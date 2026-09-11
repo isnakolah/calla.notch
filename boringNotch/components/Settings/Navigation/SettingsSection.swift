@@ -21,7 +21,7 @@ import SwiftUI
 /// and a breadcrumb that says where the path is.
 enum SettingsSection: String, CaseIterable, Identifiable, Hashable, Codable {
     case general, appearance, media, calendar, system, shelf
-    case pomodoro, copilot, tutor, sweep
+    case pomodoro, copilot, tutor, ice, sweep
     case shortcuts, privacy, about
 
     var id: String { rawValue }
@@ -37,6 +37,7 @@ enum SettingsSection: String, CaseIterable, Identifiable, Hashable, Codable {
         case .pomodoro: return "Pomodoro"
         case .copilot: return "Call Copilot"
         case .tutor: return "Tutor"
+        case .ice: return "Ice"
         case .sweep: return "Sweep"
         case .shortcuts: return "Shortcuts"
         case .privacy: return "Privacy & Permissions"
@@ -55,6 +56,7 @@ enum SettingsSection: String, CaseIterable, Identifiable, Hashable, Codable {
         case .pomodoro: return "timer"
         case .copilot: return "waveform.badge.mic"
         case .tutor: return "graduationcap"
+        case .ice: return "snowflake"
         case .sweep: return "externaldrive.badge.checkmark"
         case .shortcuts: return "keyboard"
         case .privacy: return "hand.raised"
@@ -74,6 +76,7 @@ enum SettingsSection: String, CaseIterable, Identifiable, Hashable, Codable {
         case .pomodoro: return "Focus intervals, breaks, and what happens when one ends."
         case .copilot: return "Help during a live call: what it hears, what it knows, what it says."
         case .tutor: return "Courses that watch the screen and point at the next step."
+        case .ice: return "Organize menu bar extras: sections, reveal gestures, search, spacing, and appearance."
         case .sweep: return "What is taking up the disk, and what is safe to reclaim."
         case .shortcuts: return "Every key combination this app answers to, in one place."
         case .privacy: return "What macOS has allowed this app to do, and what each thing unlocks."
@@ -87,21 +90,51 @@ enum SettingsSection: String, CaseIterable, Identifiable, Hashable, Codable {
     var subpages: [SettingsPage] {
         switch self {
         case .general: return [.displays, .gestures, .advanced]
-        case .appearance: return [.accent, .headerLayout, .camera]
+        case .appearance: return [.notchSize, .accent, .headerLayout, .camera]
         case .media: return [.controlSlots]
         case .calendar: return [.calendarSources]
         case .system: return [.battery, .huds, .usage]
         case .shelf: return [.localSend, .kdeConnect]
         case .pomodoro: return []
+        // Grouped on the landing pane rather than listed flat — see
+        // `SettingsSection.groups`. Screen Quiz had been missing from this list
+        // entirely, which made a thirty-one-kilobyte pane reachable only by a
+        // deep link from the notch.
         case .copilot:
-            return [.copilotCall, .copilotModels, .copilotPrompts,
-                    .copilotKnowledge, .copilotHistory, .copilotBackup]
+            return [.copilotCall, .copilotQuiz, .copilotCoding,
+                    .copilotModels, .copilotPrompts, .copilotKnowledge,
+                    .copilotHistory, .copilotBackup].filter { $0.availablePage == $0 }
         case .tutor: return [.tutorCourses, .tutorCreate, .tutorBehavior, .tutorEngine]
+        case .ice: return [.iceGeneral, .iceLayout, .iceAppearance, .iceHotkeys, .iceAdvanced]
         // Clean Up is the landing pane, so it is not listed here. History and
         // Options are reached from the header rather than from a card, since the
         // landing has real work on it to get in the way of.
         case .sweep: return [.sweepHistory, .sweepOptions]
         case .shortcuts, .privacy, .about: return []
+        }
+    }
+
+    /// The subpages, in named groups.
+    ///
+    /// A section earns this once its list stops being scannable. Call Copilot
+    /// has three things it can *do* — a call, a screen quiz, a coding interview
+    /// — and five settings that apply across all three, and listing those eight
+    /// as peers made the modes indistinguishable from the shared plumbing. The
+    /// groups are the answer to "where is that?": the thing you are setting up,
+    /// or the thing every mode shares.
+    ///
+    /// Sections without groups fall back to one unnamed group of `subpages`, so
+    /// the landing pane has one code path.
+    var groups: [(title: String, pages: [SettingsPage])] {
+        switch self {
+        case .copilot:
+            return [
+                ("What it can do", [SettingsPage.copilotCall, .copilotQuiz, .copilotCoding].filter { $0.availablePage == $0 }),
+                ("What it knows", [.copilotModels, .copilotPrompts, .copilotKnowledge]),
+                ("What it keeps", [.copilotHistory, .copilotBackup]),
+            ]
+        default:
+            return subpages.isEmpty ? [] : [("", subpages)]
         }
     }
 }

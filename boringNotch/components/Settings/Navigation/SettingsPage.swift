@@ -18,7 +18,7 @@ enum SettingsPage: Hashable {
     // General
     case displays, gestures, advanced
     // Appearance
-    case accent, headerLayout, camera
+    case notchSize, accent, headerLayout, camera
     // Media
     case controlSlots
     // Calendar
@@ -33,7 +33,7 @@ enum SettingsPage: Hashable {
     // pages answering one question — which model does what — and the split put
     // "which brain answers" and "which ear hears" on opposite sides of a menu
     // even though choosing one constrains the other.
-    case copilotCall, copilotModels, copilotPrompts
+    case copilotCall, copilotQuiz, copilotCoding, copilotModels, copilotPrompts
     case copilotKnowledge, copilotBackup, copilotHistory
     case copilotKnowledgeDetail(KnowledgeRoute)
     case copilotCallDetail(id: String)
@@ -43,6 +43,8 @@ enum SettingsPage: Hashable {
     // to watch is one question, and the answer to the second is what makes the
     // first work at all.
     case tutorCourses, tutorCreate, tutorBehavior, tutorEngine
+    // Ice
+    case iceGeneral, iceLayout, iceAppearance, iceHotkeys, iceAdvanced
     // Sweep
     //
     // No `cleanUp` page. The section's landing pane *is* the clean-up list —
@@ -55,16 +57,19 @@ enum SettingsPage: Hashable {
     var section: SettingsSection {
         switch self {
         case .displays, .gestures, .advanced: return .general
-        case .accent, .headerLayout, .camera: return .appearance
+        case .notchSize, .accent, .headerLayout, .camera: return .appearance
         case .controlSlots: return .media
         case .calendarSources: return .calendar
         case .battery, .huds, .usage: return .system
         case .localSend, .kdeConnect: return .shelf
-        case .copilotCall, .copilotModels, .copilotPrompts, .copilotKnowledge,
-             .copilotBackup, .copilotHistory, .copilotKnowledgeDetail, .copilotCallDetail:
+        case .copilotCall, .copilotQuiz, .copilotCoding, .copilotModels, .copilotPrompts,
+             .copilotKnowledge, .copilotBackup, .copilotHistory,
+             .copilotKnowledgeDetail, .copilotCallDetail:
             return .copilot
         case .tutorCourses, .tutorCreate, .tutorBehavior, .tutorEngine:
             return .tutor
+        case .iceGeneral, .iceLayout, .iceAppearance, .iceHotkeys, .iceAdvanced:
+            return .ice
         case .sweepHistory, .sweepOptions: return .sweep
         }
     }
@@ -74,6 +79,7 @@ enum SettingsPage: Hashable {
         case .displays: return "Displays"
         case .gestures: return "Gestures"
         case .advanced: return "Advanced"
+        case .notchSize: return "Notch Size"
         case .accent: return "Accent Colour"
         case .headerLayout: return "Header Layout"
         case .camera: return "Camera & Visualizers"
@@ -85,6 +91,8 @@ enum SettingsPage: Hashable {
         case .localSend: return "LocalSend"
         case .kdeConnect: return "KDE Connect"
         case .copilotCall: return "Live Call"
+        case .copilotQuiz: return "Screen Quiz"
+        case .copilotCoding: return "Live Coding"
         case .copilotModels: return "Models"
         case .copilotPrompts: return "Prompts"
         case .copilotKnowledge: return "Knowledge"
@@ -96,6 +104,11 @@ enum SettingsPage: Hashable {
         case .tutorCreate: return "Create"
         case .tutorBehavior: return "Behaviour & Access"
         case .tutorEngine: return "Engine"
+        case .iceGeneral: return "General"
+        case .iceLayout: return "Menu Bar Layout"
+        case .iceAppearance: return "Menu Bar Appearance"
+        case .iceHotkeys: return "Hotkeys"
+        case .iceAdvanced: return "Advanced"
         case .sweepHistory: return "History"
         case .sweepOptions: return "Options"
         }
@@ -106,6 +119,7 @@ enum SettingsPage: Hashable {
         case .displays: return "display.2"
         case .gestures: return "hand.draw"
         case .advanced: return "gearshape.2"
+        case .notchSize: return "arrow.up.left.and.arrow.down.right"
         case .accent: return "paintpalette"
         case .headerLayout: return "rectangle.3.group"
         case .camera: return "camera"
@@ -117,6 +131,8 @@ enum SettingsPage: Hashable {
         case .localSend: return "antenna.radiowaves.left.and.right"
         case .kdeConnect: return "iphone.gen3.radiowaves.left.and.right"
         case .copilotCall: return "waveform.badge.mic"
+        case .copilotQuiz: return "macwindow.badge.plus"
+        case .copilotCoding: return "chevron.left.forwardslash.chevron.right"
         case .copilotModels: return "brain"
         case .copilotPrompts: return "text.quote"
         case .copilotKnowledge: return "brain.head.profile"
@@ -128,6 +144,11 @@ enum SettingsPage: Hashable {
         case .tutorCreate: return "wand.and.stars"
         case .tutorBehavior: return "slider.horizontal.3"
         case .tutorEngine: return "bolt.horizontal.circle"
+        case .iceGeneral: return "switch.2"
+        case .iceLayout: return "menubar.rectangle"
+        case .iceAppearance: return "rectangle.inset.filled"
+        case .iceHotkeys: return "command"
+        case .iceAdvanced: return "slider.horizontal.3"
         case .sweepHistory: return "clock.arrow.circlepath"
         case .sweepOptions: return "slider.horizontal.3"
         }
@@ -140,6 +161,7 @@ enum SettingsPage: Hashable {
         case .displays: return "Which screen the notch appears on, and what happens when you plug one in."
         case .gestures: return "Swiping the notch open and closed."
         case .advanced: return "Shadow, corner radius, lock screen, and hiding from screen recordings."
+        case .notchSize: return "Resize regular tabs and both Call layouts directly on the notch."
         case .accent: return "The colour used for anything active or selected."
         case .headerLayout: return "What sits either side of the notch, and in which order."
         case .camera: return "The mirror, its shape, and the music visualizer."
@@ -151,6 +173,8 @@ enum SettingsPage: Hashable {
         case .localSend: return "Sending shelf items to other devices over the network."
         case .kdeConnect: return "Pairing with a phone through KDE Connect."
         case .copilotCall: return "What is captured during a call, and what shows in the notch."
+        case .copilotQuiz: return "The window Quiz watches, who answers, and what it keeps."
+        case .copilotCoding: return "The project and the brief a coding interview starts from."
         case .copilotModels: return "Which model hears the call, and which one answers."
         case .copilotPrompts: return "Who you are, and how each kind of call should be handled."
         case .copilotKnowledge: return "What the copilot has been given for each meeting."
@@ -162,6 +186,11 @@ enum SettingsPage: Hashable {
         case .tutorCreate: return "Building a new course or revising one."
         case .tutorBehavior: return "What the tutor watches, how it points, and which apps it may see."
         case .tutorEngine: return "The runtime, the gateway, and what it last did."
+        case .iceGeneral: return "Reveal hidden extras and decide when they rehide."
+        case .iceLayout: return "Put each discovered menu bar extra in visible, hidden, or always hidden."
+        case .iceAppearance: return "A Boring-owned light or dark overlay for the menu bar."
+        case .iceHotkeys: return "Keyboard ways to reveal extras or search them."
+        case .iceAdvanced: return "Always-hidden extras, spacing, dividers, and recovery controls."
         case .sweepHistory: return "What has been freed, and what grew back."
         case .sweepOptions: return "Scan roots, exclusions, and when the helper stops."
         }
@@ -175,6 +204,7 @@ enum SettingsPage: Hashable {
         case .displays: return ["monitor", "screen", "external", "sidecar"]
         case .gestures: return ["swipe", "trackpad", "scroll"]
         case .advanced: return ["shadow", "corner radius", "lock screen", "screen recording", "app icon"]
+        case .notchSize: return ["resize", "width", "height", "panel", "expanded", "compact", "collapsed"]
         case .accent: return ["colour", "color", "tint", "theme"]
         case .headerLayout: return ["slots", "items", "left", "right", "arrange"]
         case .camera: return ["mirror", "selfie", "face", "spectrogram", "visualizer"]
@@ -186,6 +216,11 @@ enum SettingsPage: Hashable {
         case .localSend: return ["airdrop", "transfer", "share", "network"]
         case .kdeConnect: return ["phone", "android", "pair"]
         case .copilotCall: return ["meeting", "live", "zoom", "meet", "teams"]
+        case .copilotQuiz: return ["quiz", "screen quiz", "voters", "arbiter", "reasoner",
+                                   "screen recording", "accessibility", "capture",
+                                   "resolution", "answer", "exam", "test", "question"]
+        case .copilotCoding: return ["code", "coding", "interview", "project", "folder",
+                                     "shadow", "brief", "rubric", "repo", "git", "wave"]
         case .copilotModels: return ["model", "gateway", "local", "agy", "gemini", "claude",
                                      "intelligence", "whisper", "speech", "transcript",
                                      "transcription", "download"]
@@ -200,6 +235,11 @@ enum SettingsPage: Hashable {
         case .tutorBehavior: return ["tooltip", "cursor", "capture", "watch",
                                      "allowed apps", "bundle", "permission", "access"]
         case .tutorEngine: return ["runtime", "gateway", "diagnostics", "version"]
+        case .iceGeneral: return ["menu bar", "reveal", "rehide", "hover", "scroll"]
+        case .iceLayout: return ["sections", "visible", "hidden", "drag", "extras"]
+        case .iceAppearance: return ["overlay", "light", "dark", "opacity"]
+        case .iceHotkeys: return ["shortcut", "keyboard", "search"]
+        case .iceAdvanced: return ["always hidden", "spacing", "divider", "reset"]
         case .sweepHistory: return ["freed", "regrowth", "space"]
         case .sweepOptions: return ["exclusions", "scan roots", "interval", "lifetime"]
         }
@@ -208,18 +248,28 @@ enum SettingsPage: Hashable {
     /// Every page without a payload: what search indexes, and what the tests
     /// walk. `copilotKnowledgeDetail` is excluded because its instances are
     /// user data, not destinations that exist before the data does.
+    var availablePage: SettingsPage {
+        guard !CallaFeatureAvailability.liveCoding else { return self }
+        switch self {
+        case .copilotCoding: return .copilotCall
+        case .copilotKnowledgeDetail(.waveInterview): return .copilotKnowledge
+        default: return self
+        }
+    }
+
     static let indexable: [SettingsPage] = [
         .displays, .gestures, .advanced,
-        .accent, .headerLayout, .camera,
+        .notchSize, .accent, .headerLayout, .camera,
         .controlSlots,
         .calendarSources,
         .battery, .huds, .usage,
         .localSend, .kdeConnect,
-        .copilotCall, .copilotModels, .copilotPrompts,
+        .copilotCall, .copilotQuiz, .copilotCoding, .copilotModels, .copilotPrompts,
         .copilotKnowledge, .copilotBackup, .copilotHistory,
         .tutorCourses, .tutorCreate, .tutorBehavior, .tutorEngine,
+        .iceGeneral, .iceLayout, .iceAppearance, .iceHotkeys, .iceAdvanced,
         .sweepHistory, .sweepOptions,
-    ]
+    ].filter { $0.availablePage == $0 }
 }
 
 // MARK: - The string form
@@ -243,6 +293,10 @@ extension SettingsPage {
     }
 
     init?(identifier: String) {
+        if !CallaFeatureAvailability.liveCoding && identifier == "copilot.coding" {
+            self = .copilotCall
+            return
+        }
         if identifier.hasPrefix("copilot.history.call:") {
             self = .copilotCallDetail(id: String(identifier.dropFirst("copilot.history.call:".count)))
             return
@@ -273,16 +327,19 @@ extension SettingsPage {
     /// forward and reverse directions cannot disagree.
     private static let stems: [SettingsPage: String] = [
         .displays: "displays", .gestures: "gestures", .advanced: "advanced",
-        .accent: "accent", .headerLayout: "header-layout", .camera: "camera",
+        .notchSize: "notch-size", .accent: "accent", .headerLayout: "header-layout", .camera: "camera",
         .controlSlots: "control-slots",
         .calendarSources: "sources",
         .battery: "battery", .huds: "huds", .usage: "usage",
         .localSend: "localsend", .kdeConnect: "kde-connect",
-        .copilotCall: "call", .copilotModels: "models", .copilotPrompts: "prompts",
+        .copilotCall: "call", .copilotQuiz: "quiz", .copilotCoding: "coding",
+        .copilotModels: "models", .copilotPrompts: "prompts",
         .copilotKnowledge: "knowledge", .copilotBackup: "backup",
         .copilotHistory: "history",
         .tutorCourses: "courses", .tutorCreate: "create", .tutorBehavior: "behavior",
         .tutorEngine: "engine",
+        .iceGeneral: "general", .iceLayout: "layout", .iceAppearance: "appearance",
+        .iceHotkeys: "hotkeys", .iceAdvanced: "advanced",
         .sweepHistory: "history", .sweepOptions: "options",
     ]
 }
@@ -291,6 +348,7 @@ extension KnowledgeRoute {
     var identifier: String {
         switch self {
         case let .event(id): return "event:\(id)"
+        case .waveInterview: return "wave-interview"
         case .everyCall: return "every-call"
         case .byPersona: return "by-persona"
         case .orphaned: return "orphaned"
@@ -301,6 +359,7 @@ extension KnowledgeRoute {
         switch identifier {
         case "every-call": self = .everyCall
         case "by-persona": self = .byPersona
+        case "wave-interview": self = .waveInterview
         case "orphaned": self = .orphaned
         default:
             guard identifier.hasPrefix("event:") else { return nil }

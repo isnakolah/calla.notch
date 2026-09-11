@@ -1,4 +1,5 @@
 import AppKit
+import CallaContracts
 import Defaults
 import SwiftUI
 import UniformTypeIdentifiers
@@ -21,12 +22,39 @@ struct CopilotHistoryPane: View {
     @State private var loading = false
     /// Calls waiting their turn for the large model.
     @State private var queued: [String] = []
+    /// Which archive this pane is showing.
+    ///
+    /// This was bound to `Defaults[.callaCopilotMode]` — the same key the notch's
+    /// Call|Quiz selector uses — so opening quiz history in Settings silently
+    /// re-armed the notch into Quiz mode, and starting a quiz from a calendar
+    /// event retargeted this pane. One key cannot do both jobs.
+    @State private var historyMode = "call"
+    @State private var quizSessions: [QuizHistorySession] = []
+    @State private var captureImage: NSImage?
+    @State private var showsCapture = false
+    @State private var confirmsDeleteAllQuiz = false
+    @State private var quizLoading = false
+    /// Grades applied this visit, so a row reflects the press before the archive
+    /// is read back.
+    @State private var grades: [String: QuizAnswerGrade] = [:]
 
 
     var body: some View {
         SettingsPane(SettingsPage.copilotHistory) {
-            pendingRetranscribeCard
-            callsCard
+            Picker("History", selection: $historyMode) {
+                Text("Call").tag("call")
+                Text("Quiz").tag("quiz")
+                if CallaFeatureAvailability.liveCoding { Text("Code").tag("code") }
+            }
+            .pickerStyle(.segmented).frame(width: 300)
+            if historyMode == "quiz" {
+                quizCard
+            } else if CallaFeatureAvailability.liveCoding && historyMode == "code" {
+                codeCard
+            } else {
+                pendingRetranscribeCard
+                callsCard
+            }
         }
         .task { await load() }
         // The badge and the counts only change when a run finishes, so the list is
@@ -36,9 +64,48 @@ struct CopilotHistoryPane: View {
             Task { await load() }
             startNextRetranscribe()
         }
+        .sheet(isPresented: $showsCapture) {
+            VStack(spacing: 12) {
+                if let captureImage {
+                    Image(nsImage: captureImage).resizable().scaledToFit()
+                } else {
+                    Text("Capture unavailable")
+                }
+                Button("Close") { showsCapture = false }.keyboardShortcut(.cancelAction)
+            }
+            .padding().frame(minWidth: 640, minHeight: 420)
+        }
+        .confirmationDialog("Delete all Quiz history?", isPresented: $confirmsDeleteAllQuiz) {
+            Button("Delete All Quiz History", role: .destructive) {
+                engine.deleteAllQuizHistory { quizSessions = [] }
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("Encrypted captures, answers, and records are removed. Quiz encryption key rotates.")
+        }
     }
 
     // MARK: - Re-transcribing
+
+    private var codeCard: some View {
+        SettingCard("Live Coding History",
+                    detail: "Encrypted shadow projects and guidance remain on this Mac until you delete them.") {
+            VStack(alignment: .leading, spacing: 10) {
+                if engine.retainedCodingSessions.isEmpty {
+                    Text("No retained Live Coding interviews")
+                        .font(NotchType.rowDetail).foregroundStyle(.secondary)
+                }
+                ForEach(engine.retainedCodingSessions) { session in
+                    SettingRow(session.folderName,
+                               detail: "\(session.lifecycle.rawValue.capitalized) · \(session.moveCount) moves") {
+                        Button(role: .destructive) {
+                            engine.deleteCodingSession(session.sessionID)
+                        } label: { Image(systemName: "trash") }
+                    }
+                }
+            }
+        }
+    }
 
     /// Calls with audio still on disk that the large model has not been over.
     private var pending: [CallaCallSummary] {
@@ -96,7 +163,125 @@ struct CopilotHistoryPane: View {
         engine.retranscribe(callID: next)
     }
 
+    /// Was this answer right?
+    ///
+    /// This is the only place correctness is recorded, and confidence calibration
+    /// is built from it — without any graded answers the percentage shown in the
+    /// notch is only the model's opinion of itself.
+    @ViewBuilder
+    private func gradeControls(_ answer: QuizFinalAnswer) -> some View {
+        let current = grades[answer.id] ?? .ungraded
+        HStack(spacing: 2) {
+            Button {
+                apply(current == .correct ? .ungraded : .correct, to: answer)
+            } label: {
+                Image(systemName: current == .correct ? "hand.thumbsup.fill" : "hand.thumbsup")
+            }
+            .buttonStyle(.plain)
+            .foregroundStyle(current == .correct ? NotchTint.healthy : .secondary)
+            .help("This answer was right")
+            .accessibilityLabel("Mark answer correct")
+
+            Button {
+                apply(current == .incorrect ? .ungraded : .incorrect, to: answer)
+            } label: {
+                Image(systemName: current == .incorrect ? "hand.thumbsdown.fill" : "hand.thumbsdown")
+            }
+            .buttonStyle(.plain)
+            .foregroundStyle(current == .incorrect ? NotchTint.stuck : .secondary)
+            .help("This answer was wrong")
+            .accessibilityLabel("Mark answer incorrect")
+        }
+    }
+
+    private func apply(_ grade: QuizAnswerGrade, to answer: QuizFinalAnswer) {
+        grades[answer.id] = grade
+        engine.gradeQuizAnswer(answer.id, grade: grade)
+    }
+
     // MARK: - Calls
+
+    private var quizCard: some View {
+        SettingCard("Quiz History", detail: "Answers and encrypted captures. Marking answers right or wrong is what teaches the confidence figure what it is worth. Worker research stays backend-only.") {
+            VStack(spacing: NotchSpace.snug) {
+                if quizLoading {
+                    Text("Reading the archive…").font(NotchType.rowDetail).foregroundStyle(.secondary)
+                } else if quizSessions.isEmpty {
+                    Text("No Quiz sessions yet").font(NotchType.rowDetail).foregroundStyle(.secondary)
+                }
+                ForEach(quizSessions) { quiz in
+                    VStack(alignment: .leading, spacing: 5) {
+                        HStack {
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(quiz.startedAt.formatted(date: .abbreviated, time: .shortened))
+                                    .font(NotchType.rowTitle)
+                                Text([quiz.eventLabel ?? "No event", quiz.targetApplication,
+                                      quiz.targetWindow].joined(separator: " · "))
+                                    .font(NotchType.rowDetail).foregroundStyle(.secondary).lineLimit(1)
+                            }
+                            Spacer()
+                            // A session with several viewports had every capture
+                            // but the first hidden with nothing saying so.
+                            if quiz.captureIDs.count > 1 {
+                                Menu("Reveal capture") {
+                                    ForEach(Array(quiz.captureIDs.enumerated()), id: \.element) { item in
+                                        Button("Capture \(item.offset + 1)") { reveal(item.element) }
+                                    }
+                                }
+                                .controlSize(.small).fixedSize()
+                            } else if let captureID = quiz.captureIDs.first {
+                                Button("Reveal capture") { reveal(captureID) }.controlSize(.small)
+                            }
+                            Button("Delete Session", role: .destructive) {
+                                engine.deleteQuizSession(quiz.id) { loadQuiz() }
+                            }
+                            .controlSize(.small)
+                        }
+                        ForEach(quiz.answers) { answer in
+                            HStack(alignment: .firstTextBaseline, spacing: NotchSpace.tight) {
+                                VStack(alignment: .leading, spacing: NotchSpace.hair) {
+                                    if let summary = answer.summary, !summary.isEmpty {
+                                        Text(summary)
+                                            .font(NotchType.rowDetail)
+                                            .foregroundStyle(.secondary)
+                                            .lineLimit(1)
+                                    }
+                                    Text(answer.answer).lineLimit(3).textSelection(.enabled)
+                                    if let rationale = answer.rationale, !rationale.isEmpty {
+                                        Label {
+                                            Text(rationale)
+                                                .font(NotchType.rowDetail)
+                                                .foregroundStyle(.secondary)
+                                                .fixedSize(horizontal: false, vertical: true)
+                                        } icon: {
+                                            Image(systemName: "wand.and.stars")
+                                                .foregroundStyle(NotchTint.healthy)
+                                        }
+                                    }
+                                }
+                                Spacer(minLength: 8)
+                                if answer.verified {
+                                    SettingBadge("\(answer.confidence)%", tint: NotchTint.healthy)
+                                } else {
+                                    SettingBadge("No answer", tint: NotchTint.attention)
+                                }
+                                if answer.verified { gradeControls(answer) }
+                            }
+                            .font(NotchType.rowDetail)
+                        }
+                    }
+                    if quiz.id != quizSessions.last?.id { Divider() }
+                }
+                HStack {
+                    Spacer()
+                    Button("Delete All Quiz History", role: .destructive) {
+                        confirmsDeleteAllQuiz = true
+                    }
+                    .controlSize(.small).disabled(quizSessions.isEmpty)
+                }
+            }
+        }
+    }
 
     @ViewBuilder
     private var callsCard: some View {
@@ -111,24 +296,50 @@ struct CopilotHistoryPane: View {
                 }
             }
         } else {
-            SettingCard("Calls", detail: "Newest first.") {
-                VStack(spacing: 0) {
-                    ForEach(calls) { call in
-                        callRow(call)
-                        if call.id != calls.last?.id {
-                            Divider().padding(.vertical, 2)
-                        }
-                    }
+            if !CallaFeatureAvailability.liveCoding {
+                SettingCard("Calls", detail: "Newest first.") { callList(calls) }
+            } else if !interviewCalls.isEmpty {
+                SettingCard(WaveInterview.title,
+                            detail: "\(interviewCalls.count) session\(interviewCalls.count == 1 ? "" : "s") of one meeting. Newest first.") {
+                    callList(interviewCalls)
+                }
+            }
+            if CallaFeatureAvailability.liveCoding && !otherCalls.isEmpty {
+                SettingCard(interviewCalls.isEmpty ? "Calls" : "Other calls",
+                            detail: "Newest first.") {
+                    callList(otherCalls)
                 }
             }
         }
     }
 
-    private func callRow(_ call: CallaCallSummary) -> some View {
+    /// Sessions of the interview, and everything else.
+    ///
+    /// Split rather than numbered in one list because the archive predates the
+    /// meeting being pinned: calls recorded then carry no meeting at all, and
+    /// calling them session 4 of an interview they were not part of would be a
+    /// grouping the data does not support.
+    private var interviewCalls: [CallaCallSummary] { calls.filter(\.isWaveInterview) }
+    private var otherCalls: [CallaCallSummary] { calls.filter { !$0.isWaveInterview } }
+
+    private func callList(_ rows: [CallaCallSummary]) -> some View {
+        VStack(spacing: 0) {
+            ForEach(Array(rows.enumerated()), id: \.element.id) { index, call in
+                // Newest first, so the oldest session is number one.
+                callRow(call, session: CallaFeatureAvailability.liveCoding && call.isWaveInterview ? rows.count - index : nil)
+                if index < rows.count - 1 {
+                    Divider().padding(.vertical, 2)
+                }
+            }
+        }
+    }
+
+    private func callRow(_ call: CallaCallSummary, session: Int?) -> some View {
         HStack(spacing: 10) {
             SettingGlyph(symbol: "waveform", tint: NotchTint.active, size: 26)
             VStack(alignment: .leading, spacing: 2) {
-                Text(call.startedAt?.formatted(date: .abbreviated, time: .shortened) ?? call.id)
+                Text((session.map { "Session \($0) · " } ?? "")
+                     + (call.startedAt?.formatted(date: .abbreviated, time: .shortened) ?? call.id))
                     .font(NotchType.rowTitle)
                 Text(subtitle(for: call))
                     .font(NotchType.rowDetail)
@@ -139,6 +350,15 @@ struct CopilotHistoryPane: View {
             // indistinguishable from a call that was never re-transcribed.
             if call.retranscribed {
                 SettingBadge("Re-transcribed", tint: NotchTint.healthy)
+            }
+            if CallaFeatureAvailability.liveCoding && call.isWaveRehearsal {
+                // Same meeting, different run. Without this the archive is a
+                // list of sessions where the real one is indistinguishable from
+                // the practice, which is the thing you most need to tell apart.
+                SettingBadge("Rehearsal")
+            }
+            if call.wasInterrupted {
+                SettingBadge("Interrupted", tint: NotchTint.attention)
             }
             // Zero advice against a full transcript is the case worth surfacing: the
             // copilot was running and never answered.
@@ -183,11 +403,29 @@ struct CopilotHistoryPane: View {
             calls = fetched
             loading = false
         }
+        loadQuiz()
+        if CallaFeatureAvailability.liveCoding { engine.fetchRetainedCodingSessions() }
+    }
+
+    private func loadQuiz() {
+        quizLoading = true
+        engine.quizHistory { sessions in
+            quizSessions = sessions
+            quizLoading = false
+        }
+    }
+
+    private func reveal(_ captureID: String) {
+        engine.revealQuizCapture(captureID) { data in
+            captureImage = data.flatMap(NSImage.init(data:))
+            showsCapture = true
+        }
     }
 
 
     private func subtitle(for call: CallaCallSummary) -> String {
         var parts: [String] = []
+        if call.wasInterrupted { parts.append("Interrupted") }
         if let duration = call.duration { parts.append(callClock(duration)) }
         parts.append("\(call.turnCount) turn\(call.turnCount == 1 ? "" : "s")")
         if call.suggestionCount > 0 { parts.append("\(call.suggestionCount) suggested") }

@@ -203,6 +203,32 @@ struct SettingsTileGrid<Content: View>: View {
     }
 }
 
+/// A named group of tiles.
+///
+/// A section earns groups when its destinations stop being one list. Call
+/// Copilot has three things it can *do* and five settings shared by all three,
+/// and as eight peer tiles the modes were indistinguishable from the plumbing —
+/// the reader had to open pages to find out which was which. The heading is the
+/// answer to "where is that?" before anything is opened.
+struct SettingsTileGroup<Content: View>: View {
+    let title: String
+    var columns: Int = 3
+    @ViewBuilder var content: Content
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: NotchSpace.tight) {
+            if !title.isEmpty {
+                Text(title.uppercased())
+                    .font(NotchType.eyebrow)
+                    .tracking(0.7)
+                    .foregroundStyle(.tertiary)
+                    .padding(.leading, 2)
+            }
+            SettingsTileGrid(columns: columns) { content }
+        }
+    }
+}
+
 // MARK: - Header navigation
 
 /// A sibling page, reachable from the header.

@@ -30,7 +30,7 @@ extension SettingsRoute {
                           trailing: Defaults[.notchHeaderTrailing].compactMap { $0 })
         case .controlSlots:
             return .media(title: "Windowlicker", artist: "Aphex Twin")
-        case .accent, .camera, .displays, .gestures, .advanced:
+        case .notchSize, .accent, .camera, .displays, .gestures, .advanced:
             return .shape
         default: return nil
         }
@@ -57,6 +57,9 @@ extension SettingsRoute {
         case .tutor:
             return .activity(symbol: "graduationcap.fill", text: "Shape the lamp base",
                              tint: NotchTint.active, caption: "A lesson in progress")
+        case .ice:
+            return .activity(symbol: "snowflake", text: "Hidden extras ready",
+                             tint: NotchTint.active, caption: "Menu bar organizer")
         case .sweep:
             return .meter(label: "12.4 GB", fraction: 0.34,
                           tint: NotchTint.attention, caption: "Reclaimable space")

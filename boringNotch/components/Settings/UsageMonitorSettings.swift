@@ -53,9 +53,9 @@ struct UsageMonitorSettings: View {
                         title: "Neither CLI is being read",
                         detail: "Turn one on below and its allowance appears here.")
                 } else {
-                    if showClaude { providerRow("Claude", state: manager.claude) }
+                    if showClaude { providerRow("Claude", state: manager.claude, error: manager.lastError(for: "claude")) }
                     if showClaude, showCodex { Divider().opacity(0.35) }
-                    if showCodex { providerRow("Codex", state: manager.codex) }
+                    if showCodex { providerRow("Codex", state: manager.codex, error: manager.lastError(for: "codex")) }
                 }
 
                 HStack {
@@ -72,7 +72,7 @@ struct UsageMonitorSettings: View {
     }
 
     @ViewBuilder
-    private func providerRow(_ name: String, state: ProviderUsageState) -> some View {
+    private func providerRow(_ name: String, state: ProviderUsageState, error: String?) -> some View {
         VStack(alignment: .leading, spacing: NotchSpace.tight) {
             HStack(spacing: NotchSpace.tight) {
                 Text(name).font(NotchType.rowTitle)
@@ -83,13 +83,21 @@ struct UsageMonitorSettings: View {
             }
             if let report = state.report, report.status == .ok {
                 SettingsStatRow {
-                    quotaTile("Session", report.session)
+                    if !report.weeklyExhausted {
+                        quotaTile("Session", report.effectiveSession)
+                    }
                     quotaTile("This week", report.weekly)
                 }
             } else {
                 Text(explanation(for: state))
                     .font(NotchType.rowDetail)
                     .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            if let error {
+                Text("Last refresh failed: \(error)")
+                    .font(NotchType.rowDetail)
+                    .foregroundStyle(NotchTint.attention)
                     .fixedSize(horizontal: false, vertical: true)
             }
         }

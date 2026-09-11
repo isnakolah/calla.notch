@@ -229,6 +229,9 @@ struct NotchStopSlider<Value: Hashable>: View {
         let title: String
         /// What this stop costs or means. One short phrase.
         var caption: String?
+        /// Optional consequence tint. Used when later stops cost materially
+        /// more time or resources than earlier stops.
+        var tint: Color? = nil
         var id: Int { title.hashValue }
     }
 
@@ -247,6 +250,7 @@ struct NotchStopSlider<Value: Hashable>: View {
     private static var thumbActive: CGFloat { 20 }
 
     private var index: Int { stops.firstIndex { $0.value == selection } ?? 0 }
+    private var selectedTint: Color { stops[index].tint ?? NotchTint.active }
 
     var body: some View {
         VStack(alignment: .leading, spacing: NotchSpace.tight) {
@@ -270,7 +274,7 @@ struct NotchStopSlider<Value: Hashable>: View {
                         .fill(Color.primary.opacity(0.10))
                         .frame(height: 6)
                     Capsule()
-                        .fill(isEnabled ? NotchTint.active : Color.secondary)
+                        .fill(isEnabled ? selectedTint : Color.secondary)
                         .frame(width: max(6, xs[index]), height: 6)
                     ForEach(Array(xs.enumerated()), id: \.offset) { i, x in
                         Circle()
@@ -326,7 +330,7 @@ struct NotchStopSlider<Value: Hashable>: View {
             .overlay(Circle().strokeBorder(Color.black.opacity(0.22), lineWidth: 0.5))
             .background(
                 Circle()
-                    .fill(NotchTint.active.opacity(dragging ? 0.24 : active ? 0.18 : 0))
+                    .fill(selectedTint.opacity(dragging ? 0.24 : active ? 0.18 : 0))
                     .frame(width: size + (dragging ? 18 : 12),
                            height: size + (dragging ? 18 : 12))
             )

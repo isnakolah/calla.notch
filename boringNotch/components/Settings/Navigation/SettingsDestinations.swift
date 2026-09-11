@@ -22,6 +22,7 @@ extension SettingsSection {
         case .pomodoro: PomodoroSettings()
         case .copilot: CopilotPane()
         case .tutor: TutorPane()
+        case .ice: IcePane()
         case .sweep: SweepSettings(selectedTab: .cleanUp)
         case .shortcuts: ShortcutsPane()
         case .privacy: PrivacyPane()
@@ -36,6 +37,7 @@ extension SettingsPage {
         case .displays: DisplaysPane()
         case .gestures: GesturesPane()
         case .advanced: Advanced()
+        case .notchSize: NotchSizePane()
         case .accent: AccentPane()
         case .headerLayout: NotchLayoutPane()
         case .camera: CameraPane()
@@ -47,17 +49,28 @@ extension SettingsPage {
         case .localSend: LocalSendPane()
         case .kdeConnect: KDEConnectPane()
         case .copilotCall: CopilotCallPane()
+        case .copilotQuiz: CopilotQuizPane()
+        case .copilotCoding:
+            if CallaFeatureAvailability.liveCoding { CopilotCodingPane() } else { CopilotCallPane() }
         case .copilotModels: CopilotModelsPane()
         case .copilotPrompts: CopilotPromptsPane()
         case .copilotKnowledge: CopilotKnowledgePane()
         case .copilotBackup: CopilotBackupPane()
         case .copilotHistory: CopilotHistoryPane()
-        case let .copilotKnowledgeDetail(route): CopilotKnowledgeDetailPane(route: route)
+        case let .copilotKnowledgeDetail(route):
+            if !CallaFeatureAvailability.liveCoding && route == .waveInterview {
+                CopilotKnowledgePane()
+            } else { CopilotKnowledgeDetailPane(route: route) }
         case let .copilotCallDetail(id): CopilotCallDetailPane(callID: id)
         case .tutorCourses: TutorCoursesPane()
         case .tutorCreate: TutorCreatePane()
         case .tutorBehavior: TutorBehaviorPane()
         case .tutorEngine: TutorEnginePane()
+        case .iceGeneral: IceGeneralPane()
+        case .iceLayout: IceLayoutPane()
+        case .iceAppearance: IceAppearancePane()
+        case .iceHotkeys: IceHotkeysPane()
+        case .iceAdvanced: IceAdvancedPane()
         case .sweepHistory: SweepSettings(selectedTab: .history)
         case .sweepOptions: SweepSettings(selectedTab: .options)
         }

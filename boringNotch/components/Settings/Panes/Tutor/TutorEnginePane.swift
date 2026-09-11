@@ -34,10 +34,6 @@ struct TutorEnginePane: View {
                     SettingFact(title: "Gateway",
                                 value: status.gatewayReachable ? "Reachable" : "Unavailable",
                                 tint: status.gatewayReachable ? NotchTint.healthy : NotchTint.attention)
-                    SettingFact(title: "Calla Mac node",
-                                value: status.nodeConnected ? "Connected" : "Disconnected",
-                                tint: status.nodeConnected ? NotchTint.healthy : NotchTint.attention)
-                    SettingFact(title: "Build", value: status.engineBuild ?? "Waiting for capability receipt")
                     HStack {
                         Button(status.running ? "Stop engine" : "Start engine") {
                             status.running ? engine.stop() : engine.start()
@@ -68,7 +64,7 @@ struct TutorEnginePane: View {
             }
             if !status.diagnostics.isEmpty {
                 // Competing-install warnings arrive here: the engine reports a
-                // legacy host holding the socket, or a second Calla Mac node.
+                // legacy host holding the same lesson shortcuts.
                 SettingCard("Diagnostics", detail: "The last few bounded notes from the engine.") {
                     VStack(alignment: .leading, spacing: 4) {
                         ForEach(status.diagnostics, id: \.self) { line in

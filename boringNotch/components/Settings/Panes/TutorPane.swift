@@ -51,8 +51,6 @@ struct TutorPane: View {
                                   tint: status.hostReady ? NotchTint.healthy : NotchTint.attention)
                 SettingsHealthDot(label: "Gateway",
                                   tint: status.gatewayReachable ? NotchTint.healthy : NotchTint.attention)
-                SettingsHealthDot(label: "Node",
-                                  tint: status.nodeConnected ? NotchTint.healthy : NotchTint.attention)
             }
             .padding(.trailing, NotchSpace.tight)
         }
@@ -148,9 +146,7 @@ struct TutorPane: View {
     }
 
     private var engineValue: String {
-        guard status.running else { return "Stopped" }
-        guard let build = status.engineBuild else { return "Running" }
-        return "Running · \(build)"
+        status.running ? "Running" : "Stopped"
     }
 }
 

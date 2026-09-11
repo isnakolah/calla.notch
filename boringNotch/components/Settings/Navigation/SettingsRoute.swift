@@ -12,7 +12,7 @@ struct SettingsRoute: Hashable {
 
     init(_ section: SettingsSection, _ path: [SettingsPage] = []) {
         self.section = section
-        self.path = path
+        self.path = path.map(\.availablePage)
     }
 
     /// The page actually on screen, or `nil` at a section's landing pane.
@@ -76,6 +76,8 @@ extension SettingsRoute {
         case "Shelf", "shelf": self = .init(.shelf)
         case "Pomodoro", "pomodoro": self = .init(.pomodoro)
         case "Copilot", "CallCopilot", "copilotCall": self = .init(.copilot, [.copilotCall])
+        case "Quiz", "copilotQuiz": self = .init(.copilot, [.copilotQuiz])
+        case "CopilotCoding", "copilotCoding": self = .init(.copilot, [.copilotCoding])
         case "CopilotIntelligence", "copilotIntelligence": self = .init(.copilot, [.copilotModels])
         case "CopilotPrompts", "copilotPrompts": self = .init(.copilot, [.copilotPrompts])
         case "CopilotKnowledge", "copilotKnowledge": self = .init(.copilot, [.copilotKnowledge])
@@ -87,6 +89,12 @@ extension SettingsRoute {
         case "tutorBehavior": self = .init(.tutor, [.tutorBehavior])
         case "tutorAccess": self = .init(.tutor, [.tutorBehavior])
         case "tutorEngine": self = .init(.tutor, [.tutorEngine])
+        case "Ice", "ice": self = .init(.ice)
+        case "iceGeneral": self = .init(.ice, [.iceGeneral])
+        case "iceLayout": self = .init(.ice, [.iceLayout])
+        case "iceAppearance": self = .init(.ice, [.iceAppearance])
+        case "iceHotkeys": self = .init(.ice, [.iceHotkeys])
+        case "iceAdvanced": self = .init(.ice, [.iceAdvanced])
         case "Sweep", "sweep": self = .init(.sweep)
         // Clean Up is the section's landing pane now, so the link that used to
         // push it lands on the section instead of pushing a page that is gone.

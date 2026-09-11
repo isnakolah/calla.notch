@@ -160,6 +160,7 @@ class SettingsWindowController: NSWindowController {
 
 extension SettingsWindowController: NSWindowDelegate {
     func windowWillClose(_ notification: Notification) {
+        NotchResizeSession.shared.finish()
         NotificationCenter.default.post(name: .boringNotchSettingsWillClose, object: nil)
         relinquishFocus()
     }
@@ -174,6 +175,11 @@ extension SettingsWindowController: NSWindowDelegate {
     }
     
     func windowDidResignKey(_ notification: Notification) {
+    }
+
+    func windowDidChangeScreen(_ notification: Notification) {
+        guard let window = notification.object as? NSWindow else { return }
+        NotchResizeSession.shared.retarget(to: window.screen)
     }
     
 }

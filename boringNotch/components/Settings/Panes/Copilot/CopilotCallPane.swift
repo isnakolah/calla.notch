@@ -3,8 +3,9 @@
 //  boringNotch
 //
 
+import AppKit
+import CallaContracts
 import Defaults
-import KeyboardShortcuts
 import SwiftUI
 
 /// The live call: what is being captured right now, what starts it, and what
@@ -20,25 +21,16 @@ import SwiftUI
 /// default size, which is the whole point.
 struct CopilotCallPane: View {
     @ObservedObject private var engine = CallaEngineClient.shared
+    @ObservedObject private var library = CallaKnowledgeLibrary.shared
+    @Environment(\.settingsRouter) private var router
 
     @Default(.callaCopilotEnabled) private var copilotEnabled
-    @Default(.callaCopilotPersona) private var persona
+    @Default(.callaQuizEnabled) private var quizEnabled
+    @Default(.callaPlainCallEnabled) private var plainCallEnabled
     @Default(.callaCopilotLiveModel) private var model
     @Default(.callaCopilotAutoReveal) private var autoReveal
-    @Default(.callaCopilotPrerollEnabled) private var preroll
-    @Default(.callaCopilotPrerollLead) private var prerollLead
     @Default(.callaCopilotGlassLevel) private var glassLevel
-    @Default(.callaCopilotCustomPersonas) private var customPersonas
-    @Default(.callaPanelWidth) private var panelWidth
-    @Default(.callaPanelHeight) private var panelHeight
-    @Default(.callaCompactPanelWidth) private var compactPanelWidth
-    @Default(.callaCompactPanelHeight) private var compactPanelHeight
 
-    /// Which layout the size controls are driving. One set of controls for two
-    /// layouts rather than two stacked sets, which is what pushed this card past
-    /// a screen; the silhouette draws both either way, so the one you are not
-    /// editing is still visible as an outline.
-    @State private var editingCompact = false
 
     private var copilot: CallaCopilotStatus { engine.status.copilot }
 
@@ -49,10 +41,10 @@ struct CopilotCallPane: View {
                 liveCard
                 permissionsCard
             } trailing: {
-                panelSizeCard
-                warmUpCard
+                panelSizeLink
             }
             notchCard
+            quizLink
             if let result = copilot.lastResult {
                 SettingCard("Last result") {
                     Text(result)
@@ -62,8 +54,12 @@ struct CopilotCallPane: View {
                 }
             }
         }
-        .task { engine.refresh() }
-        .onChange(of: persona) { _, value in engine.setCallPersona(value) }
+        .task {
+            engine.refresh()
+            // Keep settings and the notch on the selected call profile.
+            engine.setCallPersona(Defaults[.callaCopilotPersona])
+            await library.load()
+        }
     }
 
     // MARK: - Cards
@@ -99,11 +95,19 @@ struct CopilotCallPane: View {
                                 tint: copilot.gatewayConnected ? NotchTint.healthy : NotchTint.attention)
                     SettingFact(title: "Turns heard", value: "\(copilot.turnCount)")
                 }
+                if CallaFeatureAvailability.liveCoding {
+                    SettingRow("Plain listening call",
+                               detail: "Adds a Call segment to the notch: any meeting, any persona, no project. Off, the notch is only the Wave interview.") {
+                        Toggle("", isOn: $plainCallEnabled).labelsHidden().toggleStyle(.switch)
+                    }
+                }
                 HStack {
                     if copilot.running {
                         Button("End call", role: .destructive) { engine.endCall() }
                     } else {
-                        Button("Start call") { engine.startCall(persona: persona, model: model) }
+                        Button("Start call") {
+                            engine.startCall(persona: Defaults[.callaCopilotPersona], model: model)
+                        }
                             .buttonStyle(.borderedProminent)
                             .disabled(!copilot.available)
                     }
@@ -120,7 +124,6 @@ struct CopilotCallPane: View {
             let elapsed = Int(Date().timeIntervalSince(startedAt))
             return String(format: "In a call · %d:%02d", elapsed / 60, elapsed % 60)
         }
-        if copilot.prewarming { return "Warm, not recording" }
         if copilot.starting { return "Starting" }
         return "Idle"
     }
@@ -170,10 +173,10 @@ struct CopilotCallPane: View {
 
     private func permissionRow(_ title: String, detail: String, granted: Bool) -> some View {
         SettingRow(title, detail: detail) {
-            HStack(spacing: 8) {
+            HStack(spacing: NotchSpace.snug) {
                 if !permissionsResolved {
                     Image(systemName: "questionmark.circle.fill")
-                        .font(.system(size: 13))
+                        .font(NotchType.rowTitle)
                         .foregroundStyle(.tertiary)
                 } else {
                     SettingStatusIcon(ok: granted)
@@ -186,123 +189,38 @@ struct CopilotCallPane: View {
         }
     }
 
-    private var warmUpCard: some View {
-        SettingCard("Before a scheduled meeting",
-                    detail: "Loads the model early so the first suggestion is not ten seconds late. Nothing is recorded: the notch shows Join, Start and Not now, and both microphones stay off until you press one.") {
-            SettingRow("Warm up ahead of an event") {
-                Toggle("", isOn: $preroll).labelsHidden().toggleStyle(.switch)
-            }
-            if preroll {
-                // A scale, so a slider rather than a picker: the positions are
-                // ordered and the reader is trading slack against a warm model
-                // sitting idle. A cold start takes about ten seconds; the rest
-                // is slack for a meeting that begins on time.
-                NotchStopSlider(
-                    selection: Binding(get: { prerollLead }, set: { prerollLead = $0 }),
-                    stops: [
-                        .init(value: 60.0, title: "1 min"),
-                        .init(value: 120.0, title: "2 min"),
-                        .init(value: 300.0, title: "5 min"),
-                        .init(value: 600.0, title: "10 min"),
-                    ],
-                    label: "How early")
-                if let armed = MeetingPreroll.shared.armed {
-                    SettingFact(title: "Armed for", value: armed.title, tint: NotchTint.active)
-                }
+    // MARK: - Quiz
+
+    /// Quiz has its own page now; this keeps it reachable from where it used to
+    /// live.
+    private var quizLink: some View {
+        SettingsDrillGroup {
+            SettingsDrillRow(
+                symbol: SettingsPage.copilotQuiz.symbol,
+                title: String(localized: SettingsPage.copilotQuiz.title),
+                detail: "The window Quiz watches, who answers, and what it keeps.",
+                badge: quizEnabled ? "On" : "Off",
+                badgeTint: quizEnabled ? NotchTint.active : nil
+            ) {
+                router?.go(.init(.copilot, [.copilotQuiz]))
             }
         }
     }
 
-    // MARK: - Panel size
-
-    /// How big the live panel is, in each layout.
-    ///
-    /// The card shows the thing it controls. Four numbers on four sliders say
-    /// nothing about the shape they make, and the panel is a shape — so the
-    /// silhouette is drawn to scale, hanging from the top edge the way the notch
-    /// does, and its own right and bottom edges are draggable. The sliders below
-    /// are the fine adjustment, not the only way in.
-    ///
-    /// The ranges are not decoration. The window behind the notch is created once
-    /// at a fixed ceiling, so a size outside them would draw a panel the window
-    /// cannot contain.
-    private var panelSizeCard: some View {
-        SettingCard("Panel size",
-                    detail: "Drag the panel's own edges, or use the sliders. Changes apply straight away.") {
-            HStack {
-                Picker("", selection: $editingCompact) {
-                    Text("Expanded").tag(false)
-                    Text("Collapsed").tag(true)
-                }
-                .labelsHidden().pickerStyle(.segmented).frame(width: 190)
-                Spacer(minLength: 8)
-                // One read-out for the pair. "600 × 340" is the size; two numbers
-                // parked beside two sliders are just slider state.
-                Text("\(Int(activeWidth.wrappedValue)) × \(Int(activeHeight.wrappedValue))")
-                    .font(NotchType.figure).foregroundStyle(.secondary)
-                    .contentTransition(.numericText())
-            }
-
-            HStack(alignment: .top, spacing: NotchSpace.card) {
-                PanelSilhouette(width: activeWidth,
-                                height: activeHeight,
-                                heightRange: activeHeightRange,
-                                ghost: ghostSize)
-
-                VStack(alignment: .leading, spacing: NotchSpace.snug) {
-                    NotchSlider(value: activeWidth,
-                                range: widthRange,
-                                step: 2,
-                                label: "Width",
-                                format: { "\(Int($0)) pt" },
-                                ends: ("\(Int(CallaPanelBounds.width.lowerBound))",
-                                       "\(Int(CallaPanelBounds.width.upperBound))"))
-                    NotchSlider(value: activeHeight,
-                                range: heightRange,
-                                step: 2,
-                                label: "Height",
-                                format: { "\(Int($0)) pt" },
-                                ends: ("\(Int(activeHeightRange.lowerBound))",
-                                       "\(Int(activeHeightRange.upperBound))"))
-                }
-            }
-
-            if !CallaPanelSize.isDefault {
-                HStack {
-                    Spacer(minLength: 0)
-                    Button("Reset to defaults") { CallaPanelSize.reset() }
-                        .controlSize(.small)
-                }
+    private var panelSizeLink: some View {
+        SettingsDrillGroup(
+            "Panel size",
+            detail: "Normal, expanded Call, and compact Call sizes now live together under Appearance."
+        ) {
+            SettingsDrillRow(
+                symbol: SettingsPage.notchSize.symbol,
+                title: String(localized: SettingsPage.notchSize.title),
+                detail: "Open the real notch and resize it directly.",
+                badge: "Appearance"
+            ) {
+                router?.go(.init(.appearance, [.notchSize]))
             }
         }
-    }
-
-    private var widthRange: ClosedRange<Double> {
-        Double(CallaPanelBounds.width.lowerBound)...Double(CallaPanelBounds.width.upperBound)
-    }
-
-    private var heightRange: ClosedRange<Double> {
-        Double(activeHeightRange.lowerBound)...Double(activeHeightRange.upperBound)
-    }
-
-    private var activeWidth: Binding<Double> {
-        editingCompact ? $compactPanelWidth : $panelWidth
-    }
-
-    private var activeHeight: Binding<Double> {
-        editingCompact ? $compactPanelHeight : $panelHeight
-    }
-
-    private var activeHeightRange: ClosedRange<CGFloat> {
-        editingCompact ? CallaPanelBounds.compactHeight : CallaPanelBounds.fullHeight
-    }
-
-    /// The layout not currently being edited, drawn as an outline so the two are
-    /// visibly one panel in two states rather than two unrelated rectangles.
-    private var ghostSize: CGSize {
-        editingCompact
-            ? CGSize(width: panelWidth, height: panelHeight)
-            : CGSize(width: compactPanelWidth, height: compactPanelHeight)
     }
 
     private var notchCard: some View {
@@ -347,128 +265,5 @@ struct CopilotCallPane: View {
     private func openPrivacySettings() {
         guard let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenCapture") else { return }
         NSWorkspace.shared.open(url)
-    }
-}
-
-/// A scale drawing of the call panel, hanging from the top edge the way the
-/// notch does — and the primary control for its size.
-///
-/// Four numbers do not describe a shape, so the shape is what you grab. The two
-/// handles are the panel's own right and bottom edges, which is the gesture
-/// anyone already has for resizing a rectangle; the sliders underneath exist for
-/// the pixel and for the keyboard.
-///
-/// Both layouts are drawn against the same maximum, so the collapsed panel is
-/// visibly a smaller thing than the expanded one rather than a second diagram of
-/// the same size.
-private struct PanelSilhouette: View {
-    @Binding var width: Double
-    @Binding var height: Double
-    /// The height range this layout is drawn against; the width range is shared.
-    let heightRange: ClosedRange<CGFloat>
-    /// The other layout, as an outline.
-    let ghost: CGSize
-
-    /// The frame the silhouette is drawn inside. Fixed, so the drawing does not
-    /// resize as the value changes — only the shape within it does.
-    private static let box = CGSize(width: 118, height: 80)
-    private static let inset: CGFloat = 6
-
-    @State private var dragStart: CGSize?
-
-    private func drawn(_ size: CGSize) -> CGSize {
-        let w = Self.box.width * (size.width / CallaPanelBounds.width.upperBound)
-        let h = (Self.box.height - Self.inset)
-            * (size.height / CallaPanelBounds.fullHeight.upperBound)
-        return CGSize(width: max(12, w), height: max(8, h))
-    }
-
-    private var current: CGSize {
-        drawn(CGSize(width: width, height: height))
-    }
-
-    var body: some View {
-        ZStack(alignment: .top) {
-            // The screen the notch hangs from.
-            RoundedRectangle(cornerRadius: 6, style: .continuous)
-                .fill(NotchSurface.sunken)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 6, style: .continuous)
-                        .strokeBorder(NotchSurface.hairline, lineWidth: 1))
-
-            // The notch itself, so the panel is seen hanging from something.
-            UnevenRoundedRectangle(topLeadingRadius: 0, bottomLeadingRadius: 2,
-                                   bottomTrailingRadius: 2, topTrailingRadius: 0,
-                                   style: .continuous)
-                .fill(Color.black)
-                .frame(width: 26, height: Self.inset)
-
-            let ghostDrawn = drawn(ghost)
-            UnevenRoundedRectangle(topLeadingRadius: 0, bottomLeadingRadius: 6,
-                                   bottomTrailingRadius: 6, topTrailingRadius: 0,
-                                   style: .continuous)
-                .strokeBorder(Color.white.opacity(0.28), style: StrokeStyle(lineWidth: 1, dash: [2, 2]))
-                .frame(width: ghostDrawn.width, height: ghostDrawn.height)
-                .offset(y: Self.inset)
-
-            UnevenRoundedRectangle(topLeadingRadius: 0, bottomLeadingRadius: 7,
-                                   bottomTrailingRadius: 7, topTrailingRadius: 0,
-                                   style: .continuous)
-                .fill(Color.effectiveAccent.opacity(0.75))
-                .frame(width: current.width, height: current.height)
-                .offset(y: Self.inset)
-                .overlay(alignment: .top) {
-                    handles
-                }
-        }
-        .frame(width: Self.box.width, height: Self.box.height)
-        .animation(.easeOut(duration: 0.12), value: current)
-    }
-
-    private var handles: some View {
-        ZStack(alignment: .top) {
-            Color.clear.frame(width: current.width, height: current.height)
-            // Right edge: width.
-            Capsule()
-                .fill(.white)
-                .frame(width: 5, height: 14)
-                .shadow(color: .black.opacity(0.5), radius: 2, y: 1)
-                .offset(x: current.width / 2, y: current.height / 2 - 7)
-                .gesture(edgeDrag(horizontal: true))
-            // Bottom edge: height.
-            Capsule()
-                .fill(.white)
-                .frame(width: 14, height: 5)
-                .shadow(color: .black.opacity(0.5), radius: 2, y: 1)
-                .offset(y: current.height - 2.5)
-                .gesture(edgeDrag(horizontal: false))
-        }
-        .offset(y: Self.inset)
-        .accessibilityHidden(true)
-    }
-
-    /// Drag in drawing points, applied in panel points. The scale factors are
-    /// the same ones the drawing uses, so a handle moved an inch moves the panel
-    /// the amount the drawing says it does.
-    private func edgeDrag(horizontal: Bool) -> some Gesture {
-        DragGesture(minimumDistance: 0, coordinateSpace: .local)
-            .onChanged { drag in
-                let start = dragStart ?? CGSize(width: width, height: height)
-                if dragStart == nil { dragStart = start }
-                if horizontal {
-                    let perPoint = CallaPanelBounds.width.upperBound / Self.box.width
-                    width = clamp(start.width + drag.translation.width * perPoint,
-                                  CallaPanelBounds.width)
-                } else {
-                    let perPoint = CallaPanelBounds.fullHeight.upperBound
-                        / (Self.box.height - Self.inset)
-                    height = clamp(start.height + drag.translation.height * perPoint, heightRange)
-                }
-            }
-            .onEnded { _ in dragStart = nil }
-    }
-
-    private func clamp(_ value: CGFloat, _ range: ClosedRange<CGFloat>) -> Double {
-        Double(min(max(value, range.lowerBound), range.upperBound))
     }
 }

@@ -89,6 +89,10 @@ struct CopilotCallDetailPane: View {
         SettingCard(call.startedAt?.formatted(date: .abbreviated, time: .shortened) ?? call.id) {
             VStack(alignment: .leading, spacing: 10) {
                 SettingFact(title: "Persona", value: CallaCopilotPersona.title(call.persona))
+                SettingFact(
+                    title: "Ended",
+                    value: call.wasInterrupted ? "Interrupted" : "Completed",
+                    tint: call.wasInterrupted ? NotchTint.attention : NotchTint.healthy)
                 if let duration = call.duration {
                     SettingFact(title: "Length", value: callClock(duration))
                 }

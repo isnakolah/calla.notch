@@ -22,6 +22,7 @@ struct CopilotModelsPane: View {
     @ObservedObject private var engine = CallaEngineClient.shared
 
     @State private var authToken: String = ""
+    @State private var availableModels: [String] = []
     @Default(.callaIntelligenceProvider) private var provider
     @Default(.callaIntelligenceLiveTier) private var liveTier
     @Default(.callaIntelligenceSummaryModel) private var summaryModel
@@ -43,7 +44,7 @@ struct CopilotModelsPane: View {
             }
             fallbackCard
         }
-        .task { engine.refresh() }
+        .task { engine.refresh(); engine.listQuizModels { availableModels = $0 } }
     }
 
     // MARK: - Hears
@@ -114,9 +115,9 @@ struct CopilotModelsPane: View {
 
     private var answersCard: some View {
         SettingCard("Answers from",
-                    detail: "Local runs on this Mac and does not need the gateway host to be reachable.") {
+                    detail: "Agy sends transcript and selected passages to Google remote models; raw audio stays on Mac.") {
             Picker("", selection: $provider) {
-                Text("This Mac").tag("local")
+                Text("Agy · Google remote").tag("local")
                 Text("Gateway").tag("gateway")
             }
             .labelsHidden()
@@ -153,8 +154,9 @@ struct CopilotModelsPane: View {
             SettingRow("End-of-call summary",
                        detail: "One deeper pass once the call is over, where a slower model costs nothing that matters.") {
                 Picker("", selection: $summaryModel) {
-                    Text("Gemini 3.1 Pro").tag("gemini-3.1-pro-high")
-                    Text("Sonnet 4.6").tag("claude-sonnet-4-6")
+                    ForEach(availableModels.contains(summaryModel) ? availableModels : [summaryModel] + availableModels, id: \.self) { model in
+                        Text(model).tag(model)
+                    }
                 }
                 .labelsHidden().frame(width: 170)
                 .disabled(provider != "local")
@@ -169,7 +171,7 @@ struct CopilotModelsPane: View {
             if copilot.running {
                 Divider().opacity(0.35)
                 SettingRow("Answering now", detail: copilot.providerDetail ?? "—") {
-                    SettingBadge(copilot.activeProvider == "local" ? "This Mac" : "Gateway",
+                    SettingBadge(copilot.activeProvider == "local" ? "Agy · Google remote" : "Gateway",
                                  tint: copilot.activeProvider == "local" ? NotchTint.active : nil)
                 }
             }
@@ -326,7 +328,7 @@ private struct GatewayFlow: View {
 
     var body: some View {
         HStack(spacing: NotchSpace.snug) {
-            node(symbol: "laptopcomputer", title: "This Mac", detail: "agy", tint: NotchTint.active)
+            node(symbol: "cloud", title: "Agy · Google remote", detail: "transcript + selected passages", tint: NotchTint.active)
 
             VStack(spacing: 2) {
                 SettingsMicroLabel(text: label, tint: tint)

@@ -28,7 +28,7 @@ final class SettingsRouter: ObservableObject {
 
     /// Bound straight into `NavigationStack(path:)`.
     var path: Binding<[SettingsPage]> {
-        Binding(get: { self.route.path }, set: { self.route.path = $0 })
+        Binding(get: { self.route.path }, set: { self.route.path = $0.map(\.availablePage) })
     }
 
     /// Bound into the sidebar's `List(selection:)`.
@@ -51,7 +51,7 @@ final class SettingsRouter: ObservableObject {
     func go(_ route: SettingsRoute) { self.route = route }
     func go(legacyIdentifier: String) { route = .init(legacyIdentifier: legacyIdentifier) }
 
-    func push(_ page: SettingsPage) { route.path.append(page) }
+    func push(_ page: SettingsPage) { route.path.append(page.availablePage) }
     func pop() { _ = route.path.popLast() }
 
     /// The breadcrumb's only verb. Depth 0 is the section's landing pane.
