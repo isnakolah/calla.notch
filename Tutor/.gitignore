@@ -11,4 +11,3 @@ node_modules/
 coverage/
 *.otpack
 *.sqlite3
-graphify-out/

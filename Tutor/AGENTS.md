@@ -17,10 +17,11 @@ Keep the Gateway loopback-bound. The private external Tailscale Serve proxy is
 the only Mac route. Never expose OpenClaw, bridge, or screenshot credentials
 in source, logs, or reports.
 
-The private one-user setup runs `calla_node_enroller.py` on the Gateway. It
-enrolls only one pending node whose display name is exactly `Calla Mac`, then
-writes that node ID into Calla's plugin configuration. Do not broaden this
-matching rule or enable it on a shared tailnet.
+Boring runtime must never install or run OpenClaw on macOS. OpenClaw belongs on
+Gateway only. Boring reaches owner-only course and feedback adapters over SSH;
+Gateway releases remove stale `nodeId` configuration and retire old
+`calla-node-enroller.service`. Node scripts remain legacy standalone source,
+not Boring deployment inputs.
 
 Before handing off code changes, run `make test`. For runtime work, distinguish
 private-Tailscale proof from a real macOS TutorHost teaching round trip.

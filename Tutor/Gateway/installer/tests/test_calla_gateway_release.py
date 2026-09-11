@@ -38,16 +38,16 @@ class GatewayReleaseTests(unittest.TestCase):
         # tests exercise installer mechanics without needing a real Gateway.
         self.assertEqual(Path("~/openclaw.json").expanduser().name, "openclaw.json")
 
-    def test_contract_metadata_is_removed_from_persisted_config(self):
+    def test_node_and_contract_metadata_are_removed_from_persisted_config(self):
         manifest = ReleaseManifest("test", "digest", {"min": 2, "max": 3}, "b" * 64, "pack", 1)
         migrated = migrate_calla_config({"plugins": {"entries": {"tutor": {"config": {"nodeId": "old-mac", "nodeContractHash": "a" * 64}}}}}, current=Path("/private/calla/current"), manifest=manifest)
-        self.assertEqual(migrated["plugins"]["entries"]["tutor"]["config"]["nodeId"], "old-mac")
+        self.assertNotIn("nodeId", migrated["plugins"]["entries"]["tutor"]["config"])
         self.assertNotIn("nodeContractHash", migrated["plugins"]["entries"]["tutor"]["config"])
 
-    def test_legacy_missing_contract_keeps_v2_node_for_first_migration(self):
+    def test_legacy_node_is_removed_for_gateway_only_runtime(self):
         manifest = ReleaseManifest("test", "digest", {"min": 2, "max": 3}, "b" * 64, "pack", 1)
         migrated = migrate_calla_config({"plugins": {"entries": {"tutor": {"config": {"nodeId": "legacy-mac"}}}}}, current=Path("/private/calla/current"), manifest=manifest)
-        self.assertEqual(migrated["plugins"]["entries"]["tutor"]["config"]["nodeId"], "legacy-mac")
+        self.assertNotIn("nodeId", migrated["plugins"]["entries"]["tutor"]["config"])
 
     def test_config_migration_replaces_legacy_standalone_mode(self):
         manifest = ReleaseManifest("test", "digest", {"min": 2, "max": 3}, "b" * 64, "pack", 1)
@@ -100,6 +100,7 @@ class GatewayReleaseTests(unittest.TestCase):
             release = build_release(tutor, Path(temporary) / "release", "test")
             manifest = GatewayReleaseInstaller(Path(temporary) / "gateway", runner=lambda _: None).validate_release(release)
             self.assertEqual(manifest.releaseVersion, "test")
+            self.assertFalse((release / "migrations" / "calla_node_enroller.py").exists())
 
     def test_apply_rolls_back_config_and_current_after_probe_failure(self):
         with tempfile.TemporaryDirectory() as temporary:
@@ -167,7 +168,7 @@ class GatewayReleaseTests(unittest.TestCase):
             self.assertEqual(captured[0]["plugins"]["load"]["paths"], [str(staged / "plugin")])
             self.assertFalse((root / "current").exists())
 
-    def test_gateway_adapters_resolve_through_current(self):
+    def test_gateway_adapters_resolve_through_current_and_retire_node_enroller(self):
         with tempfile.TemporaryDirectory() as temporary:
             base = Path(temporary)
             root = base / "gateway"
@@ -175,19 +176,21 @@ class GatewayReleaseTests(unittest.TestCase):
             staged = self.release(base / "staged", "new")
             config = base / "openclaw.json"
             config.write_text(json.dumps({"plugins": {"load": {"paths": ["/other"]}, "entries": {"tutor": {"config": {"stateDirectory": str(base / "state")}}}}}), encoding="utf-8")
-            GatewayReleaseInstaller(root, runner=lambda _: None, home=home).apply(staged, config_path=config, restart=False)
+            unit = home / ".config" / "systemd" / "user" / "calla-node-enroller.service"
+            unit.parent.mkdir(parents=True)
+            unit.write_text("legacy", encoding="utf-8")
+            calls = []
+            GatewayReleaseInstaller(root, runner=lambda command: calls.append(command), home=home).apply(staged, config_path=config, restart=False)
             course = home / ".local" / "bin" / "calla-course"
             feedback = home / ".local" / "bin" / "calla-feedback"
-            unit = home / ".config" / "systemd" / "user" / "calla-node-enroller.service"
             self.assertTrue(course.is_symlink())
             self.assertEqual(course.readlink(), root / "current" / "bin" / "calla-course-gateway.sh")
             self.assertTrue(feedback.is_symlink())
             self.assertEqual(feedback.readlink(), root / "current" / "bin" / "calla-feedback-gateway.sh")
-            self.assertIn(str(root / "current" / "migrations" / "calla_node_enroller.py"), unit.read_text(encoding="utf-8"))
-            self.assertIn(f"--openclaw-bin {home}/.npm-global/bin/openclaw", unit.read_text(encoding="utf-8"))
-            self.assertIn('--display-name "Calla Mac"', unit.read_text(encoding="utf-8"))
+            self.assertFalse(unit.exists())
+            self.assertIn(["systemctl", "--user", "disable", "--now", "calla-node-enroller.service"], calls)
 
-    def test_probe_requires_course_socket_and_internal_node_handshake(self):
+    def test_probe_requires_gateway_plugin_and_course_socket_without_node(self):
         with tempfile.TemporaryDirectory() as temporary:
             base = Path(temporary)
             root = base / "gateway"
@@ -201,9 +204,7 @@ class GatewayReleaseTests(unittest.TestCase):
             self.assertIn(["openclaw", "gateway", "status", "--no-probe"], calls)
             self.assertIn(["openclaw", "plugins", "inspect", "tutor"], calls)
             self.assertTrue(any(command[:2] == ["/bin/sh", "-c"] and "calla-course" in command[2] for command in calls))
-            node_call = next(command for command in calls if command[:3] == ["openclaw", "nodes", "invoke"])
-            self.assertIn("calla-node", node_call)
-            self.assertTrue(any("session_start" in argument for argument in node_call))
+            self.assertFalse(any(command[:3] == ["openclaw", "nodes", "invoke"] for command in calls))
 
     def test_pack_install_failure_restores_existing_pack_state(self):
         with tempfile.TemporaryDirectory() as temporary:

@@ -16,8 +16,6 @@ import shlex
 import shutil
 import subprocess
 import tempfile
-import time
-import uuid
 import zipfile
 from dataclasses import asdict, dataclass
 from pathlib import Path
@@ -155,7 +153,9 @@ def migrate_calla_config(config: dict[str, Any], *, current: Path, manifest: Rel
     # Release-derived facts live in current/manifest.json, read by the plugin
     # after the atomic pointer flip. Persisting them here breaks OpenClaw builds
     # that validate the cached old schema before loading current/plugin.
-    for key in ("nodeContractHash", "engineBuild", "agentWorkspace"):
+    # Boring talks to Gateway through owner-only SSH adapters. It never runs an
+    # OpenClaw node on macOS, so stale pairing config must not revive that path.
+    for key in ("nodeId", "nodeContractHash", "engineBuild", "agentWorkspace"):
         tutor_config.pop(key, None)
     return result
 
@@ -284,11 +284,11 @@ class GatewayReleaseInstaller:
             temporary_config.unlink(missing_ok=True)
 
     def _probe(self, release: Path, config_path: Path) -> None:
-        """Prove active release, course socket, and paired engine together."""
+        """Prove active Gateway release and owner-only control socket."""
         # This OpenClaw version rejects an unauthenticated explicit local URL
         # even when its configured private Gateway is healthy. Service status,
-        # plugin inspection, course socket, and node invocation below still
-        # prove the active Gateway and Tutor path end-to-end.
+        # plugin inspection and course socket still prove active Gateway-owned
+        # Tutor control without running OpenClaw on macOS.
         self.runner(["openclaw", "gateway", "status", "--no-probe"])
         self.runner(["openclaw", "plugins", "inspect", "tutor"])
         if not (release / "plugin" / "openclaw.plugin.json").is_file():
@@ -296,45 +296,6 @@ class GatewayReleaseInstaller:
         course = self.home / ".local" / "bin" / "calla-course"
         request = '{"version":1,"command":"list","payload":{}}\\n'
         self.runner(["/bin/sh", "-c", f"printf %s {shlex.quote(request)} | {shlex.quote(str(course))}"])
-        self._probe_paired_node(config_path, release)
-
-    def _probe_paired_node(self, config_path: Path, release: Path) -> None:
-        deadline = time.monotonic() + 30
-        last_error = "no paired Calla Mac node"
-        while time.monotonic() < deadline:
-            try:
-                config = json.loads(config_path.read_text(encoding="utf-8"))
-                tutor = config["plugins"]["entries"]["tutor"]["config"]
-                node_id = tutor.get("nodeId")
-                manifest = ReleaseManifest.load(release / "manifest.json")
-                contract = manifest.nodeContractHash
-                engine_build = manifest.releaseVersion
-                if not isinstance(node_id, str) or not node_id:
-                    last_error = "Calla Mac is still re-pairing"
-                elif not isinstance(contract, str) or len(contract) < 16:
-                    last_error = "Calla node contract hash is missing"
-                else:
-                    envelope = {
-                        "protocol_version": 2,
-                        "request_id": str(uuid.uuid4()),
-                        "operation": "session_start",
-                        "session_id": "calla-release-probe",
-                        "payload": {
-                            "supported_protocol_range": {"min": 2, "max": 3},
-                            "engine_build": engine_build,
-                            "node_contract_hash": contract,
-                        },
-                    }
-                    self.runner([
-                        "openclaw", "nodes", "invoke", "--node", node_id,
-                        "--command", "tutor.host", "--params", json.dumps(envelope, separators=(",", ":")),
-                        "--json", "--invoke-timeout", "15000",
-                    ])
-                    return
-            except (KeyError, TypeError, json.JSONDecodeError) as error:
-                last_error = f"invalid Calla config while waiting for node: {error}"
-            time.sleep(3)
-        raise ReleaseError(f"Gateway probe failed: {last_error}")
 
     @staticmethod
     def _state_directory(config: dict[str, Any]) -> Path:
@@ -394,40 +355,19 @@ class GatewayReleaseInstaller:
         atomic_symlink(self.current / "bin" / "calla-course-gateway.sh", course)
         feedback = bin_directory / "calla-feedback"
         atomic_symlink(self.current / "bin" / "calla-feedback-gateway.sh", feedback)
+        # Retire older Gateway releases' Mac node enroller. Gateway remains
+        # OpenClaw owner; Boring reaches these adapters directly over SSH.
         unit = unit_directory / "calla-node-enroller.service"
-        content = "\n".join((
-            "[Unit]",
-            "Description=Calla Mac private node enroller",
-            "After=default.target",
-            "",
-            "[Service]",
-            "Type=simple",
-            f"ExecStart=/usr/bin/python3 {self.current}/migrations/calla_node_enroller.py --watch --openclaw-bin {self.home}/.npm-global/bin/openclaw --display-name \"Calla Mac\"",
-            "Restart=always",
-            "RestartSec=3",
-            "",
-            "[Install]",
-            "WantedBy=default.target",
-            "",
-        ))
-        descriptor, temporary_name = tempfile.mkstemp(prefix=".calla-node-enroller.", dir=unit_directory)
-        temporary = Path(temporary_name)
-        try:
-            with os.fdopen(descriptor, "w", encoding="utf-8") as handle:
-                handle.write(content)
-                handle.flush()
-                os.fsync(handle.fileno())
-            os.chmod(temporary, 0o600)
-            os.replace(temporary, unit)
-        finally:
-            temporary.unlink(missing_ok=True)
+        if unit.exists() or unit.is_symlink():
+            self.runner(["systemctl", "--user", "disable", "--now", "calla-node-enroller.service"])
+            unit.unlink(missing_ok=True)
         self.runner(["systemctl", "--user", "daemon-reload"])
-        self.runner(["systemctl", "--user", "enable", "--now", "calla-node-enroller.service"])
 
     def _backup_gateway_adapters(self) -> dict[Path, tuple[str, bytes | str] | None]:
         """Capture Calla-owned entry points so failed first install is harmless."""
         paths = (
             self.home / ".local" / "bin" / "calla-course",
+            self.home / ".local" / "bin" / "calla-feedback",
             self.home / ".config" / "systemd" / "user" / "calla-node-enroller.service",
         )
         backup: dict[Path, tuple[str, bytes | str] | None] = {}
@@ -463,7 +403,9 @@ class GatewayReleaseInstaller:
                 temporary.unlink(missing_ok=True)
         try:
             self.runner(["systemctl", "--user", "daemon-reload"])
-            self.runner(["systemctl", "--user", "restart", "calla-node-enroller.service"])
+            unit = self.home / ".config" / "systemd" / "user" / "calla-node-enroller.service"
+            if unit.exists():
+                self.runner(["systemctl", "--user", "enable", "--now", "calla-node-enroller.service"])
         except Exception:
             # Preserve original release failure when no previous unit existed.
             pass

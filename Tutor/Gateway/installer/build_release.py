@@ -39,7 +39,7 @@ def build_release(tutor: Path, output: Path, version: str) -> Path:
         shutil.copy2(source, output / "bin" / name)
         (output / "bin" / name).chmod(0o700)
     (output / "migrations").mkdir()
-    for name in ("calla_migration.py", "calla_openclaw_setup.py", "calla_pack_store.py", "calla_node_enroller.py"):
+    for name in ("calla_migration.py", "calla_openclaw_setup.py", "calla_pack_store.py"):
         shutil.copy2(tutor / "tools" / name, output / "migrations" / name)
     # Course preparation and pack installation resolve this directory through
     # the release root. Keep it release-contained: no Gateway checkout path.

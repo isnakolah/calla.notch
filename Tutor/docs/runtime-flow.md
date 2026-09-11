@@ -1,5 +1,10 @@
 # Calla Tutor runtime flow
 
+> Boring deployment uses Gateway-only OpenClaw. It does not install, launch,
+> pair, or enroll an OpenClaw node on Mac. Boring reaches Gateway's owner-only
+> `calla-course` and `calla-feedback` adapters over SSH. Node topology below is
+> legacy standalone Tutor documentation and is not a Boring runtime path.
+
 What actually runs, where it runs, and how to prove it end to end. Read
 [agent-context.md](agent-context.md) first for the authority model; this
 document is the operational counterpart — paths, config keys, the exact call
@@ -308,7 +313,7 @@ files. Engine validates, encrypts, persists capture plus pending request, then
 routes. Gateway feedback is a separate owner-only socket using
 `runEmbeddedAgent(images:, disableTools:true)` with no Tutor tools/node calls.
 
-Gateway/node snapshot transport remains `tutor.host`, but permitted Engine
-operations are capability, catalogue, lifecycle, runtime and health snapshots.
-Any legacy teaching/model operation is unavailable in Engine mode. Standalone
-mode retains legacy behavior for rollback and is never entered by Boring.
+Boring does not load OpenClaw or `tutor.host` on Mac. Gateway-only authoring and
+feedback travel through owner-only SSH adapters; deterministic capture,
+verification, overlay, and progression remain in Boring Engine/TutorHost.
+Standalone mode retains legacy node behavior outside Boring deployment.
