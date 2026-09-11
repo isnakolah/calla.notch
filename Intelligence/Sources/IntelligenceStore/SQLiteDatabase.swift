@@ -167,6 +167,7 @@ enum SQLiteValue {
     case blob(Data)
 
     static func int(_ value: Int) -> SQLiteValue { .int(Int64(value)) }
+    static func int(_ value: Int?) -> SQLiteValue { value.map { .int(Int64($0)) } ?? .null }
     static func text(_ value: String?) -> SQLiteValue { value.map { .text($0) } ?? .null }
     static func double(_ value: Double?) -> SQLiteValue { value.map { .double($0) } ?? .null }
     static func date(_ value: Date?) -> SQLiteValue { value.map { .double($0.timeIntervalSince1970) } ?? .null }
@@ -195,6 +196,11 @@ struct SQLiteRow {
     func doubleIfPresent(_ index: Int32) -> Double? {
         guard sqlite3_column_type(statement, index) != SQLITE_NULL else { return nil }
         return sqlite3_column_double(statement, index)
+    }
+
+    func intIfPresent(_ index: Int32) -> Int? {
+        guard sqlite3_column_type(statement, index) != SQLITE_NULL else { return nil }
+        return Int(sqlite3_column_int64(statement, index))
     }
 
     func date(_ index: Int32) -> Date? {

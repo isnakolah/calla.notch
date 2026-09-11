@@ -1,4 +1,5 @@
 import XCTest
+import CallaContracts
 @testable import IntelligenceCore
 
 /// A stand-in brain. Everything the router decides — gating, ordering, retrying,
@@ -65,8 +66,11 @@ final class IntelligenceRouterTests: XCTestCase {
         )
     }
 
-    private func request(_ task: IntelligenceTask, input: String = "hello") -> IntelligenceRequest {
-        IntelligenceRequest(task: task, sessionKey: "call-1", input: input)
+    private func request(_ task: IntelligenceTask, input: String = "hello",
+                         priority: IntelligencePriority = .high,
+                         queuePolicy: IntelligenceQueuePolicy = .fifo) -> IntelligenceRequest {
+        IntelligenceRequest(task: task, sessionKey: "call-1", input: input,
+                            priority: priority, queuePolicy: queuePolicy)
     }
 
     func testPrefersTheFirstAllowedProvider() async throws {
@@ -222,9 +226,7 @@ final class IntelligenceRouterTests: XCTestCase {
         XCTAssertEqualAsync(await gateway.callCount, 1)
     }
 
-    /// A live call outruns any model. Inputs that arrive mid-request must become
-    /// one follow-up request, not a backlog of stale ones.
-    func testEnqueueCoalescesInputsArrivingDuringARequest() async throws {
+    func testBackgroundQueueCoalescesToNewestPendingRequest() async throws {
         let local = FakeProvider(kind: .localAgy, delay: 0.3, reply: "local")
         let router = IntelligenceRouter(providers: [local])
         let task = task(budget: 5, providers: [.localAgy])
@@ -235,17 +237,37 @@ final class IntelligenceRouterTests: XCTestCase {
             onFailure: { _ in }
         )
 
-        await router.enqueue(request(task, input: "first"))
-        await router.enqueue(request(task, input: "second"))
-        await router.enqueue(request(task, input: "third"))
+        await router.enqueue(request(task, input: "first", priority: .background,
+                                     queuePolicy: .coalescing))
+        await router.enqueue(request(task, input: "second", priority: .background,
+                                     queuePolicy: .coalescing))
+        await router.enqueue(request(task, input: "third", priority: .background,
+                                     queuePolicy: .coalescing))
 
         try await Task.sleep(nanoseconds: 1_200_000_000)
 
         let inputs = await local.inputs
-        XCTAssertEqual(inputs.count, 2, "one in flight, then one merged follow-up")
+        XCTAssertEqual(inputs.count, 2, "one in flight, then newest coalesced state")
         XCTAssertEqual(inputs.first, "first")
-        XCTAssertEqual(inputs.last, "second\nthird")
+        XCTAssertEqual(inputs.last, "third")
         XCTAssertEqualAsync(await received.value, 2)
+    }
+
+    func testUrgentQuestionsStayFIFOAndRunBeforeBackground() async throws {
+        let local = FakeProvider(kind: .localAgy, delay: 0.2, reply: "local")
+        let router = IntelligenceRouter(providers: [local])
+        let task = task(budget: 5, providers: [.localAgy])
+
+        await router.setHandlers(onResponse: { _ in }, onFailure: { _ in })
+        await router.enqueue(request(task, input: "active", priority: .urgent))
+        await router.enqueue(request(task, input: "summary", priority: .background,
+                                     queuePolicy: .coalescing))
+        await router.enqueue(request(task, input: "question-1", priority: .urgent))
+        await router.enqueue(request(task, input: "question-2", priority: .urgent))
+        try await Task.sleep(nanoseconds: 1_200_000_000)
+
+        let inputs = await local.inputs
+        XCTAssertEqual(inputs, ["active", "question-1", "question-2", "summary"])
     }
 }
 

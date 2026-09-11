@@ -9,7 +9,7 @@ import Foundation
 enum Schema {
     /// Bump this and append to `migrations` — never edit a migration that has
     /// shipped, because someone's file has already run it.
-    static let current = 5
+    static let current = 8
 
     static func migrate(_ database: SQLiteDatabase) throws {
         let version = try database.scalarInt("PRAGMA user_version") ?? 0
@@ -35,7 +35,71 @@ enum Schema {
         }
     }
 
-    private static let migrations: [Int: String] = [1: v1, 2: v2, 3: v3, 4: v4, 5: v5]
+    private static let migrations: [Int: String] = [1: v1, 2: v2, 3: v3, 4: v4, 5: v5, 6: v6, 7: v7, 8: v8]
+
+    /// Preserve source-chunk embeddings inside frozen Call packs. Retrieval can
+    /// then fuse scoped BM25 and cosine ranks without consulting mutable notes.
+    private static let v8 = """
+    ALTER TABLE call_knowledge_chunk ADD COLUMN embedding BLOB;
+    """
+
+    /// Frozen per-call knowledge plus durable v3 question/answer feed.
+    /// Every table is call-owned, so deleting history removes copied knowledge.
+    private static let v7 = """
+    ALTER TABLE knowledge_chunk ADD COLUMN page INTEGER;
+    ALTER TABLE knowledge_chunk ADD COLUMN section TEXT;
+    ALTER TABLE call_suggestion ADD COLUMN question TEXT;
+
+    CREATE TABLE call_knowledge_snapshot (
+      call_id       TEXT PRIMARY KEY REFERENCES call(id) ON DELETE CASCADE,
+      generation    INTEGER NOT NULL,
+      created_at    REAL NOT NULL,
+      revisions_json TEXT NOT NULL,
+      glossary_json TEXT NOT NULL
+    );
+    CREATE TABLE call_knowledge_chunk (
+      id            INTEGER PRIMARY KEY,
+      call_id       TEXT NOT NULL REFERENCES call_knowledge_snapshot(call_id) ON DELETE CASCADE,
+      citation_id   TEXT NOT NULL,
+      source_id     TEXT NOT NULL,
+      revision      TEXT NOT NULL,
+      kind          TEXT NOT NULL,
+      label         TEXT NOT NULL,
+      page          INTEGER,
+      section       TEXT,
+      text          TEXT NOT NULL,
+      UNIQUE(call_id, citation_id)
+    );
+    CREATE INDEX call_knowledge_chunk_call ON call_knowledge_chunk(call_id, source_id);
+
+    CREATE TABLE call_question_v3 (
+      id            TEXT PRIMARY KEY,
+      call_id       TEXT NOT NULL REFERENCES call(id) ON DELETE CASCADE,
+      generation    INTEGER NOT NULL,
+      payload_json  TEXT NOT NULL,
+      detected_at   REAL NOT NULL
+    );
+    CREATE INDEX call_question_v3_call ON call_question_v3(call_id, detected_at);
+
+    CREATE TABLE call_answer_v3 (
+      id            TEXT PRIMARY KEY,
+      call_id       TEXT NOT NULL REFERENCES call(id) ON DELETE CASCADE,
+      generation    INTEGER NOT NULL,
+      question_id   TEXT NOT NULL,
+      payload_json  TEXT NOT NULL,
+      published_at  REAL NOT NULL
+    );
+    CREATE INDEX call_answer_v3_call ON call_answer_v3(call_id, published_at);
+    """
+
+    /// Database end state is authoritative. Existing finite rows predate explicit
+    /// reasons and remain completed until archive reconciliation proves they came
+    /// from an unclean host exit.
+    private static let v6 = """
+    ALTER TABLE call ADD COLUMN end_reason TEXT CHECK(end_reason IN ('completed', 'interrupted'));
+    UPDATE call SET end_reason = 'completed' WHERE ended_at IS NOT NULL;
+    CREATE INDEX IF NOT EXISTS call_end_state ON call(end_reason, started_at DESC);
+    """
 
     /// Engine-owned Tutor durable state. Host never receives this database and
     /// Gateway never writes it. Capture files live outside SQLite; rows retain

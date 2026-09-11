@@ -11,6 +11,11 @@ import Foundation
 /// that order — a note is usually already structured by the person who wrote it,
 /// and respecting that beats any splitting heuristic.
 enum TextChunker {
+    struct Located: Sendable, Equatable {
+        var text: String
+        var page: Int?
+        var section: String?
+    }
     static let target = 400
     /// Carried from the previous chunk so a fact split across a boundary is still
     /// findable from either side.
@@ -46,6 +51,37 @@ enum TextChunker {
         }
         if !current.isEmpty { chunks.append(current) }
         return chunks
+    }
+
+    /// Page markers are inserted by `KnowledgeDocumentReader` before text crosses
+    /// process boundary. Split pages first so overlap never leaks across them.
+    static func locatedChunks(of text: String, target: Int = target, overlap: Int = overlap) -> [Located] {
+        let pattern = #"\[\[CALLA_PAGE:(\d+)\]\]"#
+        guard let regex = try? NSRegularExpression(pattern: pattern) else {
+            return chunks(of: text, target: target, overlap: overlap).map { Located(text: $0, page: nil, section: nil) }
+        }
+        let range = NSRange(text.startIndex..., in: text)
+        let matches = regex.matches(in: text, range: range)
+        guard !matches.isEmpty else {
+            return chunks(of: text, target: target, overlap: overlap).map { Located(text: $0, page: nil, section: nil) }
+        }
+
+        var result: [Located] = []
+        var cursor = text.startIndex
+        var page: Int?
+        for match in matches {
+            guard let markerRange = Range(match.range, in: text) else { continue }
+            let segment = String(text[cursor ..< markerRange.lowerBound])
+            result += chunks(of: segment, target: target, overlap: overlap)
+                .map { Located(text: $0, page: page, section: nil) }
+            if let numberRange = Range(match.range(at: 1), in: text) {
+                page = Int(text[numberRange])
+            }
+            cursor = markerRange.upperBound
+        }
+        result += chunks(of: String(text[cursor...]), target: target, overlap: overlap)
+            .map { Located(text: $0, page: page, section: nil) }
+        return result
     }
 
     private static func paragraphs(of text: String) -> [String] {
