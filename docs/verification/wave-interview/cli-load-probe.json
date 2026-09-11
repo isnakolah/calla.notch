@@ -1,0 +1,41 @@
+{
+  "scope": "Synthetic prompt to completed CLI result; not speech-end-to-visible installed UI latency",
+  "models": [
+    "gemini-3.8-flash-low",
+    "gemini-3.7-flash-medium",
+    "gemini-3.1-pro-high"
+  ],
+  "warmup_ms": [
+    5365.6,
+    1207.3
+  ],
+  "samples": [
+    {
+      "milliseconds": 1406.8,
+      "background_jobs_at_start": 2
+    },
+    {
+      "milliseconds": 1208.3,
+      "background_jobs_at_start": 2
+    },
+    {
+      "milliseconds": 2010.9,
+      "background_jobs_at_start": 2
+    },
+    {
+      "milliseconds": 1808.0,
+      "background_jobs_at_start": 2
+    },
+    {
+      "milliseconds": 1409.4,
+      "background_jobs_at_start": 2
+    },
+    {
+      "milliseconds": 1205.4,
+      "background_jobs_at_start": 2
+    }
+  ],
+  "median_ms": 1408.1,
+  "p95_ms": 2010.9,
+  "count": 6
+}
