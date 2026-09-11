@@ -1,5 +1,16 @@
 import Foundation
 
+public enum CallaCallTerminationPolicy {
+    /// CallHost drains several signals cleanly. Only generation tagged by owner
+    /// End is completion; every other owned-process exit is interruption.
+    public static func shouldForceInterrupted(
+        exitingGeneration: Int,
+        explicitlyEndedGeneration: Int?
+    ) -> Bool {
+        explicitlyEndedGeneration != exitingGeneration
+    }
+}
+
 /// Validation for owner-issued call-copilot commands.
 ///
 /// Pure and dependency-free on purpose, like its course-command sibling: it
@@ -11,9 +22,6 @@ public enum CallaCopilotCommandValidation {
     /// Commands the notch may send. Anything else is refused outright.
     public static let allowedActions: Set<String> = [
         "start", "stop", "answer", "set_persona", "set_provider", "archive", "fetch_model", "login",
-        // The two-minute pre-roll: warm everything, record nothing. `release`
-        // promotes a prewarmed host to a recording one; `stop` cancels it.
-        "prewarm", "release",
         // A rehearsal of the sign-in against a throwaway HOME, so the flow can be
         // watched without signing out.
         "test_login",
@@ -121,16 +129,19 @@ public enum CallaCopilotCommandValidation {
                                personaGuidance: String?,
                                baseGuidance: String?,
                                knowledge: String? = nil,
-                               meeting: MeetingFields? = nil) -> ProfileFields? {
+                               meeting: MeetingFields? = nil,
+                               selectedKnowledgeNoteIDs: [String]? = nil) -> ProfileFields? {
         guard case .accepted(let about) = promptText(about, limit: aboutLimit),
               case .accepted(let persona) = promptText(personaGuidance, limit: personaGuidanceLimit),
               case .accepted(let base) = promptText(baseGuidance, limit: baseGuidanceLimit),
               case .accepted(let knowledge) = promptText(knowledge, limit: knowledgeLimit)
         else { return nil }
 
-        if about == nil, persona == nil, base == nil, knowledge == nil, meeting == nil { return nil }
+        if about == nil, persona == nil, base == nil, knowledge == nil, meeting == nil,
+           selectedKnowledgeNoteIDs == nil { return nil }
         return ProfileFields(about: about, personaGuidance: persona, baseGuidance: base,
-                             knowledge: knowledge, meeting: meeting)
+                             knowledge: knowledge, meeting: meeting,
+                             selectedKnowledgeNoteIDs: selectedKnowledgeNoteIDs)
     }
 
     public static let aboutLimit = 1200
@@ -231,9 +242,11 @@ public enum CallaCopilotCommandValidation {
         public let baseGuidance: String?
         public let knowledge: String?
         public let meeting: MeetingFields?
+        public let selectedKnowledgeNoteIDs: [String]?
 
         enum CodingKeys: String, CodingKey {
             case about, knowledge, meeting
+            case selectedKnowledgeNoteIDs = "selected_knowledge_note_ids"
             case personaGuidance = "persona_guidance"
             case baseGuidance = "base_guidance"
         }
@@ -242,13 +255,26 @@ public enum CallaCopilotCommandValidation {
                     personaGuidance: String?,
                     baseGuidance: String?,
                     knowledge: String? = nil,
-                    meeting: MeetingFields? = nil) {
+                    meeting: MeetingFields? = nil,
+                    selectedKnowledgeNoteIDs: [String]? = nil) {
             self.about = about
             self.personaGuidance = personaGuidance
             self.baseGuidance = baseGuidance
             self.knowledge = knowledge
             self.meeting = meeting
+            self.selectedKnowledgeNoteIDs = selectedKnowledgeNoteIDs
         }
+    }
+
+    public static func knowledgeNoteIDs(_ values: [String]?) -> [String]? {
+        guard let values, values.count <= 120 else { return nil }
+        var seen = Set<String>()
+        var result: [String] = []
+        for value in values {
+            guard value.range(of: "^[A-Za-z0-9._:-]{1,100}$", options: .regularExpression) != nil else { return nil }
+            if seen.insert(value).inserted { result.append(value) }
+        }
+        return result
     }
 
     /// The wire shape of a meeting, mirroring `IntelligenceStore.MeetingContext`.

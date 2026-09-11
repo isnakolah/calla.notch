@@ -6,6 +6,8 @@ import Foundation
 import ImageIO
 import UniformTypeIdentifiers
 import CallaContracts
+import IntelligenceCore
+import IntelligenceProviders
 import IntelligenceStore
 
 private struct Preferences: Codable, Equatable {
@@ -19,6 +21,7 @@ private struct Preferences: Codable, Equatable {
     let showStatusHUD: Bool
     let learnerID: String
     let hiddenCourseIDs: [String]
+    let quizEnabled: Bool?
 }
 
 private struct Status: Codable {
@@ -30,18 +33,17 @@ private struct Status: Codable {
     var screenRecordingGranted = false
     var accessibilityGranted = false
     var gatewayReachable = false
-    var nodeConnected = false
     var releaseVersion: String? = nil
     var previousGatewayRelease: String? = nil
     var lastGatewayUpdate: String? = nil
     var lastGatewayUpdateAt: Date? = nil
-    var engineBuild: String? = nil
     var lastResult = "Engine not started"
     var diagnostics: [String] = []
     var activeLesson: ActiveLesson? = nil
     var courses: [CourseSnapshot] = []
     var tutorIntelligence: TutorIntelligenceStatus? = nil
     var copilot: CopilotStatus = CopilotStatus()
+    var quiz: QuizSessionSnapshot = QuizSessionSnapshot()
 }
 
 private struct TutorIntelligenceStatus: Codable {
@@ -56,7 +58,6 @@ private struct TutorIntelligenceStatus: Codable {
     var localAgyAuthenticated = false
     var gatewayFeedbackAvailable = false
     var gatewayAuthoringAvailable = false
-    var nodeTransportHealthy = false
     var engineIngressHealthy = false
     var captureAvailable = false
     var lastProvider: String? = nil
@@ -77,6 +78,7 @@ private struct CopilotStatus: Codable {
     var available = false
     var running = false
     var callID: String? = nil
+    var generation = 0
     var persona = "generic"
     var startedAt: Date? = nil
     var turnCount = 0
@@ -86,6 +88,10 @@ private struct CopilotStatus: Codable {
     var headline: String? = nil
     var angles: [String] = []
     var confirm: [String] = []
+    var detectedQuestion: String? = nil
+    var citationLabels: [String] = []
+    var grounding: String? = nil
+    var answerLatencyMs: Int? = nil
     var summary: String? = nil
     var openQuestions: [String] = []
     var suggestionAfterSeq: Int? = nil
@@ -229,6 +235,17 @@ private struct ArchivedTurnOut: Codable {
     var t0: Double
     var t1: Double
     var text: String
+    var confidence: Double?
+}
+
+/// The interview's occurrence ids, mirrored from the app's `WaveInterview`.
+///
+/// Hand-mirrored because the engine is a separate process with its own module
+/// graph and does not link the app. Only the two ids are needed here: the app
+/// owns everything else about the meeting.
+enum CallaWaveIdentity {
+    static let seriesID = "wave-interview"
+    static let rehearsalEventID = "wave-interview-rehearsal"
 }
 
 /// One archived call, as listed for the History pane.
@@ -236,6 +253,7 @@ private struct CallSummaryFile: Codable {
     var id: String
     var startedAt: Date?
     var endedAt: Date?
+    var endReason: String?
     var turnCount: Int
     var persona: String
     var hasAudio: Bool
@@ -248,15 +266,22 @@ private struct CallSummaryFile: Codable {
     /// How many suggestions the copilot returned during the call. Zero on a call
     /// that transcribed fine and never answered is the signal worth seeing.
     var suggestionCount: Int = 0
+    /// Which meeting the call belonged to. History groups on these, and a call
+    /// recorded before the app pinned a meeting has neither.
+    var eventID: String?
+    var seriesID: String?
 
     enum CodingKeys: String, CodingKey {
         case id, persona, retranscribed
         case startedAt = "started_at"
         case endedAt = "ended_at"
+        case endReason = "end_reason"
         case turnCount = "turn_count"
         case hasAudio = "has_audio"
         case archivedTurnCount = "archived_turn_count"
         case suggestionCount = "suggestion_count"
+        case eventID = "event_id"
+        case seriesID = "series_id"
     }
 }
 
@@ -338,6 +363,10 @@ private struct CopilotSuggestionFile: Codable {
     var headline: String
     var angles: [String]
     var confirm: [String]
+    var question: String? = nil
+    var citations: [String]?
+    var grounding: String? = nil
+    var latencyMs: Int?
     var summary: String?
     var openQuestions: [String]?
 
@@ -347,6 +376,10 @@ private struct CopilotSuggestionFile: Codable {
         case headline
         case angles
         case confirm
+        case question
+        case citations
+        case grounding
+        case latencyMs = "latency_ms"
         case summary
         case openQuestions = "open_questions"
     }
@@ -374,9 +407,11 @@ private struct CopilotCommand: Codable {
     /// the event's own fields; the knowledge itself is composed here, because the
     /// app is sandboxed and cannot open the store.
     var meeting: CopilotMeeting?
+    var selectedKnowledgeNoteIDs: [String]?
 
     enum CodingKeys: String, CodingKey {
         case action, persona, model, profile, provider, tier, fallback, meeting, question
+        case selectedKnowledgeNoteIDs = "selected_knowledge_note_ids"
         case summaryModel = "summary_model"
         case gatewayStandby = "gateway_standby"
         case callID = "call_id"
@@ -669,17 +704,130 @@ private struct GatewayUpdateRecord: Codable {
     }
 }
 
+/// Persistent reader for CallHost's owner-only event socket. One bounded,
+/// length-prefixed v3 event per frame; reconnects while exact call generation
+/// remains active. Files remain recovery fallback.
+private final class CallEventSocketClient: @unchecked Sendable {
+    private let lock = NSLock()
+    private var active = false
+    private var descriptor: Int32 = -1
+
+    func start(path: URL, receive: @escaping @Sendable (CallEvent) -> Void) {
+        stop()
+        lock.withLock { active = true }
+        DispatchQueue.global(qos: .userInitiated).async { [weak self] in
+            self?.run(path: path, receive: receive)
+        }
+    }
+
+    func stop() {
+        let fd = lock.withLock { () -> Int32 in
+            active = false
+            let fd = descriptor
+            descriptor = -1
+            return fd
+        }
+        if fd >= 0 { shutdown(fd, SHUT_RDWR); Darwin.close(fd) }
+    }
+
+    private var isActive: Bool { lock.withLock { active } }
+
+    private func run(path: URL, receive: @escaping @Sendable (CallEvent) -> Void) {
+        while isActive {
+            guard let fd = Self.connect(path: path) else {
+                Thread.sleep(forTimeInterval: 0.05)
+                continue
+            }
+            lock.withLock {
+                if active { descriptor = fd }
+                else { Darwin.close(fd) }
+            }
+            guard isActive else { return }
+            readFrames(from: fd, receive: receive)
+            lock.withLock {
+                if descriptor == fd { descriptor = -1 }
+            }
+            Darwin.close(fd)
+        }
+    }
+
+    private func readFrames(from fd: Int32, receive: @escaping @Sendable (CallEvent) -> Void) {
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+        while isActive {
+            guard let header = Self.read(count: 4, from: fd) else { return }
+            let length = header.withUnsafeBytes { raw -> UInt32 in
+                raw.loadUnaligned(as: UInt32.self).bigEndian
+            }
+            guard length > 0, length <= 256 * 1_024,
+                  let payload = Self.read(count: Int(length), from: fd),
+                  let event = try? decoder.decode(CallEvent.self, from: payload)
+            else { return }
+            receive(event)
+        }
+    }
+
+    private static func connect(path: URL) -> Int32? {
+        guard path.path.utf8.count < MemoryLayout<sockaddr_un>.size - 3 else { return nil }
+        let fd = socket(AF_UNIX, SOCK_STREAM, 0)
+        guard fd >= 0 else { return nil }
+        var address = sockaddr_un()
+        address.sun_len = UInt8(MemoryLayout<sockaddr_un>.size)
+        address.sun_family = sa_family_t(AF_UNIX)
+        let maximum = MemoryLayout.size(ofValue: address.sun_path) - 1
+        _ = path.path.withCString { source in
+            withUnsafeMutablePointer(to: &address.sun_path) { destination in
+                strncpy(UnsafeMutableRawPointer(destination).assumingMemoryBound(to: CChar.self), source, maximum)
+            }
+        }
+        let result = withUnsafePointer(to: &address) {
+            $0.withMemoryRebound(to: sockaddr.self, capacity: 1) {
+                Darwin.connect(fd, $0, socklen_t(MemoryLayout<sockaddr_un>.size))
+            }
+        }
+        guard result == 0 else { Darwin.close(fd); return nil }
+        return fd
+    }
+
+    private static func read(count: Int, from fd: Int32) -> Data? {
+        var data = Data(count: count)
+        let completed = data.withUnsafeMutableBytes { raw -> Bool in
+            guard let base = raw.baseAddress else { return false }
+            var offset = 0
+            while offset < count {
+                let result = recv(fd, base.advanced(by: offset), count - offset, 0)
+                if result > 0 { offset += result; continue }
+                if result < 0, errno == EINTR { continue }
+                return false
+            }
+            return true
+        }
+        return completed ? data : nil
+    }
+}
+
 /// Privileged Tutor process. Preferences arrive as complete snapshots from
 /// Boring UI; this process never reads Boring or legacy Calla preferences.
-final class BoringCallaEngine: NSObject, BoringCallaEngineProtocol {
+final class BoringCallaEngine: NSObject, BoringCallaEngineProtocol, @unchecked Sendable {
     private let queue = DispatchQueue(label: "theboringteam.boringnotch.calla-engine")
     private let fileManager = FileManager.default
     private var preferences: Preferences?
     private var isRunning = false
     private var lastResult = "Engine not started"
     private var runtime: Process?
-    private var nodeRuntime: Process?
     private var copilotProcess: Process?
+    private var copilotEventClient: CallEventSocketClient?
+    private var copilotEventSequence = -1
+    private var copilotEventQuestion: CallQuestion?
+    private var copilotEventAnswer: CallAnswer?
+    /// Live Call host inherited from an earlier Engine instance. Kept only after
+    /// PID file, executable command, status call ID and generation all agree.
+    private var adoptedCopilotPID: pid_t?
+    private var adoptedCopilotCallID: String?
+    /// Generation for which owner UI explicitly requested End. CallHost drains
+    /// SIGTERM too, so process exit alone cannot distinguish user completion
+    /// from external termination.
+    private var copilotStopRequestedGeneration: Int?
     /// Monotonic per-engine call epoch. A host from an earlier run can finish
     /// after a restart; its file/event must not replace current call state.
     private var copilotGeneration = 0
@@ -688,7 +836,9 @@ final class BoringCallaEngine: NSObject, BoringCallaEngineProtocol {
     /// Which brain the next call starts on. Local by default, so a call still
     /// gets suggestions when `nomonhomelab` is unreachable.
     private var copilotProvider = "local"
-    private var copilotTier = "balanced"
+    /// Which tier the next call answers on before the app has told us. Fast,
+    /// for the same reason the app defaults to it: ~1.9s against ~5.2s.
+    private var copilotTier = "fast"
     private var copilotSummaryModel = "gemini-3.1-pro-high"
     private var copilotFallback = true
     /// When the gateway socket opens on a call the local brain is answering.
@@ -764,17 +914,17 @@ final class BoringCallaEngine: NSObject, BoringCallaEngineProtocol {
     private var gatewayReachable = false
     private var gatewayMonitor: DispatchSourceTimer?
     private var diagnostics: [String] = []
-    private let statusObservers = NSHashTable<AnyObject>.weakObjects()
+    // XPC observer arguments are proxies. The subscription must retain them
+    // until this connection shuts down; a weak table loses the push channel.
+    private let statusObservers = NSHashTable<AnyObject>(options: .strongMemory)
+    private let callObservers = NSHashTable<AnyObject>(options: .strongMemory)
+    private let codingObservers = NSHashTable<AnyObject>(options: .strongMemory)
+    private var codingObserverSequence = -1
     private var statusMonitor: DispatchSourceTimer?
     private var engineIngress: TutorEngineIngress?
-    /// Rotated for each Engine process. Only its child node receives this in
-    /// environment; no token is persisted or surfaced through XPC/status.
+    /// Rotated for each Engine process. Used only by private Engine ingress;
+    /// no token is persisted or surfaced through XPC/status.
     private var engineIngressToken = UUID().uuidString.lowercased()
-    /// OpenClaw starts the node in a fresh process and does not retain the
-    /// Engine's environment for plugin configuration.  This file is a private,
-    /// per-launch config overlay; it is removed with the node and never exposed
-    /// through status, projections, or logs.
-    private var nodeConfigURL: URL?
     private var activeTutorRun: TutorRunRecord?
     private var tutorGeneration = 0
     private var tutorObservationTimer: DispatchSourceTimer?
@@ -782,6 +932,25 @@ final class BoringCallaEngine: NSObject, BoringCallaEngineProtocol {
     private var tutorCaptureFailure: String?
     private var lastTutorVerification: String?
     private var tutorImportFailureCode: String?
+    private lazy var quizController = QuizEngineController(
+        root: root.appendingPathComponent("quiz", isDirectory: true),
+        hostExecutable: { [weak self] in self?.copilotExecutable })
+    private lazy var codingController = CodingSessionController(
+        root: root.appendingPathComponent("coding", isDirectory: true),
+        hostExecutable: { [weak self] in self?.copilotExecutable },
+        askCall: { [weak self] callID, generation, questionID, prompt, evidence in
+            guard let self else { return false }
+            return await withCheckedContinuation { continuation in
+                self.queue.async {
+                    guard self.copilotGeneration == generation,
+                          self.currentCopilotStatus().callID == callID else {
+                        continuation.resume(returning: false); return
+                    }
+                    let event = self.requestHostControl(.answer, callID: callID, text: prompt, questionID: questionID, codingEvidence: evidence)
+                    continuation.resume(returning: event?.kind == .answer)
+                }
+            }
+        })
 
     private var root: URL {
         fileManager.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
@@ -793,7 +962,9 @@ final class BoringCallaEngine: NSObject, BoringCallaEngineProtocol {
     private var tutorCaptureURL: URL { root.appendingPathComponent("TutorAttachments", isDirectory: true) }
     private var tutorAgyWorkspaceURL: URL { root.appendingPathComponent("TutorAgyWorkspace", isDirectory: true) }
     private var runtimePIDURL: URL { root.appendingPathComponent("runtime.pid") }
-    private var nodePIDURL: URL { root.appendingPathComponent("node.pid") }
+    /// Migration-only PID receipt from builds that embedded a local OpenClaw
+    /// node. New builds never create it or launch OpenClaw on this Mac.
+    private var retiredNodePIDURL: URL { root.appendingPathComponent("node.pid") }
 
     func start(with reply: @escaping (Data) -> Void) {
         queue.async {
@@ -803,24 +974,15 @@ final class BoringCallaEngine: NSObject, BoringCallaEngineProtocol {
                 try TutorAgyAttachmentStager(workspace: self.tutorAgyWorkspaceURL).prepare()
                 self.restorePreferences()
                 self.importBoringTutorState()
-                self.importArchivesOnce()
                 self.reclaimStaleOwnedChildren()
+                let liveCallID = self.reconcileOwnedCopilotAtStartup()
+                self.importArchivesOnce(preservingLiveCallID: liveCallID)
                 self.detectConflicts()
                 try self.startEngineIngress()
                 // Teaching depends on the host, so a failure here is fatal.
                 try self.startRuntime()
                 self.isRunning = true
-                // The node only carries Gateway traffic. It used to be started
-                // before `isRunning` was set, so a missing plugin file left the
-                // engine permanently "still starting" with a healthy host
-                // already running — every command refused, notch stuck offline.
-                do {
-                    try self.startNodeRuntime()
-                    self.lastResult = "Engine ready; Tutor runtime and Calla Mac node starting"
-                } catch {
-                    self.appendDiagnostic("Calla Mac node did not start: \(error.localizedDescription)")
-                    self.lastResult = "Tutor runtime ready; Calla Mac node unavailable"
-                }
+                self.lastResult = "Engine ready; Tutor runtime started"
                 self.startGatewayMonitor()
                 NSLog("[CallaEngine] runtime launched")
             } catch {
@@ -838,6 +1000,12 @@ final class BoringCallaEngine: NSObject, BoringCallaEngineProtocol {
     /// quit or a crash must not leave a call host holding the microphone, or a
     /// resident `agy` language server holding ~190MB, with nothing driving either.
     func shutdownEverything() {
+        queue.async {
+            self.statusMonitor?.cancel(); self.statusMonitor = nil
+            self.statusObservers.removeAllObjects(); self.callObservers.removeAllObjects(); self.codingObservers.removeAllObjects()
+        }
+        _ = awaitOnQueue { [quizController] in await quizController.shutdown(); return true }
+        _ = awaitOnQueue { [codingController] in await codingController.shutdown(); return true }
         stopGatewayMonitor()
         stopTutorObservation()
         engineIngress?.stop()
@@ -845,16 +1013,25 @@ final class BoringCallaEngine: NSObject, BoringCallaEngineProtocol {
         if let runtime { terminateProcessTree(runtime.processIdentifier) }
         runtime = nil
         clearOwnedPID(at: runtimePIDURL)
-        if let nodeRuntime { terminateProcessTree(nodeRuntime.processIdentifier) }
-        nodeRuntime = nil
-        clearOwnedPID(at: nodePIDURL)
-        removeEphemeralNodeConfig()
+        let interruptedCallID = currentOwnedCopilotCallID()
+        if let interruptedCallID { markCallInterrupted(interruptedCallID) }
         if let copilot = copilotProcess, copilot.isRunning {
             // SIGINT first: the host drains the trailing utterance on it.
             kill(copilot.processIdentifier, SIGINT)
             terminateProcessTree(copilot.processIdentifier)
+        } else if let adoptedCopilotPID, isOwnedCopilotProcess(adoptedCopilotPID) {
+            kill(adoptedCopilotPID, SIGINT)
+            terminateProcessTree(adoptedCopilotPID)
         }
         copilotProcess = nil
+        copilotEventClient?.stop()
+        copilotEventClient = nil
+        copilotEventSequence = -1
+        copilotEventQuestion = nil
+        copilotEventAnswer = nil
+        adoptedCopilotPID = nil
+        adoptedCopilotCallID = nil
+        copilotStopRequestedGeneration = nil
         clearOwnedPID(at: copilotPIDURL)
         try? fileManager.removeItem(at: copilotStatusURL)
         if let login = agyLoginProcess, login.isRunning {
@@ -939,6 +1116,327 @@ final class BoringCallaEngine: NSObject, BoringCallaEngineProtocol {
         queue.async { reply(self.encodedStatus()) }
     }
 
+    // MARK: - Screen Quiz
+
+    func listQuizWindows(with reply: @escaping (Data) -> Void) {
+        queue.async {
+            Task { [weak self] in
+                guard let self else { return }
+                let windows = (try? await self.quizController.listWindows()) ?? []
+                let data = (try? JSONEncoder.calla.encode(windows)) ?? Data("[]".utf8)
+                self.queue.async { reply(data) }
+            }
+        }
+    }
+
+    func listQuizModels(with reply: @escaping (Data) -> Void) {
+        queue.async {
+            Task { [weak self] in
+                guard let self else { return }
+                let models = (try? await self.quizController.listModels()) ?? []
+                let data = (try? JSONEncoder.calla.encode(models)) ?? Data("[]".utf8)
+                self.queue.async { reply(data) }
+            }
+        }
+    }
+
+    func requestQuizPermissions(with reply: @escaping (Data) -> Void) {
+        queue.async {
+            Task { [weak self] in
+                guard let self else { return }
+                let readiness = await self.quizController.requestPermissions()
+                let data = (try? JSONEncoder.calla.encode(readiness)) ?? Data()
+                self.queue.async { reply(data) }
+            }
+        }
+    }
+
+    func warmQuiz(_ data: Data, with reply: @escaping (Bool) -> Void) {
+        queue.async {
+            guard self.preferences?.quizEnabled == true else { reply(false); return }
+            guard data.count <= 16 * 1_024,
+                  let request = try? self.jsonDecoder.decode(QuizWarmRequest.self, from: data)
+            else { reply(false); return }
+            guard self.copilotProcess?.isRunning != true,
+                  !self.currentCopilotStatus().running else { reply(false); return }
+            Task { [weak self] in
+                guard let self else { return }
+                await self.quizController.warm(request)
+                self.queue.async { reply(true) }
+            }
+        }
+    }
+
+    func cancelQuizWarm(with reply: @escaping (Bool) -> Void) {
+        queue.async {
+            Task { [weak self] in
+                guard let self else { return }
+                await self.quizController.cancelWarm()
+                self.queue.async { reply(true) }
+            }
+        }
+    }
+
+    func startQuiz(_ data: Data, with reply: @escaping (Data) -> Void) {
+        queue.async {
+            guard self.preferences?.quizEnabled == true else {
+                self.lastResult = "Quiz is disabled by runtime feature gate"
+                reply(self.encodedQuizSnapshot(.init(state: .failed, failure: self.lastResult))); return
+            }
+            guard data.count <= 512 * 1_024,
+                  let configuration = try? self.jsonDecoder.decode(QuizSessionConfiguration.self, from: data) else {
+                self.lastResult = "Rejected invalid Quiz configuration"
+                reply(self.encodedQuizSnapshot(.init(state: .failed, failure: self.lastResult))); return
+            }
+            guard self.copilotProcess?.isRunning != true,
+                  !self.currentCopilotStatus().running else {
+                self.lastResult = "End Call before starting Quiz"
+                reply(self.encodedQuizSnapshot(.init(state: .failed, failure: self.lastResult))); return
+            }
+            Task { [weak self] in
+                guard let self else { return }
+                let result: Result<QuizSessionSnapshot, Error>
+                do { result = .success(try await self.quizController.start(configuration)) }
+                catch { result = .failure(error) }
+                let snapshot: QuizSessionSnapshot
+                switch result {
+                case .success(let value): snapshot = value
+                case .failure(let error):
+                    let current = await self.quizController.snapshot()
+                    snapshot = QuizSessionSnapshot(
+                        state: .failed,
+                        target: configuration.target,
+                        screenRecordingReady: current.screenRecordingReady,
+                        accessibilityReady: current.accessibilityReady,
+                        agyAuthenticated: current.agyAuthenticated,
+                        modelsReady: current.modelsReady,
+                        workersReady: false,
+                        failure: error.localizedDescription)
+                }
+                let data = self.encodedQuizSnapshot(snapshot)
+                self.queue.async {
+                    switch result {
+                    case .success:
+                        self.lastResult = "Quiz watching selected window"
+                    case .failure(let error):
+                        self.lastResult = "Quiz start failed: \(error.localizedDescription)"
+                    }
+                    reply(data)
+                }
+            }
+        }
+    }
+
+    func sendQuizCommand(_ data: Data, with reply: @escaping (Data) -> Void) {
+        queue.async {
+            guard data.count <= 32 * 1_024,
+                  let command = try? self.jsonDecoder.decode(QuizCommand.self, from: data) else {
+                self.lastResult = "Rejected invalid Quiz command"
+                reply(self.encodedQuizSnapshot(.init(state: .failed, failure: self.lastResult))); return
+            }
+            Task { [weak self] in
+                guard let self else { return }
+                let result: Result<QuizSessionSnapshot, Error>
+                do { result = .success(try await self.quizController.send(command)) }
+                catch { result = .failure(error) }
+                let snapshot: QuizSessionSnapshot
+                switch result {
+                case .success(let value): snapshot = value
+                case .failure: snapshot = await self.quizController.snapshot()
+                }
+                let data = self.encodedQuizSnapshot(snapshot)
+                self.queue.async {
+                    if case .failure(let error) = result {
+                        self.lastResult = "Quiz command failed: \(error.localizedDescription)"
+                    }
+                    reply(data)
+                }
+            }
+        }
+    }
+
+    func quizStatus(with reply: @escaping (Data) -> Void) {
+        queue.async {
+            let value = self.awaitOnQueue { await self.quizController.snapshot() } ?? QuizSessionSnapshot()
+            reply((try? JSONEncoder.calla.encode(value)) ?? Data())
+        }
+    }
+
+    func quizHistory(with reply: @escaping (Data) -> Void) {
+        queue.async {
+            let value = self.awaitOnQueue { await self.quizController.history() } ?? []
+            reply((try? JSONEncoder.calla.encode(value)) ?? Data("[]".utf8))
+        }
+    }
+
+    func revealQuizCapture(_ captureID: String, with reply: @escaping (Data) -> Void) {
+        queue.async {
+            guard captureID.range(of: "^[A-Za-z0-9._-]{8,160}$", options: .regularExpression) != nil else {
+                reply(Data()); return
+            }
+            reply(self.awaitOnQueue { await self.quizController.reveal(captureID: captureID) } ?? Data())
+        }
+    }
+
+    func gradeQuizAnswer(_ answerID: String, grade: Int, with reply: @escaping (Data) -> Void) {
+        queue.async {
+            guard answerID.range(of: "^[A-Za-z0-9._-]{8,160}$", options: .regularExpression) != nil,
+                  let value = QuizAnswerGrade(rawValue: grade) else {
+                reply(self.encodedStatus()); return
+            }
+            _ = self.awaitOnQueue {
+                try? await self.quizController.grade(answerID: answerID, grade: value)
+                return true
+            }
+            reply(self.encodedStatus())
+        }
+    }
+
+    func deleteQuizSession(_ sessionID: String, with reply: @escaping (Data) -> Void) {
+        queue.async {
+            guard sessionID.range(of: "^[A-Za-z0-9._-]{8,160}$", options: .regularExpression) != nil else {
+                reply(self.encodedStatus()); return
+            }
+            _ = self.awaitOnQueue { try? await self.quizController.delete(sessionID: sessionID); return true }
+            reply(self.encodedStatus())
+        }
+    }
+
+    func deleteAllQuizHistory(with reply: @escaping (Data) -> Void) {
+        queue.async {
+            _ = self.awaitOnQueue { try? await self.quizController.deleteAll(); return true }
+            reply(self.encodedStatus())
+        }
+    }
+
+    // MARK: - Live Coding
+
+    func prepareWave(_ data: Data, with reply: @escaping (Data) -> Void) {
+        guard data.count <= 512 * 1024,
+              let request = try? jsonDecoder.decode(WavePreparationRequest.self, from: data) else {
+            reply(Data()); return
+        }
+        Task {
+            let result = await codingController.prepareWave(request)
+            reply((try? JSONEncoder.calla.encode(result)) ?? Data())
+        }
+    }
+
+    func registerCodingFolder(_ bookmark: Data, with reply: @escaping (Data) -> Void) {
+        queue.async {
+            guard !bookmark.isEmpty, bookmark.count <= 256 * 1_024 else { reply(Data()); return }
+            Task { [weak self] in
+                guard let self else { return }
+                let value = try? await self.codingController.registerFolder(bookmark: bookmark)
+                let data = value.flatMap { try? JSONEncoder.calla.encode($0) } ?? Data()
+                self.queue.async { reply(data) }
+            }
+        }
+    }
+
+    func startCoding(_ data: Data, with reply: @escaping (Data) -> Void) {
+        queue.async {
+            guard data.count <= 512 * 1_024,
+                  let configuration = try? self.jsonDecoder.decode(CodingSessionConfiguration.self, from: data)
+            else { reply(Data()); return }
+            let call = self.currentCopilotStatus()
+            let matchesLiveCall = call.running && call.callID == configuration.callID
+                && configuration.generation == self.copilotGeneration
+            let reservesNextCall = !call.running && !call.starting && !call.finishing
+                && configuration.generation == self.copilotGeneration + 1
+            guard matchesLiveCall || reservesNextCall else {
+                let failed = CodingSessionSnapshot(
+                    sessionID: configuration.sessionID, callID: configuration.callID,
+                    generation: configuration.generation, lifecycle: .failed,
+                    failure: .init(code: "call_not_active",
+                                   message: "Start Live Coding capture before creating its shadow.",
+                                   recovery: "Start the call, then try Code again."))
+                reply((try? JSONEncoder.calla.encode(failed)) ?? Data()); return
+            }
+            let quiz = self.awaitOnQueue { await self.quizController.snapshot() } ?? .init()
+            guard !quiz.active else { reply(Data()); return }
+            self.codingObserverSequence = -1
+            Task { [weak self] in
+                guard let self else { return }
+                // Report why, rather than replying with nothing.
+                //
+                // `try?` here cost two debugging sessions: a bookmark that would
+                // not resolve and a date the decoder rejected both arrived as an
+                // empty reply, which the notch could only render as a 45-second
+                // timeout naming neither. A start that fails now says so.
+                var snapshot: CodingSessionSnapshot?
+                do {
+                    snapshot = try await self.codingController.start(configuration)
+                } catch {
+                    snapshot = CodingSessionSnapshot(
+                        sessionID: configuration.sessionID, callID: configuration.callID,
+                        generation: configuration.generation, lifecycle: .failed,
+                        failure: .init(code: "coding_start_failed",
+                                       message: error.localizedDescription,
+                                       recovery: "Check the project folder and AGY sign-in, then try again."))
+                }
+                let encoded = snapshot.flatMap { try? JSONEncoder.calla.encode($0) } ?? Data()
+                self.queue.async { reply(encoded) }
+                if snapshot?.lifecycle == .ready {
+                    self.queue.async { self.startStatusMonitorIfNeeded() }
+                    Task { [weak self] in
+                        try? await Task.sleep(for: .seconds(35))
+                        self?.queue.async { [weak self] in
+                            guard let self else { return }
+                            let call = self.currentCopilotStatus()
+                            let sameCall = call.callID == configuration.callID
+                                && self.copilotGeneration == configuration.generation
+                            if sameCall, call.running {
+                                _ = self.awaitOnQueue { await self.codingController.markCapturing(); return true }
+                            } else if !(sameCall && (call.starting || call.finishing)) {
+                                Task {
+                                    await self.codingController.interruptIfStillAwaitingCall(
+                                        sessionID: configuration.sessionID, generation: configuration.generation)
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    func codingControl(_ data: Data, with reply: @escaping (Data) -> Void) {
+        queue.async {
+            guard data.count <= 256 * 1_024,
+                  let command = try? self.jsonDecoder.decode(CodingCommand.self, from: data)
+            else { reply(Data()); return }
+            if command.kind == .resume { self.codingObserverSequence = -1 }
+            Task { [weak self] in
+                guard let self else { return }
+                let snapshot = try? await self.codingController.send(command)
+                let encoded = snapshot.flatMap { try? JSONEncoder.calla.encode($0) } ?? Data()
+                self.queue.async { reply(encoded) }
+            }
+        }
+    }
+
+    func codingStatus(with reply: @escaping (Data) -> Void) {
+        queue.async {
+            let value = self.awaitOnQueue { await self.codingController.snapshot() } ?? .init()
+            reply((try? JSONEncoder.calla.encode(value)) ?? Data())
+        }
+    }
+
+    func codingEvents(since sequence: Int, with reply: @escaping (Data) -> Void) {
+        queue.async {
+            let value = self.awaitOnQueue { await self.codingController.replay(since: sequence) } ?? []
+            reply((try? JSONEncoder.calla.encode(value)) ?? Data("[]".utf8))
+        }
+    }
+
+    func codingSessions(with reply: @escaping (Data) -> Void) {
+        queue.async {
+            let value = self.awaitOnQueue { await self.codingController.retainedSessions() } ?? []
+            reply((try? JSONEncoder.calla.encode(value)) ?? Data("[]".utf8))
+        }
+    }
+
     func subscribeStatus(_ observer: BoringCallaEngineStatusObserver, with reply: @escaping (Data) -> Void) {
         queue.async {
             self.statusObservers.add(observer)
@@ -947,13 +1445,51 @@ final class BoringCallaEngine: NSObject, BoringCallaEngineProtocol {
         }
     }
 
+    func subscribeCallEvents(_ observer: BoringCallaEngineCallObserver, with reply: @escaping (Data) -> Void) {
+        queue.async {
+            self.callObservers.add(observer)
+            reply(self.encodedStatus())
+        }
+    }
+
+    func subscribeCodingEvents(_ observer: BoringCallaEngineCodingObserver, with reply: @escaping (Data) -> Void) {
+        queue.async {
+            self.codingObservers.add(observer)
+            self.startStatusMonitorIfNeeded()
+            reply((try? JSONEncoder.calla.encode(
+                self.awaitOnQueue { await self.codingController.snapshot() } ?? .init())) ?? Data())
+        }
+    }
+
     private func startStatusMonitorIfNeeded() {
         guard statusMonitor == nil else { return }
         let timer = DispatchSource.makeTimerSource(queue: queue)
         timer.schedule(deadline: .now() + .milliseconds(400), repeating: .milliseconds(400))
         timer.setEventHandler { [weak self] in
-            guard let self, !self.statusObservers.allObjects.isEmpty else { return }
-            _ = self.encodedStatus()
+            guard let self else { return }
+            if !self.statusObservers.allObjects.isEmpty { _ = self.encodedStatus() }
+            let codingSnapshot = self.awaitOnQueue { await self.codingController.snapshot() } ?? .init()
+            let call = self.currentCopilotStatus()
+            if codingSnapshot.lifecycle == .ready, call.running,
+               codingSnapshot.callID == call.callID,
+               codingSnapshot.generation == self.copilotGeneration {
+                _ = self.awaitOnQueue { await self.codingController.markCapturing(); return true }
+            } else if codingSnapshot.lifecycle == .capturing,
+                      !call.running, !call.starting, !call.finishing {
+                let interrupted = self.copilotStopRequestedGeneration != codingSnapshot.generation
+                _ = self.awaitOnQueue { await self.codingController.finishAfterCall(interrupted: interrupted); return true }
+            }
+            guard !self.codingObservers.allObjects.isEmpty else { return }
+            let updates = self.awaitOnQueue {
+                await self.codingController.replay(since: self.codingObserverSequence)
+            } ?? []
+            for event in updates {
+                guard let data = try? JSONEncoder.calla.encode(event) else { continue }
+                self.codingObserverSequence = max(self.codingObserverSequence, event.sequence)
+                for object in self.codingObservers.allObjects {
+                    (object as? BoringCallaEngineCodingObserver)?.callaEngineCodingEvent(data)
+                }
+            }
         }
         timer.resume()
         statusMonitor = timer
@@ -1156,6 +1692,7 @@ final class BoringCallaEngine: NSObject, BoringCallaEngineProtocol {
     private var copilotRoot: URL { root.appendingPathComponent("copilot", isDirectory: true) }
     private var copilotStatusURL: URL { copilotRoot.appendingPathComponent("active-call.json") }
     private var copilotControlSocketURL: URL { copilotRoot.appendingPathComponent("call-host.sock") }
+    private var copilotEventSocketURL: URL { copilotRoot.appendingPathComponent("call-events.sock") }
     private var copilotSuggestionURL: URL { copilotRoot.appendingPathComponent("latest-suggestion.json") }
     private var copilotPermissionsURL: URL { copilotRoot.appendingPathComponent("permissions.json") }
     private var copilotModelDownloadURL: URL { copilotRoot.appendingPathComponent("model-download.json") }
@@ -1187,8 +1724,6 @@ final class BoringCallaEngine: NSObject, BoringCallaEngineProtocol {
             }
             switch action {
             case "start": self.startCopilot(command)
-            case "prewarm": self.startCopilot(command, prewarm: true)
-            case "release": self.releasePrewarm()
             case "stop": self.stopCopilot()
             case "answer": self.answerSelectedText(command.question)
             case "archive": self.retranscribeCall(command)
@@ -1210,7 +1745,7 @@ final class BoringCallaEngine: NSObject, BoringCallaEngineProtocol {
                 // Like persona: the host binds its provider at launch, so a
                 // change mid-call would be a lie. Automatic fallback is the only
                 // thing that switches brains during a call.
-                self.copilotResult = self.copilotProcess?.isRunning == true
+                self.copilotResult = self.copilotIsRunning
                     ? "Intelligence set to \(provider); applies to the next call"
                     : "Intelligence set to \(provider)"
             case "set_persona":
@@ -1220,7 +1755,7 @@ final class BoringCallaEngine: NSObject, BoringCallaEngineProtocol {
                 self.copilotPersona = persona
                 // Persona is fixed for the life of a call; the gateway binds it
                 // at call_start. Changing it takes effect on the next call.
-                self.copilotResult = self.copilotProcess?.isRunning == true
+                self.copilotResult = self.copilotIsRunning
                     ? "Persona set to \(persona); applies to the next call"
                     : "Persona set to \(persona)"
             case "login":
@@ -1237,29 +1772,19 @@ final class BoringCallaEngine: NSObject, BoringCallaEngineProtocol {
         }
     }
 
-    private func startCopilot(_ command: CopilotCommand, prewarm: Bool = false) {
-        if copilotProcess?.isRunning == true {
-            // A warm host is already most of a call, so a start that lands on
-            // one promotes it rather than being refused.
-            //
-            // Boring's own `startCall` tries this first, but it can only ask the
-            // question of the status snapshot it last polled — and the snapshot
-            // is up to four seconds old, so a start pressed shortly after a
-            // pre-roll armed reached here with `prewarming` still false and got
-            // "Call already running" for a host that was sitting there waiting
-            // to be released. The engine owns the process and can answer for it
-            // now, which is the only place the answer is never stale.
-            //
-            // A start that is itself a pre-roll is not promoted: two warm-ups
-            // arriving together should leave the first one warm, not begin
-            // recording nobody asked for.
-            if !prewarm, currentCopilotStatus().prewarming == true {
-                releasePrewarm()
-                return
-            }
+    private func startCopilot(_ command: CopilotCommand) {
+        let quiz = awaitOnQueue { await self.quizController.snapshot() }
+        guard quiz?.active != true else {
+            copilotResult = "End Quiz before starting Call"
+            return
+        }
+        if copilotIsRunning {
             copilotResult = "Call already running"
             return
         }
+        adoptedCopilotPID = nil
+        adoptedCopilotCallID = nil
+        copilotStopRequestedGeneration = nil
         guard let executable = copilotExecutable else {
             copilotResult = "Call host is not installed"; return
         }
@@ -1298,6 +1823,9 @@ final class BoringCallaEngine: NSObject, BoringCallaEngineProtocol {
         process.currentDirectoryURL = executable.deletingLastPathComponent()
         copilotGeneration &+= 1
         let generation = copilotGeneration
+        copilotEventSequence = -1
+        copilotEventQuestion = nil
+        copilotEventAnswer = nil
         var arguments = [
             "serve",
             "--gateway", gateway.absoluteString,
@@ -1307,6 +1835,9 @@ final class BoringCallaEngine: NSObject, BoringCallaEngineProtocol {
             "--tier", copilotTier,
             "--generation", String(generation),
         ]
+        if let requestedCallID = CallaCopilotCommandValidation.callID(command.callID) {
+            arguments += ["--call-id", requestedCallID]
+        }
         // Every value here came back from an allowlist above, so nothing the UI
         // sent can widen this command line.
         if let summaryModel = CallaCopilotCommandValidation.summaryModel(copilotSummaryModel) {
@@ -1316,10 +1847,6 @@ final class BoringCallaEngine: NSObject, BoringCallaEngineProtocol {
         // Validated to a known mode before it reaches argv, like every other
         // value here — nothing the UI sends can widen this command line.
         arguments += ["--gateway-standby", copilotGatewayStandby.argument]
-        // Warm everything, record nothing. The flag is ours, not the caller's:
-        // it is derived from which action was validated, never from a string the
-        // app sent, so nothing the UI says can turn a pre-roll into a recording.
-        if prewarm { arguments.append("--prewarm") }
         process.arguments = arguments
         // The user's prompt text goes in over stdin rather than as arguments.
         // It is the only free-text field this service accepts, and an argument
@@ -1338,14 +1865,27 @@ final class BoringCallaEngine: NSObject, BoringCallaEngineProtocol {
         // store — it is sandboxed and the file is not in its container — so the
         // only process that sees both the meeting the app names and the notes the
         // user wrote is this one.
-        let knowledge = meeting.flatMap { composedKnowledge(for: $0) }
+        let selectedKnowledgeNoteIDs = CallaCopilotCommandValidation.knowledgeNoteIDs(command.selectedKnowledgeNoteIDs)
+        if command.selectedKnowledgeNoteIDs != nil, selectedKnowledgeNoteIDs == nil {
+            copilotResult = "Call pack selection was rejected"
+            return
+        }
+        // Call-pack content is copied into an immutable snapshot by CallHost and
+        // retrieved passage-by-passage. Never bootstrap a model conversation
+        // with whole notes or document bodies. Meeting metadata remains in its
+        // typed field; selected ids remain scope, not prompt text.
+        if selectedKnowledgeNoteIDs != nil, store == nil {
+            copilotResult = "Call pack store is unavailable"
+            return
+        }
 
         if let profile = CallaCopilotCommandValidation.profile(
             about: command.profile?.about,
             personaGuidance: command.profile?.personaGuidance,
             baseGuidance: command.profile?.baseGuidance,
-            knowledge: knowledge,
-            meeting: meeting),
+            knowledge: nil,
+            meeting: meeting,
+            selectedKnowledgeNoteIDs: selectedKnowledgeNoteIDs),
            let payload = try? JSONEncoder().encode(profile) {
             let pipe = Pipe()
             process.standardInput = pipe
@@ -1365,8 +1905,18 @@ final class BoringCallaEngine: NSObject, BoringCallaEngineProtocol {
         process.terminationHandler = { [weak self] child in
             self?.queue.async {
                 guard self?.copilotGeneration == generation else { return }
+                self?.copilotEventClient?.stop()
+                self?.copilotEventClient = nil
+                if let self, let callID = self.currentOwnedCopilotCallID(),
+                   CallaCallTerminationPolicy.shouldForceInterrupted(
+                    exitingGeneration: generation,
+                    explicitlyEndedGeneration: self.copilotStopRequestedGeneration) {
+                    self.forceCallInterrupted(callID)
+                }
                 self?.clearOwnedPID(at: pidFile, matching: child.processIdentifier)
                 self?.copilotProcess = nil
+                self?.adoptedCopilotCallID = nil
+                self?.copilotStopRequestedGeneration = nil
                 if child.terminationStatus != 0 {
                     self?.copilotResult = "Call host stopped (status \(child.terminationStatus))"
                 }
@@ -1380,6 +1930,12 @@ final class BoringCallaEngine: NSObject, BoringCallaEngineProtocol {
                                             attributes: [.posixPermissions: 0o700])
             try process.run()
             copilotProcess = process
+            let eventClient = CallEventSocketClient()
+            copilotEventClient = eventClient
+            eventClient.start(path: copilotEventSocketURL) { [weak self] event in
+                guard let engine = self else { return }
+                engine.queue.async { engine.acceptCallEvent(event) }
+            }
             try? writeOwnedPID(process.processIdentifier, to: copilotPIDURL)
             // Written after the child exists, and closed straight away so the
             // host sees EOF and starts rather than blocking on a read.
@@ -1391,7 +1947,7 @@ final class BoringCallaEngine: NSObject, BoringCallaEngineProtocol {
             copilotPendingProfile = nil
             copilotProfilePipe = nil
             if copilotResult == nil {
-                copilotResult = prewarm ? "Copilot warmed up; not recording" : "Call started"
+                copilotResult = "Call started"
             }
         } catch {
             copilotPendingProfile = nil
@@ -1406,13 +1962,18 @@ final class BoringCallaEngine: NSObject, BoringCallaEngineProtocol {
     /// parses every transcript this Mac has ever recorded, and the engine queue
     /// also serves the status poll the notch is waiting on. Nothing depends on it
     /// having finished — every reader falls back to the files until it has.
-    private func importArchivesOnce() {
+    private func importArchivesOnce(preservingLiveCallID: String?) {
         guard let store else { return }
         let directory = copilotCallsRoot
         Task.detached(priority: .utility) {
             let imported = await store.importArchives(from: directory)
+            let reconciled = (try? await store.reconcileCallHistory(
+                from: directory, preservingLiveCallID: preservingLiveCallID)) ?? 0
             if imported > 0 {
                 NSLog("[CallaEngine] imported %d archived call(s) into the store", imported)
+            }
+            if reconciled > 0 {
+                NSLog("[CallaEngine] reconciled %d call history row(s)", reconciled)
             }
             // Loads the embedding backend and vectors anything that has none.
             //
@@ -1520,34 +2081,6 @@ final class BoringCallaEngine: NSObject, BoringCallaEngineProtocol {
         case "series": CallaCopilotCommandValidation.eventIdentifier(key).map(KnowledgeScope.series)
         case "persona": CallaCopilotCommandValidation.persona(key).map(KnowledgeScope.persona)
         default: nil
-        }
-    }
-
-    /// Promotes a ready host through its owner-only control socket. The 0600
-    /// marker is retained only while an older host is still starting.
-    private func releasePrewarm() {
-        guard copilotProcess?.isRunning == true else {
-            copilotResult = "Nothing is warmed up"
-            return
-        }
-        let callID = currentCopilotStatus().callID
-        if let callID,
-           let event = requestHostControl(.release, callID: callID),
-           event.kind != .fatal {
-            copilotResult = "Recording"
-            return
-        }
-        let payload = ["call_id": callID].compactMapValues { $0 }
-        guard let data = try? JSONEncoder().encode(payload) else { return }
-        let marker = copilotRoot.appendingPathComponent("prewarm-release.json")
-        do {
-            try fileManager.createDirectory(at: copilotRoot, withIntermediateDirectories: true,
-                                            attributes: [.posixPermissions: 0o700])
-            try data.write(to: marker, options: .atomic)
-            try? fileManager.setAttributes([.posixPermissions: 0o600], ofItemAtPath: marker.path)
-            copilotResult = "Recording"
-        } catch {
-            copilotResult = "Could not start recording: \(error.localizedDescription)"
         }
     }
 
@@ -1754,11 +2287,12 @@ final class BoringCallaEngine: NSObject, BoringCallaEngineProtocol {
     }
 
     private func stopCopilot() {
-        guard let process = copilotProcess, process.isRunning else {
+        guard copilotIsRunning else {
             copilotResult = "No call running"
             try? fileManager.removeItem(at: copilotStatusURL)
             return
         }
+        copilotStopRequestedGeneration = copilotGeneration
         if let callID = currentCopilotStatus().callID,
            let event = requestHostControl(.stop, callID: callID),
            event.kind == .finished {
@@ -1768,7 +2302,11 @@ final class BoringCallaEngine: NSObject, BoringCallaEngineProtocol {
         // SIGINT rather than terminate(): the host flushes its endpointers,
         // drains the transcription queue and closes the WAVs on it, so a
         // trailing sentence is not lost.
-        kill(process.processIdentifier, SIGINT)
+        if let process = copilotProcess, process.isRunning {
+            kill(process.processIdentifier, SIGINT)
+        } else if let adoptedCopilotPID, isOwnedCopilotProcess(adoptedCopilotPID) {
+            kill(adoptedCopilotPID, SIGINT)
+        }
         copilotResult = "Ending call…"
     }
 
@@ -1794,14 +2332,18 @@ final class BoringCallaEngine: NSObject, BoringCallaEngineProtocol {
     /// One bounded JSON request/reply over the host's mode-0600 Unix socket.
     /// No transcript, prompt, coordinates, or raw provider output crosses it.
     private func requestHostControl(
-        _ kind: CallHostCommandKind, callID: String, text: String? = nil
+        _ kind: CallHostCommandKind, callID: String, text: String? = nil, questionID: UUID? = nil, codingEvidence: CodingDialogueEvidence? = nil
     ) -> CallHostEvent? {
         guard fileManager.fileExists(atPath: copilotControlSocketURL.path) else { return nil }
-        let command = CallHostCommand(callID: callID, generation: copilotGeneration, kind: kind, text: text)
+        var command = CallHostCommand(callID: callID, generation: copilotGeneration, kind: kind, text: text, questionID: questionID)
+        command.codingEvidence = codingEvidence
         guard let payload = try? JSONEncoder().encode(command) else { return nil }
         let descriptor = socket(AF_UNIX, SOCK_STREAM, 0)
         guard descriptor >= 0 else { return nil }
         defer { Darwin.close(descriptor) }
+        var timeout = timeval(tv_sec: 3, tv_usec: 0)
+        _ = setsockopt(descriptor, SOL_SOCKET, SO_RCVTIMEO, &timeout, socklen_t(MemoryLayout<timeval>.size))
+        _ = setsockopt(descriptor, SOL_SOCKET, SO_SNDTIMEO, &timeout, socklen_t(MemoryLayout<timeval>.size))
         var address = sockaddr_un()
         address.sun_len = UInt8(MemoryLayout<sockaddr_un>.size)
         address.sun_family = sa_family_t(AF_UNIX)
@@ -1862,6 +2404,8 @@ final class BoringCallaEngine: NSObject, BoringCallaEngineProtocol {
                         CopilotSuggestionFile(
                             callID: callID, afterSeq: entry.afterSeq, headline: entry.headline,
                             angles: entry.angles, confirm: entry.confirm,
+                            question: entry.question,
+                            latencyMs: entry.latencyMs,
                             summary: entry.summary, openQuestions: entry.openQuestions)
                     }
                     reply((try? JSONEncoder().encode(mapped)) ?? Data("[]".utf8))
@@ -1964,9 +2508,18 @@ final class BoringCallaEngine: NSObject, BoringCallaEngineProtocol {
             switch command.action {
             case "approve":
                 let record = try? store.call(id: callID)
-                let meeting = record.map {
-                    MeetingContext(eventID: $0.eventID, seriesID: $0.seriesID,
-                                   title: $0.eventTitle, startsAt: $0.eventStart)
+                let meeting = record.map { row in
+                    // A recap is filed at the narrowest scope its meeting has,
+                    // and series beats event. Dropping the series on a rehearsal
+                    // is what keeps a practice conclusion — reached against a
+                    // scratch copy, or against an interviewer who was not there
+                    // — from being retrieved during the interview itself. The
+                    // rehearsal's own occurrence still gets it, so approving is
+                    // not silently a no-op.
+                    let rehearsal = row.eventID == CallaWaveIdentity.rehearsalEventID
+                    return MeetingContext(eventID: row.eventID,
+                                          seriesID: rehearsal ? nil : row.seriesID,
+                                          title: row.eventTitle, startsAt: row.eventStart)
                 }
                 _ = self.awaitOnQueue { try? await store.approve(recapDraftFor: callID, meeting: meeting) }
             case "reject":
@@ -2037,7 +2590,8 @@ final class BoringCallaEngine: NSObject, BoringCallaEngineProtocol {
                 let mapped = turns.suffix(limit).map { turn in
                     ArchivedTurnOut(
                         id: UUID(), seq: turn.seq, source: turn.source,
-                        t0: turn.t0, t1: turn.t1, text: turn.text)
+                        t0: turn.t0, t1: turn.t1, text: turn.text,
+                        confidence: turn.confidence)
                 }
                 return (try? JSONEncoder().encode(mapped)) ?? Data("[]".utf8)
             }
@@ -2074,37 +2628,24 @@ final class BoringCallaEngine: NSObject, BoringCallaEngineProtocol {
     /// knows them: whether the WAVs are still there, whether the large model has
     /// been over the call, and how many turns that pass produced.
     private func archivedCalls(limit: Int = 200) -> Data {
-        if let store {
-            let records = awaitOnQueue { (try? await store.calls(limit: limit)) ?? [] } ?? []
-            if !records.isEmpty {
-                let summaries = records.map { record -> CallSummaryFile in
-                    let facts = archiveFacts(forCall: record.id)
-                    return CallSummaryFile(
-                        id: record.id,
-                        startedAt: record.startedAt,
-                        endedAt: record.endedAt,
-                        turnCount: record.turnCount,
-                        persona: record.persona,
-                        hasAudio: facts.hasAudio,
-                        retranscribed: facts.archivedTurnCount > 0,
-                        archivedTurnCount: facts.archivedTurnCount,
-                        suggestionCount: facts.suggestionCount)
-                }
-                return (try? JSONEncoder().encode(summaries)) ?? Data("[]".utf8)
-            }
+        guard let store else { return Data("[]".utf8) }
+        let records = awaitOnQueue { (try? await store.calls(limit: limit)) ?? [] } ?? []
+        let summaries = records.map { record -> CallSummaryFile in
+            let facts = archiveFacts(forCall: record.id)
+            return CallSummaryFile(
+                id: record.id,
+                startedAt: record.startedAt,
+                endedAt: record.endedAt,
+                endReason: record.endReason?.rawValue,
+                turnCount: record.turnCount,
+                persona: record.persona,
+                hasAudio: facts.hasAudio,
+                retranscribed: facts.archivedTurnCount > 0,
+                archivedTurnCount: facts.archivedTurnCount,
+                suggestionCount: facts.suggestionCount,
+                eventID: record.eventID,
+                seriesID: record.seriesID)
         }
-
-        guard let ids = try? fileManager.contentsOfDirectory(atPath: copilotCallsRoot.path) else {
-            return Data("[]".utf8)
-        }
-        let summaries: [CallSummaryFile] = ids
-            .compactMap { CallaCopilotCommandValidation.callID($0) }
-            .compactMap { summary(forCall: $0) }
-            .sorted { ($0.startedAt ?? .distantPast) > ($1.startedAt ?? .distantPast) }
-            .prefix(limit)
-            .map { $0 }
-        // Plain encoder, like `encodedStatus()` — the notch decodes both with a
-        // plain decoder, so the date strategies have to match.
         return (try? JSONEncoder().encode(summaries)) ?? Data("[]".utf8)
     }
 
@@ -2127,51 +2668,56 @@ final class BoringCallaEngine: NSObject, BoringCallaEngineProtocol {
         return text.split(separator: "\n", omittingEmptySubsequences: true).count
     }
 
-    private func summary(forCall callID: String) -> CallSummaryFile? {
-        let directory = copilotCallsRoot.appendingPathComponent(callID, isDirectory: true)
-        let transcript = directory.appendingPathComponent("transcript.jsonl")
-        guard let text = try? String(contentsOf: transcript, encoding: .utf8) else { return nil }
+    private func acceptCallEvent(_ incoming: CallEvent) {
+        guard incoming.contractVersion == CallaContract.version,
+              incoming.generation == copilotGeneration,
+              incoming.sequence > copilotEventSequence else { return }
+        if let current = adoptedCopilotCallID, current != incoming.callID { return }
+        adoptedCopilotCallID = incoming.callID
+        copilotEventSequence = incoming.sequence
+        var accepted = incoming
+        if let lifecycle = incoming.lifecycle {
+            _ = awaitOnQueue { await self.codingController.reconcileCall(lifecycle); return true }
+        }
+        if let question = incoming.question { copilotEventQuestion = question }
+        if var answer = incoming.answer {
+            answer.timing.enginePublishedAt = Date()
+            copilotEventAnswer = answer
+            accepted.answer = answer
+        }
+        if incoming.kind == .failure, let message = incoming.message {
+            copilotResult = message
+        }
 
-        let turns = text
-            .split(separator: "\n", omittingEmptySubsequences: true)
-            .compactMap { line -> ArchivedTurn? in
-                guard let data = line.data(using: .utf8) else { return nil }
-                return try? jsonDecoder.decode(ArchivedTurn.self, from: data)
+        let encoder = JSONEncoder()
+        encoder.dateEncodingStrategy = .iso8601
+        if let data = try? encoder.encode(accepted) {
+            for object in callObservers.allObjects {
+                (object as? BoringCallaEngineCallObserver)?.callaEngineCallEvent(data)
             }
-        guard !turns.isEmpty else { return nil }
-
-        // The call's own metadata file is the authority when it exists; a call
-        // killed mid-flight has none, and the transcript's timestamps are still
-        // enough to list it.
-        let meta = (try? Data(contentsOf: directory.appendingPathComponent("call.json")))
-            .flatMap { try? jsonDecoder.decode(CopilotHostStatus.self, from: $0) }
-        let started = meta?.startedAt
-            ?? (try? fileManager.attributesOfItem(atPath: transcript.path)[.creationDate] as? Date) ?? nil
-        let ended = (try? fileManager.attributesOfItem(atPath: transcript.path)[.modificationDate] as? Date) ?? nil
-        let audio = (try? fileManager.contentsOfDirectory(atPath: directory.path))?
-            .contains { $0.hasSuffix(".wav") } ?? false
-
-        let archive = directory.appendingPathComponent("transcript-archive.jsonl")
-        let archivedLines = (try? String(contentsOf: archive, encoding: .utf8))
-            .map { $0.split(separator: "\n", omittingEmptySubsequences: true).count } ?? 0
-        let suggestionLines = (try? String(
-            contentsOf: directory.appendingPathComponent("suggestions.jsonl"), encoding: .utf8))
-            .map { $0.split(separator: "\n", omittingEmptySubsequences: true).count } ?? 0
-
-        return CallSummaryFile(
-            id: callID,
-            startedAt: started,
-            endedAt: ended,
-            turnCount: turns.count,
-            persona: meta?.persona ?? "generic",
-            hasAudio: audio,
-            retranscribed: archivedLines > 0,
-            archivedTurnCount: archivedLines,
-            suggestionCount: suggestionLines)
+        }
+        // Same queue, immediately after event forwarding. Existing UI consumes
+        // one status shape; this push replaces live polling without splitting
+        // rendering logic. Recovery polls remain enabled at low frequency.
+        _ = encodedStatus()
     }
 
     private func currentCopilotStatus() -> CopilotStatus {
+        if let adoptedCopilotPID, !isOwnedCopilotProcess(adoptedCopilotPID) {
+            if let adoptedCopilotCallID,
+               CallaCallTerminationPolicy.shouldForceInterrupted(
+                exitingGeneration: copilotGeneration,
+                explicitlyEndedGeneration: copilotStopRequestedGeneration) {
+                forceCallInterrupted(adoptedCopilotCallID)
+            }
+            self.adoptedCopilotPID = nil
+            self.adoptedCopilotCallID = nil
+            copilotStopRequestedGeneration = nil
+            clearOwnedPID(at: copilotPIDURL)
+            try? fileManager.removeItem(at: copilotStatusURL)
+        }
         var status = CopilotStatus()
+        status.generation = copilotGeneration
         status.available = copilotExecutable != nil
         status.persona = copilotPersona
         status.lastResult = copilotResult
@@ -2186,7 +2732,9 @@ final class BoringCallaEngine: NSObject, BoringCallaEngineProtocol {
         status.agyLoginURL = agyLoginURL
         status.agyAwaitingCode = agyLoginAwaitingCode
         status.agyLoginStage = agyLoginStage
-        status.agyBackupAvailable = fileManager.fileExists(atPath: Self.supersededCredentialURL.path)
+        status.agyBackupAvailable = Self.credentialURLs.contains {
+            fileManager.fileExists(atPath: Self.supersededURL(for: $0).path)
+        }
         status.retranscribingCallID = archiveProcess?.isRunning == true ? retranscribingCallID : nil
         status.agyAccount = auth.account
 
@@ -2203,7 +2751,8 @@ final class BoringCallaEngine: NSObject, BoringCallaEngineProtocol {
            // can change notch UI; old archives have no lifecycle and remain
            // readable through history, never as active calls.
            host.lifecycle?.generation == copilotGeneration {
-            let alive = copilotProcess?.isRunning == true
+            adoptedCopilotCallID = host.callID
+            let alive = copilotIsRunning
             // `starting` and `running` are deliberately exclusive. A host that is
             // still loading its model is not a call the notch should draw as live,
             // but it is emphatically not nothing either — that gap is what made
@@ -2245,7 +2794,7 @@ final class BoringCallaEngine: NSObject, BoringCallaEngineProtocol {
             status.questionWorking = host.questionWorking ?? false
             status.summaryWorking = host.summaryWorking ?? false
             status.answering = host.answering ?? false
-            status.prewarming = host.prewarming ?? false
+            status.prewarming = false
             status.meetingTitle = host.meetingTitle
             status.meetingStartsAt = host.meetingStartsAt
 
@@ -2257,9 +2806,37 @@ final class BoringCallaEngine: NSObject, BoringCallaEngineProtocol {
                 status.headline = suggestion.headline
                 status.angles = suggestion.angles
                 status.confirm = suggestion.confirm
+                status.detectedQuestion = suggestion.question
+                status.citationLabels = suggestion.citations ?? []
+                status.grounding = suggestion.grounding
+                status.answerLatencyMs = suggestion.latencyMs
                 status.summary = suggestion.summary
                 status.openQuestions = suggestion.openQuestions ?? []
                 status.suggestionAfterSeq = suggestion.afterSeq
+            }
+            if let question = copilotEventQuestion,
+               question.callID == host.callID,
+               question.generation == copilotGeneration {
+                status.detectedQuestion = question.prompt
+            }
+            if let answer = copilotEventAnswer,
+               answer.callID == host.callID,
+               answer.generation == copilotGeneration {
+                status.headline = answer.main
+                status.angles = answer.points
+                status.confirm = answer.warning.map { [$0] } ?? []
+                status.detectedQuestion = answer.question
+                status.citationLabels = answer.citations.map { citation in
+                    if let page = citation.page { return "\(citation.label) · p. \(page)" }
+                    if let section = citation.section { return "\(citation.label) · \(section)" }
+                    return citation.label
+                }
+                status.grounding = answer.grounding.rawValue
+                status.answerLatencyMs = answer.timing.speechEndToPublishMilliseconds
+                status.suggestionAfterSeq = answer.citations.compactMap(\.toSeq).max()
+                    ?? copilotEventQuestion?.toSeq
+                status.activeProvider = answer.provider
+                status.providerDetail = answer.model
             }
         }
         return status
@@ -2330,23 +2907,7 @@ final class BoringCallaEngine: NSObject, BoringCallaEngineProtocol {
         let fingerprint = credentialFingerprint()
         if let agyAuthCache, agyAuthCacheFingerprint == fingerprint { return agyAuthCache }
         agyAuthCacheFingerprint = fingerprint
-        let home = Self.userHome
-        let credsURL = URL(fileURLWithPath: home).appendingPathComponent(".gemini/oauth_creds.json")
-        let accountsURL = URL(fileURLWithPath: home).appendingPathComponent(".gemini/google_accounts.json")
-
-        var loggedIn = false
-        if let data = try? Data(contentsOf: credsURL),
-           let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-           let token = json["refresh_token"] as? String, !token.isEmpty {
-            loggedIn = true
-        }
-        var account: String?
-        if let data = try? Data(contentsOf: accountsURL),
-           let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-           let active = json["active"] as? String, !active.isEmpty {
-            account = active
-        }
-        let result = (loggedIn: loggedIn, account: account)
+        let result = (loggedIn: AgyLocator.hasCredentials(), account: AgyLocator.activeAccount())
         agyAuthCache = result
         return result
     }
@@ -2387,7 +2948,7 @@ final class BoringCallaEngine: NSObject, BoringCallaEngineProtocol {
     }
 
     private func loginAgy(force: Bool = false, rehearsing: Bool = false) {
-        guard copilotProcess?.isRunning != true else {
+        guard !copilotIsRunning else {
             copilotResult = "Cannot sign in while a call is running"; return
         }
         guard agyLoginProcess?.isRunning != true else {
@@ -2423,8 +2984,12 @@ final class BoringCallaEngine: NSObject, BoringCallaEngineProtocol {
                     }
                     // Moved aside, not deleted, and put back by
                     // `restoreSupersededCredentialIfNeeded()` unless a new one arrives.
-                    try? self.fileManager.removeItem(at: Self.supersededCredentialURL)
-                    try? self.fileManager.moveItem(at: Self.credentialURL, to: Self.supersededCredentialURL)
+                    for url in Self.credentialURLs
+                        where self.fileManager.fileExists(atPath: url.path) {
+                        let superseded = Self.supersededURL(for: url)
+                        try? self.fileManager.removeItem(at: superseded)
+                        try? self.fileManager.moveItem(at: url, to: superseded)
+                    }
                     self.agyAuthCache = nil
                     self.startAgySignIn(binary: binary, rehearsing: false)
                 }
@@ -2528,6 +3093,7 @@ final class BoringCallaEngine: NSObject, BoringCallaEngineProtocol {
 
     /// Reacts to the TUI: answer its menu, publish the URL, open the browser.
     private func consumeLoginOutput(_ chunk: String) {
+        try? fileManager.setAttributes([.posixPermissions: 0o600], ofItemAtPath: agyLoginLogURL.path)
         agyLoginBuffer = String((agyLoginBuffer + chunk).suffix(16_000))
 
         if !agyLoginChoseMethod, CallaAgyLoginParsing.isAtLoginMethodMenu(agyLoginBuffer) {
@@ -2652,7 +3218,7 @@ final class BoringCallaEngine: NSObject, BoringCallaEngineProtocol {
     /// failed re-authentication is — signing out is a decision, so undoing it is
     /// the user's call too (`restore_login`).
     private func signOutAgy() {
-        guard copilotProcess?.isRunning != true else {
+        guard !copilotIsRunning else {
             copilotResult = "Cannot sign out while a call is running"; return
         }
         if let login = agyLoginProcess, login.isRunning {
@@ -2660,11 +3226,15 @@ final class BoringCallaEngine: NSObject, BoringCallaEngineProtocol {
             agyLoginProcess = nil
             agyLoginInput = nil
         }
-        guard fileManager.fileExists(atPath: Self.credentialURL.path) else {
+        let present = Self.credentialURLs.filter { fileManager.fileExists(atPath: $0.path) }
+        guard !present.isEmpty else {
             copilotResult = "Not signed in"; return
         }
-        try? fileManager.removeItem(at: Self.supersededCredentialURL)
-        try? fileManager.moveItem(at: Self.credentialURL, to: Self.supersededCredentialURL)
+        for url in present {
+            let superseded = Self.supersededURL(for: url)
+            try? fileManager.removeItem(at: superseded)
+            try? fileManager.moveItem(at: url, to: superseded)
+        }
         // The account file only records which account was active; a fresh sign-in
         // rewrites it, and leaving it behind makes the UI claim an account that no
         // longer has a credential.
@@ -2683,11 +3253,16 @@ final class BoringCallaEngine: NSObject, BoringCallaEngineProtocol {
 
     /// Puts back what `sign_out` set aside.
     private func restoreAgyCredentials() {
-        guard fileManager.fileExists(atPath: Self.supersededCredentialURL.path) else {
+        let setAside = Self.credentialURLs.filter {
+            fileManager.fileExists(atPath: Self.supersededURL(for: $0).path)
+        }
+        guard !setAside.isEmpty else {
             copilotResult = "No previous sign-in to restore"; return
         }
-        try? fileManager.removeItem(at: Self.credentialURL)
-        try? fileManager.moveItem(at: Self.supersededCredentialURL, to: Self.credentialURL)
+        for url in setAside {
+            try? fileManager.removeItem(at: url)
+            try? fileManager.moveItem(at: Self.supersededURL(for: url), to: url)
+        }
         if fileManager.fileExists(atPath: Self.accountsBackupURL.path) {
             try? fileManager.removeItem(at: Self.accountsURL)
             try? fileManager.moveItem(at: Self.accountsBackupURL, to: Self.accountsURL)
@@ -2708,20 +3283,37 @@ final class BoringCallaEngine: NSObject, BoringCallaEngineProtocol {
     }
 
     private func credentialFingerprint() -> String {
-        let path = Self.credentialURL.path
-        guard let attributes = try? fileManager.attributesOfItem(atPath: path) else { return "absent" }
-        let size = (attributes[.size] as? NSNumber)?.intValue ?? -1
-        let modified = (attributes[.modificationDate] as? Date)?.timeIntervalSince1970 ?? -1
-        return "\(size)-\(modified)"
+        Self.credentialURLs.map { url -> String in
+            guard let attributes = try? fileManager.attributesOfItem(atPath: url.path) else {
+                return "absent"
+            }
+            let size = (attributes[.size] as? NSNumber)?.intValue ?? -1
+            let modified = (attributes[.modificationDate] as? Date)?.timeIntervalSince1970 ?? -1
+            return "\(size)-\(modified)"
+        }.joined(separator: "|")
     }
 
-    static var credentialURL: URL {
-        URL(fileURLWithPath: userHome).appendingPathComponent(".gemini/oauth_creds.json")
+    /// Every place AGY may keep the credential this engine signs in and out of.
+    ///
+    /// AGY 1.1.x writes `antigravity-cli/antigravity-oauth-token`; older builds
+    /// wrote `oauth_creds.json`. This engine only ever knew the second one, and
+    /// on a 1.1.x install that made a *successful* sign-in invisible: `agy`
+    /// authenticated through the keyring, wrote the new file, and the completion
+    /// watcher went on polling the old path until its ten-minute timeout — with
+    /// the TUI still running behind a panel that said "signing in".
+    ///
+    /// `AgyLocator.hasCredentials` already knew both. The duplicate here is what
+    /// drifted, so the engine now defers to it rather than keeping a second
+    /// opinion.
+    static var credentialURLs: [URL] { AgyEnvironment.credentialLocations }
+
+    static var credentialURL: URL { AgyEnvironment.credentialsFile }
+
+    static func supersededURL(for url: URL) -> URL {
+        url.appendingPathExtension("superseded")
     }
 
-    static var supersededCredentialURL: URL {
-        credentialURL.appendingPathExtension("superseded")
-    }
+    static var supersededCredentialURL: URL { supersededURL(for: credentialURL) }
 
     /// Whether the stored credential can actually reach the model.
     ///
@@ -2755,13 +3347,18 @@ final class BoringCallaEngine: NSObject, BoringCallaEngineProtocol {
     private func restoreSupersededCredentialIfNeeded() {
         // A deliberate sign-out is not an accident to be repaired.
         guard !agyExplicitSignOut else { return }
-        guard fileManager.fileExists(atPath: Self.supersededCredentialURL.path) else { return }
-        if fileManager.fileExists(atPath: Self.credentialURL.path) {
-            // A new credential arrived; the old one is genuinely superseded.
-            try? fileManager.removeItem(at: Self.supersededCredentialURL)
+        let setAside = Self.credentialURLs.filter {
+            fileManager.fileExists(atPath: Self.supersededURL(for: $0).path)
+        }
+        guard !setAside.isEmpty else { return }
+        if AgyLocator.hasCredentials() {
+            // A new credential arrived; the old ones are genuinely superseded.
+            for url in setAside { try? fileManager.removeItem(at: Self.supersededURL(for: url)) }
             return
         }
-        try? fileManager.moveItem(at: Self.supersededCredentialURL, to: Self.credentialURL)
+        for url in setAside {
+            try? fileManager.moveItem(at: Self.supersededURL(for: url), to: url)
+        }
         agyAuthCache = nil
     }
 
@@ -3150,12 +3747,8 @@ final class BoringCallaEngine: NSObject, BoringCallaEngineProtocol {
         return (try? JSONSerialization.data(withJSONObject: body, options: [.sortedKeys])) ?? Data("{\"ok\":false}".utf8)
     }
 
-    /// Both children inherit the XPC service's stdio, which goes nowhere. Until
-    /// this existed the only node log on disk was the one the retired
-    /// `com.calla.openclaw-node-host` LaunchAgent wrote via `StandardOutPath`,
-    /// so disabling that agent also blinded `BackendStatus`. Give each child its
-    /// own owner-only file under the private runtime root instead of sharing
-    /// `~/Library/Logs/Calla`, where two hosts' lines were indistinguishable.
+    /// Child processes inherit the XPC service's stdio, which goes nowhere.
+    /// Give each child its own owner-only file under the private runtime root.
     private func childLogHandle(_ name: String) -> FileHandle? {
         let file = root.appendingPathComponent("logs/\(name).log")
         if !fileManager.fileExists(atPath: file.path) {
@@ -3235,75 +3828,6 @@ final class BoringCallaEngine: NSObject, BoringCallaEngineProtocol {
         try writeOwnedPID(process.processIdentifier, to: runtimePIDURL)
     }
 
-    /// Node process has no UI and never owns preferences. Its plugin location
-    /// is installed by Boring's narrow runtime installer; the engine only
-    /// keeps the one Boring-owned Calla Mac connection alive while Boring runs.
-    private func startNodeRuntime() throws {
-        guard ProcessInfo.processInfo.environment["CALLA_DISABLE_NODE"] != "1" else { return }
-        guard nodeRuntime?.isRunning != true else { return }
-        // Refuse to be the second node. Starting one anyway is what produced the
-        // flap: the Gateway accepts one `Calla Mac`, evicts the duplicate, and
-        // the survivor's KeepAlive brings it straight back. This holds even if
-        // somebody re-enables the retired LaunchAgent.
-        // Deployment restarts terminate the previous Engine's node first, but
-        // ps can observe that dying descendant for a few scheduler turns. Give
-        // it a short bounded drain before treating a node as genuinely foreign.
-        let foreignDeadline = Date().addingTimeInterval(2)
-        var competingNode = foreignNodeProcess()
-        while competingNode != nil && Date() < foreignDeadline {
-            Thread.sleep(forTimeInterval: 0.1)
-            competingNode = foreignNodeProcess()
-        }
-        if let pid = competingNode {
-            appendDiagnostic("Not starting a node: another Calla Mac node is running (pid \(pid))")
-            return
-        }
-        guard let appResources = appCallaResources(),
-              fileManager.fileExists(atPath: appResources.appendingPathComponent("openclaw/openclaw.plugin.json").path),
-              fileManager.isExecutableFile(atPath: appResources.appendingPathComponent("scripts/calla-node-host.sh").path) else {
-            throw CocoaError(.fileNoSuchFile, userInfo: [NSFilePathErrorKey: "Calla node resources"])
-        }
-        let process = Process()
-        process.executableURL = appResources.appendingPathComponent("scripts/calla-node-host.sh")
-        process.currentDirectoryURL = appResources
-        let nodeConfig = try writeEphemeralNodeConfig()
-        var environment = ProcessInfo.processInfo.environment
-        // Fixed private Tailscale Serve route for nomonhomelab. Short DNS is
-        // intentionally not used: it resolves but does not present gateway
-        // TLS identity on this owner network.
-        environment["CALLA_NODE_GATEWAY_HOST"] = "nomonhomelab.tailec0dca.ts.net"
-        environment["CALLA_NODE_GATEWAY_PORT"] = "443"
-        environment["CALLA_NODE_GATEWAY_TLS"] = "true"
-        environment["CALLA_NODE_DISPLAY_NAME"] = "Calla Mac"
-        environment["CALLA_RUNTIME_ROOT"] = root.path
-        environment["CALLA_RUNTIME_MODE"] = "engine"
-        environment["CALLA_ENGINE_INGRESS_SOCKET"] = engineIngressURL.path
-        environment["CALLA_ENGINE_CAPABILITY_TOKEN"] = engineIngressToken
-        environment["CALLA_NODE_CONFIG_PATH"] = nodeConfig.path
-        process.environment = environment
-        if let log = childLogHandle("node-host") {
-            process.standardOutput = log
-            process.standardError = log
-        }
-        let pidFile = nodePIDURL
-        process.terminationHandler = { [weak self] child in
-            self?.queue.async {
-                self?.clearOwnedPID(at: pidFile, matching: child.processIdentifier)
-                self?.removeEphemeralNodeConfig()
-                guard self?.isRunning == true else { return }
-                self?.lastResult = "Calla Mac node stopped (status \(child.terminationStatus)); re-pairing will retry"
-            }
-        }
-        do {
-            try process.run()
-        } catch {
-            removeEphemeralNodeConfig()
-            throw error
-        }
-        nodeRuntime = process
-        try writeOwnedPID(process.processIdentifier, to: nodePIDURL)
-    }
-
     /// Drop the socket file once nothing is bound to it, so the next `start`
     /// does not meet a leftover from the last one.
     ///
@@ -3336,39 +3860,6 @@ final class BoringCallaEngine: NSObject, BoringCallaEngineProtocol {
         if RuntimeSocketClient.answers(path: legacyHostSocketPath) {
             appendDiagnostic("A legacy Calla TutorHost is running and will fight for lesson shortcuts")
         }
-        if let pid = foreignNodeProcess() {
-            appendDiagnostic("Another Calla Mac node is already running (pid \(pid))")
-        }
-    }
-
-    /// A node process that is not ours. Two nodes registering the same
-    /// `Calla Mac` identity make the Gateway evict one, and whichever agent
-    /// holds KeepAlive respawns it, so the pair flap indefinitely.
-    private func foreignNodeProcess() -> pid_t? {
-        let ours = nodeRuntime?.processIdentifier
-        let ourDescendants = ours.map { Set(childProcesses(of: $0) + [$0]) } ?? []
-        let process = Process()
-        let output = Pipe()
-        process.executableURL = URL(fileURLWithPath: "/bin/ps")
-        process.arguments = ["-axo", "pid=,command="]
-        process.standardOutput = output
-        guard (try? process.run()) != nil else { return nil }
-        // Drain before waiting. Full command lines run to tens of kilobytes, and
-        // a pipe holds 64K: waiting first deadlocks the engine's serial queue
-        // against a `ps` that is blocked writing into a buffer nobody is reading.
-        let data = output.fileHandleForReading.readDataToEndOfFile()
-        process.waitUntilExit()
-        guard let text = String(data: data, encoding: .utf8) else { return nil }
-        for line in text.split(separator: "\n") {
-            let trimmed = line.trimmingCharacters(in: .whitespaces)
-            guard let separator = trimmed.firstIndex(of: " "),
-                  let pid = pid_t(trimmed[trimmed.startIndex..<separator]) else { continue }
-            let command = trimmed[separator...]
-            guard command.contains("openclaw-node") else { continue }
-            if ourDescendants.contains(pid) { continue }
-            return pid
-        }
-        return nil
     }
 
     private func appCallaResources() -> URL? {
@@ -3380,43 +3871,11 @@ final class BoringCallaEngine: NSObject, BoringCallaEngineProtocol {
             .appendingPathComponent("Resources/Calla", isDirectory: true)
     }
 
-    /// Construct a throwaway complete OpenClaw config instead of mutating the
-    /// user's node config with an Engine capability token.  OpenClaw reads this
-    /// before connecting; the token then exists only in this 0600 file and the
-    /// child process, and a fresh Engine replaces it on every launch.
-    private func writeEphemeralNodeConfig() throws -> URL {
-        removeEphemeralNodeConfig()
-        let source = URL(fileURLWithPath: NSHomeDirectory())
-            .appendingPathComponent(".openclaw/openclaw.json")
-        let sourceData = try Data(contentsOf: source)
-        guard var config = try JSONSerialization.jsonObject(with: sourceData) as? [String: Any] else {
-            throw TutorRuntimeError.invalidResponse
-        }
-        var plugins = config["plugins"] as? [String: Any] ?? [:]
-        var entries = plugins["entries"] as? [String: Any] ?? [:]
-        var tutor = entries["tutor"] as? [String: Any] ?? [:]
-        var tutorConfig = tutor["config"] as? [String: Any] ?? [:]
-        tutorConfig["role"] = "node"
-        tutorConfig["runtimeMode"] = "engine"
-        tutorConfig["engineSocketPath"] = engineIngressURL.path
-        tutorConfig["engineCapabilityToken"] = engineIngressToken
-        tutor["enabled"] = true
-        tutor["config"] = tutorConfig
-        entries["tutor"] = tutor
-        plugins["entries"] = entries
-        config["plugins"] = plugins
-
-        let destination = root.appendingPathComponent("node-openclaw-\(UUID().uuidString.lowercased()).json")
-        let data = try JSONSerialization.data(withJSONObject: config, options: [.sortedKeys])
-        try data.write(to: destination, options: .atomic)
-        try fileManager.setAttributes([.posixPermissions: 0o600], ofItemAtPath: destination.path)
-        nodeConfigURL = destination
-        return destination
-    }
-
-    private func removeEphemeralNodeConfig() {
-        if let nodeConfigURL { try? fileManager.removeItem(at: nodeConfigURL) }
-        nodeConfigURL = nil
+    /// Clean receipts left by builds that embedded a local OpenClaw node.
+    /// Only Boring-recorded PID is reclaimed; unrelated processes stay outside
+    /// this app's authority.
+    private func removeRetiredLocalNodeState() {
+        reclaimOwnedProcess(at: retiredNodePIDURL)
         guard let names = try? fileManager.contentsOfDirectory(atPath: root.path) else { return }
         for name in names where name.hasPrefix("node-openclaw-") && name.hasSuffix(".json") {
             try? fileManager.removeItem(at: root.appendingPathComponent(name))
@@ -3433,18 +3892,120 @@ final class BoringCallaEngine: NSObject, BoringCallaEngineProtocol {
             // stopped one does.
             removeSocketIfUnbound(waitingUpTo: 0.5)
         }
-        if nodeRuntime?.isRunning != true {
-            reclaimOwnedProcess(at: nodePIDURL)
-            nodeRuntime = nil
-            removeEphemeralNodeConfig()
-        }
+        removeRetiredLocalNodeState()
         if copilotProcess?.isRunning != true {
-            reclaimOwnedProcess(at: copilotPIDURL)
             copilotProcess = nil
-            // A reclaimed host is a dead call. Clear the status file so the
-            // notch cannot keep showing a call that ended with the process.
-            try? fileManager.removeItem(at: copilotStatusURL)
         }
+    }
+
+    /// Adopts a verified recording host across Engine restart. Legacy prewarm is
+    /// sole Call host stopped during upgrade; unrelated and unverified processes
+    /// are never touched.
+    @discardableResult
+    private func reconcileOwnedCopilotAtStartup() -> String? {
+        guard let pid = ownedPID(at: copilotPIDURL) else {
+            clearOwnedPID(at: copilotPIDURL)
+            try? fileManager.removeItem(at: copilotStatusURL)
+            return nil
+        }
+        guard let command = ownedCopilotCommand(pid) else {
+            clearOwnedPID(at: copilotPIDURL)
+            try? fileManager.removeItem(at: copilotStatusURL)
+            return nil
+        }
+        let arguments = command.split(whereSeparator: \.isWhitespace)
+        if arguments.contains("--prewarm") {
+            if let data = try? Data(contentsOf: copilotStatusURL),
+               let host = try? jsonDecoder.decode(CopilotHostStatus.self, from: data) {
+                markCallInterrupted(host.callID)
+            }
+            terminateProcessTree(pid)
+            clearOwnedPID(at: copilotPIDURL, matching: pid)
+            try? fileManager.removeItem(at: copilotStatusURL)
+            copilotResult = "Removed legacy prewarmed Call host"
+            return nil
+        }
+        guard let data = try? Data(contentsOf: copilotStatusURL),
+              let host = try? jsonDecoder.decode(CopilotHostStatus.self, from: data),
+              let lifecycle = host.lifecycle else {
+            // PID is ours, but without matching call identity no history row can
+            // safely be preserved or changed. Adopt only its PID so a second
+            // host cannot start while recovery waits for valid status.
+            adoptedCopilotPID = pid
+            return nil
+        }
+
+        if host.prewarming == true || lifecycle.state == CallLifecycleState.prewarming.rawValue {
+            markCallInterrupted(host.callID)
+            terminateProcessTree(pid)
+            clearOwnedPID(at: copilotPIDURL, matching: pid)
+            try? fileManager.removeItem(at: copilotStatusURL)
+            copilotResult = "Removed legacy prewarmed Call host"
+            return nil
+        }
+
+        adoptedCopilotPID = pid
+        adoptedCopilotCallID = host.callID
+        copilotGeneration = lifecycle.generation
+        return host.callID
+    }
+
+    private var copilotIsRunning: Bool {
+        if copilotProcess?.isRunning == true { return true }
+        guard let adoptedCopilotPID else { return false }
+        return isOwnedCopilotProcess(adoptedCopilotPID)
+    }
+
+    private func currentOwnedCopilotCallID() -> String? {
+        if let data = try? Data(contentsOf: copilotStatusURL),
+           let host = try? jsonDecoder.decode(CopilotHostStatus.self, from: data),
+           host.lifecycle?.generation == copilotGeneration {
+            return host.callID
+        }
+        return adoptedCopilotCallID
+    }
+
+    private func markCallInterrupted(_ callID: String, at date: Date = Date()) {
+        guard let store else { return }
+        _ = awaitOnQueue { try? await store.interruptCall(id: callID, at: date) }
+    }
+
+    private func forceCallInterrupted(_ callID: String, at date: Date = Date()) {
+        guard let store else { return }
+        _ = awaitOnQueue {
+            try? await store.reconcileEndState(id: callID, at: date, reason: .interrupted)
+        }
+    }
+
+    private func ownedPID(at file: URL) -> pid_t? {
+        guard let value = try? String(contentsOf: file, encoding: .utf8),
+              let pid = pid_t(value.trimmingCharacters(in: .whitespacesAndNewlines)),
+              pid > 1, pid != getpid() else { return nil }
+        return pid
+    }
+
+    /// PID file alone is not authority. Exact CallHost executable suffix plus
+    /// `serve` command prevents stale/reused PID from targeting another process.
+    private func isOwnedCopilotProcess(_ pid: pid_t) -> Bool {
+        ownedCopilotCommand(pid) != nil
+    }
+
+    private func ownedCopilotCommand(_ pid: pid_t) -> String? {
+        guard pid > 1, Darwin.kill(pid, 0) == 0 else { return nil }
+        let process = Process()
+        let output = Pipe()
+        process.executableURL = URL(fileURLWithPath: "/bin/ps")
+        process.arguments = ["-p", String(pid), "-o", "command="]
+        process.standardOutput = output
+        process.standardError = FileHandle.nullDevice
+        guard (try? process.run()) != nil else { return nil }
+        let data = output.fileHandleForReading.readDataToEndOfFile()
+        process.waitUntilExit()
+        let command = String(decoding: data, as: UTF8.self)
+        guard process.terminationStatus == 0
+            && command.contains("/CallaCallHost.app/Contents/MacOS/CallaCallHost")
+            && command.split(whereSeparator: \.isWhitespace).contains("serve") else { return nil }
+        return command
     }
 
     private func reclaimOwnedProcess(at file: URL) {
@@ -3490,8 +4051,7 @@ final class BoringCallaEngine: NSObject, BoringCallaEngineProtocol {
         process.arguments = ["-axo", "pid=,ppid="]
         process.standardOutput = output
         guard (try? process.run()) != nil else { return [] }
-        // Drain before waiting, for the same reason as `foreignNodeProcess`.
-        // This output is small enough to have got away with it so far.
+        // Drain before waiting so a full pipe cannot deadlock this serial queue.
         let data = output.fileHandleForReading.readDataToEndOfFile()
         process.waitUntilExit()
         guard process.terminationStatus == 0,
@@ -4137,9 +4697,7 @@ final class BoringCallaEngine: NSObject, BoringCallaEngineProtocol {
     }
 
     private func encodedStatus() -> Data {
-        let handshake = currentCapabilityHandshake()
         let gatewayUpdate = currentGatewayUpdate()
-        let hasVerifiedHandshake = handshake != nil
         // Read from the host's receipt, not from this process. TCC grants are
         // per executable and CallaTutorHost is what captures, so preflighting
         // here reported the XPC service's own grant — which is why Settings
@@ -4152,18 +4710,17 @@ final class BoringCallaEngine: NSObject, BoringCallaEngineProtocol {
             screenRecordingGranted: hostStatus?.screenRecordingGranted ?? false,
             accessibilityGranted: hostStatus?.accessibilityGranted ?? false,
             gatewayReachable: gatewayReachable,
-            nodeConnected: gatewayReachable && hasVerifiedHandshake && nodeRuntime?.isRunning == true,
             releaseVersion: gatewayUpdate?.currentRelease,
             previousGatewayRelease: gatewayUpdate?.previousRelease,
             lastGatewayUpdate: gatewayUpdate?.summary,
             lastGatewayUpdateAt: gatewayUpdate?.completedAt,
-            engineBuild: handshake?.engineBuild,
             lastResult: lastResult,
             diagnostics: diagnostics,
             activeLesson: currentActiveLesson(),
             courses: currentCourses(),
             tutorIntelligence: currentTutorIntelligenceStatus(hostStatus: hostStatus),
-            copilot: currentCopilotStatus()
+            copilot: currentCopilotStatus(),
+            quiz: awaitOnQueue { [quizController] in await quizController.snapshot() } ?? QuizSessionSnapshot()
         )
         do {
             let data = try JSONEncoder().encode(status)
@@ -4180,6 +4737,10 @@ final class BoringCallaEngine: NSObject, BoringCallaEngineProtocol {
         }
     }
 
+    private func encodedQuizSnapshot(_ snapshot: QuizSessionSnapshot) -> Data {
+        (try? JSONEncoder.calla.encode(snapshot)) ?? Data()
+    }
+
     private func currentTutorIntelligenceStatus(hostStatus: HostStatus?) -> TutorIntelligenceStatus {
         let preference: TutorProviderPreference
         if let store {
@@ -4189,7 +4750,6 @@ final class BoringCallaEngine: NSObject, BoringCallaEngineProtocol {
         }
         let agy = agyAvailability()
         let auth = agyAuthStatus()
-        let capability = currentCapabilityHandshake()
         let statusStore = store
         let history: TutorHistoryPage? = awaitOnQueue {
             try? await statusStore?.tutorFeedbackHistory(pageSize: 1)
@@ -4210,7 +4770,6 @@ final class BoringCallaEngine: NSObject, BoringCallaEngineProtocol {
             localAgyAuthenticated: auth.loggedIn,
             gatewayFeedbackAvailable: gatewayReachable,
             gatewayAuthoringAvailable: gatewayReachable,
-            nodeTransportHealthy: gatewayReachable && capability != nil && nodeRuntime?.isRunning == true,
             engineIngressHealthy: engineIngress != nil,
             captureAvailable: preferences?.captureEnabled == true && hostStatus?.screenRecordingGranted == true,
             lastProvider: latest?.actualProvider?.rawValue,

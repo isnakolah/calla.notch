@@ -53,7 +53,7 @@ struct TutorAgyAttachmentStager {
     static let safeInvocationDescription = "agy --print [Tutor JPEG attachment]"
 
     static func printArguments(prompt: String) -> [String] {
-        ["--print", prompt, "--model", "gemini-3.7-flash-low", "--output-format", "json",
+        ["--print", prompt, "--model", "gemini-3.8-flash-low", "--output-format", "json",
          "--print-timeout", "5s", "--mode", "plan", "--sandbox", "--disable-slash-commands"]
     }
 }

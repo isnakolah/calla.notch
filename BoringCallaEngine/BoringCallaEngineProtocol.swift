@@ -5,6 +5,16 @@ import Foundation
     func callaEngineStatusDidChange(_ data: Data)
 }
 
+@objc protocol BoringCallaEngineCallObserver {
+    /// Typed v3 Call event. Status/file recovery remains fallback after reconnect.
+    func callaEngineCallEvent(_ data: Data)
+}
+
+@objc protocol BoringCallaEngineCodingObserver {
+    /// Ordered Code event. Status is recovery state and never reconstructs this feed.
+    func callaEngineCodingEvent(_ data: Data)
+}
+
 @objc protocol BoringCallaEngineProtocol {
     func start(with reply: @escaping (Data) -> Void)
     func stop(with reply: @escaping (Data) -> Void)
@@ -12,6 +22,7 @@ import Foundation
     func status(with reply: @escaping (Data) -> Void)
     /// Retained weakly. Client keeps its regular status poll as reconnect fallback.
     func subscribeStatus(_ observer: BoringCallaEngineStatusObserver, with reply: @escaping (Data) -> Void)
+    func subscribeCallEvents(_ observer: BoringCallaEngineCallObserver, with reply: @escaping (Data) -> Void)
     func requestGatewayUpdate(with reply: @escaping (Data) -> Void)
     func requestScreenRecording(with reply: @escaping (Data) -> Void)
     func requestAccessibility(with reply: @escaping (Data) -> Void)
@@ -75,4 +86,29 @@ import Foundation
     func knowledgeControl(_ command: Data, with reply: @escaping (Data) -> Void)
     /// Calls recorded against a calendar event, or its whole recurring series.
     func copilotCallsForEvent(_ query: Data, with reply: @escaping (Data) -> Void)
+    /// Screen Quiz v1. Capture stays in CallaCallHost; Engine owns authority,
+    /// encrypted history, worker pool, and sanitized state.
+    func listQuizWindows(with reply: @escaping (Data) -> Void)
+    func listQuizModels(with reply: @escaping (Data) -> Void)
+    func requestQuizPermissions(with reply: @escaping (Data) -> Void)
+    /// Brings the Quiz council up before Start is pressed. Grants nothing: no
+    /// target, no session, no capture authority — only a council to spawn.
+    func warmQuiz(_ request: Data, with reply: @escaping (Bool) -> Void)
+    func cancelQuizWarm(with reply: @escaping (Bool) -> Void)
+    func startQuiz(_ configuration: Data, with reply: @escaping (Data) -> Void)
+    func sendQuizCommand(_ command: Data, with reply: @escaping (Data) -> Void)
+    func quizStatus(with reply: @escaping (Data) -> Void)
+    func quizHistory(with reply: @escaping (Data) -> Void)
+    func revealQuizCapture(_ captureID: String, with reply: @escaping (Data) -> Void)
+    func gradeQuizAnswer(_ answerID: String, grade: Int, with reply: @escaping (Data) -> Void)
+    func deleteQuizSession(_ sessionID: String, with reply: @escaping (Data) -> Void)
+    func deleteAllQuizHistory(with reply: @escaping (Data) -> Void)
+    func prepareWave(_ data: Data, with reply: @escaping (Data) -> Void)
+    func registerCodingFolder(_ bookmark: Data, with reply: @escaping (Data) -> Void)
+    func startCoding(_ configuration: Data, with reply: @escaping (Data) -> Void)
+    func codingControl(_ command: Data, with reply: @escaping (Data) -> Void)
+    func codingStatus(with reply: @escaping (Data) -> Void)
+    func codingEvents(since sequence: Int, with reply: @escaping (Data) -> Void)
+    func codingSessions(with reply: @escaping (Data) -> Void)
+    func subscribeCodingEvents(_ observer: BoringCallaEngineCodingObserver, with reply: @escaping (Data) -> Void)
 }
