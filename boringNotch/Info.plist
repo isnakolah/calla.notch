@@ -24,7 +24,7 @@
 	<key>NSMicrophoneUsageDescription</key>
 	<string>The call copilot transcribes your side of a call on this Mac to suggest how to answer. Audio never leaves your Mac.</string>
 	<key>NSScreenCaptureUsageDescription</key>
-	<string>The call copilot captures system audio to transcribe the other party on a call. Only audio is used; no screen contents are recorded or uploaded.</string>
+	<string>Call Copilot captures system audio. Screen Quiz captures only your selected window and sends screenshots plus selected context through local AGY to the remote model sessions you configure, with a possible arbiter and one fresh automatic retry for failed requests. Independent web research may occur. Quiz captures stay encrypted until you delete them. Quiz never clicks, types, or submits.</string>
 	<key>SUEnableDownloaderService</key>
 	<true/>
 	<key>SUEnableInstallerLauncherService</key>

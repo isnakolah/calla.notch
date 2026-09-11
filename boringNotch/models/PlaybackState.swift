@@ -45,3 +45,13 @@ extension PlaybackState: Equatable {
             && lhs.isFavorite == rhs.isFavorite
     }
 }
+
+// Partial media updates often omit artwork. Keep it only for the same item.
+extension PlaybackState {
+    func artworkForUpdate(from previous: PlaybackState, supplied: Data?, isDiff: Bool) -> Data? {
+        if let supplied { return supplied }
+        guard isDiff, bundleIdentifier == previous.bundleIdentifier,
+              title == previous.title, artist == previous.artist, album == previous.album else { return nil }
+        return previous.artwork
+    }
+}

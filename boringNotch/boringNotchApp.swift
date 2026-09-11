@@ -7,6 +7,7 @@
 
 import AVFoundation
 import Combine
+import CallaContracts
 import Defaults
 import KeyboardShortcuts
 import LaunchAtLogin
@@ -39,6 +40,9 @@ struct DynamicNotchApp: App {
         // from app launch onward.
         DispatchQueue.main.async {
             _ = UsageMonitorManager.shared
+            // Ice is Boring-owned and does not trigger an Accessibility prompt.
+            // Its runtime reports a blocked state until Settings asks explicitly.
+            IceMenuBarController.shared.start()
             guard Defaults[.callaTutorEnabled] else { return }
             CallaEngineClient.shared.start()
             CallaEngineClient.shared.applyCurrentPreferences()
@@ -103,6 +107,10 @@ struct DynamicNotchApp: App {
 }
 
 class AppDelegate: NSObject, NSApplicationDelegate {
+    /// SwiftUI may install a forwarding application-delegate proxy. Keep the
+    /// concrete delegate available to app-owned coordinators that need windows.
+    static weak var shared: AppDelegate?
+
     /// Fresh installs should keep the notch available after a reboot. Record the
     /// initial registration so a later user choice in Settings remains respected.
     private static let didConfigureLaunchAtLoginKey = "didConfigureLaunchAtLogin"
@@ -144,6 +152,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         cleanupDragDetectors()
         cleanupWindows()
         XPCHelperClient.shared.stopMonitoringAccessibilityAuthorization()
+        IceMenuBarController.shared.stop()
         // Quitting the notch takes its helpers with it: the capture host holding the
         // microphone, the Tutor runtime, and any resident `agy` language server.
         // Otherwise they are reparented to launchd and survive until a restart.
@@ -257,24 +266,19 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     private func setupDragDetectorForScreen(_ screen: NSScreen) {
         guard let uuid = screen.displayUUID else { return }
         
-        let screenFrame = screen.frame
-        // The largest the notch can ever be, not a normal tab's size. The drop
-        // chooser is taller than `openNotchSize`, so its lower half sat outside
-        // this rect — moving the pointer down onto a half read as leaving the
-        // notch, and moving back up re-fired the entry handler mid-drag.
-        let notchHeight = maxOpenNotchSize.height
-        let notchWidth = maxOpenNotchSize.width
-        
-        // Create notch region at the top-center of the screen where an open notch would occupy
-        let notchRegion = CGRect(
-            x: screenFrame.midX - notchWidth / 2,
-            y: screenFrame.maxY - notchHeight,
-            width: notchWidth,
-            height: notchHeight
-        )
-        
-        let detector = DragDetector(notchRegion: notchRegion)
-        
+        // The backing window is much larger than the visible notch. Re-evaluate
+        // its visible bounds during the drag, including after it opens.
+        let detector = DragDetector(notchRegion: { [weak self] in
+            guard let self, Defaults[.boringShelf] else { return .zero }
+            let model = Defaults[.showOnAllDisplays] ? self.viewModels[uuid] : self.vm
+            guard let model, Defaults[.showOnAllDisplays] || self.window?.screen == screen,
+                  !model.hideOnClosed || model.notchState == .open else { return .zero }
+            let size = model.notchState == .open ? model.notchSize : model.closedNotchSize
+            return CGRect(x: screen.frame.midX - size.width / 2,
+                          y: screen.frame.maxY - size.height,
+                          width: size.width, height: size.height)
+        })
+
         detector.onDragEntersNotchRegion = { [weak self] in
             Task { @MainActor in
                 self?.handleDragEntersNotchRegion(onScreen: screen)
@@ -286,6 +290,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private func handleDragEntersNotchRegion(onScreen screen: NSScreen) {
+        guard !NotchResizeSession.shared.isEditing else { return }
         guard let uuid = screen.displayUUID else { return }
 
         // This runs off a global mouse monitor, outside every drop target, and
@@ -343,6 +348,27 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         return window
     }
 
+    /// Resolves only target notch in all-display mode. With one notch, move that
+    /// notch beside Settings for edit session and restore preferred display later.
+    @MainActor
+    func prepareNotchResizeTarget(on screen: NSScreen) -> BoringViewModel? {
+        guard let uuid = screen.displayUUID else { return nil }
+        if Defaults[.showOnAllDisplays] {
+            return viewModels[uuid] ?? viewModels.values.first
+        }
+        vm.screenUUID = uuid
+        if let window {
+            positionWindow(window, on: screen)
+        }
+        return vm
+    }
+
+    @MainActor
+    func finishNotchResizeTarget() {
+        guard !Defaults[.showOnAllDisplays] else { return }
+        adjustWindowPosition()
+    }
+
     @MainActor
     private func positionWindow(_ window: NSWindow, on screen: NSScreen, changeAlpha: Bool = false) {
         if changeAlpha {
@@ -359,6 +385,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        Self.shared = self
 
         CallaCopilotSettings.migrate()
 
@@ -375,12 +402,10 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
         if Defaults[.callaCopilotEnabled] {
             // Touching the session here builds its status bridge before the first
-            // poll. Recording remains an explicit user action; the calendar may
-            // warm a host, but it never releases capture on its own.
+            // poll. Starting capture remains an explicit user action.
             _ = CopilotLiveSession.shared
             CallaEngineClient.shared.start()
             CallaEngineClient.shared.startMonitoring()
-            MeetingPreroll.shared.start()
         }
 
         NotificationCenter.default.addObserver(
@@ -524,15 +549,48 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             }
         }
 
-        KeyboardShortcuts.onKeyDown(for: .copilotToggleCall) {
+        // KeyboardShortcuts registers a Carbon global hotkey, so this callback
+        // arrives even while another application is active. Resolve the notch
+        // under the pointer here and mutate it directly; a session-owned state
+        // object cannot represent pinning Home, Shelf, Pomodoro, or Tutor.
+        KeyboardShortcuts.onKeyDown(for: .copilotTogglePin) { [weak self] in
+            Task { @MainActor in
+                self?.toggleUniversalNotchPin()
+            }
+        }
+
+        KeyboardShortcuts.onKeyDown(for: .copilotToggleCall) { [weak self] in
             Task { @MainActor in
                 let engine = CallaEngineClient.shared
-                guard Defaults[.callaCopilotEnabled], engine.status.copilot.available else { return }
-                if engine.status.copilot.running {
-                    engine.endCall()
-                } else {
-                    engine.startCall(persona: Defaults[.callaCopilotPersona],
-                                     model: Defaults[.callaCopilotLiveModel])
+                guard Defaults[.callaCopilotEnabled] else { return }
+                switch CallaMode.resolved(Defaults[.callaCopilotMode],
+                    plainCall: Defaults[.callaPlainCallEnabled], quiz: Defaults[.callaQuizEnabled]).rawValue {
+                case "quiz" where Defaults[.callaQuizEnabled]:
+                    if let sessionID = engine.status.quiz.sessionID,
+                       engine.status.quiz.active {
+                        engine.sendQuiz(.init(sessionID: sessionID, command: .stop))
+                    } else {
+                        BoringViewCoordinator.shared.currentView = .copilot
+                        NotificationCenter.default.post(name: .callaQuizWantsNotch, object: nil)
+                    }
+                case "code":
+                    let coding = engine.coding
+                    if (coding.lifecycle.active || coding.lifecycle == .interrupted),
+                       let sessionID = coding.sessionID, let callID = coding.callID {
+                        engine.sendCoding(.init(sessionID: sessionID, callID: callID,
+                                                generation: coding.generation, kind: .end))
+                        engine.endCall()
+                    } else {
+                        BoringViewCoordinator.shared.currentView = .copilot
+                        self?.notchViewModel(at: NSEvent.mouseLocation).open()
+                    }
+                default:
+                    guard engine.status.copilot.available else { return }
+                    if engine.status.copilot.running {
+                        engine.endCall()
+                    } else {
+                        engine.startCall(persona: Defaults[.callaCopilotPersona], model: Defaults[.callaCopilotLiveModel])
+                    }
                 }
             }
         }
@@ -543,11 +601,25 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             }
         }
 
+        // One registration for every live-session key. Which surface a press
+        // belongs to is decided when it happens, by `NotchSessionRouter`, rather
+        // than by which of three near-identical shortcut names was bound.
+        NotchSessionShortcuts.install()
+
+        // Carries a pre-modes Quiz setup into the per-mode councils, once.
+        QuizProfileStore.migrateIfNeeded()
+
+        KeyboardShortcuts.onKeyDown(for: .quizToggleWrap) {
+            NotificationCenter.default.post(name: .callaQuizToggleWrap, object: nil)
+        }
+
         KeyboardShortcuts.onKeyDown(for: .copilotDismiss) { [weak self] in
             Task { @MainActor in
                 guard let self else { return }
+                let viewModel = self.notchViewModel(at: NSEvent.mouseLocation)
+                viewModel.setPinned(false)
                 CopilotLiveSession.shared.dismiss()
-                self.vm.close()
+                viewModel.close()
             }
         }
 
@@ -587,6 +659,44 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         if LaunchAtLogin.isEnabled {
             defaults.set(true, forKey: Self.didConfigureLaunchAtLoginKey)
         }
+    }
+
+    /// Toggles the notch-level pin from either the global shortcut or an
+    /// in-panel pin button.
+    ///
+    /// Call and Quiz also acquire a temporary session pin. Turning the pin off
+    /// clears both reasons, otherwise the notch would appear to ignore the
+    /// universal shortcut until capture ended.
+    @MainActor
+    func toggleUniversalNotchPin(for requestedViewModel: BoringViewModel? = nil) {
+        let viewModel = requestedViewModel ?? notchViewModel(at: NSEvent.mouseLocation)
+        let session = CopilotLiveSession.shared
+        let isEffectivelyPinned = viewModel.isPinned || session.pinsNotchOpen
+
+        closeNotchTask?.cancel()
+        closeNotchTask = nil
+
+        if isEffectivelyPinned {
+            viewModel.setPinned(false)
+            if session.pinsNotchOpen {
+                session.dismiss()
+            }
+            viewModel.close()
+        } else {
+            viewModel.setPinned(true)
+            viewModel.open()
+        }
+    }
+
+    @MainActor
+    private func notchViewModel(at pointerLocation: NSPoint) -> BoringViewModel {
+        guard Defaults[.showOnAllDisplays] else { return vm }
+        for screen in NSScreen.screens where screen.frame.contains(pointerLocation) {
+            if let uuid = screen.displayUUID, let viewModel = viewModels[uuid] {
+                return viewModel
+            }
+        }
+        return viewModels.values.first ?? vm
     }
 
     func playWelcomeSound() {

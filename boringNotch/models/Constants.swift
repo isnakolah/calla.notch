@@ -7,6 +7,7 @@
 
 import SwiftUI
 import Defaults
+import CallaContracts
 
 private let availableDirectories = FileManager
     .default
@@ -17,6 +18,10 @@ let appVersion = "\(Bundle.main.infoDictionary?["CFBundleShortVersionString"] as
 
 let temporaryDirectory = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask).first!
 let spacing: CGFloat = 16
+
+/// `CodingModelProfile` lives in CallaContracts, which must not depend on
+/// Defaults — the conformance belongs here instead.
+extension CodingModelProfile: Defaults.Serializable {}
 
 struct CustomVisualizer: Codable, Hashable, Equatable, Defaults.Serializable {
     let UUID: UUID
@@ -106,6 +111,13 @@ extension Defaults.Keys {
     static let lightingEffect = Key<Bool>("lightingEffect", default: true)
     static let enableShadow = Key<Bool>("enableShadow", default: true)
     static let cornerRadiusScaling = Key<Bool>("cornerRadiusScaling", default: true)
+
+    // Open-notch profiles. Stored as Double because Defaults has no CGFloat
+    // bridge; every read is clamped by NotchSizePreferences.
+    static let normalNotchWidth = Key<Double>(
+        "normalNotchWidth", default: Double(NotchSizeProfile.normal.defaultSize.width))
+    static let normalNotchHeight = Key<Double>(
+        "normalNotchHeight", default: Double(NotchSizeProfile.normal.defaultSize.height))
 
     static let showNotHumanFace = Key<Bool>("showNotHumanFace", default: false)
     static let tileShowLabels = Key<Bool>("tileShowLabels", default: false)
@@ -206,22 +218,96 @@ extension Defaults.Keys {
 
     // MARK: Calla Call Copilot
     static let callaCopilotEnabled = Key<Bool>("callaCopilotEnabled", default: true)
+    /// Screen Quiz remains opt-in until accuracy, privacy, and signed-runtime
+    /// gates have been exercised on this build.
+    static let callaQuizEnabled = Key<Bool>("callaQuizEnabled", default: false)
+    /// The preferred live surface. Legacy values are preserved;
+    /// `CallaMode.resolved` maps unavailable modes to Call.
+    static let callaCopilotMode = Key<String>("callaCopilotMode", default: "call")
+    /// The plain listening call — any meeting, any persona, no project.
+    ///
+    /// Off by default. The notch is armed for the Wave interview, and a second
+    /// Start button that quietly records something else is how the wrong
+    /// session gets captured. On, it adds a Call segment to the switcher and
+    /// changes nothing else.
+    static let callaPlainCallEnabled = Key<Bool>("callaPlainCallEnabled", default: false)
+    static let callaQuizVoterOneModel = Key<String>("callaQuizVoterOneModel", default: "gemini-3.1-pro-high")
+    static let callaQuizVoterTwoModel = Key<String>("callaQuizVoterTwoModel", default: "claude-opus-4-6-thinking")
+    static let callaQuizVoterThreeModel = Key<String>("callaQuizVoterThreeModel", default: "claude-sonnet-4-6")
+    static let callaQuizArbiterModel = Key<String>("callaQuizArbiterModel", default: "claude-opus-4-6-thinking")
+    /// One council per question mode.
+    ///
+    /// The four keys above are the legacy flat council. They are kept because a
+    /// user who has configured them should not lose that on upgrade — they are
+    /// folded into the `fallback` profile once, by `QuizProfileStore.migrateIfNeeded`.
+    static let callaQuizProfiles = Key<[String: QuizModeProfile]>(
+        "callaQuizProfiles", default: QuizProfileStore.factoryDefaults)
+    static let callaQuizWarmMode = Key<String>("callaQuizWarmMode", default: QuizMode.choice.rawValue)
+    static let callaQuizProfilesMigrated = Key<Bool>("callaQuizProfilesMigrated", default: false)
+    /// Answer before the screen has finished settling, cancelling if it moves.
+    static let callaQuizSpeculative = Key<Bool>("callaQuizSpeculative", default: true)
+    /// How a code answer is set. Falls back to the system monospaced face when the
+    /// named font is not installed, so a missing font degrades rather than
+    /// silently rendering code in a proportional face.
+    static let callaQuizCodeFont = Key<String>("callaQuizCodeFont",
+                                               default: "CaskaydiaCove Nerd Font")
+    static let callaQuizCodeFontSize = Key<Double>("callaQuizCodeFontSize", default: 10.5)
+    static let callaQuizCodeLineNumbers = Key<Bool>("callaQuizCodeLineNumbers", default: true)
+    static let callaQuizCaptureResolution = Key<String>("callaQuizCaptureResolution", default: QuizContract.defaultCaptureResolution.rawValue)
+    static let callaQuizTargetWindowID = Key<String>("callaQuizTargetWindowID", default: "")
+    static let callaQuizTargetBundleID = Key<String>("callaQuizTargetBundleID", default: "")
+    static let callaQuizTargetWindowTitle = Key<String>("callaQuizTargetWindowTitle", default: "")
     /// Which conversation the pointers are tuned for. Bound at call start; the
     /// gateway validates it against the same allowlist.
     static let callaCopilotPersona = Key<String>("callaCopilotPersona", default: "generic")
+
+    /// Live Coding setups, prepared ahead of the interview and filed against a
+    /// meeting, its series, or nothing at all.
+    ///
+    /// The project folder rides in here as an app-scoped security bookmark
+    /// rather than a path: the notch resolves it and mints the engine's
+    /// capability at Start, so "set it up on Monday, press Start on Thursday"
+    /// survives both a restart of the app and a restart of the XPC service,
+    /// which an engine-held capability does not.
+    static let callaCodingSetups = Key<[CallaCodingSetup]>("callaCodingSetups", default: [])
+    /// Whether the next session is a rehearsal or the interview itself.
+    ///
+    /// Defaults to a rehearsal. Every session before the sitting is one, and
+    /// starting the real thing by accident costs nothing, while recording a
+    /// rehearsal as the interview quietly files practice conclusions where the
+    /// real session will read them.
+    static let callaWaveSession = Key<String>("callaWaveSession", default: "rehearsal")
+    /// One-time adoption of a project prepared before the interview became the
+    /// only meeting. See `CallaCodingSetupStore.adoptExistingSetupIfNeeded`.
+    static let callaWaveSetupAdopted = Key<Bool>("callaWaveSetupAdopted", default: false)
+    /// Which model answers each Live Coding lane.
+    ///
+    /// Live Coding shipped with one hardcoded model for every lane while Quiz
+    /// had per-role model and effort control. The lanes want opposite things —
+    /// the move lane is waited on mid-sentence, the edit lane is not — so this
+    /// is the same granularity, exposed the same way.
+    static let callaCodingProfile = Key<CodingModelProfile>("callaCodingProfile",
+                                                            default: .standard)
 
     // How big the call panel is, in both layouts. Stored as Double because
     // `Defaults` has no CGFloat bridge; clamped on read by `CallaPanelSize`, so
     // a value edited by hand in the plist cannot produce a panel the window is
     // too small to draw.
+    static let codingPanelWidth = Key<Double>("codingPanelWidth", default: 740)
+    static let codingPanelHeight = Key<Double>("codingPanelHeight", default: 480)
+    static let codingCompactWidth = Key<Double>("codingCompactWidth", default: 620)
+    static let codingCompactHeight = Key<Double>("codingCompactHeight", default: 280)
+    static let wavePanelWidth = Key<Double>("wavePanelWidth", default: 740)
+    static let wavePanelHeight = Key<Double>("wavePanelHeight", default: 420)
+    static let waveGlassLevel = Key<Double>("waveGlassLevel", default: 0.5)
     static let callaPanelWidth = Key<Double>(
-        "callaPanelWidth", default: Double(copilotNotchSize.width))
+        "callaPanelWidth", default: Double(NotchSizeProfile.callExpanded.defaultSize.width))
     static let callaPanelHeight = Key<Double>(
-        "callaPanelHeight", default: Double(copilotNotchSize.height))
+        "callaPanelHeight", default: Double(NotchSizeProfile.callExpanded.defaultSize.height))
     static let callaCompactPanelWidth = Key<Double>(
-        "callaCompactPanelWidth", default: Double(copilotCompactNotchSize.width))
+        "callaCompactPanelWidth", default: Double(NotchSizeProfile.callCollapsed.defaultSize.width))
     static let callaCompactPanelHeight = Key<Double>(
-        "callaCompactPanelHeight", default: Double(copilotCompactNotchSize.height))
+        "callaCompactPanelHeight", default: Double(NotchSizeProfile.callCollapsed.defaultSize.height))
     /// Live transcription model. The archive model is deliberately not offered:
     /// its CoreML encoder forces whisper's full 30s context per utterance.
     static let callaCopilotLiveModel = Key<String>("callaCopilotLiveModel", default: "whisper-small-en")
@@ -233,18 +319,9 @@ extension Defaults.Keys {
     /// meeting does.
     /// Legacy storage only. Automatic meeting start is no longer supported.
     static let callaCopilotAutoStartOnMeeting = Key<Bool>("callaCopilotAutoStartOnMeeting", default: false)
-    /// Warm the copilot up before a meeting on the calendar starts.
-    ///
-    /// Separate from the microphone detector above, and it does something the
-    /// detector cannot: the first suggestion of a call costs ~10s of cold `agy`
-    /// boot plus the whisper model load, which lands in the opening minutes —
-    /// exactly where the questions worth answering are. Warming ahead moves that
-    /// cost to a moment when nobody is talking.
-    static let callaCopilotPrerollEnabled = Key<Bool>("callaCopilotPrerollEnabled", default: true)
-    /// How long before a meeting starts to warm up, in seconds.
-    ///
-    /// Two minutes covers a cold boot with room to spare. Nothing is recorded
-    /// during it — the capture legs do not start until the user presses Join.
+    /// Legacy storage only. Boring uses manual-only Call start policy.
+    static let callaCopilotPrerollEnabled = Key<Bool>("callaCopilotPrerollEnabled", default: false)
+    /// Legacy storage only. Retained for settings decode compatibility.
     static let callaCopilotPrerollLead = Key<Double>("callaCopilotPrerollLead", default: 120)
     /// Events the user has told the pre-roll to leave alone, by event id.
     static let callaCopilotPrerollExcluded = Key<[String]>("callaCopilotPrerollExcluded", default: [])
@@ -324,6 +401,10 @@ extension Defaults.Keys {
     // while a fresh probe fails or before the first probe completes.
     static let cachedClaudeUsage = Key<Data?>("cachedClaudeUsage", default: nil)
     static let cachedCodexUsage = Key<Data?>("cachedCodexUsage", default: nil)
+    /// Last failed refresh is stored separately so a good cached allowance never
+    /// masquerades as a fresh reading.
+    static let usageLastClaudeError = Key<String?>("usageLastClaudeError", default: nil)
+    static let usageLastCodexError = Key<String?>("usageLastCodexError", default: nil)
 
     // MARK: Pomodoro
     static let pomodoroTab = Key<Bool>("pomodoroTab", default: false)

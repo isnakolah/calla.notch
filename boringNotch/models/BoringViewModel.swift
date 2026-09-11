@@ -19,6 +19,14 @@ class BoringViewModel: NSObject, ObservableObject {
     @Published var contentType: ContentType = .normal
     @Published private(set) var notchState: NotchState = .closed
 
+    /// The reader explicitly asked this notch to stay open.
+    ///
+    /// This belongs to the notch rather than Call/Quiz: the global shortcut is
+    /// useful while any other application owns focus, and it must still work
+    /// when no capture session exists.
+    @Published private var pinState = NotchPinState()
+    var isPinned: Bool { pinState.isPinned }
+
     @Published var dragDetectorTargeting: Bool = false
     @Published var generalDropTargeting: Bool = false
     @Published var dropZoneTargeting: Bool = false
@@ -199,16 +207,34 @@ class BoringViewModel: NSObject, ObservableObject {
     /// much of it the notch shape paints, so a caller can grow or shrink an
     /// already-open notch inside an animation.
     func open(size: CGSize) {
-        self.notchSize = size
+        let proposed = NotchResizeSession.shared.previewSize(for: self) ?? size
+        self.notchSize = CopilotLiveSession.shared.isCoding && coordinator.currentView == .copilot
+            ? NotchResizeGeometry.clamped(proposed, for: NotchResizeSession.shared.isEditing(self) ? NotchResizeSession.shared.activeProfile : CopilotLiveSession.shared.codingSizeProfile, screenSize: getScreenFrame(screenUUID)?.size)
+            : proposed
         self.notchState = .open
 
         // Force music information update when notch is opened
         MusicManager.shared.forceUpdate()
     }
 
+    func setPinned(_ pinned: Bool) {
+        let session = CopilotLiveSession.shared
+        pinState.set(pinned, duringInterview: coordinator.currentView == .copilot
+            && (session.isLive || session.isCoding || session.starting || session.ending))
+    }
+
+    func releaseInterviewPin() { pinState.releaseInterview() }
+
     func close() {
+        guard !NotchResizeSession.shared.isEditing(self) else { return }
         // Do not close while a share picker or sharing service is active
         if SharingStateManager.shared.preventNotchClose {
+            return
+        }
+        // An explicit notch pin applies to every tab, not only a live Call or
+        // Quiz. Automatic closes (hover, timers, session transitions) all pass
+        // through here, so this is the single authority they must respect.
+        if isPinned {
             return
         }
         // A live call holds the notch open for its whole duration. ⌥⌘. drops the
@@ -233,6 +259,12 @@ class BoringViewModel: NSObject, ObservableObject {
         } else if !coordinator.openLastTabByDefault {
             coordinator.currentView = .home
         }
+    }
+
+    /// Bypasses normal open-size routing while resize editor owns this notch.
+    func setResizePreview(size: CGSize) {
+        notchSize = size
+        notchState = .open
     }
 
     func closeHello() {
