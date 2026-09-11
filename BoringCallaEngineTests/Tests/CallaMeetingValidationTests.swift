@@ -148,13 +148,22 @@ final class CallaMeetingValidationTests: XCTestCase {
 }
 
 final class CallaPrewarmActionTests: XCTestCase {
-    func testPrewarmAndReleaseAreAllowed() {
-        XCTAssertEqual(CallaCopilotCommandValidation.action("prewarm"), "prewarm")
-        XCTAssertEqual(CallaCopilotCommandValidation.action("release"), "release")
+    func testPrewarmAndReleaseAreRejected() {
+        XCTAssertNil(CallaCopilotCommandValidation.action("prewarm"))
+        XCTAssertNil(CallaCopilotCommandValidation.action("release"))
     }
 
     func testUnknownActionsAreStillRefused() {
         XCTAssertNil(CallaCopilotCommandValidation.action("record_everything"))
         XCTAssertNil(CallaCopilotCommandValidation.action(""))
+    }
+
+    func testOnlyExplicitEndMakesOwnedHostExitCompleted() {
+        XCTAssertFalse(CallaCallTerminationPolicy.shouldForceInterrupted(
+            exitingGeneration: 7, explicitlyEndedGeneration: 7))
+        XCTAssertTrue(CallaCallTerminationPolicy.shouldForceInterrupted(
+            exitingGeneration: 7, explicitlyEndedGeneration: nil))
+        XCTAssertTrue(CallaCallTerminationPolicy.shouldForceInterrupted(
+            exitingGeneration: 7, explicitlyEndedGeneration: 6))
     }
 }

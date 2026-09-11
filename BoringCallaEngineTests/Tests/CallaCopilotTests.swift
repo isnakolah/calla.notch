@@ -6,16 +6,24 @@ import XCTest
 /// transcript to. Every rule here fails open into something worse than a crash
 /// if it is wrong, so each is pinned.
 final class CallaCopilotCommandValidationTests: XCTestCase {
+    func testKnowledgeSelectionIsBoundedAndValidated() {
+        XCTAssertEqual(CallaCopilotCommandValidation.knowledgeNoteIDs([]), [])
+        XCTAssertEqual(CallaCopilotCommandValidation.knowledgeNoteIDs(["note-a", "note-a", "doc:2"]),
+                       ["note-a", "doc:2"])
+        XCTAssertNil(CallaCopilotCommandValidation.knowledgeNoteIDs(["bad/id"]))
+        XCTAssertNil(CallaCopilotCommandValidation.knowledgeNoteIDs(
+            (0 ... 120).map { "note-\($0)" }))
+    }
+
     func testOnlyTheKnownActionsAreAccepted() {
-        // Every entry, not most of them. `prewarm` and `release` were missing
-        // here, which is how `set_detail` sat in a security allowlist with no
+        // Every entry, not most of them. This is how `set_detail` sat in a security allowlist with no
         // sender and no handler for as long as it did.
         for action in ["start", "stop", "answer", "set_persona", "set_provider", "archive",
-                       "fetch_model", "login", "test_login", "sign_out", "restore_login",
-                       "prewarm", "release"] {
+                       "fetch_model", "login", "test_login", "sign_out", "restore_login"] {
             XCTAssertEqual(CallaCopilotCommandValidation.action(action), action)
         }
-        for action in ["", "  ", "restart", "start;rm -rf /", "START", "set_detail"] {
+        for action in ["", "  ", "restart", "start;rm -rf /", "START", "set_detail",
+                       "prewarm", "release"] {
             XCTAssertNil(CallaCopilotCommandValidation.action(action), "accepted \(action)")
         }
         XCTAssertNil(CallaCopilotCommandValidation.action(nil))
@@ -27,7 +35,6 @@ final class CallaCopilotCommandValidationTests: XCTestCase {
         let handled: Set<String> = [
             "start", "stop", "answer", "set_persona", "set_provider", "archive",
             "fetch_model", "login", "test_login", "sign_out", "restore_login",
-            "prewarm", "release",
         ]
         XCTAssertEqual(
             CallaCopilotCommandValidation.allowedActions.subtracting(handled), [],
@@ -215,6 +222,29 @@ final class CallaCopilotCommandValidationTests: XCTestCase {
 /// The notch slab is fixed and unscrollable, and this surface is read in the
 /// second before the user has to speak.
 final class CallaCopilotPresentationTests: XCTestCase {
+    func testQuizAnswerUnwrapsNestedWorkerJSONForExistingHistory() {
+        let value = #"{"answer":"C — All arborescence are DAGs","confidence":100}"#
+        let answer = QuizAnswerPresentation.make(answer: value, kind: "singleChoice")
+        XCTAssertEqual(answer.style, .choice)
+        XCTAssertEqual(answer.badge, "C")
+        XCTAssertEqual(answer.body, "All arborescence are DAGs")
+        XCTAssertEqual(answer.copyText, "C — All arborescence are DAGs")
+    }
+
+    func testQuizAnswerFormatsMultipleChoiceAndCodeWithoutLosingCopyText() {
+        let choices = QuizAnswerPresentation.make(
+            answer: "B, D — Photosynthesis; Respiration", kind: "multipleChoice")
+        XCTAssertEqual(choices.badge, "B, D")
+        XCTAssertEqual(choices.body, "Photosynthesis; Respiration")
+
+        let code = QuizAnswerPresentation.make(
+            answer: "```swift\nlet answer = 42\n```", kind: "code")
+        XCTAssertEqual(code.style, .code)
+        XCTAssertEqual(code.codeLanguage, "swift")
+        XCTAssertEqual(code.body, "let answer = 42")
+        XCTAssertEqual(code.copyText, "let answer = 42")
+    }
+
     func testMissingHostOutranksEverythingElse() {
         let mode = CallaCopilotPresentation.mode(
             available: false, running: true, systemAudioActive: true, hasSuggestion: true)
