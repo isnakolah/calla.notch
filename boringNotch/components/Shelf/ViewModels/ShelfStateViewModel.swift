@@ -27,6 +27,7 @@ final class ShelfStateViewModel: ObservableObject {
     // Queue for deferred bookmark updates to avoid publishing during view updates
     private var pendingBookmarkUpdates: [ShelfItem.ID: Data] = [:]
     private var updateTask: Task<Void, Never>?
+    private var filePicker: NSOpenPanel?
 
     private init() {
         items = ShelfPersistenceService.shared.load()
@@ -126,8 +127,11 @@ final class ShelfStateViewModel: ObservableObject {
     /// but it cannot be the only one — an empty shelf would otherwise be
     /// reachable by drag alone.
     func chooseFiles() {
-        SharingStateManager.shared.beginInteraction()
-        defer { SharingStateManager.shared.endInteraction() }
+        if let filePicker {
+            NSApp.activate(ignoringOtherApps: true)
+            filePicker.makeKeyAndOrderFront(nil)
+            return
+        }
 
         let panel = NSOpenPanel()
         panel.allowsMultipleSelection = true
@@ -135,13 +139,31 @@ final class ShelfStateViewModel: ObservableObject {
         panel.canChooseDirectories = true
         panel.title = "Add to Shelf"
         panel.prompt = "Add"
-        guard panel.runModal() == .OK, !panel.urls.isEmpty else { return }
+        filePicker = panel
+        SharingStateManager.shared.beginInteraction()
 
-        let items = panel.urls.compactMap { url -> ShelfItem? in
-            guard let bookmark = try? Bookmark(url: url).data else { return nil }
-            return ShelfItem(kind: .file(bookmark: bookmark))
+        // The notch is a nonactivating panel. Give the standalone picker focus
+        // and avoid nesting a modal event loop inside the SwiftUI button action.
+        NSApp.activate(ignoringOtherApps: true)
+        panel.begin { [weak self] response in
+            Task { @MainActor in
+                guard let self else {
+                    SharingStateManager.shared.endInteraction()
+                    return
+                }
+                defer {
+                    self.filePicker = nil
+                    SharingStateManager.shared.endInteraction()
+                }
+                guard response == .OK else { return }
+                let items = panel.urls.compactMap { url -> ShelfItem? in
+                    guard let bookmark = try? Bookmark(url: url).data else { return nil }
+                    return ShelfItem(kind: .file(bookmark: bookmark))
+                }
+                self.add(items)
+            }
         }
-        add(items)
+        panel.makeKeyAndOrderFront(nil)
     }
 
     func cleanupInvalidItems() {

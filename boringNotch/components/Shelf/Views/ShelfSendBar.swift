@@ -32,14 +32,14 @@ struct ShelfSendBar: View {
 
                 HStack(spacing: 5) {
                     Image(systemName: symbolName)
-                        .font(.system(size: 11, weight: .semibold))
+                        .font(NotchGlassType.glyph)
                     Text(title)
-                        .font(.system(size: 11, weight: .bold, design: .rounded))
+                        .font(NotchGlassType.inlineFigure.weight(.bold))
                         .monospacedDigit()
                         .contentTransition(.numericText())
                         .lineLimit(1)
                 }
-                .foregroundStyle(isEnabled ? .white : .white.opacity(0.45))
+                .foregroundStyle(isEnabled ? NotchInk.primary : NotchInk.tertiary)
                 .frame(maxWidth: .infinity)
             }
             .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))

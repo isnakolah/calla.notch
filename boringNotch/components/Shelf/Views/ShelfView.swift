@@ -21,31 +21,65 @@ struct ShelfView: View {
     private static let railHeight: CGFloat = 56
 
     var body: some View {
-        VStack(alignment: .leading, spacing: Self.rowSpacing) {
-            ShelfToolbar(
-                shelfShare: shelfShare,
-                itemCount: tvm.items.count,
-                selectedCount: selection.selectedIDs.count,
-                summary: summary,
-                canClear: !tvm.isEmpty,
-                onClear: { tvm.clear() }
-            )
-
-            queueRail
-                .frame(height: Self.railHeight)
-
-            ShelfSendBar(
-                shelfShare: shelfShare,
-                itemCount: queuedItems.count,
-                onSend: { Task { await shelfShare.shareShelfItems(queuedItems) } },
-                onChooseFiles: { tvm.chooseFiles() },
-                onOpenSettings: { SettingsWindowController.shared.showShelfWindow() }
-            )
+        HStack(spacing: 12) {
+            VStack(alignment: .leading, spacing: NotchGlassSpace.snug) {
+                HStack(spacing: 5) {
+                    NotchStatusDot(live: shelfShare.isSending,
+                                   tint: shelfShare.selectedDestinationReady ? NotchTint.healthy : NotchTint.attention)
+                    NotchCaps(shelfShare.isSending ? "Sending" : (shelfShare.selectedDestinationReady ? "Ready" : "Offline"))
+                    Spacer(minLength: 0)
+                    NotchGlyphButton(symbol: "gearshape", help: "Shelf settings") {
+                        SettingsWindowController.shared.showShelfWindow()
+                    }
+                }
+                CallaContextChip(title: shelfShare.selectedDestination.title,
+                                 symbol: shelfShare.selectedDestination.symbolName) {
+                    ForEach(LocalSendDestination.allCases) { destination in
+                        Button(destination.title) { shelfShare.select(destination) }
+                    }
+                }
+                Text(shelfShare.lastError ?? "Choose where your files go.")
+                    .font(NotchGlassType.caption).foregroundStyle(NotchInk.tertiary)
+                    .lineLimit(2)
+                CallaPrimaryButton(title: actionTitle,
+                                   symbol: tvm.isEmpty ? "plus" : "arrow.up.right",
+                                   enabled: !shelfShare.isSending) {
+                    if tvm.isEmpty { tvm.chooseFiles() }
+                    else if shelfShare.isAvailable && shelfShare.selectedDestinationReady {
+                        Task { await shelfShare.shareShelfItems(queuedItems) }
+                    } else { SettingsWindowController.shared.showShelfWindow() }
+                }
+            }
+            .frame(width: 158, alignment: .leading)
+            NotchColumnDivider()
+            VStack(alignment: .leading, spacing: NotchGlassSpace.snug) {
+                HStack {
+                    NotchCaps(tvm.isEmpty ? "Files" : summary)
+                    Spacer(minLength: 4)
+                    NotchGlyphButton(symbol: "plus", help: "Add files") { tvm.chooseFiles() }
+                    if !tvm.isEmpty {
+                        NotchGlyphButton(symbol: "trash", help: "Clear queue") { tvm.clear() }
+                            .disabled(shelfShare.isSending)
+                    }
+                }
+                if tvm.isEmpty {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("Drop files here").font(NotchGlassType.title).foregroundStyle(NotchInk.primary)
+                        Text("They stay queued until you send.")
+                            .font(NotchGlassType.caption).foregroundStyle(NotchInk.tertiary)
+                    }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
+                } else {
+                    queueRail.frame(maxHeight: .infinity)
+                }
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
-        // Toolbar 18 + 6 + rail 48 + 6 + send 26 = 104, the same content canvas
-        // as Usage and Pomodoro. Every row is fixed, so send status never
-        // stretches the open notch.
-        .frame(height: 104)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .padding(.vertical, 8)
+        .padding(.horizontal, 12)
+        .notchCard()
+        .notchTabInsets()
         // One drop target for the whole tab: dropping queues, sending is always
         // an explicit press.
         .onDrop(of: [.fileURL, .url, .utf8PlainText, .plainText, .data, .image], isTargeted: $vm.dropZoneTargeting) { providers in
@@ -62,38 +96,48 @@ struct ShelfView: View {
 
     // MARK: - Queue rail
 
+    private var actionTitle: String {
+        if shelfShare.isSending { return "Sending \(Int(shelfShare.sendFraction * 100))%" }
+        if tvm.isEmpty { return "Choose files" }
+        if !shelfShare.isAvailable { return "Set up sharing" }
+        if !shelfShare.selectedDestinationReady {
+            return shelfShare.isPaired(shelfShare.selectedDestination)
+                ? "Connect \(shelfShare.selectedDestination.title)" : "Pair \(shelfShare.selectedDestination.title)"
+        }
+        return "Send to \(shelfShare.selectedDestination.title)"
+    }
+
     private var queueRail: some View {
-        RoundedRectangle(cornerRadius: 14, style: .continuous)
-            .fill(isDropTargeted ? Color.effectiveAccent.opacity(0.10) : Color.white.opacity(0.04))
-            .overlay {
-                RoundedRectangle(cornerRadius: 14, style: .continuous)
-                    .strokeBorder(
-                        isDropTargeted ? Color.effectiveAccent.opacity(0.8) : Color.white.opacity(0.06),
-                        lineWidth: isDropTargeted ? 1.5 : 1
-                    )
-            }
-            .overlay { railContent.padding(4) }
-            .contentShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
-            // The scroll content swallows taps aimed at a backdrop, so this has
-            // to cover the whole rail — and then skip the clicks a chip already
-            // handled, or selecting would immediately deselect.
+        railContent
+            .padding(2)
+            .background(isDropTargeted ? Color.effectiveAccent.opacity(0.1) : .clear,
+                        in: RoundedRectangle(cornerRadius: 8))
+            .contentShape(Rectangle())
             .onTapGesture {
                 guard !selection.consumeChipClick() else { return }
                 selection.clear()
             }
-            .transaction { $0.animation = vm.animation }
     }
 
     @ViewBuilder
     private var railContent: some View {
         if tvm.isEmpty {
-            HStack(spacing: 7) {
+            VStack(spacing: 6) {
                 Image(systemName: "tray.and.arrow.down")
-                    .font(.system(size: 12, weight: .medium))
-                Text("Drop files here to queue")
-                    .font(.system(size: 10, weight: .medium, design: .rounded))
+                    .font(.system(size: 19, weight: .light))
+                    .foregroundStyle(Color.effectiveAccent.opacity(0.8))
+                Text("Drop files to queue")
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundStyle(NotchInk.primary)
+                Button { tvm.chooseFiles() } label: {
+                    Label("Choose files", systemImage: "plus")
+                        .font(.system(size: 10, weight: .semibold))
+                        .padding(.horizontal, 12).padding(.vertical, 5)
+                        .background(.white.opacity(0.08), in: Capsule())
+                }
+                .buttonStyle(.plain)
+                .foregroundStyle(NotchInk.secondary)
             }
-            .foregroundStyle(.white.opacity(0.35))
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         } else {
             // Two columns, filling row-major, scrolling down.
@@ -104,7 +148,7 @@ struct ShelfView: View {
             // rather than a grid. Down is the direction a list of things grows.
             ScrollView(.vertical) {
                 LazyVGrid(
-                    columns: Array(repeating: GridItem(.flexible(), spacing: 6), count: 2),
+                    columns: [GridItem(.flexible())],
                     alignment: .leading,
                     spacing: 4
                 ) {

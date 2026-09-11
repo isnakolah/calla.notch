@@ -20,54 +20,49 @@ struct ShelfToolbar: View {
     @Namespace private var destinationNamespace
 
     var body: some View {
-        HStack(spacing: 6) {
-            destinationPicker
-            statusIndicator
-            Spacer(minLength: 4)
-            summaryLabel
-            if canClear {
-                Circle()
-                    .fill(.white.opacity(0.25))
-                    .frame(width: 2, height: 2)
-                    .padding(.horizontal, 1)
-                clearButton
+        VStack(alignment: .leading, spacing: 6) {
+            HStack {
+                Text("Destination").font(.system(size: 11, weight: .semibold))
+                Spacer()
+                settingsButton
             }
-            settingsButton
+            destinationPicker
+            HStack(spacing: 4) {
+                statusIndicator
+                Spacer(minLength: 0)
+                if canClear { clearButton }
+            }
         }
-        .frame(height: Self.height)
+        .padding(8)
+        .frame(height: 104)
+        .background(.white.opacity(0.035), in: RoundedRectangle(cornerRadius: 12))
+        .overlay(RoundedRectangle(cornerRadius: 12).strokeBorder(.white.opacity(0.06)))
     }
 
-    // MARK: - Destination
-
     private var destinationPicker: some View {
-        HStack(spacing: 2) {
+        VStack(spacing: 4) {
             ForEach(LocalSendDestination.allCases) { destination in
-                let isSelected = shelfShare.selectedDestination == destination
-                Button {
-                    withAnimation(.smooth(duration: 0.3)) { shelfShare.select(destination) }
-                } label: {
-                    HStack(spacing: 3) {
-                        Image(systemName: destination.symbolName)
-                            .font(.system(size: 9, weight: .semibold))
-                        Text(destination.title)
-                            .font(.system(size: 9.5, weight: .semibold, design: .rounded))
+                let selected = shelfShare.selectedDestination == destination
+                Button { withAnimation(.easeInOut(duration: 0.18)) { shelfShare.select(destination) } } label: {
+                    HStack(spacing: 7) {
+                        Image(systemName: destination.symbolName).frame(width: 14)
+                        Text(destination.title).fontWeight(.medium)
+                        Spacer(minLength: 0)
+                        if selected { Image(systemName: "checkmark").font(.system(size: 9, weight: .bold)) }
                     }
-                    .foregroundStyle(isSelected ? Color.effectiveAccent : Color.white.opacity(0.5))
+                    .font(.system(size: 11))
+                    .foregroundStyle(selected ? Color.effectiveAccent : NotchInk.secondary)
                     .padding(.horizontal, 8)
-                    .frame(height: Self.height)
-                    .background {
-                        if isSelected {
-                            Capsule()
-                                .fill(Color.effectiveAccent.opacity(0.22))
-                                .matchedGeometryEffect(id: "shelfDestination", in: destinationNamespace)
-                        }
-                    }
-                    .contentShape(Capsule())
+                    .frame(height: 23)
+                    .background(selected ? Color.effectiveAccent.opacity(0.14) : .clear,
+                                in: RoundedRectangle(cornerRadius: 7))
+                    .contentShape(RoundedRectangle(cornerRadius: 7))
                 }
                 .buttonStyle(.plain)
+                .accessibilityLabel("Send to \(destination.title)")
+                .accessibilityAddTraits(selected ? [.isButton, .isSelected] : .isButton)
             }
         }
-        .background(Capsule().fill(Color.white.opacity(0.06)))
     }
 
     /// A dot alone when the destination is reachable; the word only shows up
@@ -83,19 +78,20 @@ struct ShelfToolbar: View {
                     .opacity(shelfShare.isDiscovering ? 0.4 : 1)
                 if let statusWord {
                     Text(statusWord)
-                        .font(.system(size: 9, weight: .medium))
-                        .foregroundStyle(.white.opacity(0.45))
+                        .font(NotchGlassType.caption)
+                        .foregroundStyle(NotchInk.tertiary)
                 }
             }
         }
         .buttonStyle(.plain)
         .help("Refresh devices")
+        .accessibilityLabel(statusWord.map { "Devices: \($0). Refresh" } ?? "Devices ready. Refresh")
         .animation(.smooth(duration: 0.3), value: shelfShare.isDiscovering)
     }
 
     private var statusColor: Color {
-        if shelfShare.selectedDestinationReady { return .green }
-        return shelfShare.isPaired(shelfShare.selectedDestination) ? .orange : .white.opacity(0.25)
+        if shelfShare.selectedDestinationReady { return NotchTint.healthy }
+        return shelfShare.isPaired(shelfShare.selectedDestination) ? NotchTint.attention : NotchInk.tertiary
     }
 
     private var statusWord: String? {
@@ -107,7 +103,7 @@ struct ShelfToolbar: View {
 
     private var summaryLabel: some View {
         Text(shelfShare.lastError ?? summary)
-            .font(.system(size: 9, weight: .medium))
+            .font(NotchGlassType.caption)
             .monospacedDigit()
             .contentTransition(.numericText())
             .foregroundStyle(summaryColor)
@@ -116,19 +112,20 @@ struct ShelfToolbar: View {
     }
 
     private var summaryColor: Color {
-        if shelfShare.lastError != nil { return .orange }
-        return selectedCount > 0 ? Color.effectiveAccent : .white.opacity(0.45)
+        if shelfShare.lastError != nil { return NotchTint.attention }
+        return selectedCount > 0 ? Color.effectiveAccent : NotchInk.tertiary
     }
 
     private var clearButton: some View {
         Button(action: onClear) {
             Text("Clear")
-                .font(.system(size: 9, weight: .semibold, design: .rounded))
-                .foregroundStyle(.white.opacity(0.4))
+                .font(NotchGlassType.caption)
+                .foregroundStyle(NotchInk.tertiary)
         }
         .buttonStyle(.plain)
         .disabled(shelfShare.isSending)
         .help("Remove everything from the queue")
+        .accessibilityLabel("Clear the queue")
     }
 
     private var settingsButton: some View {
@@ -136,11 +133,12 @@ struct ShelfToolbar: View {
             SettingsWindowController.shared.showShelfWindow()
         } label: {
             Image(systemName: "gearshape")
-                .font(.system(size: 10, weight: .semibold))
-                .foregroundStyle(.white.opacity(0.4))
+                .font(NotchGlassType.glyph)
+                .foregroundStyle(NotchInk.tertiary)
                 .frame(width: Self.height, height: Self.height)
         }
         .buttonStyle(.plain)
         .help("Shelf settings")
+        .accessibilityLabel("Shelf settings")
     }
 }
