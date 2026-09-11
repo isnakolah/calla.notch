@@ -1,4 +1,5 @@
 import Foundation
+import CallaContracts
 
 /// Picks a provider, enforces the latency budget, retries once, falls back, and
 /// reports which brain actually answered.
@@ -69,11 +70,18 @@ public actor IntelligenceRouter {
 
     // MARK: - Push path
 
-    /// Fire-and-forget. Coalesces per session and delivers through the handlers.
+    /// Fire-and-forget. Queue behavior is explicit on every request.
     public func enqueue(_ request: IntelligenceRequest) {
         let key = request.sessionKey ?? request.task.id
         guard !inFlight.contains(key) else {
-            pending[key, default: []].append(request)
+            if request.queuePolicy == .coalescing,
+               let index = pending[key, default: []].lastIndex(where: {
+                   $0.task.id == request.task.id && $0.queuePolicy == .coalescing
+               }) {
+                pending[key]?[index] = request
+            } else {
+                pending[key, default: []].append(request)
+            }
             return
         }
         inFlight.insert(key)
@@ -95,17 +103,12 @@ public actor IntelligenceRouter {
     private func finish(key: String) {
         inFlight.remove(key)
         guard let queued = pending.removeValue(forKey: key), !queued.isEmpty else { return }
-        // Everything that arrived while we were waiting becomes one request.
-        let merged = IntelligenceRequest(
-            task: queued[0].task,
-            sessionKey: queued[0].sessionKey,
-            system: queued[0].system,
-            input: queued.map(\.input).joined(separator: "\n"),
-            tier: queued[0].tier,
-            exactModel: queued[0].exactModel,
-            attachments: queued[0].attachments
-        )
-        enqueue(merged)
+        let highest = queued.map(\.priority).max() ?? .offline
+        guard let index = queued.firstIndex(where: { $0.priority == highest }) else { return }
+        var remainder = queued
+        let next = remainder.remove(at: index)
+        if !remainder.isEmpty { pending[key] = remainder }
+        enqueue(next)
     }
 
     /// How many inputs are waiting behind the in-flight request. For diagnostics
@@ -198,7 +201,9 @@ public actor IntelligenceRouter {
             input: request.input,
             tier: tier,
             exactModel: exact,
-            attachments: request.attachments
+            attachments: request.attachments,
+            priority: request.priority,
+            queuePolicy: request.queuePolicy
         )
     }
 

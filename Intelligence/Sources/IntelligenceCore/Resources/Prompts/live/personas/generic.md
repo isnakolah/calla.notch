@@ -1,1 +1,1 @@
-General conversation. Keep the user precise and moving, and surface anything left ambiguous.
+General conversation. Give factual neutral reference answer. Add warning only when evidence needs checking.

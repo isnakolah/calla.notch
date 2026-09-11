@@ -1,4 +1,5 @@
 import Foundation
+import CallaContracts
 
 /// The pieces of a system prompt, kept separate so a provider can send them
 /// once per conversation and never restate them.
@@ -54,6 +55,8 @@ public struct IntelligenceRequest: Sendable {
     /// Attachments are Engine-owned bytes. No provider may infer execution or
     /// progression authority from them.
     public let attachments: [IntelligenceAttachment]
+    public let priority: IntelligencePriority
+    public let queuePolicy: IntelligenceQueuePolicy
 
     public init(
         task: IntelligenceTask,
@@ -62,7 +65,9 @@ public struct IntelligenceRequest: Sendable {
         input: String,
         tier: ModelTier? = nil,
         exactModel: String? = nil,
-        attachments: [IntelligenceAttachment] = []
+        attachments: [IntelligenceAttachment] = [],
+        priority: IntelligencePriority = .high,
+        queuePolicy: IntelligenceQueuePolicy = .fifo
     ) {
         self.task = task
         self.sessionKey = sessionKey
@@ -71,6 +76,8 @@ public struct IntelligenceRequest: Sendable {
         self.tier = tier
         self.exactModel = exactModel
         self.attachments = attachments
+        self.priority = priority
+        self.queuePolicy = queuePolicy
     }
 
     public var effectiveTier: ModelTier { tier ?? task.defaultTier }

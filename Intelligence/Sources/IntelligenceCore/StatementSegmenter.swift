@@ -83,6 +83,8 @@ public struct StatementRules: Sendable, Hashable {
     public var requestFloor: Double
     /// A flushed buffer shorter than this with no question mark is dropped.
     public var minMeaningfulWords: Int
+    /// Live Coding also reacts to completed requests phrased as statements.
+    public var codingRequests: Bool
 
     public init(
         vadCapSeconds: Double = 9.5,
@@ -96,7 +98,8 @@ public struct StatementRules: Sendable, Hashable {
         maxSpan: Double = 30,
         idleWait: Double = 4,
         requestFloor: Double = 2.5,
-        minMeaningfulWords: Int = 3
+        minMeaningfulWords: Int = 3,
+        codingRequests: Bool = false
     ) {
         self.vadCapSeconds = vadCapSeconds
         self.cappedContinuationGap = cappedContinuationGap
@@ -110,6 +113,7 @@ public struct StatementRules: Sendable, Hashable {
         self.idleWait = idleWait
         self.requestFloor = requestFloor
         self.minMeaningfulWords = minMeaningfulWords
+        self.codingRequests = codingRequests
     }
 
     /// Tuned for live calls, where a turn is one VAD utterance (500ms silence,
@@ -215,7 +219,12 @@ public struct StatementSegmenter: Sendable {
         // Rule 0: a question outranks the pacing. It flushes on a short pause and
         // ignores the request floor, because the floor exists to stop the copilot
         // narrating — not to make someone wait while they are being asked something.
-        if Statement.invitesAnAnswer(lane.text), gap >= rules.questionGap {
+        let codingRequest = rules.codingRequests
+            && (CodingIntentClassifier.classify(lane.text) != .none
+                || (speaker == .remote && CodingInterviewerSignal.detect(lane.text) != nil))
+        let hangingRequest = rules.codingRequests && Self.endsHanging(lane.text)
+        if (Statement.invitesAnAnswer(lane.text) || codingRequest),
+           !hangingRequest, gap >= rules.questionGap {
             return flush(speaker, at: now, viaSpeakerChange: false, force: true)
         }
 
@@ -259,7 +268,9 @@ public struct StatementSegmenter: Sendable {
 
         // Rule 7: don't spend a request on "yeah". A speaker-change flush is
         // exempt only when the other lane has something real to react to.
-        let trivial = words < rules.minMeaningfulWords && !text.contains("?")
+        let meaningfulCodingRequest = rules.codingRequests
+            && CodingIntentClassifier.classify(text) != .none
+        let trivial = words < rules.minMeaningfulWords && !text.contains("?") && !meaningfulCodingRequest
         let otherHasContent = Self.wordCount(lanes[speaker.other]?.text ?? "") >= rules.minMeaningfulWords
         if trivial, !(viaSpeakerChange && otherHasContent) {
             lane.turns.removeAll()

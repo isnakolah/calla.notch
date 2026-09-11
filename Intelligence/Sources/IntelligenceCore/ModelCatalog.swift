@@ -4,7 +4,7 @@ import Foundation
 ///
 /// Two names per entry, because the two `agy` transports disagree: `agentapi`
 /// (the fast path) takes coarse tiers like `flash`, while print mode takes exact
-/// ids like `gemini-3.7-flash-low`. Anything user-facing must go through here so
+/// ids like `gemini-3.8-flash-low`. Anything user-facing must go through here so
 /// the allowlists cannot drift between the app, the XPC engine, and the host.
 public struct ModelCatalog: Sendable, Hashable {
     public struct Entry: Sendable, Hashable {
