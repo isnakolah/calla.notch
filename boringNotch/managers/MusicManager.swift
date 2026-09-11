@@ -1,3 +1,4 @@
+import OSLog
 //
 //  MusicManager.swift
 //  boringNotch
@@ -55,6 +56,9 @@ class MusicManager: ObservableObject {
     @Published var isFavoriteTrack: Bool = false
 
     private var artworkData: Data? = nil
+    private var browserArtworkTask: Task<Void, Never>?
+    private var browserArtworkKey: String?
+    private var browserArtworkRetryAt = Date.distantPast
 
     // Store last values at the time artwork was changed
     private var lastArtworkTitle: String = "I'm Handsome"
@@ -234,6 +238,37 @@ class MusicManager: ObservableObject {
 
             // Fetch lyrics on content change
             self.fetchLyricsIfAvailable(bundleIdentifier: state.bundleIdentifier, title: state.title, artist: state.artist)
+        }
+
+        let browserKey = [state.bundleIdentifier, state.title, state.artist, state.album].joined(separator: "|")
+        if browserArtworkKey != browserKey {
+            browserArtworkTask?.cancel()
+            browserArtworkTask = nil
+            browserArtworkKey = browserKey
+            browserArtworkRetryAt = .distantPast
+        }
+        if state.bundleIdentifier == "app.zen-browser.zen", state.artwork == nil,
+           usingAppIconForArtwork, browserArtworkTask == nil, Date() >= browserArtworkRetryAt {
+            browserArtworkRetryAt = Date().addingTimeInterval(15)
+            browserArtworkTask = Task { @MainActor [weak self] in
+                defer { if self?.browserArtworkKey == browserKey { self?.browserArtworkTask = nil } }
+                Logger(subsystem: "theboringteam.boringnotch", category: "artwork").notice("Zen artwork: requesting active document thumbnail")
+                guard let address = await XPCHelperClient.shared.zenYouTubeArtworkURL(title: state.title),
+                      let url = URL(string: address), !Task.isCancelled else {
+                    Logger(subsystem: "theboringteam.boringnotch", category: "artwork").notice("Zen artwork: helper returned no thumbnail")
+                    return
+                }
+                var request = URLRequest(url: url)
+                request.timeoutInterval = 8
+                guard let (data, response) = try? await URLSession.shared.data(for: request),
+                      (response as? HTTPURLResponse)?.statusCode == 200,
+                      data.count < 3_000_000, let image = NSImage(data: data),
+                      !Task.isCancelled, let self, self.browserArtworkKey == browserKey,
+                      self.artworkData == nil else { return }
+                Logger(subsystem: "theboringteam.boringnotch", category: "artwork").notice("Zen artwork: thumbnail applied")
+                self.usingAppIconForArtwork = false
+                self.updateAlbumArt(newAlbumArt: image)
+            }
         }
 
         let timeChanged = state.currentTime != self.elapsedTime
@@ -528,8 +563,9 @@ class MusicManager: ObservableObject {
 
             if let artworkImage = NSImage(data: artworkData) {
                 DispatchQueue.main.async { [weak self] in
-                    self?.usingAppIconForArtwork = false
-                    self?.updateAlbumArt(newAlbumArt: artworkImage)
+                    guard let self, self.artworkData == artworkData else { return }
+                    self.usingAppIconForArtwork = false
+                    self.updateAlbumArt(newAlbumArt: artworkImage)
                 }
             }
         }

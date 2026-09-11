@@ -266,14 +266,6 @@ final class NowPlayingController: ObservableObject, MediaControllerProtocol {
             newPlaybackState.repeatMode = self.playbackState.repeatMode
         }
 
-        if let artworkDataString = payload.artworkData {
-            newPlaybackState.artwork = Data(
-                base64Encoded: artworkDataString.trimmingCharacters(in: .whitespacesAndNewlines)
-            )
-        } else if !diff {
-            newPlaybackState.artwork = nil
-        }
-
         if let dateString = payload.timestamp,
            let date = ISO8601DateFormatter().date(from: dateString) {
             newPlaybackState.lastUpdated = date
@@ -291,6 +283,12 @@ final class NowPlayingController: ObservableObject, MediaControllerProtocol {
             (diff ? self.playbackState.bundleIdentifier : "")
         )
         
+        newPlaybackState.artwork = newPlaybackState.artworkForUpdate(
+            from: playbackState,
+            supplied: payload.artworkData.flatMap {
+                Data(base64Encoded: $0.trimmingCharacters(in: .whitespacesAndNewlines))
+            }, isDiff: diff)
+
         newPlaybackState.volume = payload.volume ?? (diff ? self.playbackState.volume : 0.5)
         
         self.playbackState = newPlaybackState
