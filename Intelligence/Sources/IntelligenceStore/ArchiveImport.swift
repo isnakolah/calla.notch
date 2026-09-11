@@ -95,17 +95,39 @@ enum ArchiveImport {
         return decoder
     }
 
+    static func meta(in directory: URL) -> Meta? {
+        guard let data = try? Data(contentsOf: directory.appendingPathComponent("meta.json")) else {
+            return nil
+        }
+        return try? decoder.decode(Meta.self, from: data)
+    }
+
+    /// Latest durable activity from files written while capture or recap was
+    /// progressing. `call.json` is start metadata, so it is deliberately not an
+    /// activity signal; a legacy no-capture prewarm therefore ends at start.
+    static func latestActivity(in directory: URL) -> Date? {
+        let trustedNames = [
+            "transcript.jsonl", "transcript-archive.jsonl", "suggestions.jsonl",
+            "mic.wav", "system.wav",
+        ]
+        return trustedNames.compactMap { name -> Date? in
+            let path = directory.appendingPathComponent(name).path
+            return (try? FileManager.default.attributesOfItem(atPath: path)[.modificationDate]) as? Date
+        }.max()
+    }
+
     /// One call's directory, decoded.
     ///
     /// `meta.json` first, `call.json` second, and nothing at all is not a reason
     /// to give up: a directory with a readable transcript is a call that happened,
     /// and the file's own timestamps say when. Returns nil only when there is no
-    /// transcript to import.
-    static func read(directory: URL) -> (meta: Meta, turns: [Turn], suggestions: [Suggestion])? {
+    /// transcript or legacy call metadata to import.
+    static func read(directory: URL) -> (
+        meta: Meta, turns: [Turn], suggestions: [Suggestion], endReason: CallEndReason
+    )? {
         let decoder = decoder
         let transcript = directory.appendingPathComponent("transcript.jsonl")
         let turns = lines(of: transcript).compactMap { try? decoder.decode(Turn.self, from: $0) }
-        guard !turns.isEmpty else { return nil }
 
         let suggestions = lines(of: directory.appendingPathComponent("suggestions.jsonl"))
             .compactMap { try? decoder.decode(Suggestion.self, from: $0) }
@@ -113,7 +135,8 @@ enum ArchiveImport {
         if let data = try? Data(contentsOf: directory.appendingPathComponent("meta.json")),
            var meta = try? decoder.decode(Meta.self, from: data) {
             meta.turnCount = turns.count
-            return (meta, turns, suggestions)
+            return (meta, turns, suggestions,
+                    meta.endedAt == nil ? .interrupted : .completed)
         }
 
         let attributes = try? FileManager.default.attributesOfItem(atPath: transcript.path)
@@ -131,19 +154,19 @@ enum ArchiveImport {
                 // rather than pretended to be exact.
                 endedAt: modified,
                 liveModel: "",
-                turnCount: turns.count), turns, suggestions)
+                turnCount: turns.count), turns, suggestions, .interrupted)
         }
 
         // Nothing but a transcript. The directory name is the call id — that is
         // how the host laid it out — and the file's timestamps are the rest.
-        guard let created else { return nil }
+        guard !turns.isEmpty, let created else { return nil }
         return (Meta(
             callID: directory.lastPathComponent,
             persona: "generic",
             startedAt: created,
             endedAt: modified,
             liveModel: "",
-            turnCount: turns.count), turns, suggestions)
+            turnCount: turns.count), turns, suggestions, .interrupted)
     }
 
     /// A malformed line is skipped rather than failing the file.
@@ -188,11 +211,14 @@ public extension CallaStore {
             if (try? call(id: archive.meta.callID)) ?? nil != nil { continue }
 
             do {
+                let endedAt = archive.meta.endedAt
+                    ?? (archive.endReason == .interrupted ? archive.meta.startedAt : nil)
                 try beginCall(CallRecord(
                     id: archive.meta.callID,
                     persona: archive.meta.persona,
                     startedAt: archive.meta.startedAt,
-                    endedAt: archive.meta.endedAt,
+                    endedAt: endedAt,
+                    endReason: archive.endReason,
                     liveModel: archive.meta.liveModel.isEmpty ? nil : archive.meta.liveModel,
                     turnCount: archive.meta.turnCount))
                 for turn in archive.turns {
@@ -218,8 +244,15 @@ public extension CallaStore {
                             at: archive.meta.startedAt),
                         callID: archive.meta.callID)
                 }
-                if let endedAt = archive.meta.endedAt {
-                    try endCall(id: archive.meta.callID, at: endedAt)
+                if let endedAt {
+                    if archive.endReason == .completed {
+                        try endCall(id: archive.meta.callID, at: endedAt)
+                    } else {
+                        try run(
+                            "UPDATE call SET ended_at = ?, end_reason = ? WHERE id = ?",
+                            [.date(endedAt), .text(CallEndReason.interrupted.rawValue),
+                             .text(archive.meta.callID)])
+                    }
                 }
                 imported += 1
             } catch {
@@ -246,5 +279,46 @@ public extension CallaStore {
             "INSERT INTO store_meta(key, value) VALUES(?, 'done') " +
             "ON CONFLICT(key) DO UPDATE SET value = excluded.value",
             [.text(ArchiveImport.marker)])
+    }
+
+    /// Repairs history after host or Engine exit. Clean `meta.json` is completion
+    /// evidence. Every other archived/open row is interrupted at last trustworthy
+    /// file activity, bounded to call start and reconciliation time.
+    ///
+    /// Live host identity comes from Engine-owned PID plus matching status; that
+    /// row is never touched.
+    @discardableResult
+    func reconcileCallHistory(
+        from callsDirectory: URL,
+        preservingLiveCallID: String? = nil,
+        now: Date = Date()
+    ) throws -> Int {
+        var changed = 0
+        for record in try recordsForReconciliation() {
+            guard record.id != preservingLiveCallID else { continue }
+            let directory = callsDirectory.appendingPathComponent(record.id, isDirectory: true)
+            let exists = (try? directory.resourceValues(forKeys: [.isDirectoryKey]).isDirectory) == true
+
+            if exists, let meta = ArchiveImport.meta(in: directory), let endedAt = meta.endedAt {
+                if record.endedAt != endedAt || record.endReason != .completed {
+                    try reconcileEndState(id: record.id, at: endedAt, reason: .completed)
+                    changed += 1
+                }
+                continue
+            }
+
+            // A completed DB row with no archive evidence left is still completed.
+            // This covers retention/manual cleanup without rewriting known truth.
+            guard exists || record.endReason != .completed else { continue }
+            if record.endReason == .interrupted, record.endedAt != nil { continue }
+
+            let start = record.startedAt ?? record.eventStart ?? now
+            let activity = exists ? ArchiveImport.latestActivity(in: directory) : nil
+            let candidate = activity ?? start
+            let bounded = min(max(candidate, start), now)
+            try reconcileEndState(id: record.id, at: bounded, reason: .interrupted)
+            changed += 1
+        }
+        return changed
     }
 }

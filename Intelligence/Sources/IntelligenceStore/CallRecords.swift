@@ -1,6 +1,11 @@
 import Foundation
 import CallaContracts
 
+public enum CallEndReason: String, Codable, Sendable, Equatable {
+    case completed
+    case interrupted
+}
+
 /// A call, as stored. The transcript and the suggestions hang off it by id.
 ///
 /// `eventID` and `seriesID` are the link back to the calendar. They are why a
@@ -15,6 +20,7 @@ public struct CallRecord: Codable, Sendable, Equatable, Identifiable {
     public var persona: String
     public var startedAt: Date?
     public var endedAt: Date?
+    public var endReason: CallEndReason?
     public var liveModel: String?
     public var provider: String?
     public var turnCount: Int
@@ -27,6 +33,7 @@ public struct CallRecord: Codable, Sendable, Equatable, Identifiable {
         case eventStart = "event_start"
         case startedAt = "started_at"
         case endedAt = "ended_at"
+        case endReason = "end_reason"
         case liveModel = "live_model"
         case turnCount = "turn_count"
     }
@@ -40,6 +47,7 @@ public struct CallRecord: Codable, Sendable, Equatable, Identifiable {
         persona: String,
         startedAt: Date? = nil,
         endedAt: Date? = nil,
+        endReason: CallEndReason? = nil,
         liveModel: String? = nil,
         provider: String? = nil,
         turnCount: Int = 0
@@ -52,6 +60,7 @@ public struct CallRecord: Codable, Sendable, Equatable, Identifiable {
         self.persona = persona
         self.startedAt = startedAt
         self.endedAt = endedAt
+        self.endReason = endReason
         self.liveModel = liveModel
         self.provider = provider
         self.turnCount = turnCount
@@ -106,13 +115,14 @@ public struct StoredSuggestion: Codable, Sendable, Equatable {
     public var headline: String
     public var angles: [String]
     public var confirm: [String]
+    public var question: String?
     public var summary: String?
     public var openQuestions: [String]
     public var latencyMs: Int
     public var at: Date
 
     enum CodingKeys: String, CodingKey {
-        case headline, angles, confirm, summary, at
+        case headline, angles, confirm, question, summary, at
         case afterSeq = "after_seq"
         case openQuestions = "open_questions"
         case latencyMs = "latency_ms"
@@ -120,12 +130,13 @@ public struct StoredSuggestion: Codable, Sendable, Equatable {
 
     public init(
         afterSeq: Int, headline: String, angles: [String] = [], confirm: [String] = [],
-        summary: String? = nil, openQuestions: [String] = [], latencyMs: Int = 0, at: Date = Date()
+        question: String? = nil, summary: String? = nil, openQuestions: [String] = [], latencyMs: Int = 0, at: Date = Date()
     ) {
         self.afterSeq = afterSeq
         self.headline = headline
         self.angles = angles
         self.confirm = confirm
+        self.question = question
         self.summary = summary
         self.openQuestions = openQuestions
         self.latencyMs = latencyMs
@@ -181,8 +192,8 @@ public extension CallaStore {
         try run(
             """
             INSERT INTO call(id, event_id, series_id, event_title, event_start,
-                             persona, started_at, ended_at, live_model, provider, turn_count)
-            VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                             persona, started_at, ended_at, end_reason, live_model, provider, turn_count)
+            VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ON CONFLICT(id) DO UPDATE SET
               event_id = excluded.event_id, series_id = excluded.series_id,
               event_title = excluded.event_title, event_start = excluded.event_start,
@@ -191,7 +202,7 @@ public extension CallaStore {
             """,
             [.text(record.id), .text(record.eventID), .text(record.seriesID),
              .text(record.eventTitle), .date(record.eventStart), .text(record.persona),
-             .date(record.startedAt), .date(record.endedAt), .text(record.liveModel),
+             .date(record.startedAt), .date(record.endedAt), .text(record.endReason?.rawValue), .text(record.liveModel),
              .text(record.provider), .int(record.turnCount)])
     }
 
@@ -246,18 +257,40 @@ public extension CallaStore {
     func record(suggestion: StoredSuggestion, callID: String) throws {
         try run(
             """
-            INSERT INTO call_suggestion(call_id, after_seq, headline, angles, confirm,
+            INSERT INTO call_suggestion(call_id, after_seq, headline, angles, confirm, question,
                                         summary, open_questions, latency_ms, at)
-            VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?)
+            VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
             [.text(callID), .int(suggestion.afterSeq), .text(suggestion.headline),
              .text(Self.join(suggestion.angles)), .text(Self.join(suggestion.confirm)),
-             .text(suggestion.summary), .text(Self.join(suggestion.openQuestions)),
+             .text(suggestion.question), .text(suggestion.summary), .text(Self.join(suggestion.openQuestions)),
              .int(suggestion.latencyMs), .date(suggestion.at)])
     }
 
     func endCall(id: String, at date: Date = Date()) throws {
-        try run("UPDATE call SET ended_at = ? WHERE id = ?", [.date(date), .text(id)])
+        try run(
+            "UPDATE call SET ended_at = ?, end_reason = ? " +
+            "WHERE id = ? AND (end_reason IS NULL OR end_reason = ?)",
+            [.date(date), .text(CallEndReason.completed.rawValue), .text(id),
+             .text(CallEndReason.completed.rawValue)])
+    }
+
+    /// Marks a call that did not finish through explicit End. Completed rows are
+    /// immutable here; startup archive reconciliation owns legacy correction.
+    func interruptCall(id: String, at date: Date = Date()) throws {
+        try run(
+            "UPDATE call SET ended_at = ?, end_reason = ? WHERE id = ? AND end_reason IS NULL",
+            [.date(date), .text(CallEndReason.interrupted.rawValue), .text(id)])
+    }
+
+    func recordsForReconciliation() throws -> [CallRecord] {
+        try query(Self.callColumns + " ORDER BY started_at DESC", row: Self.call)
+    }
+
+    func reconcileEndState(id: String, at date: Date, reason: CallEndReason) throws {
+        try run(
+            "UPDATE call SET ended_at = ?, end_reason = ? WHERE id = ?",
+            [.date(date), .text(reason.rawValue), .text(id)])
     }
 
     /// Stores the account a call ended with, and — this is the point — files it as
@@ -372,15 +405,15 @@ public extension CallaStore {
     func suggestions(forCall callID: String) throws -> [StoredSuggestion] {
         try query(
             """
-            SELECT after_seq, headline, angles, confirm, summary, open_questions, latency_ms, at
+            SELECT after_seq, headline, angles, confirm, question, summary, open_questions, latency_ms, at
             FROM call_suggestion WHERE call_id = ? ORDER BY id
             """,
             [.text(callID)]) { row in
                 StoredSuggestion(
                     afterSeq: row.int(0), headline: row.string(1),
                     angles: Self.split(row.text(2)), confirm: Self.split(row.text(3)),
-                    summary: row.text(4), openQuestions: Self.split(row.text(5)),
-                    latencyMs: row.int(6), at: row.date(7) ?? Date())
+                    question: row.text(4), summary: row.text(5), openQuestions: Self.split(row.text(6)),
+                    latencyMs: row.int(7), at: row.date(8) ?? Date())
             }
     }
 
@@ -462,15 +495,16 @@ public extension CallaStore {
 
     private static let callColumns = """
     SELECT id, event_id, series_id, event_title, event_start, persona,
-           started_at, ended_at, live_model, provider, turn_count FROM call
+           started_at, ended_at, end_reason, live_model, provider, turn_count FROM call
     """
 
     private static func call(_ row: SQLiteRow) -> CallRecord {
         CallRecord(
             id: row.string(0), eventID: row.text(1), seriesID: row.text(2),
             eventTitle: row.text(3), eventStart: row.date(4), persona: row.string(5),
-            startedAt: row.date(6), endedAt: row.date(7), liveModel: row.text(8),
-            provider: row.text(9), turnCount: row.int(10))
+            startedAt: row.date(6), endedAt: row.date(7),
+            endReason: row.text(8).flatMap(CallEndReason.init(rawValue:)),
+            liveModel: row.text(9), provider: row.text(10), turnCount: row.int(11))
     }
 
     /// String lists go in newline-separated rather than as JSON.

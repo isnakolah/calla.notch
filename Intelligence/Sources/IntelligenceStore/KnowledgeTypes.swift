@@ -194,13 +194,18 @@ public struct KnowledgeHit: Sendable, Equatable {
     public let source: KnowledgeSource
     /// Fused rank score. Comparable within one search, meaningless across two.
     public let score: Double
+    public let page: Int?
+    public let section: String?
 
-    public init(noteID: String, title: String, text: String, source: KnowledgeSource, score: Double) {
+    public init(noteID: String, title: String, text: String, source: KnowledgeSource,
+                score: Double, page: Int? = nil, section: String? = nil) {
         self.noteID = noteID
         self.title = title
         self.text = text
         self.source = source
         self.score = score
+        self.page = page
+        self.section = section
     }
 }
 

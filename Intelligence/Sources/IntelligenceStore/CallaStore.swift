@@ -16,11 +16,11 @@ public actor CallaStore {
     // Internal to IntelligenceStore extensions only. Public callers still cross
     // actor APIs; no second process obtains a SQLite handle.
     let database: SQLiteDatabase
-    private let embedder: Embedder
+    let embedder: Embedder
 
     /// Set once `prepare()` has run. Until then searches are lexical only, which
     /// is correct rather than degraded: the vectors may not exist yet.
-    private var embeddingsReady = false
+    var embeddingsReady = false
 
     public init(path: URL, embedder: Embedder = Embedder()) throws {
         try FileManager.default.createDirectory(
@@ -61,6 +61,26 @@ public actor CallaStore {
 
         embeddingsReady = true
         await backfillEmbeddings()
+    }
+
+    /// Ensures exact Call-pack sources are indexed before their immutable copy
+    /// is taken. General backfill is intentionally bounded; selected sources are
+    /// not, because Start must not freeze a half-indexed pack.
+    public func prepareKnowledge(noteIDs: [String]) async {
+        await prepare()
+        let ids = Array(Set(noteIDs)).sorted()
+        guard embeddingsReady, !ids.isEmpty else { return }
+        let placeholders = Array(repeating: "?", count: ids.count).joined(separator: ",")
+        let bindings = ids.map(SQLiteValue.text)
+        let pending = (try? database.query(
+            "SELECT id, text FROM knowledge_chunk WHERE embedding IS NULL AND note_id IN (\(placeholders))",
+            bindings) { ($0.int(0), $0.string(1)) }) ?? []
+        for (id, text) in pending {
+            guard let vector = await embedder.embed(text) else { continue }
+            try? database.run(
+                "UPDATE knowledge_chunk SET embedding = ? WHERE id = ?",
+                [.blob(VectorBlob.encode(vector)), .int(id)])
+        }
     }
 
     /// Embeds anything indexed while no backend was loaded. Bounded per call so a
@@ -132,13 +152,13 @@ public actor CallaStore {
         // Embedding is deliberately outside the transaction: it is the slow part,
         // and holding a write lock across an await would block the call host's
         // transcript writes for as long as the model takes.
-        let pieces = TextChunker.chunks(of: chunkable(stored))
+        let pieces = TextChunker.locatedChunks(of: chunkable(stored))
         for (ordinal, piece) in pieces.enumerated() {
-            let vector = embeddingsReady ? await embedder.embed(piece) : nil
+            let vector = embeddingsReady ? await embedder.embed(piece.text) : nil
             try database.run(
-                "INSERT INTO knowledge_chunk(note_id, ord, text, embedding) VALUES(?, ?, ?, ?)",
-                [.text(stored.id), .int(ordinal), .text(piece),
-                 .blob(vector.map(VectorBlob.encode))])
+                "INSERT INTO knowledge_chunk(note_id, ord, text, embedding, page, section) VALUES(?, ?, ?, ?, ?, ?)",
+                [.text(stored.id), .int(ordinal), .text(piece.text),
+                 .blob(vector.map(VectorBlob.encode)), .int(piece.page), .text(piece.section)])
         }
         return stored
     }
@@ -246,6 +266,32 @@ public actor CallaStore {
         return blocks.isEmpty ? nil : blocks.joined(separator: "\n\n")
     }
 
+    /// Prompt manifest for exact Call pack selection. Selected document text is
+    /// never packed whole; only its name is disclosed until retrieval finds a hit.
+    public func promptBlock(noteIDs: [String], limit: Int) throws -> String? {
+        let selected = Set(noteIDs)
+        let notes = try notes().filter { selected.contains($0.id) }
+        var blocks: [String] = []
+        var attachments: [String] = []
+        var used = 0
+        for note in notes {
+            guard note.source.isPacked else {
+                if let line = note.manifestLine { attachments.append(line) }
+                continue
+            }
+            let title = note.title.trimmingCharacters(in: .whitespacesAndNewlines)
+            let body = note.body.trimmingCharacters(in: .whitespacesAndNewlines)
+            let block = title.isEmpty ? body : (body.isEmpty ? title : "\(title)\n\(body)")
+            guard !block.isEmpty, used + block.count + 2 <= limit else { continue }
+            used += block.count + 2
+            blocks.append(block)
+        }
+        if !attachments.isEmpty {
+            blocks.append("Selected and searchable:\n" + attachments.map { "- \($0)" }.joined(separator: "\n"))
+        }
+        return blocks.isEmpty ? nil : blocks.joined(separator: "\n\n")
+    }
+
     private static func note(_ row: SQLiteRow) -> KnowledgeNote {
         KnowledgeNote(
             id: row.string(0),
@@ -339,13 +385,15 @@ public actor CallaStore {
             }
             hits.append(KnowledgeHit(
                 noteID: chunk.noteID, title: chunk.title, text: chunk.text,
-                source: chunk.source, score: entry.score))
+                source: chunk.source, score: entry.score, page: chunk.page, section: chunk.section))
         }
-        for runnerUp in runnersUp where hits.count < limit {
+        var sourceCounts = Dictionary(grouping: hits, by: \.noteID).mapValues(\.count)
+        for runnerUp in runnersUp where hits.count < limit && sourceCounts[runnerUp.chunk.noteID, default: 0] < 2 {
             hits.append(KnowledgeHit(
                 noteID: runnerUp.chunk.noteID, title: runnerUp.chunk.title,
                 text: runnerUp.chunk.text, source: runnerUp.chunk.source,
-                score: runnerUp.score))
+                score: runnerUp.score, page: runnerUp.chunk.page, section: runnerUp.chunk.section))
+            sourceCounts[runnerUp.chunk.noteID, default: 0] += 1
         }
         return hits
     }
@@ -367,6 +415,8 @@ public actor CallaStore {
         let text: String
         let source: KnowledgeSource
         let embedding: Data?
+        let page: Int?
+        let section: String?
     }
 
     private func candidateChunks(scopes: [KnowledgeScope]) throws -> [Candidate] {
@@ -387,7 +437,7 @@ public actor CallaStore {
         }
         let sql = """
         SELECT c.id, c.note_id, n.title, c.text, n.source, c.embedding,
-               n.origin_name
+               n.origin_name, c.page, c.section
         FROM knowledge_chunk c
         JOIN knowledge_note n ON n.id = c.note_id
         WHERE \(clauses.joined(separator: " OR "))
@@ -400,7 +450,7 @@ public actor CallaStore {
                 id: row.int(0), noteID: row.string(1),
                 title: row.text(6) ?? row.string(2), text: row.string(3),
                 source: KnowledgeSource(rawValue: row.string(4)) ?? .manual,
-                embedding: row.blob(5))
+                embedding: row.blob(5), page: row.intIfPresent(7), section: row.text(8))
         }
     }
 
