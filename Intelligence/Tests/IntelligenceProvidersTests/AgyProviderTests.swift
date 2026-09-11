@@ -125,10 +125,7 @@ final class AgyProviderTests: XCTestCase {
         }
     }
 
-    /// A host swap cannot carry a conversation over (verified against the real
-    /// CLI), so a dead host must restart on the slow transport with a fresh
-    /// conversation seeded from the brief — not lose the call's context.
-    func testHostDeathFallsBackToSlowTransportAndReseeds() async throws {
+    func testLiveAnswerNeverFallsBackToSlowPrintTransport() async throws {
         let fast = RecordingTransport()
         let slow = RecordingTransport()
         let provider = makeProvider(fast: fast, slow: slow)
@@ -136,18 +133,16 @@ final class AgyProviderTests: XCTestCase {
         _ = try await provider.respond(to: request("Them: first"))
         fast.failSend = .sessionDied("connection reset")
 
-        let response = try await provider.respond(to: request("Them: second"))
-        XCTAssertEqual(slow.calls.count, 1)
-        XCTAssertNil(slow.calls[0].conversationID, "the old conversation is gone with the host")
-        XCTAssertTrue(slow.calls[0].prompt.contains("BASE"), "so guidance is re-sent")
-        XCTAssertTrue(
-            slow.calls[0].prompt.contains("Earlier in this session"),
-            "and the call's context is carried forward"
-        )
-        XCTAssertEqual(response.attribution.provider, .localAgy)
+        do {
+            _ = try await provider.respond(to: request("Them: second"))
+            XCTFail("live request must fail explicitly instead of using slow print")
+        } catch let failure as IntelligenceFailure {
+            guard case .sessionDied = failure else { return XCTFail("unexpected \(failure)") }
+        }
+        XCTAssertTrue(slow.calls.isEmpty)
     }
 
-    func testRolloverStartsAFreshConversationWithABrief() async throws {
+    func testRolloverSwapsToPreparedConversationBetweenQuestions() async throws {
         let fast = RecordingTransport()
         // Small budget so the second request trips it.
         let provider = makeProvider(fast: fast, slow: RecordingTransport(), rolloverBudget: 15_100)
@@ -155,8 +150,11 @@ final class AgyProviderTests: XCTestCase {
         _ = try await provider.respond(to: request("Them: first"))
         let second = try await provider.respond(to: request("Them: second"))
 
-        XCTAssertNil(fast.calls[1].conversationID, "rolled over instead of growing context")
+        XCTAssertEqual(fast.calls.count, 3)
+        XCTAssertNil(fast.calls[1].conversationID, "replacement was prepared before next question")
         XCTAssertTrue(fast.calls[1].prompt.contains("Earlier in this session"))
+        XCTAssertEqual(fast.calls[2].conversationID, "conv-2", "live request appended to prepared replacement")
+        XCTAssertEqual(fast.calls[2].prompt, "Them: second", "live path paid no bootstrap")
         XCTAssertEqual(second.attribution.rollovers, 1, "and it is visible, not silent")
     }
 

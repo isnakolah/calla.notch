@@ -153,3 +153,46 @@ final class PromptPackTests: XCTestCase {
         XCTAssertTrue(pack.text(.laneSummary).contains("`summary`"))
     }
 }
+
+/// The Live Coding lane ships as files rather than as an assembled prompt, so
+/// the failure mode is different: nothing throws, the twin just silently falls
+/// back to the terse built-in and paces itself badly.
+final class CodingPromptPackTests: XCTestCase {
+    private let pack = PromptPack()
+
+    func testTheTwinConstitutionResolvesFromTheBundleNotTheFallback() {
+        let text = pack.text(.codingAgents)
+        XCTAssertTrue(text.contains("# Live Coding twin"),
+                      "coding/agents.md did not resolve from the bundle")
+        XCTAssertTrue(text.contains("__NO_MOVE__"))
+    }
+
+    /// Pacing is the product requirement; if this wording is lost the twin
+    /// starts handing over finished solutions and nothing else notices.
+    func testTheConstitutionStillForbidsHandingOverTheWholeSolution() {
+        let text = pack.text(.codingAgents)
+        XCTAssertTrue(text.contains("Never hand over a finished solution"))
+        XCTAssertTrue(text.contains("skeleton"))
+    }
+
+    func testBothCodingLanesResolve() {
+        XCTAssertTrue(pack.text(.codingLaneMove).contains("__NO_MOVE__"))
+        XCTAssertTrue(pack.text(.codingLanePlan).contains("next_increments"))
+    }
+
+    func testCodingPersonasAreDiscoveredByDroppingAFileIn() {
+        let ids = pack.codingPersonaIDs()
+        XCTAssertTrue(ids.contains("generic"))
+        XCTAssertTrue(ids.contains("algorithms"))
+        XCTAssertNotEqual(ids, pack.personaIDs(),
+                          "coding personas must not resolve from live/personas")
+    }
+
+    func testAnUnknownCodingPersonaFallsBackToGeneric() {
+        XCTAssertEqual(pack.codingPersona("no-such-persona"), pack.codingPersona("generic"))
+    }
+
+    func testTheBundledPackLintsClean() {
+        XCTAssertEqual(pack.lint().map(\.path), [])
+    }
+}

@@ -179,9 +179,9 @@ final class ArchiveImportTests: XCTestCase {
         XCTAssertEqual(record?.turnCount, 1)
     }
 
-    func testACallWithNothingTranscribedIsSkipped() async throws {
-        // Armed and abandoned: metadata, no speech. Nothing to import, and
-        // nothing lost by skipping it.
+    func testACallWithNothingTranscribedIsRetainedAsInterrupted() async throws {
+        // Legacy prewarm: metadata, no speech. Retain it with finite truthful
+        // state instead of losing it or rendering it as active forever.
         let directory = callsDirectory.appendingPathComponent("call-silent", isDirectory: true)
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
         let startRecord = "{\"call_id\":\"call-silent\",\"persona\":\"generic\","
@@ -191,7 +191,10 @@ final class ArchiveImportTests: XCTestCase {
 
         let store = try makeStore()
         let imported = await store.importArchives(from: callsDirectory)
-        XCTAssertEqual(imported, 0)
+        XCTAssertEqual(imported, 1)
+        let call = try await store.call(id: "call-silent")
+        XCTAssertEqual(call?.endReason, .interrupted)
+        XCTAssertEqual(call?.endedAt, call?.startedAt)
     }
 
     func testATruncatedLastLineDoesNotLoseTheFile() async throws {
@@ -213,6 +216,86 @@ final class ArchiveImportTests: XCTestCase {
         XCTAssertEqual(imported, 5)
         let calls = try await store.calls()
         XCTAssertEqual(calls.count, 5)
+    }
+
+    func testRecoveryUsesCleanMetadataAndArchiveActivity() async throws {
+        let completedDirectory = try writeCall(id: "call-clean", turns: 1, ended: true)
+        let crashDirectory = callsDirectory.appendingPathComponent("call-crash", isDirectory: true)
+        try FileManager.default.createDirectory(at: crashDirectory, withIntermediateDirectories: true)
+        let started = Date(timeIntervalSince1970: 1_700_001_000)
+        let activity = started.addingTimeInterval(75)
+        try "{\"seq\":1,\"source\":\"me\",\"t0\":0,\"t1\":1,\"text\":\"hello\"}".write(
+            to: crashDirectory.appendingPathComponent("transcript.jsonl"),
+            atomically: true, encoding: .utf8)
+        try FileManager.default.setAttributes(
+            [.modificationDate: activity],
+            ofItemAtPath: crashDirectory.appendingPathComponent("transcript.jsonl").path)
+
+        let store = try makeStore()
+        try await store.beginCall(CallRecord(
+            id: "call-clean", persona: "sales",
+            startedAt: Date(timeIntervalSince1970: 1_700_000_000)))
+        try await store.beginCall(CallRecord(id: "call-crash", persona: "generic", startedAt: started))
+
+        let changed = try await store.reconcileCallHistory(
+            from: callsDirectory, now: started.addingTimeInterval(200))
+        XCTAssertEqual(changed, 2)
+        let completed = try await store.call(id: "call-clean")
+        XCTAssertEqual(completed?.endReason, .completed)
+        XCTAssertEqual(
+            completed?.endedAt,
+            ArchiveImport.meta(in: completedDirectory)?.endedAt,
+            "clean archive end metadata must be preserved")
+        let crashed = try await store.call(id: "call-crash")
+        XCTAssertEqual(crashed?.endReason, .interrupted)
+        XCTAssertEqual(crashed?.endedAt, activity)
+    }
+
+    func testRecoveryBoundsSilentPrewarmAndPreservesVerifiedLiveCall() async throws {
+        let started = Date(timeIntervalSince1970: 1_700_002_000)
+        for id in ["call-prewarm", "call-live"] {
+            let directory = callsDirectory.appendingPathComponent(id, isDirectory: true)
+            try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+            try "{\"call_id\":\"\(id)\",\"persona\":\"generic\",\"started_at\":\"\(iso(started))\"}".write(
+                to: directory.appendingPathComponent("call.json"), atomically: true, encoding: .utf8)
+        }
+        let store = try makeStore()
+        try await store.beginCall(CallRecord(id: "call-prewarm", persona: "generic", startedAt: started))
+        try await store.beginCall(CallRecord(id: "call-live", persona: "generic", startedAt: started))
+
+        _ = try await store.reconcileCallHistory(
+            from: callsDirectory,
+            preservingLiveCallID: "call-live",
+            now: started.addingTimeInterval(300))
+
+        let prewarm = try await store.call(id: "call-prewarm")
+        XCTAssertEqual(prewarm?.endReason, .interrupted)
+        XCTAssertEqual(prewarm?.endedAt, started, "no-capture prewarm falls back to call start")
+        let live = try await store.call(id: "call-live")
+        XCTAssertNil(live?.endedAt)
+        XCTAssertNil(live?.endReason)
+    }
+
+    func testRecoveryCorrectsLegacyDerivedCompletionWithoutCleanMetadata() async throws {
+        let directory = callsDirectory.appendingPathComponent("call-legacy-crash", isDirectory: true)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        let started = Date(timeIntervalSince1970: 1_700_003_000)
+        let activity = started.addingTimeInterval(45)
+        let transcript = directory.appendingPathComponent("transcript.jsonl")
+        try "{\"seq\":1,\"source\":\"them\",\"t0\":0,\"t1\":1,\"text\":\"hi\"}".write(
+            to: transcript, atomically: true, encoding: .utf8)
+        try FileManager.default.setAttributes([.modificationDate: activity], ofItemAtPath: transcript.path)
+
+        let store = try makeStore()
+        try await store.beginCall(CallRecord(
+            id: "call-legacy-crash", persona: "generic", startedAt: started,
+            endedAt: activity, endReason: .completed))
+        _ = try await store.reconcileCallHistory(
+            from: callsDirectory, now: started.addingTimeInterval(300))
+
+        let recovered = try await store.call(id: "call-legacy-crash")
+        XCTAssertEqual(recovered?.endReason, .interrupted)
+        XCTAssertEqual(recovered?.endedAt, activity)
     }
 
     func testAMissingDirectoryIsNotAnError() async throws {

@@ -31,9 +31,22 @@ final class AgyEnvironmentTests: XCTestCase {
         XCTAssertEqual(
             AgyEnvironment.accountsFile.path,
             AgyEnvironment.userHome + "/.gemini/google_accounts.json")
+        XCTAssertEqual(
+            AgyEnvironment.cliOAuthTokenFile.path,
+            AgyEnvironment.userHome + "/.gemini/antigravity-cli/antigravity-oauth-token")
         // A child writing credentials and the app reporting on them must not be
         // able to disagree about where they live.
         XCTAssertTrue(AgyEnvironment.credentialsFile.path.hasPrefix(AgyEnvironment.userHome))
+    }
+
+    func testCredentialLocationsCoverBothFormatsNewestFirst() {
+        // AGY 1.1.x writes the cli token; older builds wrote oauth_creds.json.
+        // Anything deciding "is this machine signed in" has to consult both, and
+        // has to consult them through this one list — the engine kept its own,
+        // naming only the legacy path, and a successful sign-in on 1.1.x was
+        // therefore invisible to it.
+        XCTAssertEqual(AgyEnvironment.credentialLocations,
+                       [AgyEnvironment.cliOAuthTokenFile, AgyEnvironment.credentialsFile])
     }
 
     func testSpawnEnvironmentRepairsAMinimalGUIPath() {

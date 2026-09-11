@@ -43,6 +43,49 @@ final class SchemaTests: XCTestCase {
         let permissions = (attributes[.posixPermissions] as? NSNumber)?.intValue ?? 0
         XCTAssertEqual(permissions & 0o077, 0, "a call transcript must not be readable by other users")
     }
+
+    func testV6MigrationPreservesPreviouslyEndedCallsAsCompleted() async throws {
+        let (store, root) = try makeStore()
+        defer { try? FileManager.default.removeItem(at: root) }
+        let ended = Date(timeIntervalSince1970: 1_700_000_600)
+        try await store.beginCall(CallRecord(
+            id: "call-migrate", persona: "generic",
+            startedAt: ended.addingTimeInterval(-600)))
+        try await store.endCall(id: "call-migrate", at: ended)
+
+        let path = root.appendingPathComponent("calla.sqlite")
+        let database = try SQLiteDatabase(path: path.path)
+        try database.execute("DROP INDEX call_end_state")
+        try database.execute("ALTER TABLE call DROP COLUMN end_reason")
+        try database.execute("ALTER TABLE knowledge_chunk DROP COLUMN page")
+        try database.execute("ALTER TABLE knowledge_chunk DROP COLUMN section")
+        try database.execute("ALTER TABLE call_suggestion DROP COLUMN question")
+        try database.execute("DROP TABLE call_answer_v3")
+        try database.execute("DROP TABLE call_question_v3")
+        try database.execute("DROP TABLE call_knowledge_chunk")
+        try database.execute("DROP TABLE call_knowledge_snapshot")
+        try database.execute("PRAGMA user_version = 5")
+
+        let migrated = try CallaStore(path: path)
+        let call = try await migrated.call(id: "call-migrate")
+        XCTAssertEqual(call?.endedAt, ended)
+        XCTAssertEqual(call?.endReason, .completed)
+    }
+
+    func testV8MigrationAddsFrozenEmbeddingAdditively() throws {
+        let (_, root) = try makeStore()
+        defer { try? FileManager.default.removeItem(at: root) }
+        let path = root.appendingPathComponent("calla.sqlite")
+        let database = try SQLiteDatabase(path: path.path)
+        try database.execute("ALTER TABLE call_knowledge_chunk DROP COLUMN embedding")
+        try database.execute("PRAGMA user_version = 7")
+
+        _ = try CallaStore(path: path)
+        let reopened = try SQLiteDatabase(path: path.path)
+        let columns = try reopened.query("PRAGMA table_info(call_knowledge_chunk)") { $0.string(1) }
+        XCTAssertTrue(columns.contains("embedding"))
+        XCTAssertEqual(try reopened.scalarInt("PRAGMA user_version"), 8)
+    }
 }
 
 final class KnowledgeTests: XCTestCase {
@@ -264,6 +307,24 @@ final class TextChunkerTests: XCTestCase {
 }
 
 final class CallRecordTests: XCTestCase {
+    func testCompletedAndInterruptedEndStatesDoNotOverwriteEachOther() async throws {
+        let (store, root) = try makeStore()
+        defer { try? FileManager.default.removeItem(at: root) }
+        let started = Date(timeIntervalSince1970: 1_700_000_000)
+
+        try await store.beginCall(CallRecord(id: "call-complete", persona: "generic", startedAt: started))
+        try await store.endCall(id: "call-complete", at: started.addingTimeInterval(10))
+        try await store.interruptCall(id: "call-complete", at: started.addingTimeInterval(20))
+        let completed = try await store.call(id: "call-complete")
+        XCTAssertEqual(completed?.endReason, .completed)
+
+        try await store.beginCall(CallRecord(id: "call-interrupt", persona: "generic", startedAt: started))
+        try await store.interruptCall(id: "call-interrupt", at: started.addingTimeInterval(10))
+        try await store.endCall(id: "call-interrupt", at: started.addingTimeInterval(20))
+        let interrupted = try await store.call(id: "call-interrupt")
+        XCTAssertEqual(interrupted?.endReason, .interrupted)
+    }
+
     func testCallLinksToItsCalendarEvent() async throws {
         let (store, root) = try makeStore()
         defer { try? FileManager.default.removeItem(at: root) }
