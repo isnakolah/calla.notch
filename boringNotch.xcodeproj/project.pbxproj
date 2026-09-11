@@ -7,6 +7,14 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		1CE000000000000000000011 /* IceConfiguration.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1CE000000000000000000001 /* IceConfiguration.swift */; };
+		1CE000000000000000000012 /* IceMenuBarController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1CE000000000000000000002 /* IceMenuBarController.swift */; };
+		1CE000000000000000000013 /* IcePane.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1CE000000000000000000003 /* IcePane.swift */; };
+		A82800000000000000000001 /* NotchSizing.swift in Sources */ = {isa = PBXBuildFile; fileRef = A82800000000000000000002 /* NotchSizing.swift */; };
+		A82800000000000000000101 /* NotchBehaviour.swift in Sources */ = {isa = PBXBuildFile; fileRef = A82800000000000000000102 /* NotchBehaviour.swift */; };
+		A82800000000000000000003 /* NotchResizeSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = A82800000000000000000004 /* NotchResizeSession.swift */; };
+		A82800000000000000000005 /* NotchResizeEditor.swift in Sources */ = {isa = PBXBuildFile; fileRef = A82800000000000000000006 /* NotchResizeEditor.swift */; };
+		A82800000000000000000007 /* NotchSizePane.swift in Sources */ = {isa = PBXBuildFile; fileRef = A82800000000000000000008 /* NotchSizePane.swift */; };
 		00A1B2C30000000000000001 /* ShelfItemMetadataCache.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00A1B2C30000000000000000 /* ShelfItemMetadataCache.swift */; };
 		00A1B2C30000000000000003 /* ShelfDragHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00A1B2C30000000000000002 /* ShelfDragHandler.swift */; };
 		00A1B2C30000000000000005 /* ShelfQueueChip.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00A1B2C30000000000000004 /* ShelfQueueChip.swift */; };
@@ -76,7 +84,10 @@
 		11F747CE2EC75CEA00F841DB /* DragPreviewView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 11F747CD2EC75CEA00F841DB /* DragPreviewView.swift */; };
 		11F7485B2EC9AABA00F841DB /* BoringNotchXPCHelper.xpc in Embed XPC Services */ = {isa = PBXBuildFile; fileRef = 11F7484F2EC9AABA00F841DB /* BoringNotchXPCHelper.xpc */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		CA11ST030000000000000003 /* IntelligenceStore in Frameworks */ = {isa = PBXBuildFile; productRef = CA11ST020000000000000002 /* IntelligenceStore */; };
+		CA11QZ110000000000000011 /* IntelligenceCore in Frameworks */ = {isa = PBXBuildFile; productRef = CA11QZ100000000000000010 /* IntelligenceCore */; };
+		CA11QZ210000000000000021 /* IntelligenceProviders in Frameworks */ = {isa = PBXBuildFile; productRef = CA11QZ200000000000000020 /* IntelligenceProviders */; };
 		CAV200030000000000000003 /* CallaContracts in Frameworks */ = {isa = PBXBuildFile; productRef = CAV200020000000000000002 /* CallaContracts */; };
+		CAV200040000000000000004 /* CallaContracts in Frameworks */ = {isa = PBXBuildFile; productRef = CAV200020000000000000002 /* CallaContracts */; };
 		CA11E0020000000000000002 /* BoringCallaEngine.xpc in Embed XPC Services */ = {isa = PBXBuildFile; fileRef = CA11E0010000000000000001 /* BoringCallaEngine.xpc */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		BA7000020000000000000002 /* SweepService.xpc in Embed XPC Services */ = {isa = PBXBuildFile; fileRef = BA7000010000000000000001 /* SweepService.xpc */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		11F748682EC9AC9600F841DB /* BoringNotchXPCHelperProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = 11F748652EC9AC9600F841DB /* BoringNotchXPCHelperProtocol.swift */; };
@@ -158,11 +169,26 @@
 		90706B2010130E2AFD272494 /* BoringSweepProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3F63D49D9D4DCC08D0D6FF90 /* BoringSweepProtocol.swift */; };
 		CA1100010000000000D00101 /* NotchDesignSystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA1100010000000000D00102 /* NotchDesignSystem.swift */; };
 		CA110001000000000000B101 /* CallaCopilotTabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA110001000000000000B102 /* CallaCopilotTabView.swift */; };
+		CA11QZ300000000000000001 /* CallaQuizPreflightView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA11QZ300000000000000002 /* CallaQuizPreflightView.swift */; };
+		CA11WM300000000000000001 /* CallaWindowTargetMenu.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA11WM300000000000000002 /* CallaWindowTargetMenu.swift */; };
+		CA11MC300000000000000001 /* CopilotCodingPane.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA11MC300000000000000002 /* CopilotCodingPane.swift */; };
+		CA11MC200000000000000001 /* CallaCodingSetup.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA11MC200000000000000002 /* CallaCodingSetup.swift */; };
+		CA11WV100000000000000001 /* WaveInterview.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA11WV100000000000000002 /* WaveInterview.swift */; };
+		CA11WV200000000000000001 /* CallaCallPreflightView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA11WV200000000000000002 /* CallaCallPreflightView.swift */; };
+		CA11MC100000000000000001 /* CallaModeChrome.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA11MC100000000000000002 /* CallaModeChrome.swift */; };
+		CA11QZ400000000000000001 /* CallaQuizLiveView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA11QZ400000000000000002 /* CallaQuizLiveView.swift */; };
+		CA11QZA00000000000000001 /* CallaQuizCodeBlock.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA11QZA00000000000000002 /* CallaQuizCodeBlock.swift */; };
+		CA11QZ900000000000000001 /* QuizProfileStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA11QZ900000000000000002 /* QuizProfileStore.swift */; };
+		CA11QZ800000000000000001 /* CallaQuizEndedView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA11QZ800000000000000002 /* CallaQuizEndedView.swift */; };
+		CA11QZ600000000000000001 /* CallaQuizLiveHeader.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA11QZ600000000000000002 /* CallaQuizLiveHeader.swift */; };
+		CA11QZ500000000000000001 /* CallaQuizPresentation.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA11QZ500000000000000002 /* CallaQuizPresentation.swift */; };
+		A82800000000000000000401 /* CallaCodingPresentation.swift in Sources */ = {isa = PBXBuildFile; fileRef = A82800000000000000000402 /* CallaCodingPresentation.swift */; };
+		A82800000000000000000501 /* CallaCodingPatchView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A82800000000000000000502 /* CallaCodingPatchView.swift */; };
 		CA1100010000000000E00101 /* CopilotCallPane.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA1100010000000000E00102 /* CopilotCallPane.swift */; };
+		CA11QZ700000000000000001 /* CopilotQuizPane.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA11QZ700000000000000002 /* CopilotQuizPane.swift */; };
 		CA11KB010000000000000001 /* CopilotKnowledgePane.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA11KB010000000000000002 /* CopilotKnowledgePane.swift */; };
 		CA11KB020000000000000001 /* CallaKnowledge.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA11KB020000000000000002 /* CallaKnowledge.swift */; };
 		CA11KB030000000000000001 /* CallaKnowledgeFocus.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA11KB030000000000000002 /* CallaKnowledgeFocus.swift */; };
-		CA11KB040000000000000001 /* MeetingPreroll.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA11KB040000000000000002 /* MeetingPreroll.swift */; };
 		CA11KB050000000000000001 /* CopilotNotchBadge.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA11KB050000000000000002 /* CopilotNotchBadge.swift */; };
 		CA11KD010000000000000001 /* KnowledgeDocumentReader.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA11KD010000000000000002 /* KnowledgeDocumentReader.swift */; };
 		CA11KD020000000000000001 /* CallaKnowledgeAttach.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA11KD020000000000000002 /* CallaKnowledgeAttach.swift */; };
@@ -237,6 +263,8 @@
 		B172AAC02C95DA0B001623F1 /* InlineHUD.swift in Sources */ = {isa = PBXBuildFile; fileRef = B172AABF2C95DA0B001623F1 /* InlineHUD.swift */; };
 		B18654392C6F4990000B926A /* KeyboardShortcuts in Frameworks */ = {isa = PBXBuildFile; productRef = B18654382C6F4990000B926A /* KeyboardShortcuts */; };
 		B186543C2C6F49AE000B926A /* ShortcutConstants.swift in Sources */ = {isa = PBXBuildFile; fileRef = B186543B2C6F49AE000B926A /* ShortcutConstants.swift */; };
+		A82800000000000000000301 /* NotchSessionShortcuts.swift in Sources */ = {isa = PBXBuildFile; fileRef = A82800000000000000000302 /* NotchSessionShortcuts.swift */; };
+		A82800000000000000000201 /* NotchSessionRouting.swift in Sources */ = {isa = PBXBuildFile; fileRef = A82800000000000000000202 /* NotchSessionRouting.swift */; };
 		B19016222CC15B3D00E3F12E /* Defaults in Frameworks */ = {isa = PBXBuildFile; productRef = B19016212CC15B3D00E3F12E /* Defaults */; };
 		B19016242CC15B5000E3F12E /* Constants.swift in Sources */ = {isa = PBXBuildFile; fileRef = B19016232CC15B4D00E3F12E /* Constants.swift */; };
 		B19424092CD0FF01003E5DC2 /* LottieAnimationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B19424082CD0FEFE003E5DC2 /* LottieAnimationView.swift */; };
@@ -304,6 +332,14 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		1CE000000000000000000001 /* IceConfiguration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Ice/IceConfiguration.swift"; sourceTree = "<group>"; };
+		1CE000000000000000000002 /* IceMenuBarController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Ice/IceMenuBarController.swift"; sourceTree = "<group>"; };
+		1CE000000000000000000003 /* IcePane.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "components/Settings/Panes/Ice/IcePane.swift"; sourceTree = "<group>"; };
+		A82800000000000000000002 /* NotchSizing.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotchSizing.swift; sourceTree = "<group>"; };
+		A82800000000000000000102 /* NotchBehaviour.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotchBehaviour.swift; sourceTree = "<group>"; };
+		A82800000000000000000004 /* NotchResizeSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotchResizeSession.swift; sourceTree = "<group>"; };
+		A82800000000000000000006 /* NotchResizeEditor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Notch/NotchResizeEditor.swift"; sourceTree = "<group>"; };
+		A82800000000000000000008 /* NotchSizePane.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Settings/Panes/Appearance/NotchSizePane.swift"; sourceTree = "<group>"; };
 		00A1B2C30000000000000000 /* ShelfItemMetadataCache.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShelfItemMetadataCache.swift; sourceTree = "<group>"; };
 		00A1B2C30000000000000002 /* ShelfDragHandler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShelfDragHandler.swift; sourceTree = "<group>"; };
 		00A1B2C30000000000000004 /* ShelfQueueChip.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShelfQueueChip.swift; sourceTree = "<group>"; };
@@ -447,11 +483,26 @@
 		3F63D49D9D4DCC08D0D6FF90 /* BoringSweepProtocol.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "XPCHelperClient/Sweep/BoringSweepProtocol.swift"; sourceTree = "<group>"; };
 		CA1100010000000000D00102 /* NotchDesignSystem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "components/Settings/DesignSystem/NotchDesignSystem.swift"; sourceTree = "<group>"; };
 		CA110001000000000000B102 /* CallaCopilotTabView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "components/Calla/CallaCopilotTabView.swift"; sourceTree = "<group>"; };
+		CA11QZ300000000000000002 /* CallaQuizPreflightView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "components/Calla/CallaQuizPreflightView.swift"; sourceTree = "<group>"; };
+		CA11WM300000000000000002 /* CallaWindowTargetMenu.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "components/Calla/CallaWindowTargetMenu.swift"; sourceTree = "<group>"; };
+		CA11MC300000000000000002 /* CopilotCodingPane.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "components/Settings/Panes/Copilot/CopilotCodingPane.swift"; sourceTree = "<group>"; };
+		CA11MC200000000000000002 /* CallaCodingSetup.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "components/Calla/CallaCodingSetup.swift"; sourceTree = "<group>"; };
+		CA11WV100000000000000002 /* WaveInterview.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "components/Calla/WaveInterview.swift"; sourceTree = "<group>"; };
+		CA11WV200000000000000002 /* CallaCallPreflightView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "components/Calla/CallaCallPreflightView.swift"; sourceTree = "<group>"; };
+		CA11MC100000000000000002 /* CallaModeChrome.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "components/Calla/CallaModeChrome.swift"; sourceTree = "<group>"; };
+		CA11QZ400000000000000002 /* CallaQuizLiveView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "components/Calla/CallaQuizLiveView.swift"; sourceTree = "<group>"; };
+		CA11QZA00000000000000002 /* CallaQuizCodeBlock.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "components/Calla/CallaQuizCodeBlock.swift"; sourceTree = "<group>"; };
+		CA11QZ900000000000000002 /* QuizProfileStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "models/QuizProfileStore.swift"; sourceTree = "<group>"; };
+		CA11QZ800000000000000002 /* CallaQuizEndedView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "components/Calla/CallaQuizEndedView.swift"; sourceTree = "<group>"; };
+		CA11QZ600000000000000002 /* CallaQuizLiveHeader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "components/Calla/CallaQuizLiveHeader.swift"; sourceTree = "<group>"; };
+		CA11QZ500000000000000002 /* CallaQuizPresentation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "components/Calla/CallaQuizPresentation.swift"; sourceTree = "<group>"; };
+		A82800000000000000000402 /* CallaCodingPresentation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "components/Calla/CallaCodingPresentation.swift"; sourceTree = "<group>"; };
+		A82800000000000000000502 /* CallaCodingPatchView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "components/Calla/CallaCodingPatchView.swift"; sourceTree = "<group>"; };
 		CA1100010000000000E00102 /* CopilotCallPane.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "components/Settings/Panes/Copilot/CopilotCallPane.swift"; sourceTree = "<group>"; };
+		CA11QZ700000000000000002 /* CopilotQuizPane.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "components/Settings/Panes/Copilot/CopilotQuizPane.swift"; sourceTree = "<group>"; };
 		CA11KB010000000000000002 /* CopilotKnowledgePane.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "components/Settings/Panes/Copilot/CopilotKnowledgePane.swift"; sourceTree = "<group>"; };
 		CA11KB020000000000000002 /* CallaKnowledge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "components/Calla/CallaKnowledge.swift"; sourceTree = "<group>"; };
 		CA11KB030000000000000002 /* CallaKnowledgeFocus.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "components/Calla/CallaKnowledgeFocus.swift"; sourceTree = "<group>"; };
-		CA11KB040000000000000002 /* MeetingPreroll.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "managers/MeetingPreroll.swift"; sourceTree = "<group>"; };
 		CA11KB050000000000000002 /* CopilotNotchBadge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "components/Calla/CopilotNotchBadge.swift"; sourceTree = "<group>"; };
 		CA11KD010000000000000002 /* KnowledgeDocumentReader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "components/Calla/KnowledgeDocumentReader.swift"; sourceTree = "<group>"; };
 		CA11KD020000000000000002 /* CallaKnowledgeAttach.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "components/Calla/CallaKnowledgeAttach.swift"; sourceTree = "<group>"; };
@@ -525,6 +576,8 @@
 		B17266E22C65F7FB0031BA0D /* WhatsNewView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WhatsNewView.swift; sourceTree = "<group>"; };
 		B172AABF2C95DA0B001623F1 /* InlineHUD.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InlineHUD.swift; sourceTree = "<group>"; };
 		B186543B2C6F49AE000B926A /* ShortcutConstants.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShortcutConstants.swift; sourceTree = "<group>"; };
+		A82800000000000000000302 /* NotchSessionShortcuts.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotchSessionShortcuts.swift; sourceTree = "<group>"; };
+		A82800000000000000000202 /* NotchSessionRouting.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotchSessionRouting.swift; sourceTree = "<group>"; };
 		B19016232CC15B4D00E3F12E /* Constants.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Constants.swift; sourceTree = "<group>"; };
 		B19424082CD0FEFE003E5DC2 /* LottieAnimationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LottieAnimationView.swift; sourceTree = "<group>"; };
 		B1A78C812C8BA08100BD51B0 /* FullscreenMediaDetection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FullscreenMediaDetection.swift; sourceTree = "<group>"; };
@@ -570,6 +623,8 @@
 
 /* Begin PBXFrameworksBuildPhase section */
 		CA11E0090000000000000009 /* Frameworks */ = {isa = PBXFrameworksBuildPhase; buildActionMask = 2147483647; files = (
+				CA11QZ110000000000000011 /* IntelligenceCore in Frameworks */,
+				CA11QZ210000000000000021 /* IntelligenceProviders in Frameworks */,
 				CA11ST030000000000000003 /* IntelligenceStore in Frameworks */,
 				CAV200030000000000000003 /* CallaContracts in Frameworks */,
 			); runOnlyForDeploymentPostprocessing = 0; };
@@ -586,6 +641,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				CAV200040000000000000004 /* CallaContracts in Frameworks */,
 				A1B2C3D4E5F6000000000002 /* OpenSSL in Frameworks */,
 				111BEA5F2ED07A340079DD4E /* MacroVisionKit in Frameworks */,
 				9A987A102C73CA8D005CA465 /* Collections in Frameworks */,
@@ -753,6 +809,9 @@
 		1443E7F12C609DB90027C1FC /* sizing */ = {
 			isa = PBXGroup;
 			children = (
+				A82800000000000000000002 /* NotchSizing.swift */,
+				A82800000000000000000102 /* NotchBehaviour.swift */,
+				A82800000000000000000004 /* NotchResizeSession.swift */,
 				1443E7F22C609DCE0027C1FC /* matters.swift */,
 			);
 			path = sizing;
@@ -761,6 +820,8 @@
 		1471639B2C5D362F0068B555 /* components */ = {
 			isa = PBXGroup;
 			children = (
+				A82800000000000000000006 /* NotchResizeEditor.swift */,
+				A82800000000000000000008 /* NotchSizePane.swift */,
 				B141C23B2CA5F50900AC8CC8 /* Onboarding */,
 				B1C448992C97375A001F0858 /* Tips */,
 				14C08BB72C8DE49E000F8AA0 /* Calendar */,
@@ -844,6 +905,9 @@
 		14CEF4142C5CAED300855D72 /* boringNotch */ = {
 			isa = PBXGroup;
 			children = (
+				1CE000000000000000000001 /* IceConfiguration.swift */,
+				1CE000000000000000000002 /* IceMenuBarController.swift */,
+				1CE000000000000000000003 /* IcePane.swift */,
 				11F748672EC9AC9600F841DB /* XPCHelperClient */,
 				116398942DF5D6B40052E6AF /* Providers */,
 				14288DE22C6E016F00B9F80C /* observers */,
@@ -933,11 +997,26 @@
 				3F63D49D9D4DCC08D0D6FF90 /* BoringSweepProtocol.swift */,
 				CA1100010000000000D00102 /* NotchDesignSystem.swift */,
 				CA110001000000000000B102 /* CallaCopilotTabView.swift */,
+				CA11QZ300000000000000002 /* CallaQuizPreflightView.swift */,
+				CA11WM300000000000000002 /* CallaWindowTargetMenu.swift */,
+				CA11MC300000000000000002 /* CopilotCodingPane.swift */,
+				CA11MC200000000000000002 /* CallaCodingSetup.swift */,
+				CA11WV100000000000000002 /* WaveInterview.swift */,
+				CA11WV200000000000000002 /* CallaCallPreflightView.swift */,
+				CA11MC100000000000000002 /* CallaModeChrome.swift */,
+				CA11QZ400000000000000002 /* CallaQuizLiveView.swift */,
+				CA11QZA00000000000000002 /* CallaQuizCodeBlock.swift */,
+				CA11QZ900000000000000002 /* QuizProfileStore.swift */,
+				CA11QZ800000000000000002 /* CallaQuizEndedView.swift */,
+				CA11QZ600000000000000002 /* CallaQuizLiveHeader.swift */,
+				CA11QZ500000000000000002 /* CallaQuizPresentation.swift */,
+				A82800000000000000000402 /* CallaCodingPresentation.swift */,
+				A82800000000000000000502 /* CallaCodingPatchView.swift */,
 				CA1100010000000000E00102 /* CopilotCallPane.swift */,
+				CA11QZ700000000000000002 /* CopilotQuizPane.swift */,
 				CA11KB010000000000000002 /* CopilotKnowledgePane.swift */,
 				CA11KB020000000000000002 /* CallaKnowledge.swift */,
 				CA11KB030000000000000002 /* CallaKnowledgeFocus.swift */,
-				CA11KB040000000000000002 /* MeetingPreroll.swift */,
 				CA11KB050000000000000002 /* CopilotNotchBadge.swift */,
 				CA11KD010000000000000002 /* KnowledgeDocumentReader.swift */,
 				CA11KD020000000000000002 /* CallaKnowledgeAttach.swift */,
@@ -1122,6 +1201,8 @@
 			isa = PBXGroup;
 			children = (
 				B186543B2C6F49AE000B926A /* ShortcutConstants.swift */,
+				A82800000000000000000302 /* NotchSessionShortcuts.swift */,
+				A82800000000000000000202 /* NotchSessionRouting.swift */,
 			);
 			path = Shortcuts;
 			sourceTree = "<group>";
@@ -1174,6 +1255,8 @@
 			fileSystemSynchronizedGroups = (CA11E0060000000000000006 /* BoringCallaEngine */);
 			name = BoringCallaEngine;
 			packageProductDependencies = (
+				CA11QZ100000000000000010 /* IntelligenceCore */,
+				CA11QZ200000000000000020 /* IntelligenceProviders */,
 				CA11ST020000000000000002 /* IntelligenceStore */,
 				CAV200020000000000000002 /* CallaContracts */,
 			);
@@ -1221,6 +1304,7 @@
 			);
 			name = boringNotch;
 			packageProductDependencies = (
+				CAV200020000000000000002 /* CallaContracts */,
 				A1B2C3D4E5F6000000000007 /* OpenSSL */,
 				14D032192C68F32E0096E6A1 /* LaunchAtLogin */,
 				14D0321C2C68F3350096E6A1 /* Sparkle */,
@@ -1339,12 +1423,12 @@
 			alwaysOutOfDate = 1;
 			buildActionMask = 2147483647;
 			files = ();
-			inputPaths = ("$(SRCROOT)/Tutor/integrations/openclaw", "$(SRCROOT)/Tutor/packs", "$(SRCROOT)/Tutor/agent-workspace", "$(SRCROOT)/Tutor/scripts/calla-node-host.sh", "$(SRCROOT)/scripts/calla/build-gateway-release.sh", "$(SRCROOT)/scripts/calla/gateway-update.sh");
+			inputPaths = ("$(SRCROOT)/Tutor", "$(SRCROOT)/scripts/calla/build-gateway-release.sh", "$(SRCROOT)/scripts/calla/gateway-update.sh");
 			name = "Embed Calla Resources";
-			outputPaths = ("$(TARGET_BUILD_DIR)/$(UNLOCALIZED_RESOURCES_FOLDER_PATH)/Calla", "$(TARGET_BUILD_DIR)/$(UNLOCALIZED_RESOURCES_FOLDER_PATH)/Calla/openclaw", "$(TARGET_BUILD_DIR)/$(UNLOCALIZED_RESOURCES_FOLDER_PATH)/Calla/packs", "$(TARGET_BUILD_DIR)/$(UNLOCALIZED_RESOURCES_FOLDER_PATH)/Calla/agent-workspace", "$(TARGET_BUILD_DIR)/$(UNLOCALIZED_RESOURCES_FOLDER_PATH)/Calla/scripts", "$(TARGET_BUILD_DIR)/$(UNLOCALIZED_RESOURCES_FOLDER_PATH)/Calla/Gateway/calla-gateway.tar.gz");
+			outputPaths = ("$(TARGET_BUILD_DIR)/$(UNLOCALIZED_RESOURCES_FOLDER_PATH)/Calla", "$(TARGET_BUILD_DIR)/$(UNLOCALIZED_RESOURCES_FOLDER_PATH)/Calla/scripts/gateway-update.sh", "$(TARGET_BUILD_DIR)/$(UNLOCALIZED_RESOURCES_FOLDER_PATH)/Calla/Gateway/calla-gateway.tar.gz");
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/zsh;
-			shellScript = "set -euo pipefail\nDEST=\"$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH/Calla\"\nmkdir -p \"$DEST/scripts\" \"$DEST/Gateway\"\nditto \"$SRCROOT/Tutor/integrations/openclaw\" \"$DEST/openclaw\"\nditto \"$SRCROOT/Tutor/packs\" \"$DEST/packs\"\nditto \"$SRCROOT/Tutor/agent-workspace\" \"$DEST/agent-workspace\"\nditto \"$SRCROOT/Tutor/scripts/calla-node-host.sh\" \"$DEST/scripts/calla-node-host.sh\"\nditto \"$SRCROOT/scripts/calla/gateway-update.sh\" \"$DEST/scripts/gateway-update.sh\"\n\"$SRCROOT/scripts/calla/build-gateway-release.sh\" \"$DEST/Gateway/calla-gateway.tar.gz\"\nchmod 700 \"$DEST/scripts/calla-node-host.sh\" \"$DEST/scripts/gateway-update.sh\"\n";
+			shellScript = "set -euo pipefail\nDEST=\"$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH/Calla\"\nmkdir -p \"$DEST/scripts\" \"$DEST/Gateway\"\nrm -rf \"$DEST/openclaw\" \"$DEST/packs\" \"$DEST/agent-workspace\"\nrm -f \"$DEST/scripts/calla-node-host.sh\"\nditto \"$SRCROOT/scripts/calla/gateway-update.sh\" \"$DEST/scripts/gateway-update.sh\"\n\"$SRCROOT/scripts/calla/build-gateway-release.sh\" \"$DEST/Gateway/calla-gateway.tar.gz\"\nchmod 700 \"$DEST/scripts/gateway-update.sh\"\n";
 		};
 /* End PBXShellScriptBuildPhase section */
 
@@ -1362,6 +1446,14 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				1CE000000000000000000011 /* IceConfiguration.swift in Sources */,
+				1CE000000000000000000012 /* IceMenuBarController.swift in Sources */,
+				1CE000000000000000000013 /* IcePane.swift in Sources */,
+				A82800000000000000000001 /* NotchSizing.swift in Sources */,
+				A82800000000000000000101 /* NotchBehaviour.swift in Sources */,
+				A82800000000000000000003 /* NotchResizeSession.swift in Sources */,
+				A82800000000000000000005 /* NotchResizeEditor.swift in Sources */,
+				A82800000000000000000007 /* NotchSizePane.swift in Sources */,
 				A1B2C3D4E5F6000000000001 /* KDECertificateServiceHelper.m in Sources */,
 				00A1B2C30000000000000001 /* ShelfItemMetadataCache.swift in Sources */,
 				00A1B2C30000000000000003 /* ShelfDragHandler.swift in Sources */,
@@ -1374,6 +1466,8 @@
 				147163982C5D35B70068B555 /* MusicVisualizer.swift in Sources */,
 				11CC44A22CEE614100C7244B /* BoringViewCoordinator.swift in Sources */,
 				B186543C2C6F49AE000B926A /* ShortcutConstants.swift in Sources */,
+				A82800000000000000000301 /* NotchSessionShortcuts.swift in Sources */,
+				A82800000000000000000201 /* NotchSessionRouting.swift in Sources */,
 				11A45C792E34E63100CEB175 /* MediaChecker.swift in Sources */,
 				B1D365CE2C6A979C0047BDBC /* LiveActivityModifier.swift in Sources */,
 				1113ABD02E80E6BB00EC13B2 /* ThumbnailService.swift in Sources */,
@@ -1560,11 +1654,26 @@
 				90706B2010130E2AFD272494 /* BoringSweepProtocol.swift in Sources */,
 				CA1100010000000000D00101 /* NotchDesignSystem.swift in Sources */,
 				CA110001000000000000B101 /* CallaCopilotTabView.swift in Sources */,
+				CA11QZ300000000000000001 /* CallaQuizPreflightView.swift in Sources */,
+				CA11WM300000000000000001 /* CallaWindowTargetMenu.swift in Sources */,
+				CA11MC300000000000000001 /* CopilotCodingPane.swift in Sources */,
+				CA11MC200000000000000001 /* CallaCodingSetup.swift in Sources */,
+				CA11WV100000000000000001 /* WaveInterview.swift in Sources */,
+				CA11WV200000000000000001 /* CallaCallPreflightView.swift in Sources */,
+				CA11MC100000000000000001 /* CallaModeChrome.swift in Sources */,
+				CA11QZ400000000000000001 /* CallaQuizLiveView.swift in Sources */,
+				CA11QZA00000000000000001 /* CallaQuizCodeBlock.swift in Sources */,
+				CA11QZ900000000000000001 /* QuizProfileStore.swift in Sources */,
+				CA11QZ800000000000000001 /* CallaQuizEndedView.swift in Sources */,
+				CA11QZ600000000000000001 /* CallaQuizLiveHeader.swift in Sources */,
+				CA11QZ500000000000000001 /* CallaQuizPresentation.swift in Sources */,
+				A82800000000000000000401 /* CallaCodingPresentation.swift in Sources */,
+				A82800000000000000000501 /* CallaCodingPatchView.swift in Sources */,
 				CA1100010000000000E00101 /* CopilotCallPane.swift in Sources */,
+				CA11QZ700000000000000001 /* CopilotQuizPane.swift in Sources */,
 				CA11KB010000000000000001 /* CopilotKnowledgePane.swift in Sources */,
 				CA11KB020000000000000001 /* CallaKnowledge.swift in Sources */,
 				CA11KB030000000000000001 /* CallaKnowledgeFocus.swift in Sources */,
-				CA11KB040000000000000001 /* MeetingPreroll.swift in Sources */,
 				CA11KB050000000000000001 /* CopilotNotchBadge.swift in Sources */,
 				CA11KD010000000000000001 /* KnowledgeDocumentReader.swift in Sources */,
 				CA11KD020000000000000001 /* CallaKnowledgeAttach.swift in Sources */,
@@ -2136,6 +2245,16 @@
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
+		CA11QZ100000000000000010 /* IntelligenceCore */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = CA11ST010000000000000001 /* XCLocalSwiftPackageReference "Intelligence" */;
+			productName = IntelligenceCore;
+		};
+		CA11QZ200000000000000020 /* IntelligenceProviders */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = CA11ST010000000000000001 /* XCLocalSwiftPackageReference "Intelligence" */;
+			productName = IntelligenceProviders;
+		};
 		CA11ST020000000000000002 /* IntelligenceStore */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = CA11ST010000000000000001 /* XCLocalSwiftPackageReference "Intelligence" */;
