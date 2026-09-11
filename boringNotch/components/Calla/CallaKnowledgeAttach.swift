@@ -57,6 +57,18 @@ struct KnowledgeTarget: Identifiable, Equatable {
         title: "Every call",
         detail: "Background the copilot should always have")
 
+    /// The interview itself — the default for anything dropped or attached.
+    ///
+    /// Filed against the series rather than the sitting so it reaches every
+    /// session: a scenario run this afternoon and the real thing on Monday are
+    /// both sessions of it, and material prepared once should be in front of
+    /// the copilot in both.
+    static let waveInterview = KnowledgeTarget(
+        kind: .series(id: WaveInterview.seriesID),
+        title: WaveInterview.title,
+        detail: "Every session of the interview",
+        startsAt: WaveInterview.startsAt)
+
     /// The choices one calendar event offers.
     ///
     /// A recurring meeting gets two, and the repeat is listed first because it is
@@ -199,16 +211,18 @@ final class CallaKnowledgeAttach: ObservableObject {
         }
     }
 
-    /// The meetings worth offering, plus the always-on option.
+    /// The interview first, then the meetings worth offering, then the
+    /// always-on option.
     ///
-    /// Today and tomorrow only. A picker listing three weeks of calendar is a
-    /// worse answer than a short list plus the Settings pane, and the file being
-    /// dropped is nearly always for something imminent.
+    /// The interview leads because it is what the copilot is for; the calendar
+    /// rows below it are today and tomorrow only. A picker listing three weeks
+    /// of calendar is a worse answer than a short list plus the Settings pane,
+    /// and the file being dropped is nearly always for something imminent.
     func refreshTargets() async {
         let calendars = Array(CalendarManager.shared.selectedCalendarIDs)
         let events = await calendarService.upcoming(within: 36 * 60 * 60, calendars: calendars)
-        var seen = Set<String>()
-        var list: [KnowledgeTarget] = []
+        var list: [KnowledgeTarget] = CallaFeatureAvailability.liveCoding ? [.waveInterview] : []
+        var seen = Set(list.map(\.id))
         for event in events where !event.isAllDay && !event.type.isReminder {
             for target in KnowledgeTarget.choices(for: event) where !seen.contains(target.id) {
                 seen.insert(target.id)
@@ -342,4 +356,6 @@ extension Notification.Name {
     /// The calendar lives inside the notch, so it cannot resize the panel itself
     /// without reaching for the view model through a chain of parents.
     static let callaKnowledgeWantsNotch = Notification.Name("callaKnowledgeWantsNotch")
+    /// Calendar selected event for Quiz preflight. Capture never starts here.
+    static let callaQuizWantsNotch = Notification.Name("callaQuizWantsNotch")
 }

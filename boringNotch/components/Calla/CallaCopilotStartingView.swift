@@ -12,7 +12,7 @@ import SwiftUI
 /// There was nothing here before. The engine reports a call as running only once
 /// the host has finished its whole `start()`, and the notch polled for that every
 /// four seconds — so a press was followed by up to six seconds of a tab that still
-/// said "Start listening", which reads as a button that did not work. People
+/// said "Start", which reads as a button that did not work. People
 /// pressed it again.
 ///
 /// Two things this deliberately does *not* do any more.
@@ -34,7 +34,6 @@ struct CallaCopilotStartingView: View {
     @ObservedObject private var engine = CallaEngineClient.shared
     @ObservedObject private var session = CopilotLiveSession.shared
 
-    @Default(.callaCopilotPersona) private var persona
     @Default(.callaCopilotLiveModel) private var model
 
     private var copilot: CallaCopilotStatus { engine.status.copilot }
@@ -196,7 +195,7 @@ struct CallaCopilotStartingView: View {
         switch remedy {
         case .retry:
             session.clearStartupFailure()
-            engine.startCall(persona: persona, model: model)
+            engine.startCall(persona: Defaults[.callaCopilotPersona], model: model)
         case .endAndRetry:
             // Bring the invisible host down first, then start clean. The engine
             // refuses a second host outright, so starting without ending would
@@ -206,7 +205,7 @@ struct CallaCopilotStartingView: View {
             engine.endCall()
             Task { @MainActor in
                 try? await Task.sleep(for: .milliseconds(600))
-                engine.startCall(persona: persona, model: model)
+                engine.startCall(persona: Defaults[.callaCopilotPersona], model: model)
             }
         case let .openSettings(page, _):
             session.dismissStartupFailure()

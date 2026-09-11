@@ -73,7 +73,7 @@ enum CallaCopilotPresentation {
         guard running, let active, active != preferred else { return nil }
         switch active {
         case "gateway": return Pill(text: "Gateway", tone: .warning)
-        case "local": return Pill(text: "This Mac", tone: .active)
+        case "local": return Pill(text: "Agy · Google remote", tone: .active)
         default: return nil
         }
     }
@@ -113,7 +113,13 @@ enum CallaCopilotPresentation {
             return working
         }
         if mode == .halfDeaf, !hasAnswer { return "Only you" }
-        if surface == "question", hasAnswer { return "Say this" }
+        if surface == "question" {
+            // The heading names the lane the reader chose, answer or not. It
+            // used to fall through to "So far" when there was no answer — so
+            // pressing Answers left both the heading and the body claiming to
+            // be the recap, and the chip looked like it had done nothing.
+            return hasAnswer ? "Answer" : "No answer yet"
+        }
         if hasSummary { return "So far" }
         return "Listening"
     }
@@ -154,5 +160,90 @@ enum CallaCopilotPresentation {
             .replacingOccurrences(of: "\r", with: " ")
             .split(separator: " ", omittingEmptySubsequences: true)
             .joined(separator: " ")
+    }
+}
+
+/// Turns strict worker output into content shaped for the Quiz answer card.
+///
+/// Workers occasionally wrap their answer in a second JSON envelope even
+/// though the outer response already followed the schema. That protocol detail
+/// must never leak into the notch, including for answers restored from history.
+struct QuizAnswerPresentation: Equatable {
+    enum Style: Equatable {
+        case choice
+        case boolean
+        case code
+        case standard
+    }
+
+    let style: Style
+    let badge: String?
+    let body: String
+    let codeLanguage: String?
+    let copyText: String
+
+    static func make(answer rawAnswer: String, kind: String) -> Self {
+        let answer = unwrapWorkerEnvelope(rawAnswer)
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+
+        if kind == "code", let fenced = fencedCode(answer) {
+            return Self(style: .code, badge: nil, body: fenced.code,
+                        codeLanguage: fenced.language, copyText: fenced.code)
+        }
+
+        if kind == "singleChoice" || kind == "multipleChoice",
+           let choice = choiceParts(answer) {
+            return Self(style: .choice, badge: choice.label, body: choice.body,
+                        codeLanguage: nil, copyText: answer)
+        }
+
+        if kind == "boolean" {
+            return Self(style: .boolean, badge: nil, body: answer,
+                        codeLanguage: nil, copyText: answer)
+        }
+
+        return Self(style: .standard, badge: nil, body: answer,
+                    codeLanguage: nil, copyText: answer)
+    }
+
+    private static func unwrapWorkerEnvelope(_ value: String) -> String {
+        var candidate = value.trimmingCharacters(in: .whitespacesAndNewlines)
+        if candidate.hasPrefix("```json"), candidate.hasSuffix("```") {
+            candidate.removeFirst("```json".count)
+            candidate.removeLast(3)
+            candidate = candidate.trimmingCharacters(in: .whitespacesAndNewlines)
+        }
+        guard let data = candidate.data(using: .utf8),
+              let object = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+              Set(object.keys) == ["answer", "confidence"],
+              object["confidence"] is NSNumber,
+              let nested = object["answer"] as? String,
+              !nested.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+            return value
+        }
+        return nested
+    }
+
+    private static func choiceParts(_ answer: String) -> (label: String, body: String)? {
+        let separators = [" — ", " – ", " - "]
+        guard let separator = separators.first(where: { answer.contains($0) }),
+              let range = answer.range(of: separator) else { return nil }
+        let label = answer[..<range.lowerBound].trimmingCharacters(in: .whitespacesAndNewlines)
+        let body = answer[range.upperBound...].trimmingCharacters(in: .whitespacesAndNewlines)
+        let allowed = CharacterSet(charactersIn: "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz, ")
+        guard !label.isEmpty, label.count <= 12, !body.isEmpty,
+              label.unicodeScalars.allSatisfy({ allowed.contains($0) }) else { return nil }
+        return (label.uppercased(), body)
+    }
+
+    private static func fencedCode(_ answer: String) -> (language: String?, code: String)? {
+        guard answer.hasPrefix("```"), answer.hasSuffix("```") else { return nil }
+        let withoutOpening = answer.dropFirst(3)
+        guard let newline = withoutOpening.firstIndex(of: "\n") else { return nil }
+        let languageText = withoutOpening[..<newline].trimmingCharacters(in: .whitespacesAndNewlines)
+        let code = withoutOpening[withoutOpening.index(after: newline)...].dropLast(3)
+            .trimmingCharacters(in: .newlines)
+        guard !code.isEmpty else { return nil }
+        return (languageText.isEmpty ? nil : languageText, String(code))
     }
 }

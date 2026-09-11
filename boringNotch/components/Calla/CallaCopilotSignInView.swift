@@ -50,30 +50,30 @@ struct CallaCopilotSignInView: View {
     private var succeeded: Bool { stage == "signed_in" }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 9) {
+        VStack(alignment: .leading, spacing: NotchGlassSpace.snug) {
             header
             steps
             if copilot.canAcceptCode || failed { codeRow }
             if let detail = copilot.lastResult, !detail.isEmpty {
                 Text(detail)
-                    .font(.system(size: 10.5))
-                    // Explicit near-white on a translucent panel: 0.72 disappears
-                    // over a light window behind the notch.
-                    .foregroundStyle(failed ? Color.orange : Color.white.opacity(0.9))
+                    .font(NotchGlassType.detail)
+                    .foregroundStyle(failed ? NotchTint.attention : NotchInk.secondary)
                     .lineLimit(2)
                     .fixedSize(horizontal: false, vertical: true)
-                    .padding(.horizontal, 8)
+                    .padding(.horizontal, NotchGlassSpace.tight)
                     .padding(.vertical, 5)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .background(
-                        Color.black.opacity(0.22),
-                        in: RoundedRectangle(cornerRadius: 7, style: .continuous)
+                        NotchPlane.chip,
+                        in: RoundedRectangle(cornerRadius: NotchGlassRadius.glyph, style: .continuous)
                     )
+                    .accessibilityLabel(detail)
             }
         }
-        .padding(.horizontal, 16)
-        .padding(.top, 4)
-        .padding(.bottom, 10)
+        // The shared insets, including the bottom one the notch's inward-curving
+        // corners need. This used to be 16pt horizontal, which put the panel out
+        // of line with every other tab by four points.
+        .notchTabInsets()
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         // The notch takes key focus while open, so the field is usable here.
         .onAppear { codeFocused = true }
@@ -92,23 +92,31 @@ struct CallaCopilotSignInView: View {
     }
 
     private var header: some View {
-        HStack(spacing: 7) {
-            Image(systemName: succeeded ? "checkmark.circle.fill" : failed ? "exclamationmark.triangle.fill" : "person.badge.key.fill")
-                .font(.system(size: 11))
-                .foregroundStyle(succeeded ? Color.green : failed ? Color.orange : Color.white.opacity(0.85))
+        HStack(spacing: NotchGlassSpace.tight) {
+            Image(systemName: succeeded ? "checkmark.circle.fill"
+                  : failed ? "exclamationmark.triangle.fill" : "person.badge.key.fill")
+                .font(NotchGlassType.glyph)
+                .foregroundStyle(succeeded ? NotchTint.healthy
+                                 : failed ? NotchTint.attention : NotchInk.secondary)
             Text(succeeded ? "Signed in" : "Sign in to use this Mac's copilot")
-                .font(.system(size: 12.5, weight: .medium))
-                .foregroundStyle(.white)
+                .font(NotchGlassType.title)
+                .foregroundStyle(NotchInk.primary)
                 .lineLimit(1)
             Spacer(minLength: 0)
             if let url = copilot.agyLoginURL {
-                Button("Open") { if let target = URL(string: url) { NSWorkspace.shared.open(target) } }
-                    .controlSize(.small)
-                Button("Copy") {
+                NotchChip(action: {
+                    if let target = URL(string: url) { NSWorkspace.shared.open(target) }
+                }) {
+                    Text("Open")
+                }
+                .accessibilityLabel("Open the sign-in page")
+                NotchChip(action: {
                     NSPasteboard.general.clearContents()
                     NSPasteboard.general.setString(url, forType: .string)
+                }) {
+                    Text("Copy")
                 }
-                .controlSize(.small)
+                .accessibilityLabel("Copy the sign-in link")
             }
         }
     }
@@ -116,48 +124,71 @@ struct CallaCopilotSignInView: View {
     /// Progress as steps rather than a spinner: a wait the user can place is a
     /// wait they will tolerate.
     private var steps: some View {
-        HStack(spacing: 6) {
+        HStack(spacing: NotchGlassSpace.snug) {
             ForEach(Step.allCases, id: \.rawValue) { step in
                 let done = step.rawValue < current.rawValue || succeeded
                 let active = step == current && !succeeded && !failed
-                HStack(spacing: 4) {
-                    Image(systemName: done ? "checkmark.circle.fill" : active ? "circle.dotted" : "circle")
-                        .font(.system(size: 8.5))
-                        .foregroundStyle(done ? Color.green : active ? Color.accentColor : Color.white.opacity(0.35))
+                HStack(spacing: NotchGlassSpace.hair + 2) {
+                    Image(systemName: done ? "checkmark.circle.fill"
+                          : active ? "circle.dotted" : "circle")
+                        .font(NotchGlassType.glyphSmall)
+                        .foregroundStyle(done ? NotchTint.healthy
+                                         : active ? Color.effectiveAccent : NotchInk.tertiary)
+                    // One ink step per state, rather than a second font weight on
+                    // top of a second opacity. Four steps is the whole palette.
                     Text(step.title)
-                        .font(.system(size: 10, weight: active ? .semibold : .regular))
-                        .foregroundStyle(active ? Color.white : Color.white.opacity(done ? 0.85 : 0.6))
+                        .font(NotchGlassType.caption)
+                        .foregroundStyle(active ? NotchInk.primary
+                                         : done ? NotchInk.secondary : NotchInk.tertiary)
                         .lineLimit(1)
                         .fixedSize()
                 }
+                .accessibilityLabel("\(step.title): \(done ? "done" : active ? "in progress" : "waiting")")
                 if step != Step.allCases.last {
                     Rectangle()
-                        .fill(Color.white.opacity(0.15))
+                        .fill(NotchInk.hairline)
                         .frame(height: 1)
                         .frame(maxWidth: 14)
                 }
             }
             Spacer(minLength: 0)
         }
+        .accessibilityElement(children: .contain)
     }
 
     private var codeRow: some View {
-        HStack(spacing: 8) {
+        let empty = code.trimmingCharacters(in: .whitespaces).isEmpty
+        return HStack(spacing: NotchGlassSpace.tight) {
             TextField("Paste the authorization code", text: $code)
-                .textFieldStyle(.roundedBorder)
-                .font(.system(size: 11))
+                .textFieldStyle(.plain)
+                .font(NotchGlassType.row)
+                .foregroundStyle(NotchInk.primary)
                 .focused($codeFocused)
                 .onSubmit(submit)
-            Button(failed ? "Retry" : "Submit") {
-                if failed, code.trimmingCharacters(in: .whitespaces).isEmpty {
+                .padding(.horizontal, 10)
+                .frame(height: NotchGlassSpace.control)
+                .background {
+                    let shape = RoundedRectangle(cornerRadius: NotchGlassRadius.chip,
+                                                 style: .continuous)
+                    ZStack {
+                        shape.fill(Color.black.opacity(0.30))
+                        shape.strokeBorder(codeFocused ? Color.effectiveAccent.opacity(0.55)
+                                           : NotchInk.hairline, lineWidth: 1)
+                    }
+                }
+                .accessibilityLabel("Authorization code")
+            NotchChip(tint: .effectiveAccent, action: {
+                if failed, empty {
                     engine.loginAgy(force: true)
                 } else {
                     submit()
                 }
+            }) {
+                Text(failed ? "Retry" : "Submit")
             }
-            .buttonStyle(.borderedProminent)
-            .controlSize(.small)
-            .disabled(!failed && code.trimmingCharacters(in: .whitespaces).isEmpty)
+            .opacity(!failed && empty ? 0.45 : 1)
+            .disabled(!failed && empty)
+            .accessibilityLabel(failed ? "Retry sign-in" : "Submit authorization code")
         }
     }
 

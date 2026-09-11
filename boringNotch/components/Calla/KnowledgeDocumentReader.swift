@@ -130,7 +130,7 @@ enum KnowledgeDocumentReader {
         var parts: [String] = []
         for index in 0 ..< pages {
             guard let page = document.page(at: index), let text = page.string else { continue }
-            parts.append(text)
+            parts.append("[[CALLA_PAGE:\(index + 1)]]\n\n" + text)
         }
         let text = tidy(parts.joined(separator: "\n\n"))
 
@@ -185,7 +185,7 @@ enum KnowledgeDocumentReader {
 
             if let cgImage = context.makeImage() {
                 let text = recognise(cgImage)
-                if !text.isEmpty { parts.append(text) }
+                if !text.isEmpty { parts.append("[[CALLA_PAGE:\(index + 1)]]\n\n" + text) }
             }
         }
         let text = tidy(parts.joined(separator: "\n\n"))

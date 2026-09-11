@@ -48,21 +48,54 @@ struct CallaCopilotEndingView: View {
     /// once the account's tail is closed, 0.75 once the deep pass has answered.
     private var completedSteps: Int {
         guard copilot.lifecycleState != CallLifecycleStateName.stopping else { return 1 }
-        guard let progress = copilot.recapProgress else {
-            // Claimed locally and nothing reported yet: the press is real, the
-            // first step is honestly in flight, and nothing beyond it is.
-            return 0
-        }
+        guard let progress = copilot.recapProgress else { return 0 }
         if progress >= 0.75 { return 4 }
         if progress >= 0.4 { return 3 }
         if progress >= 0.2 { return 2 }
         return 1
     }
 
+    /// Whether the host has told us anything at all since the press.
+    ///
+    /// This is the state `completedSteps == 0` means, and it was being drawn as
+    /// "Closing the microphones" — which made that sentence the label for *no
+    /// information*. Every stall before the host's first write rendered as the
+    /// microphones being stuck, and the microphones are the one thing that is
+    /// definitely not stuck: `CallSession.stop()` closes both legs before the
+    /// drain, the account or the recap, so by the time any of the slow work
+    /// starts they are already shut.
+    private var awaitingHost: Bool {
+        completedSteps == 0
+            && copilot.lifecycleState != CallLifecycleStateName.processingRecap
+    }
+
+    /// Both capture legs reported closed. The host publishes these on every
+    /// status write, so it is a fact rather than an inference.
+    private var capturesClosed: Bool { !copilot.micActive && !copilot.systemAudioActive }
+
     private var headline: String {
+        if awaitingHost {
+            // Named for what is actually happening: the stop has been sent and
+            // nothing has come back yet.
+            return capturesClosed ? "Closing the microphones" : "Asking the call to stop"
+        }
         guard completedSteps < Step.allCases.count else { return "Saved" }
         return Step.allCases[completedSteps].label
     }
+
+    /// How long this has been on screen without the host advancing a step.
+    ///
+    /// The only way out of a stall used to be the engine client's 60-second
+    /// timeout, with nothing on screen to say a stall was happening — so a stop
+    /// that never landed looked identical to a recap being written.
+    @State private var since = Date()
+    @State private var now = Date()
+    private let tick = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
+    private var stalledSeconds: Int { Int(now.timeIntervalSince(since)) }
+    /// Past this, the wait stops being ordinary. The deep closing pass is ~8.5s
+    /// and the transcript drain is bounded by the backlog, so a step that has
+    /// not moved in twenty seconds is worth saying out loud.
+    private var stalled: Bool { stalledSeconds >= 20 }
 
     var body: some View {
         VStack(alignment: .leading, spacing: NotchGlassSpace.snug) {
@@ -82,7 +115,7 @@ struct CallaCopilotEndingView: View {
 
             Text(footnote)
                 .font(NotchGlassType.caption)
-                .foregroundStyle(NotchInk.tertiary)
+                .foregroundStyle(stalled ? NotchTint.attention : NotchInk.tertiary)
                 .lineLimit(2)
                 .fixedSize(horizontal: false, vertical: true)
 
@@ -93,8 +126,16 @@ struct CallaCopilotEndingView: View {
             // call was for. Leaving is allowed — the work finishes without the
             // panel — which is what this offers instead.
             HStack(spacing: NotchGlassSpace.tight) {
-                Button("Leave it running") { session.dismiss() }
-                    .controlSize(.small)
+                NotchChip(action: { session.dismiss() }) { Text("Leave it running") }
+                // Only once the wait has stopped being ordinary. Sending stop
+                // again is what escalates: the engine retries the host's control
+                // socket and falls through to SIGINT, which is the path that
+                // gets a host that never answered to shut down.
+                if stalled {
+                    NotchChip(tint: NotchTint.attention, action: { engine.endCall() }) {
+                        Text("Stop it again")
+                    }
+                }
                 Spacer(minLength: 0)
             }
         }
@@ -102,6 +143,8 @@ struct CallaCopilotEndingView: View {
         .padding(.horizontal, 14)
         .padding(.vertical, 10)
         .animation(.smooth(duration: 0.2), value: completedSteps)
+        .onReceive(tick) { now = $0 }
+        .onChange(of: completedSteps) { _, _ in since = Date(); now = Date() }
     }
 
     private var elapsed: String? {
@@ -116,7 +159,14 @@ struct CallaCopilotEndingView: View {
         guard completedSteps < Step.allCases.count else {
             return "The transcript and the recap are saved. You can find them under History."
         }
-        return "Recording has stopped. This finishes on its own even if you close the notch."
+        if stalled {
+            return awaitingHost
+                ? "The call host has not answered in \(stalledSeconds)s. Stopping again sends it a signal directly."
+                : "Still working after \(stalledSeconds)s. Recording has stopped either way."
+        }
+        return capturesClosed
+            ? "Recording has stopped. This finishes on its own even if you close the notch."
+            : "This finishes on its own even if you close the notch."
     }
 }
 

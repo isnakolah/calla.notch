@@ -59,10 +59,15 @@ struct CallaCopilotLiveView: View {
     /// not a feed — so a call's earlier pointers were simply lost. Keeping them here
     /// is what lets the panel fall back to the previous answer rather than to blank.
     @State private var answers: [LiveAnswer] = []
+    @State private var answerHistoryOffset = 0
     struct LiveAnswer: Identifiable, Equatable {
         let id: Int
+        let question: String?
         let headline: String
         let angles: [String]
+        let warning: String?
+        let citations: [String]
+        let latencyMs: Int?
     }
 
     /// Fast enough that a turn appears while it is still the thing being
@@ -145,18 +150,40 @@ struct CallaCopilotLiveView: View {
             // columns are separated by their divider and their headings; that is
             // all the structure this content needs, and dropping the fill hands
             // its padding and border back to the text.
+            // The scrim is a sibling of the controls, not their background.
+            //
+            // As a background it inherited the footer's 12pt side padding, so it
+            // stopped short of both panel edges and drew two vertical seams down
+            // a surface that has none — and its two-stop ramp from clear to 92%
+            // black put a visible horizontal edge across the middle of the
+            // transcript. Full-bleed, taller, and eased through a middle stop:
+            // the controls get their contrast and the panel keeps looking like
+            // one sheet.
             .overlay(alignment: .bottom) {
                 if showsControls {
-                    footer
-                        .padding(.horizontal, 12)
-                        .padding(.bottom, 2)
-                        .background(alignment: .bottom) {
-                            LinearGradient(colors: [.clear, .black.opacity(0.92)],
-                                           startPoint: .top, endPoint: .bottom)
-                                .frame(height: 78)
-                                .allowsHitTesting(false)
-                        }
-                        .transition(.opacity)
+                    ZStack(alignment: .bottom) {
+                        LinearGradient(
+                            stops: [
+                                .init(color: .black.opacity(0), location: 0),
+                                .init(color: .black.opacity(0.34), location: 0.42),
+                                .init(color: .black.opacity(0.72), location: 0.72),
+                                .init(color: .black.opacity(0.88), location: 1)
+                            ],
+                            startPoint: .top, endPoint: .bottom)
+                            .frame(height: 92)
+                            .frame(maxWidth: .infinity)
+                            // Over-extended past the content's own inset so the
+                            // wash runs under the panel's rounded corners and is
+                            // clipped by them, rather than stopping a few points
+                            // short and drawing an edge of its own.
+                            .padding(.horizontal, -10)
+                            .allowsHitTesting(false)
+                        footer
+                            .padding(.horizontal, 12)
+                            .padding(.bottom, 2)
+                    }
+                    .frame(maxWidth: .infinity)
+                    .transition(.opacity)
                 }
             }
         }
@@ -173,18 +200,47 @@ struct CallaCopilotLiveView: View {
         .padding(.bottom, 2)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .onReceive(clockTick) { value in now = value }
-        .onChange(of: copilot.suggestionAfterSeq) { _, seq in
-            guard let seq, let headline = copilot.headline?.trimmingCharacters(in: .whitespacesAndNewlines),
-                  !headline.isEmpty, answers.last?.id != seq,
-                  answers.last?.headline != headline
-            else { return }
-            answers.append(LiveAnswer(id: seq, headline: headline, angles: copilot.angles))
-            if surface != "question" { session.markUnreadAnswer() }
-            // A long call would otherwise grow this without bound.
-            if answers.count > 30 { answers.removeFirst(answers.count - 30) }
+        .onChange(of: copilot.suggestionAfterSeq) { _, _ in
+            guard captureCurrentAnswer() else { return }
+            // A pointer that *answers a question put to you* is the one copilot
+            // event worth taking the panel for. Everything else — a remark on a
+            // statement, the same advice with a refreshed account under it —
+            // lights the unread dot and waits, which is the rule that stopped a
+            // recap being yanked away mid-read.
+            //
+            // Without this the answer lane was never reached on its own: the
+            // panel opens on "summary" by default, so a question could be asked,
+            // answered, and shown as nothing but a dot next to the capture
+            // glyphs. The answer was one chip-press away and read as absent.
+            if copilot.answering {
+                withAnimation(.easeOut(duration: 0.18)) { surface = "question" }
+                session.clearUnreadAnswer()
+            } else if surface != "question" {
+                session.markUnreadAnswer()
+            }
         }
         .onReceive(transcriptTick) { _ in refresh() }
-        .onAppear { refresh() }
+        .onReceive(NotificationCenter.default.publisher(for: .callaCallAskQuestion)) { _ in
+            beginManualQuestion()
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .callaCallToggleSurface)) { _ in
+            toggleSurface()
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .callaCallPreviousAnswer)) { _ in
+            answerHistoryOffset = min(answerHistoryOffset + 1, max(0, answers.count - 1))
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .callaCallNextAnswer)) { _ in
+            answerHistoryOffset = max(0, answerHistoryOffset - 1)
+        }
+        .onAppear {
+            refresh()
+            restoreAnswers()
+            // `onChange` fires only for changes *after* this view exists, so an
+            // answer that landed before the panel was drawn — or before a layout
+            // swap rebuilt it — was never recorded. The lane then had nothing to
+            // show for an answer that plainly existed.
+            _ = captureCurrentAnswer()
+        }
         .animation(.smooth(duration: 0.25), value: session.layout)
         .alert("Answer this", isPresented: $showsManualQuestion) {
             TextField("Selected transcript text", text: $manualQuestion, axis: .vertical)
@@ -227,6 +283,14 @@ struct CallaCopilotLiveView: View {
                 switch content {
                 case .answer:
                     answerBody
+                case .noAnswer:
+                    note(copilot.detectedQuestion != nil && !copilot.confirm.isEmpty
+                            ? "Check detected question"
+                            : (answerIsComing ? "Finding an answer" : "No answer yet"),
+                         detail: answerIsComing
+                            ? "The transcript is still running underneath."
+                            : (copilot.detectedQuestion ?? "One appears here the moment a question worth answering is asked."),
+                         tint: NotchInk.secondary)
                 case .halfDeaf:
                     note("Only your side is being heard",
                          detail: "Grant Screen Recording so the other side of the call is transcribed.",
@@ -250,17 +314,22 @@ struct CallaCopilotLiveView: View {
                 // trimmed by a point or a line; the running caption is why the
                 // collapsed panel is on screen at all.
                 captionStream
+                    // Off the floor of the panel. The strip itself is a fixed 21
+                    // (see `captionStream`); this is clearance under it, so the
+                    // last line of the call is not touching the lower curve.
+                    .padding(.bottom, 4)
                     .layoutPriority(1)
                     // Its height is 1pt of rule, 5 of spacing and one 15pt line:
                     // a fixed 21, and nothing above it may borrow from it.
                     .fixedSize(horizontal: false, vertical: true)
             }
         }
-        // Collapsed sits closer to the edge: with one column and no heading
-        // beside it there is nothing for a wide margin to align with, and the
-        // width it costs is width the recap lines want.
-        .padding(.leading, session.layout == .compact ? 5 : 10)
-        .padding(.trailing, 10)
+        // Both layouts keep the same margin on both sides. Collapsed used to sit
+        // 5pt from the leading edge against 10 on the trailing one, to buy the
+        // recap lines a little width — five points it never noticeably gained,
+        // paid for by an answer that reads as falling off the left edge of the
+        // panel while the right edge keeps its margin.
+        .padding(.horizontal, 10)
         // NOTE: the clip is applied *after* the frame below, not here. Clipping
         // first cuts to the column's own intrinsic bounds — which, when the
         // content overflows, are larger than the space available, so the clip
@@ -338,42 +407,67 @@ struct CallaCopilotLiveView: View {
             .joined(separator: "  ")
     }
 
-    private enum Content { case answer, recap, listening, halfDeaf }
+    private enum Content { case answer, noAnswer, recap, listening, halfDeaf }
 
     /// What the panel shows. **The reader's choice owns this**, and an arriving
     /// answer never takes the panel away from them.
     ///
     /// This flipped on its own: any answer while `mode == .suggesting` switched
     /// the panel to it, so a recap being read mid-call was yanked away and
-    /// replaced by "Say this". Both lanes keep working regardless of which one
+    /// replaced by "Answer". Both lanes keep working regardless of which one
     /// is on screen; a new answer while the recap is up lights the unread dot on
     /// the Answers chip and waits to be asked for.
+    /// The engine is working on one right now, so the empty lane says "coming"
+    /// rather than "none" — four seconds of "No answer yet" while one is being
+    /// written reads as the feature having given up.
+    private var answerIsComing: Bool {
+        copilot.questionWorking || copilot.working == "answer"
+    }
+
     private var content: Content {
         if mode == .halfDeaf, answers.isEmpty { return .halfDeaf }
         if surface == "question" {
             if !answers.isEmpty { return .answer }
             if let headline = copilot.headline, !headline.isEmpty { return .answer }
+            // The reader asked for the answer lane and there is nothing in it
+            // yet. This used to fall through to the recap, so pressing Answers
+            // left the same running account on screen — the chip read as broken
+            // when what had actually happened was that no answer existed. The
+            // lane says so itself now, and switches the moment one lands.
+            return .noAnswer
         }
-        // Never blank: whichever surface is chosen falls back to what there is.
+        // The recap lane still falls back: it is the resting surface, and the
+        // account is what there is to read when no question is on the table.
         if let summary = copilot.summary, !summary.isEmpty { return .recap }
         return .listening
     }
 
-    /// The newest answer, and — collapsed or expanded — at most two supporting
-    /// lines. `angleLines` caps them so the slab can never be grown by a verbose
-    /// model.
+    private var displayedAnswer: LiveAnswer? {
+        guard !answers.isEmpty else { return nil }
+        return answers[max(0, answers.count - 1 - min(answerHistoryOffset, answers.count - 1))]
+    }
+
+    /// Compact keeps main answer plus first two points. Expanded adds third point,
+    /// warning, citations, latency, and answer-history controls.
     @ViewBuilder private var answerBody: some View {
-        let latest = answers.last
+        let latest = displayedAnswer
         let headline = CallaCopilotPresentation.headlineLine(latest?.headline ?? copilot.headline,
                                                             limit: session.layout == .compact ? 150 : 110)
-        // Collapsed carries the answer and the caption, and nothing between them:
-        // the supporting lines are the first thing to go when the column is
-        // short, because they are the part you can do without mid-sentence.
         let angles = CallaCopilotPresentation.angleLines(latest?.angles ?? copilot.angles,
-                                                        limit: session.layout == .compact ? 0 : 3,
+                                                        limit: session.layout == .compact ? 2 : 3,
                                                         characters: 78)
+        let question = latest?.question ?? copilot.detectedQuestion
+        let warning = latest?.warning ?? copilot.confirm.first
+        let citations = latest?.citations ?? copilot.citationLabels
+        let latency = latest?.latencyMs ?? copilot.answerLatencyMs
 
         VStack(alignment: .leading, spacing: session.layout == .compact ? 8 : 11) {
+            if let question, !question.isEmpty {
+                Text(question)
+                    .font(NotchGlassType.caption)
+                    .foregroundStyle(NotchInk.tertiary)
+                    .lineLimit(session.layout == .compact ? 1 : 2)
+            }
             if let headline {
                 Text(headline)
                     .font(session.layout == .compact
@@ -395,10 +489,33 @@ struct CallaCopilotLiveView: View {
             }
             // Kept visually distinct on purpose: this is the part that stops a
             // confident wrong answer.
-            if session.layout == .full {
-                ForEach(Array(copilot.confirm.prefix(1).enumerated()), id: \.offset) { _, item in
-                    supportingLine(item, tint: NotchTint.attention.opacity(0.6))
+            if session.layout == .full, let warning, !warning.isEmpty {
+                supportingLine(warning, tint: NotchTint.attention.opacity(0.6))
+            }
+            if session.layout == .full, !citations.isEmpty || latency != nil || answers.count > 1 {
+                HStack(spacing: 6) {
+                    ForEach(Array(citations.prefix(3)), id: \.self) { label in
+                        Text(label).lineLimit(1)
+                    }
+                    if let latency { Text("\(latency) ms") }
+                    Spacer(minLength: 0)
+                    if answers.count > 1 {
+                        Button { answerHistoryOffset = min(answerHistoryOffset + 1, answers.count - 1) } label: {
+                            Image(systemName: "chevron.left")
+                        }
+                        .disabled(answerHistoryOffset >= answers.count - 1)
+                        .help(shortcutHelp("Previous answer", .sessionPrevious))
+                        Text("\(answers.count - answerHistoryOffset)/\(answers.count)")
+                        Button { answerHistoryOffset = max(0, answerHistoryOffset - 1) } label: {
+                            Image(systemName: "chevron.right")
+                        }
+                        .disabled(answerHistoryOffset == 0)
+                        .help(shortcutHelp("Next answer", .sessionNext))
+                    }
                 }
+                .font(NotchGlassType.caption)
+                .foregroundStyle(NotchInk.tertiary)
+                .buttonStyle(.plain)
             }
             Spacer(minLength: 0)
         }
@@ -625,27 +742,17 @@ struct CallaCopilotLiveView: View {
     /// found again every time the panel changes size.
     private var footer: some View {
         HStack(spacing: 9) {
-            NotchChip(action: {
-                manualQuestion = turns.last?.text ?? ""
-                showsManualQuestion = true
-            }) {
+            NotchChip(action: { beginManualQuestion() }) {
                 Image(systemName: "mic.fill").font(NotchGlassType.glyph)
                 Text("Ask")
-                // The literal binding below, spelled out. There is no
-                // `KeyboardShortcuts.Name` for it to read back from.
-                Text("⇧⌘A")
-                    .font(NotchGlassType.minorFigure)
-                    .foregroundStyle(NotchInk.tertiary)
+                shortcutLabel(.sessionAsk)
             }
-            .keyboardShortcut("a", modifiers: [.command, .shift])
 
-            NotchChip(action: {
-                surface = surface == "question" ? "summary" : "question"
-                if surface == "question" { session.clearUnreadAnswer() }
-            }) {
+            NotchChip(action: { toggleSurface() }) {
                 Image(systemName: surface == "question" ? "bubble.left.fill" : "text.alignleft")
                     .font(NotchGlassType.glyph)
                 Text(surface == "question" ? "Answers" : "Recap")
+                shortcutLabel(.sessionSurface)
                 if session.unreadAnswer, surface != "question" {
                     Circle().fill(Color.effectiveAccent).frame(width: 5, height: 5)
                 }
@@ -661,11 +768,38 @@ struct CallaCopilotLiveView: View {
 
             NotchChip(tint: NotchTint.stuck, action: { engine.endCall() }) {
                 Text("End call")
+                shortcutLabel(.copilotToggleCall)
             }
             .fixedSize()
         }
         .frame(height: NotchGlassSpace.control)
         .frame(maxWidth: .infinity)
+    }
+
+    @ViewBuilder
+    private func shortcutLabel(_ name: KeyboardShortcuts.Name) -> some View {
+        if let shortcut = KeyboardShortcuts.getShortcut(for: name) {
+            Text(shortcut.description)
+                    .font(NotchGlassType.minorFigure)
+                    .foregroundStyle(NotchInk.tertiary)
+        }
+    }
+
+    private func shortcutHelp(_ label: String, _ name: KeyboardShortcuts.Name) -> String {
+        guard let shortcut = KeyboardShortcuts.getShortcut(for: name) else { return label }
+        return "\(label) — \(shortcut.description)"
+    }
+
+    private func beginManualQuestion() {
+        guard copilot.running else { return }
+        manualQuestion = copilot.detectedQuestion ?? turns.last?.text ?? ""
+        showsManualQuestion = true
+    }
+
+    private func toggleSurface() {
+        guard copilot.running else { return }
+        surface = surface == "question" ? "summary" : "question"
+        if surface == "question" { session.clearUnreadAnswer() }
     }
 
     // MARK: - Activity
@@ -745,6 +879,27 @@ struct CallaCopilotLiveView: View {
         )
     }
 
+    /// Records the engine's current suggestion, if it is one we have not kept.
+    /// Returns whether anything was added.
+    @discardableResult
+    private func captureCurrentAnswer() -> Bool {
+        guard let seq = copilot.suggestionAfterSeq,
+              let headline = copilot.headline?.trimmingCharacters(in: .whitespacesAndNewlines),
+              !headline.isEmpty,
+              answers.last?.id != seq,
+              answers.last?.headline != headline
+        else { return false }
+        answers.append(LiveAnswer(id: seq, question: copilot.detectedQuestion,
+                                  headline: headline, angles: copilot.angles,
+                                  warning: copilot.confirm.first,
+                                  citations: copilot.citationLabels,
+                                  latencyMs: copilot.answerLatencyMs))
+        answerHistoryOffset = 0
+        // A long call would otherwise grow this without bound.
+        if answers.count > 30 { answers.removeFirst(answers.count - 30) }
+        return true
+    }
+
     private func refresh() {
         guard copilot.running else { return }
         engine.fetchTranscript(since: turns.last?.seq) { fresh in
@@ -758,6 +913,30 @@ struct CallaCopilotLiveView: View {
             }
         }
     }
+
+    private func restoreAnswers() {
+        guard let callID = copilot.callID else { return }
+        engine.fetchCallSuggestions(callID) { stored in
+            let restored = stored.compactMap { item -> LiveAnswer? in
+                let headline = item.headline.trimmingCharacters(in: .whitespacesAndNewlines)
+                guard !headline.isEmpty else { return nil }
+                return LiveAnswer(id: item.afterSeq, question: item.question,
+                                  headline: headline, angles: item.angles,
+                                  warning: item.confirm.first,
+                                  citations: item.citations ?? [], latencyMs: item.latencyMs)
+            }
+            guard !restored.isEmpty else { return }
+            answers = Array(restored.suffix(30))
+            answerHistoryOffset = 0
+        }
+    }
+}
+
+extension Notification.Name {
+    static let callaCallAskQuestion = Notification.Name("callaCallAskQuestion")
+    static let callaCallToggleSurface = Notification.Name("callaCallToggleSurface")
+    static let callaCallPreviousAnswer = Notification.Name("callaCallPreviousAnswer")
+    static let callaCallNextAnswer = Notification.Name("callaCallNextAnswer")
 }
 
 /// A short tinted label. Used in the header band either side of the housing,
@@ -861,12 +1040,12 @@ struct CallaCopilotLiveHeader: View {
             // clock reading "0:" over "…" is worse than no clock at all.
             HStack(spacing: NotchGlassSpace.tight) {
                 LivePulse(active: copilot.running && copilot.systemAudioActive)
-                // What the panel below is showing — "Say this", "So far" — where
+                // What the panel below is showing — "Answer", "So far" — where
                 // the state pill used to be. The pulse already carries whether
                 // both sides are heard, which is what the pill was mostly for,
                 // and the panel gets its line back.
                 Text(heading)
-                    .font(.system(size: 11, weight: .semibold))
+                    .font(NotchGlassType.bandLabel)
                     .foregroundStyle(headingTint)
                     .lineLimit(1)
                     .fixedSize()
@@ -944,6 +1123,37 @@ struct CallaCopilotLiveHeader: View {
                                     in: RoundedRectangle(cornerRadius: 5, style: .continuous))
                 }
 
+                // A coding interview's two session-level controls. They were
+                // 30pt chips inside the panel, which is the surface the step is
+                // supposed to have; up here they cost nothing the step was
+                // using. Everything else the panel offered has a key, and the
+                // hint row under the step names them.
+                if session.isCoding {
+                    Button {
+                        NotificationCenter.default.post(name: .callaCodingAction, object: "hold")
+                    } label: {
+                        Image(systemName: session.codingHeld ? "play.fill" : "pause.fill")
+                            .font(NotchGlassType.glyphSmall)
+                    }
+                    .buttonStyle(.plain)
+                    .foregroundStyle(session.codingHeld ? Color.effectiveAccent : NotchInk.secondary)
+                    .help(session.codingHeld
+                          ? "Resume — the panel follows the interview again"
+                          : "Hold this step on screen; listening continues")
+                    .accessibilityLabel(session.codingHeld ? "Resume presentation" : "Hold presentation")
+
+                    Button {
+                        NotificationCenter.default.post(name: .callaCodingAction, object: "end")
+                    } label: {
+                        Image(systemName: "stop.fill")
+                            .font(NotchGlassType.glyphSmall)
+                    }
+                    .buttonStyle(.plain)
+                    .foregroundStyle(NotchTint.stuck)
+                    .help("End the interview")
+                    .accessibilityLabel("End the interview")
+                }
+
                 // Collapse to the answer alone and back. The transcript is the
                 // part worth surrendering first: it is the half you can
                 // reconstruct by listening, where the answer is not.
@@ -957,15 +1167,15 @@ struct CallaCopilotLiveHeader: View {
                 .foregroundStyle(NotchInk.secondary)
                 .help(session.layout == .full ? "Collapse to the answer" : "Show the transcript again")
 
-                // Pin governs whether a live call holds this notch open. It does
-                // not start or end capture.
-                Button { session.togglePin() } label: {
-                    Image(systemName: session.pinned ? "pin.fill" : "pin")
+                // Pin belongs to the notch, while Call contributes a temporary
+                // automatic hold. The same action is available system-wide.
+                Button { AppDelegate.shared?.toggleUniversalNotchPin(for: vm) } label: {
+                    Image(systemName: (vm.isPinned || session.pinsNotchOpen) ? "pin.fill" : "pin")
                         .font(NotchGlassType.glyphSmall)
                 }
                 .buttonStyle(.plain)
                 .foregroundStyle(NotchInk.secondary)
-                .help(session.pinned ? "Unpin notch" : "Pin notch open")
+                .help((vm.isPinned || session.pinsNotchOpen) ? "Unpin notch" : "Pin notch open")
             }
             .frame(maxWidth: .infinity, alignment: .trailing)
         }

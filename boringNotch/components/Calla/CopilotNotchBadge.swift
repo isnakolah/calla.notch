@@ -1,3 +1,4 @@
+import CallaContracts
 import SwiftUI
 
 /// The live call, beside a closed notch.
@@ -26,6 +27,20 @@ struct CopilotNotchBadge: View {
     private let sideWidth: CGFloat = 74
 
     private var copilot: CallaCopilotStatus { engine.status.copilot }
+    private var quiz: QuizSessionSnapshot { engine.status.quiz }
+    private var coding: CodingSessionSnapshot { engine.coding }
+
+    /// A Quiz session reaches this badge through the same `isLive` flag as a
+    /// call, but shares none of its facts. Reading `copilot.*` regardless meant a
+    /// running Quiz showed a clock frozen at `0:00` (there is no
+    /// `copilot.startedAt`), an amber tint, and help text about a microphone Quiz
+    /// never opens.
+    private var isQuiz: Bool { quiz.active }
+    private var isCode: Bool { CallaFeatureAvailability.liveCoding && !isQuiz && coding.lifecycle.active }
+
+    private var quizWorking: Bool {
+        [.solving, .arbitrating, .retrying].contains(quiz.state)
+    }
 
     var body: some View {
         HStack(spacing: 0) {
@@ -59,7 +74,8 @@ struct CopilotNotchBadge: View {
             .font(.system(size: 14, weight: .semibold))
             .foregroundStyle(tint)
             .contentTransition(.symbolEffect)
-            .symbolEffect(.variableColor.iterative, isActive: copilot.thinking)
+            .symbolEffect(.variableColor.iterative,
+                          isActive: isQuiz ? quizWorking : (isCode ? runActive : copilot.thinking))
             .help(helpText)
     }
 
@@ -67,7 +83,7 @@ struct CopilotNotchBadge: View {
     /// answer on the table.
     private var readout: some View {
         HStack(spacing: 5) {
-            Text(CallaCopilotPresentation.elapsed(since: copilot.startedAt, now: now) ?? "0:00")
+            Text(readoutText)
                 .font(.system(size: 13, weight: .medium, design: .rounded).monospacedDigit())
                 .foregroundStyle(Color.white.opacity(0.85))
             if answerWaiting {
@@ -83,11 +99,34 @@ struct CopilotNotchBadge: View {
         .animation(.smooth(duration: 0.2), value: answerWaiting)
     }
 
+    /// Quiz has no start date on the wire, so the count of answers so far is the
+    /// fact worth the space instead of a clock that cannot advance.
+    private var readoutText: String {
+        if isQuiz {
+            let count = quiz.answerHistory.count
+            return count == 0 ? "—" : "\(count)"
+        }
+        if isCode { return coding.activeMove.map { "M\($0.ordinal)" } ?? "—" }
+        return CallaCopilotPresentation.elapsed(since: copilot.startedAt, now: now) ?? "0:00"
+    }
+
     private var answerWaiting: Bool {
-        copilot.answering && copilot.hasSuggestion
+        if isQuiz { return quiz.answer != nil }
+        if isCode { return coding.activeMove != nil }
+        return copilot.answering && copilot.hasSuggestion
     }
 
     private var symbol: String {
+        if isQuiz {
+            switch quiz.state {
+            case .solving, .arbitrating, .retrying: return "sparkles"
+            case .paused: return "pause.circle.fill"
+            case .failed: return "exclamationmark.triangle.fill"
+            case .answered: return "checkmark.circle.fill"
+            default: return "macwindow"
+            }
+        }
+        if isCode { return runActive ? "terminal.fill" : "chevron.left.forwardslash.chevron.right" }
         if copilot.working == "summary" { return "text.append" }
         if copilot.thinking { return "sparkles" }
         switch copilot.speaking {
@@ -98,6 +137,18 @@ struct CopilotNotchBadge: View {
     }
 
     private var tint: Color {
+        if isQuiz {
+            switch quiz.state {
+            case .failed: return NotchTint.stuck
+            case .paused: return NotchInk.secondary
+            case .answered: return NotchTint.healthy
+            default: return .effectiveAccent
+            }
+        }
+        if isCode {
+            if coding.failure != nil { return NotchTint.stuck }
+            return runActive ? .effectiveAccent : NotchTint.healthy
+        }
         // The panel's own vocabulary, so the closed badge and the open surface
         // teach the same code: accent is the copilot working, white is you, and
         // amber is the one state worth checking.
@@ -113,6 +164,18 @@ struct CopilotNotchBadge: View {
     }
 
     private var helpText: String {
+        if isQuiz {
+            switch quiz.state {
+            case .solving, .arbitrating, .retrying: return "Reasoning about the question on screen"
+            case .paused: return "Quiz is paused"
+            case .failed: return quiz.failure ?? "Quiz stopped unexpectedly"
+            case .answered: return "An answer is ready"
+            default: return "Watching the target window"
+            }
+        }
+        if isCode {
+            return coding.activeMove?.say ?? coding.activeMove?.why ?? "Listening for the next coding move"
+        }
         if copilot.working == "summary" { return "Catching the summary up" }
         if copilot.thinking { return "Finding an answer" }
         switch copilot.speaking {
@@ -123,5 +186,9 @@ struct CopilotNotchBadge: View {
                 ? "Listening to both sides"
                 : "Only your microphone is being captured"
         }
+    }
+
+    private var runActive: Bool {
+        engine.codingEvents.compactMap(\.run).last?.lifecycle == .running
     }
 }

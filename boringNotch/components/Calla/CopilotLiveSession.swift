@@ -1,4 +1,5 @@
 import AppKit
+import CallaContracts
 import Combine
 import Defaults
 import SwiftUI
@@ -29,29 +30,80 @@ final class CopilotLiveSession: ObservableObject {
 
     @Published private(set) var layout: Layout = .full
 
+    /// Whether the coding panel is frozen on the step the reader is working
+    /// through. Published rather than kept in the panel's own `@State` because
+    /// the control that toggles it now lives in the band above the panel, and a
+    /// Hold button that cannot tell you whether it is held is a light switch
+    /// with no bulb.
+    @Published var codingHeld = false
+
+    /// Where the reader is in the Quiz session's answers.
+    ///
+    /// This lives here rather than in the view because the global copy and
+    /// step shortcuts have to act on the answer that is actually on screen. A
+    /// `@State` in the panel would leave `sessionCopy` copying the newest
+    /// answer while the reader looked at an older one.
+    @Published private(set) var quizAnswerCursor = CallaQuizPresentation.Cursor.latest
+
+    /// Bumped when the reader asks to scroll the answer they are looking at.
+    ///
+    /// The scroll shortcuts used to always scroll the *target window*, which put
+    /// the session into `.collecting` — so pressing down while reading a long
+    /// answer made Quiz go and fetch more of the question instead of moving the
+    /// code. The panel is what the reader is looking at, so that is what the key
+    /// moves; scrolling the target is what the key does only when Quiz has
+    /// actually asked for it.
+    @Published private(set) var quizAnswerScroll = QuizAnswerScrollRequest(tick: 0, lines: 0)
+
+    struct QuizAnswerScrollRequest: Equatable {
+        let tick: Int
+        /// Negative is up.
+        let lines: Int
+    }
+
+    /// The last Quiz session, kept after it ends so its answers and any failure
+    /// survive long enough to be read.
+    ///
+    /// A finished or failed Quiz used to make `active` false, which dropped
+    /// `isLive`, unpinned the notch and tore the panel down — taking the answer
+    /// and the reason with it. The call flow has three dedicated surfaces for
+    /// exactly this moment; Quiz had none.
+    @Published private(set) var quizOutcome: QuizSessionSnapshot?
+
     /// Whether the session currently wants the notch held open. Cleared by
     /// `dismiss()` without ending the call.
     @Published private(set) var pinned = false
+    @Published private(set) var endedByReader = false
+    @Published private(set) var callEndReleases = 0
 
-    /// A meeting is about to start and the copilot is warm but not recording.
+    func prepareForSessionStart() { endedByReader = false }
+
+    /// End releases presentation immediately; audio drain and recap stay host-owned.
+    func releaseEndedCall() {
+        endedByReader = true
+        pinned = false
+        dismissedByReader = true
+        clearStartupFailure()
+        callEndReleases &+= 1
+        NotificationCenter.default.post(name: .copilotLiveDidChange, object: nil)
+    }
+
+    /// The reader took the notch back — "Leave it running", a dismissed
+    /// suggestion, a dismissed failure, or unpinning a live call.
     ///
-    /// Deliberately its own state alongside `signInActive` rather than a variant of
-    /// `isLive`: a call does not exist yet, nothing is being captured, and the
-    /// panel's job is to say both of those things and offer the three buttons. If
-    /// this were folded into `isLive` the notch would claim a call was running
-    /// while the microphones were off, which is the one lie this feature cannot
-    /// afford to tell.
-    @Published private(set) var prerollActive = false
-    @Published private(set) var prerollTitle: String?
-    @Published private(set) var prerollStartsAt: Date?
+    /// A dismissal is a decision about the *notch*, not about the call, and it
+    /// has to outlive the event that follows it. Without this, the next status
+    /// change after "Leave it running" either closed the notch under the reader
+    /// or moved them to Home — the two things they had just declined by pressing
+    /// the button. Cleared by anything that legitimately takes the notch again:
+    /// a call starting, a sign-in, a failure worth reading.
+    @Published private(set) var dismissedByReader = false
 
     /// A call has been asked for and has not come up yet.
     ///
-    /// Its own state rather than a variant of `isLive`, for the same reason
-    /// `prerollActive` is: nothing is being captured yet, and a notch that claimed
-    /// otherwise would be making the one claim this feature cannot get wrong. What
-    /// it buys is the panel appearing on the press instead of up to four seconds
-    /// later, with the host's own startup drawn inside it.
+    /// Its own state rather than a variant of `isLive`: nothing is being captured
+    /// yet. It buys panel appearing on press instead of up to four seconds later,
+    /// with host startup drawn inside it.
     @Published private(set) var starting = false
 
     /// The call has stopped capturing and is being written up.
@@ -108,14 +160,26 @@ final class CopilotLiveSession: ObservableObject {
     /// The single question `BoringViewModel.close()` and the panel's sharing
     /// type both ask.
     var pinsNotchOpen: Bool {
-        (isLive || starting || ending || startupFailed || signInActive || prerollActive) && pinned
+        if endedByReader { return false }
+        // A finished Quiz holds the notch so its answers can still be read — but
+        // only until the reader lets it go, or the pin would be a control that
+        // did nothing on that surface.
+        if quizOutcome != nil { return !dismissedByReader }
+        return (isLive || starting || ending || startupFailed || signInActive) && pinned
+    }
+
+    var isWave: Bool { CallaFeatureAvailability.liveCoding && CallaEngineClient.shared.coding.interviewProfile == "wave"
+        && (CallaEngineClient.shared.coding.lifecycle.active || isLive || ending) }
+
+    var isCoding: Bool { CallaFeatureAvailability.liveCoding && CallaEngineClient.shared.coding.lifecycle.active }
+    var codingSizeProfile: NotchSizeProfile {
+        layout == .compact ? .callCollapsed : .callExpanded
     }
 
     /// The size the notch should open to right now.
     var preferredOpenSize: CGSize {
         // A sign-in needs a line of text and a field, so it uses the compact size
-        // whatever the call layout happens to be. The pre-roll card is the same
-        // shape: a title, a line of state, and three buttons.
+        // whatever the call layout happens to be.
         // Filing a document outranks the rest: it is a two-column surface and at
         // a normal tab's height its own drop target falls off the bottom.
         if NotchDropRouter.shared.isChoosing { return dropChooserNotchSize }
@@ -126,7 +190,9 @@ final class CopilotLiveSession: ObservableObject {
             // a line to type — a normal tab, like every other pane.
             return CallaKnowledgeAttach.shared.presetTarget == nil ? knowledgeNotchSize : openNotchSize
         }
-        if signInActive || prerollActive { return openNotchSize }
+        if endedByReader { return openNotchSize }
+        if isCoding { return NotchSizePreferences.size(codingSizeProfile) }
+        if signInActive { return openNotchSize }
         // A starting call uses the full live size it is about to become, so the
         // notch does not resize under the reader the moment capture begins.
         // Compact, not the live slab.
@@ -137,7 +203,11 @@ final class CopilotLiveSession: ObservableObject {
         // and stayed there whether or not a call ever arrived. It grows into the
         // full size in `apply(running:)` — at the moment recording begins, which
         // is the moment the room starts carrying something.
-        if (starting || startupFailed || ending), !isLive { return CallaPanelSize.compact }
+        // Only while the session still holds the notch. After "Leave it
+        // running" the panel belongs to whatever tab the reader went to, and
+        // this was sizing every open — Home, Usage, the shelf — to the call's
+        // compact height for the whole length of the write-up.
+        if (starting || startupFailed || ending), !isLive, pinned { return CallaPanelSize.compact }
         guard isLive else { return openNotchSize }
         // Compact is genuinely smaller. Keeping the full slab for both layouts
         // meant collapsing bought nothing but empty card — the state and the
@@ -159,10 +229,16 @@ final class CopilotLiveSession: ObservableObject {
     private var cancellables: Set<AnyCancellable> = []
 
     private init() {
+        CallaEngineClient.shared.$coding.map { "\($0.lifecycle.active):\($0.interviewProfile ?? "")" }
+            .removeDuplicates().sink { [weak self] _ in
+                self?.panelSizeRevision &+= 1
+                NotificationCenter.default.post(name: .copilotLiveDidChange, object: nil)
+            }.store(in: &cancellables)
+
         CallaEngineClient.shared.$status
-            // Recording, not merely running: a prewarmed host exists but captures
-            // nothing, and the live panel must not appear for it.
-            .map(\.copilot.isRecording)
+            // Keep decode compatibility with older hosts, but only capture state
+            // may open live panel.
+            .map { $0.copilot.isRecording || $0.quiz.active }
             .removeDuplicates()
             .sink { [weak self] running in
                 self?.apply(running: running)
@@ -217,36 +293,8 @@ final class CopilotLiveSession: ObservableObject {
             .store(in: &cancellables)
     }
 
-    /// Arms the pre-roll host without disturbing the current notch. The user
-    /// discovers the ready state by opening the Copilot tab themselves.
-    ///
-    /// Called by `MeetingPreroll` at the lead time, before the engine has spawned
-    /// anything — so the card appears at the moment the user was promised it,
-    /// rather than whenever the host finishes booting.
-    func beginPreroll(title: String, startsAt: Date) {
-        guard Defaults[.callaCopilotEnabled] else { return }
-        prerollTitle = title
-        prerollStartsAt = startsAt
-        guard !prerollActive else { return }
-        prerollActive = true
-        layout = .compact
-        pinned = false
-    }
-
-    func endPreroll() {
-        guard prerollActive else { return }
-        prerollActive = false
-        prerollTitle = nil
-        prerollStartsAt = nil
-        // Hands the notch back to whatever the call is doing rather than closing
-        // it out from under a call that just started, which is the same rule the
-        // sign-in path follows when it finishes.
-        pinned = isLive
-        layout = isLive ? .full : .compact
-        NotificationCenter.default.post(name: .copilotLiveDidChange, object: nil)
-    }
-
     private func apply(starting: Bool) {
+        guard !endedByReader else { self.starting = false; return }
         guard starting != self.starting else { return }
         self.starting = starting
 
@@ -265,7 +313,7 @@ final class CopilotLiveSession: ObservableObject {
                     startupFailed = true
                     startupFailure = CallaEngineClient.shared.status.copilot.lastResult
                     layout = .compact
-                    pinned = true
+                    pin()
                 } else {
                     pinned = false
                 }
@@ -275,7 +323,7 @@ final class CopilotLiveSession: ObservableObject {
         }
         clearStartupFailure()
         layout = .compact
-        pinned = true
+        pin()
         reveal()
     }
 
@@ -293,6 +341,7 @@ final class CopilotLiveSession: ObservableObject {
         clearStartupFailure()
         lastStartupStage = nil
         pinned = false
+        dismissedByReader = true
         NotificationCenter.default.post(name: .copilotLiveDidChange, object: nil)
     }
 
@@ -312,7 +361,12 @@ final class CopilotLiveSession: ObservableObject {
         // live call for even one frame after capture closed.
         isLive = false
         layout = .compact
-        pinned = true
+        guard !endedByReader else {
+            pinned = false
+            NotificationCenter.default.post(name: .copilotLiveDidChange, object: nil)
+            return
+        }
+        pin()
         reveal()
     }
 
@@ -323,34 +377,36 @@ final class CopilotLiveSession: ObservableObject {
         if signingIn {
             guard Defaults[.callaCopilotEnabled] else { return }
             layout = .compact
-            pinned = true
+            pin()
             reveal()
         } else {
             // A finished sign-in hands the notch back to whatever the call is
             // doing, rather than closing it out from under a call that started.
-            pinned = isLive
+            if isLive { pin() } else { pinned = false }
             layout = isLive ? .full : .compact
             NotificationCenter.default.post(name: .copilotLiveDidChange, object: nil)
         }
     }
 
     private func apply(running: Bool) {
+        // An in-flight capture status after End cannot reopen the presentation.
+        // A fresh explicit launch resets this in prepareForSessionStart().
+        if running, endedByReader { return }
         guard running != isLive else { return }
         isLive = running
+        // A new session starts at its newest answer, and a finished one must not
+        // leave a stale id pointing into the next session's history.
+        quizAnswerCursor = .latest
+        if running { quizOutcome = nil }
 
         if running {
             guard Defaults[.callaCopilotEnabled] else { return }
-            // Recording has started, so the card's central claim — that nothing is
-            // being captured — has stopped being true. The live panel takes over.
             starting = false
             ending = false
             clearStartupFailure()
             lastStartupStage = nil
-            prerollActive = false
-            prerollTitle = nil
-            prerollStartsAt = nil
             layout = .full
-            pinned = true
+            pin()
             reveal()
         } else {
             pinned = false
@@ -373,11 +429,74 @@ final class CopilotLiveSession: ObservableObject {
         NotificationCenter.default.post(name: .copilotLiveDidChange, object: nil)
     }
 
+    /// Steps back through the session's answers. Stepping off the newest stops
+    /// the panel following new arrivals until the reader returns to the end.
+    func quizAnswerBack(history: [QuizFinalAnswer]) {
+        quizAnswerCursor = CallaQuizPresentation.back(quizAnswerCursor, history: history)
+    }
+
+    func quizAnswerForward(history: [QuizFinalAnswer]) {
+        quizAnswerCursor = CallaQuizPresentation.forward(quizAnswerCursor, history: history)
+    }
+
+    /// A Quiz session has ended. Worth holding the notch for only when there is
+    /// something to report: an answer to read, or a reason it stopped.
+    func noteQuizEnded(_ snapshot: QuizSessionSnapshot) {
+        let hasSomethingToSay = !snapshot.answerHistory.isEmpty
+            || (snapshot.failure?.isEmpty == false)
+        guard hasSomethingToSay else { return }
+        quizOutcome = snapshot
+        quizAnswerCursor = .latest
+    }
+
+    func dismissQuizOutcome() {
+        quizOutcome = nil
+        NotificationCenter.default.post(name: .copilotLiveDidChange, object: nil)
+    }
+
+    func scrollQuizAnswer(by lines: Int) {
+        quizAnswerScroll = QuizAnswerScrollRequest(tick: quizAnswerScroll.tick + 1, lines: lines)
+    }
+
+    func quizAnswerFollowLatest() {
+        quizAnswerCursor = .latest
+    }
+
+    /// Drops a cursor whose answer has been trimmed out of the capped history.
+    func reconcileQuizAnswerCursor(history: [QuizFinalAnswer]) {
+        let reconciled = CallaQuizPresentation.reconcile(quizAnswerCursor, history: history)
+        if reconciled != quizAnswerCursor { quizAnswerCursor = reconciled }
+    }
+
+    /// The answer the panel is showing, which is what the copy shortcut means.
+    func quizDisplayedAnswer(history: [QuizFinalAnswer]) -> QuizFinalAnswer? {
+        CallaQuizPresentation.position(quizAnswerCursor, history: history).answer
+    }
+
     func toggleLayout() {
         // Nothing to toggle while a sign-in owns the panel.
-        guard isLive, !signInActive else { return }
+        guard isLive || isCoding, !signInActive else { return }
         layout = layout == .full ? .compact : .full
         // A layout change is a size change, so the open notch has to be told.
+        NotificationCenter.default.post(name: .copilotLiveDidChange, object: nil)
+    }
+
+    /// The session taking the notch. Always through here, so no path can pin
+    /// the panel while still believing the reader wants it gone.
+    private func pin() {
+        pinned = true
+        dismissedByReader = false
+    }
+
+    /// Sets the live layout outright.
+    ///
+    /// `toggleLayout` is the reader's own control; this is the resize editor
+    /// putting the panel into the layout it is being asked to size. Without it,
+    /// picking "Call · Compact" while a call is running sized the compact
+    /// profile against the full layout's content.
+    func setLayout(_ layout: Layout) {
+        guard isLive || isCoding, !signInActive, layout != self.layout else { return }
+        self.layout = layout
         NotificationCenter.default.post(name: .copilotLiveDidChange, object: nil)
     }
 
@@ -387,19 +506,46 @@ final class CopilotLiveSession: ObservableObject {
     /// again for this call".
     func dismiss() {
         pinned = false
+        dismissedByReader = true
+        // The notch is only ever told about a *pin* change by this notification.
+        // Without it "Leave it running" left the call's panel parked open at the
+        // call's size until some unrelated status change happened to fire.
+        NotificationCenter.default.post(name: .copilotLiveDidChange, object: nil)
     }
 
     /// Changes whether a live call holds the notch open. Unpinning deliberately
     /// leaves the current panel on screen; normal notch close rules take over.
+    /// Bumped when the reader explicitly lets the notch go.
+    ///
+    /// Releasing the pin cannot close the notch from here — the view model lives
+    /// in the app, which is why `⌥⌘.` calls `dismiss()` *and* `vm.close()` itself.
+    /// Dropping `pinned` alone therefore did nothing visible while a session was
+    /// live: `syncCopilotLiveNotch` bails out for a live session, and with the
+    /// pointer over another window there is no hover-out to trigger a close. So
+    /// unpinning silently did nothing. This is the signal the notch acts on.
+    @Published private(set) var notchReleases = 0
+
     func togglePin() {
-        guard isLive, !signInActive else { return }
-        pinned.toggle()
+        // A live session only. The key is global, so it fires with any app
+        // focused — which is the point while a Quiz is running, but it must not
+        // resurrect a *finished* one from whatever the reader is doing hours
+        // later. The pin glyph on the ended panel still dismisses that surface.
+        guard isLive || isCoding, !signInActive else { return }
+        if pinned {
+            pinned = false
+            dismissedByReader = true
+            notchReleases += 1
+        } else {
+            pin()
+            reveal()
+        }
+        NotificationCenter.default.post(name: .copilotLiveDidChange, object: nil)
     }
 
     /// Re-arms the pin — called when a fresh suggestion arrives after a dismiss.
     func repin() {
-        guard isLive else { return }
-        pinned = true
+        guard isLive, !endedByReader else { return }
+        pin()
     }
 }
 
