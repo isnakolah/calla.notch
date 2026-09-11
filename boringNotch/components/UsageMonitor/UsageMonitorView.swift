@@ -157,7 +157,7 @@ private struct ProviderIconBadge: View {
         switch provider {
         case .claude:
             Image(systemName: "asterisk")
-                .font(.system(size: 11, weight: .heavy))
+                .font(NotchGlassType.glyph)
                 .foregroundStyle(provider.glyphColor)
         case .codex:
             Text(">_")
@@ -191,10 +191,10 @@ private struct ProviderUsageColumn: View {
             ProviderIconBadge(provider: provider)
 
             Text(providerName)
-                .font(.system(.headline, design: .rounded).weight(.bold))
+                .font(NotchGlassType.title)
                 .foregroundStyle(
                     QuotaDisplayStatus.worstColor(
-                        state.report?.session?.percentRemaining,
+                        state.report?.effectiveSession?.percentRemaining,
                         state.report?.weekly?.percentRemaining
                     ) ?? .primary
                 )
@@ -208,12 +208,13 @@ private struct ProviderUsageColumn: View {
 
             if let report = state.report {
                 Text(capturedAgo(report.capturedAt))
-                    .font(.caption2)
-                    .foregroundStyle(.secondary)
+                    .font(NotchGlassType.caption)
+                    .foregroundStyle(NotchInk.tertiary)
             }
 
             if let onRefresh {
-                RefreshButton(action: onRefresh)
+                NotchGlyphButton(symbol: "arrow.clockwise", help: "Refresh \(providerName) usage", action: onRefresh)
+                    .accessibilityLabel("Refresh \(providerName) usage")
             }
         }
     }
@@ -261,8 +262,11 @@ private struct ProviderUsageColumn: View {
     }
 
     private func availableQuotas(for report: UsageReportDTO) -> [AvailableQuota] {
-        [
-            report.session.map { AvailableQuota(value: $0, isWeekly: false) },
+        if report.weeklyExhausted, let weekly = report.weekly {
+            return [AvailableQuota(value: weekly, isWeekly: true)]
+        }
+        return [
+            report.effectiveSession.map { AvailableQuota(value: $0, isWeekly: false) },
             report.weekly.map { AvailableQuota(value: $0, isWeekly: true) }
         ]
         .compactMap { $0 }
@@ -298,7 +302,7 @@ private struct UsageQuotaTile: View {
                 let status = QuotaDisplayStatus.from(percentRemaining: quota.percentRemaining)
 
                 Text("\(Int(quota.percentRemaining.rounded()))%")
-                    .font(.system(size: 24, weight: .bold, design: .rounded))
+                    .font(NotchGlassType.figure)
                     .foregroundStyle(status.color)
 
                 progressBar(percent: quota.percentRemaining, color: status.color)
@@ -306,8 +310,8 @@ private struct UsageQuotaTile: View {
                 resetLabel(quota)
             } else {
                 Text("—")
-                    .font(.system(size: 24, weight: .bold, design: .rounded))
-                    .foregroundStyle(.secondary)
+                    .font(NotchGlassType.figure)
+                    .foregroundStyle(NotchInk.tertiary)
                 Spacer(minLength: 0)
             }
         }
@@ -318,7 +322,7 @@ private struct UsageQuotaTile: View {
     private func progressBar(percent: Double, color: Color) -> some View {
         GeometryReader { geo in
             ZStack(alignment: .leading) {
-                Capsule().fill(Color.primary.opacity(0.1))
+                Capsule().fill(NotchPlane.track)
                 Capsule()
                     .fill(color)
                     .frame(width: geo.size.width * max(0, min(1, percent / 100)))
@@ -334,15 +338,15 @@ private struct UsageQuotaTile: View {
             // no "Resets in" wording. Refreshed each minute.
             TimelineView(.periodic(from: .now, by: 60)) { _ in
                 Text(Self.resetString(for: resetsAt, isWeekly: isWeekly))
-                    .font(.caption2)
-                    .foregroundStyle(.secondary)
+                    .font(NotchGlassType.caption)
+                    .foregroundStyle(NotchInk.tertiary)
                     .lineLimit(1)
             }
         } else if let resetText = quota.resetText {
             // Fallback string (e.g. Codex TTY path) — strip the "Resets in/…" prefix.
             Text(Self.stripResetPrefix(resetText))
-                .font(.caption2)
-                .foregroundStyle(.secondary)
+                .font(NotchGlassType.caption)
+                .foregroundStyle(NotchInk.tertiary)
                 .lineLimit(1)
         } else {
             EmptyView()
@@ -391,26 +395,6 @@ private struct UsageQuotaTile: View {
     }
 }
 
-/// Compact refresh control for the usage header — a subtle secondary glyph that
-/// highlights on hover, sized to sit inline next to the "updated" caption.
-private struct RefreshButton: View {
-    let action: () -> Void
-    @State private var hovering = false
-
-    var body: some View {
-        Button(action: action) {
-            Image(systemName: "arrow.clockwise")
-                .font(.system(size: 10, weight: .semibold))
-                .foregroundStyle(hovering ? Color.primary : .secondary)
-                .padding(4)
-                .background(Circle().fill(hovering ? Color.primary.opacity(0.12) : .clear))
-                .contentShape(Circle())
-        }
-        .buttonStyle(.plain)
-        .onHover { hovering = $0 }
-    }
-}
-
 // MARK: - Message / Status helpers
 
 private struct MessageView: View {
@@ -424,11 +408,12 @@ private struct MessageView: View {
                 ProgressView().controlSize(.small)
             } else if let icon {
                 Image(systemName: icon)
-                    .foregroundStyle(.secondary)
+                    .font(NotchGlassType.glyph)
+                    .foregroundStyle(NotchInk.tertiary)
             }
             Text(text)
-                .font(.caption)
-                .foregroundStyle(.secondary)
+                .font(NotchGlassType.detail)
+                .foregroundStyle(NotchInk.secondary)
                 .lineLimit(2)
                 .fixedSize(horizontal: false, vertical: true)
         }

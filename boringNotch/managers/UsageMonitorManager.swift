@@ -10,6 +10,7 @@
 import Defaults
 import UserNotifications
 import Foundation
+import Security
 import SwiftUI
 
 /// Per-provider view state. Keeps the previously loaded report visible while a
@@ -40,6 +41,7 @@ final class UsageMonitorManager: ObservableObject {
 
     @Published private(set) var claude: ProviderUsageState = .idle
     @Published private(set) var codex: ProviderUsageState = .idle
+    @Published private(set) var lastErrors: [String: String] = [:]
 
     private var inFlight: Set<String> = []
     /// Usage badges can be recreated as the notch opens and closes. Keep the
@@ -52,6 +54,8 @@ final class UsageMonitorManager: ObservableObject {
         // while Claude/Codex are unreachable) still shows the previous usage.
         if let cached = Self.loadCachedReport(for: "claude") { claude = .loaded(cached) }
         if let cached = Self.loadCachedReport(for: "codex") { codex = .loaded(cached) }
+        if let error = Defaults[.usageLastClaudeError] { lastErrors["claude"] = error }
+        if let error = Defaults[.usageLastCodexError] { lastErrors["codex"] = error }
         startPeriodicRefresh()
     }
 
@@ -121,6 +125,21 @@ final class UsageMonitorManager: ObservableObject {
         }
     }
 
+    func lastError(for provider: String) -> String? { lastErrors[provider] }
+
+    private func setLastError(_ error: String?, for provider: String) {
+        if let error {
+            lastErrors[provider] = error
+        } else {
+            lastErrors.removeValue(forKey: provider)
+        }
+        if provider == "claude" {
+            Defaults[.usageLastClaudeError] = error
+        } else {
+            Defaults[.usageLastCodexError] = error
+        }
+    }
+
     // MARK: - Refresh
 
     /// Refreshes any provider whose cached report is older than the configured
@@ -160,6 +179,13 @@ final class UsageMonitorManager: ObservableObject {
         }
     }
 
+    private static func currentSecuritySessionID() -> String? {
+        var sessionID: SecuritySessionId = 0
+        guard SessionGetInfo(callerSecuritySession, &sessionID, nil) == errSecSuccess,
+              sessionID != 0 else { return nil }
+        return String(sessionID, radix: 16)
+    }
+
     private func isStale(_ state: ProviderUsageState, interval: TimeInterval) -> Bool {
         guard let report = state.report else { return true }
         return Date().timeIntervalSince(report.capturedAt) >= interval
@@ -184,7 +210,10 @@ final class UsageMonitorManager: ObservableObject {
         setState(.syncing(previous: state(for: provider).report), for: provider)
 
         Task { [provider] in
-            let dto = await XPCHelperClient.shared.fetchUsage(provider: provider)
+            let dto = await XPCHelperClient.shared.fetchUsage(
+                provider: provider,
+                securitySessionID: Self.currentSecuritySessionID()
+            )
             await MainActor.run {
                 self.inFlight.remove(provider)
                 if let dto {
@@ -194,13 +223,17 @@ final class UsageMonitorManager: ObservableObject {
                     if dto.status == .error,
                        let previous = self.state(for: provider).report,
                        previous.status == .ok {
+                        self.setLastError(dto.errorDescription ?? "Usage refresh failed", for: provider)
                         self.setState(.loaded(previous), for: provider)
                     } else {
                         let before = self.state(for: provider).report
                         self.setState(.loaded(dto), for: provider)
                         if dto.status == .ok {
+                            self.setLastError(nil, for: provider)
                             Self.persistReport(dto, for: provider)
                             self.announceIfNewlyLow(provider: provider, previous: before, current: dto)
+                        } else {
+                            self.setLastError(dto.errorDescription ?? "Usage refresh failed", for: provider)
                         }
                     }
                 } else {
@@ -208,6 +241,7 @@ final class UsageMonitorManager: ObservableObject {
                     // shows something actionable instead of spinning forever.
                     let previous = self.state(for: provider).report
                     if let previous {
+                        self.setLastError("Helper unavailable", for: provider)
                         self.setState(.loaded(previous), for: provider)
                     } else {
                         self.setState(.loaded(UsageReportDTO(
