@@ -71,6 +71,9 @@ public actor AgyProvider: IntelligenceProvider {
     /// being told one is coming — see `respond(to:)`, which used to bootstrap a
     /// second one alongside it.
     private var opening: [String: Task<Bool, Never>] = [:]
+    /// Next conversation is opened and seeded before current reaches hard cap.
+    /// Swap happens only between requests, so no live answer pays bootstrap.
+    private var replacements: [String: Task<(id: String, tokens: Int)?, Never>] = [:]
 
     public init(
         configuration: Configuration,
@@ -170,9 +173,15 @@ public actor AgyProvider: IntelligenceProvider {
            session.estimatedTokens >= configuration.rolloverTokenBudget
         {
             _ = conversationID
-            session.conversationID = nil
+            if let prepared = replacements[key], let replacement = await prepared.value {
+                session.conversationID = replacement.id
+                session.estimatedTokens = replacement.tokens
+            } else {
+                session.conversationID = nil
+                session.estimatedTokens = 0
+            }
+            replacements.removeValue(forKey: key)
             session.rollovers += 1
-            session.estimatedTokens = 0
         }
 
         let isBootstrap = session.conversationID == nil
@@ -192,9 +201,14 @@ public actor AgyProvider: IntelligenceProvider {
                 title: key
             )
         } catch let failure as IntelligenceFailure where failure.isRetryableInPlace {
-            // The host is the usual casualty. One attempt on the slow transport
-            // beats handing the turn to the Gateway, which has no summary route
-            // and no memory of this conversation.
+            // Live answers never fall onto `agy --print`: its process startup alone
+            // exceeds live budget. Router retries resident host once; failure then
+            // reaches UI explicitly. Offline recap/Tutor may still use print.
+            if request.task.id == "copilot.suggest" {
+                if case .sessionDied = failure { session.conversationID = nil }
+                sessions[key] = session
+                throw failure
+            }
             usedFallbackTransport = true
             if case .sessionDied = failure { session.conversationID = nil }
             let retryPrompt = session.conversationID == nil
@@ -224,6 +238,7 @@ public actor AgyProvider: IntelligenceProvider {
             session.recent.removeFirst(session.recent.count - configuration.briefExchanges)
         }
         sessions[key] = session
+        prepareReplacementIfNeeded(key: key, request: request, session: session)
 
         return IntelligenceResponse(
             text: parsed.text,
@@ -353,9 +368,9 @@ public actor AgyProvider: IntelligenceProvider {
 
     public func closeSession(_ sessionKey: String) async {
         sessions.removeValue(forKey: sessionKey)
-        if sessions.isEmpty {
-            await host?.stop()
-        }
+        replacements.removeValue(forKey: sessionKey)?.cancel()
+        // Shared runtime stays resident across Call and Tutor conversations.
+        // Engine shutdown/sign-out owns `shutdown()`.
     }
 
     /// Boot the host ahead of the first request.
@@ -460,6 +475,8 @@ public actor AgyProvider: IntelligenceProvider {
 
     public func shutdown() async {
         sessions.removeAll()
+        replacements.values.forEach { $0.cancel() }
+        replacements.removeAll()
         await host?.stop()
     }
 
@@ -489,6 +506,45 @@ public actor AgyProvider: IntelligenceProvider {
             .map { "- said: \($0.input)\n  answered: \($0.reply.trimmed(280))" }
             .joined(separator: "\n")
         return bootstrap + "\n\n## Earlier in this session\n\(brief)"
+    }
+
+    private func prepareReplacementIfNeeded(
+        key: String,
+        request: IntelligenceRequest,
+        session: Session
+    ) {
+        let reserve = min(5_000, max(1_000, configuration.rolloverTokenBudget / 5))
+        guard request.task.conversation != .oneShot,
+              session.estimatedTokens >= configuration.rolloverTokenBudget - reserve,
+              replacements[key] == nil else { return }
+        replacements[key] = Task { [weak self] in
+            guard let self else { return nil }
+            return await self.prepareReplacement(key: key, request: request, session: session)
+        }
+    }
+
+    private func prepareReplacement(
+        key: String,
+        request: IntelligenceRequest,
+        session: Session
+    ) async -> (id: String, tokens: Int)? {
+        guard let fastTransport else { return nil }
+        let priming = IntelligenceRequest(
+            task: request.task, sessionKey: request.sessionKey, system: request.system,
+            input: Self.primingInput, tier: request.tier, exactModel: request.exactModel,
+            attachments: request.attachments,
+            priority: request.priority, queuePolicy: request.queuePolicy)
+        let prompt = bootstrapPrompt(for: priming, session: session)
+        do {
+            let exchange = try await fastTransport.open(
+                prompt: prompt, tier: priming.effectiveTier,
+                exactModel: priming.exactModel, title: "\(key)#replacement",
+                budget: max(request.task.latencyBudget, 30))
+            return (exchange.conversationID,
+                    configuration.providerOverheadTokens + Self.estimateTokens(prompt) + Self.estimateTokens(exchange.text))
+        } catch {
+            return nil
+        }
     }
 
     private func nextEstimate(

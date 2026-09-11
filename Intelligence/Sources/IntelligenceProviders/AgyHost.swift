@@ -175,7 +175,9 @@ public actor AgyHost {
         // log out from under a host that is still running.
         let run = configuration.workspace.appendingPathComponent(
             "run-\(ProcessInfo.processInfo.processIdentifier)-\(UUID().uuidString.prefix(8))")
-        try manager.createDirectory(at: run, withIntermediateDirectories: true)
+        try manager.createDirectory(
+            at: run, withIntermediateDirectories: true,
+            attributes: [.posixPermissions: 0o700])
         runDirectory = run
         Self.pruneStaleRuns(in: configuration.workspace, keeping: run, manager: manager)
 
@@ -234,6 +236,9 @@ public actor AgyHost {
     }
 
     private func readPort() -> String? {
+        if let logURL {
+            try? FileManager.default.setAttributes([.posixPermissions: 0o600], ofItemAtPath: logURL.path)
+        }
         guard let logURL, let log = try? String(contentsOf: logURL, encoding: .utf8) else { return nil }
         let range = NSRange(log.startIndex ..< log.endIndex, in: log)
         // Last match wins: a relaunch appends to the same file.

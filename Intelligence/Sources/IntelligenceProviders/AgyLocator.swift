@@ -37,6 +37,26 @@ public enum AgyLocator {
     /// self-installed 1.1.13 is what shipped this bug. Taking the first path that
     /// exists picks by accident; this picks by version.
     public static func installations() -> [Installation] {
+        let previous = memoized()
+        let fingerprint = fingerprint(alsoWatching: previous?.installations.map(\.path) ?? [])
+        if let previous, previous.fingerprint == fingerprint, !previous.installations.isEmpty {
+            return previous.installations
+        }
+        let found = discover()
+        memoLock.lock()
+        memo = Memo(fingerprint: fingerprint, installations: found)
+        memoLock.unlock()
+        return found
+    }
+
+    /// The search itself: known paths, then a login shell, then `--version` per
+    /// candidate.
+    ///
+    /// Four process spawns, one of them a *login* shell — and `start()` ran the
+    /// whole thing on every launch to answer a question whose answer changes when
+    /// the user installs or upgrades `agy`. `installations()` now runs this only
+    /// when the binaries on disk have actually moved.
+    private static func discover() -> [Installation] {
         var seen: Set<String> = []
         var found: [Installation] = []
         var candidates = knownPaths.map { expand($0) }
@@ -50,6 +70,42 @@ public enum AgyLocator {
             found.append(Installation(path: path, version: version))
         }
         return found.sorted { compare($0.components, $1.components) > 0 }
+    }
+
+    private struct Memo: Sendable {
+        let fingerprint: String
+        let installations: [Installation]
+    }
+
+    private static let memoLock = NSLock()
+    nonisolated(unsafe) private static var memo: Memo?
+
+    private static func memoized() -> Memo? {
+        memoLock.lock(); defer { memoLock.unlock() }
+        return memo
+    }
+
+    /// Size and modification date of every path the last search cared about.
+    ///
+    /// Deliberately not a hash of the binaries: `agy` is ~180 MB and this is
+    /// consulted on a poll. A reinstall changes both fields, and an install in a
+    /// place only the login shell knows about is watched too, so an upgrade there
+    /// invalidates this as well.
+    private static func fingerprint(alsoWatching extra: [String]) -> String {
+        let paths = Set(knownPaths.map { expand($0) } + extra).sorted()
+        return paths.map { path in
+            guard let attributes = try? FileManager.default.attributesOfItem(atPath: path),
+                  let size = attributes[.size] as? Int,
+                  let modified = attributes[.modificationDate] as? Date
+            else { return "\(path)=-" }
+            return "\(path)=\(size)@\(Int(modified.timeIntervalSince1970))"
+        }.joined(separator: "|")
+    }
+
+    /// Drops the memo, so the next lookup searches again. For tests and for the
+    /// moment after a sign-in, when an install may have just appeared.
+    public static func forgetInstallations() {
+        memoLock.lock(); memo = nil; memoLock.unlock()
     }
 
     /// The newest install this code can drive, or nil.
@@ -138,6 +194,10 @@ public enum AgyLocator {
     /// still passes. Full validation would need a network call, and this runs
     /// on a 2-second poll.
     public static func hasCredentials() -> Bool {
+        if let current = FileManager.default.contents(atPath: AgyEnvironment.cliOAuthTokenFile.path),
+           !current.isEmpty {
+            return true
+        }
         guard let data = FileManager.default.contents(atPath: AgyEnvironment.credentialsFile.path),
               let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
               let refreshToken = json["refresh_token"] as? String,
@@ -157,4 +217,3 @@ public enum AgyLocator {
         return active
     }
 }
-

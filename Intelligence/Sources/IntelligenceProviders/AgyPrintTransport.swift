@@ -83,7 +83,7 @@ public struct AgyPrintTransport: AgyAttachmentTransport {
         budget: TimeInterval,
         tutorAttachment: Bool = false
     ) async throws -> AgyExchange {
-        let model = exactModel ?? catalog.exactID(for: tier) ?? "gemini-3.7-flash-low"
+        let model = exactModel ?? catalog.exactID(for: tier) ?? "gemini-3.8-flash-low"
         var arguments = tutorAttachment
             ? Self.tutorAttachmentArguments(prompt: prompt, model: model)
             : ["-p", prompt, "--model", model, "--output-format", "json"]
