@@ -1,0 +1,15 @@
+{
+  "id": "freecodecamp-arborescence-question-2",
+  "image": "freecodecamp-arborescence-question-2.png",
+  "sha256": "4b8833d2823c43330cf98ac360bd6c25ecbff8233f3ab8da7a31eefc2ffa34d8",
+  "provenance": "user-supplied",
+  "usage": "automated-test-only",
+  "questionKind": "singleChoice",
+  "questionNumber": "2/25",
+  "expectedOCRContains": [
+    "which of the following is true for an arborescence in graph theory",
+    "all arborescence are directed acyclic graphs",
+    "not all dags are arborescence"
+  ],
+  "expectedAnswer": "C — All arborescence are Directed Acyclic Graphs (DAGs) but not all DAGs are arborescence"
+}
