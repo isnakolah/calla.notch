@@ -31,6 +31,7 @@ struct WheelPicker: View {
     @State private var byClick: Bool = false
     let config: Config
     var style: WheelPickerStyle = .dots
+    var plateHeight: CGFloat = 82
 
     // Plate cards are full-width and self-center, so they need no edge spacers.
     private var spacerNum: Int { style == .dots ? config.offset : 0 }
@@ -67,7 +68,7 @@ struct WheelPicker: View {
                     }
                 }
             }
-            .frame(height: style == .dots ? 16 : nil)
+            .frame(height: style == .dots ? 16 : plateHeight)
             .scrollTargetLayout()
         }
         .scrollIndicators(.never)
@@ -123,7 +124,7 @@ struct WheelPicker: View {
     @ViewBuilder
     private func plateCard(date: Date, id: Int) -> some View {
         let isToday = Calendar.current.isDateInToday(date)
-        VStack(alignment: .leading, spacing: 2) {
+        VStack(alignment: .center, spacing: 0) {
             Text(date.formatted(.dateTime.weekday(.wide)))
                 .font(.system(size: 11, weight: .bold))
                 .tracking(0.8)
@@ -131,6 +132,7 @@ struct WheelPicker: View {
                 .foregroundColor(isToday ? Color.effectiveAccent : .white.opacity(0.55))
                 .lineLimit(1)
                 .minimumScaleFactor(0.7)
+            VStack(spacing: 2) {
             Text("\(date.date)")
                 .font(.system(size: 44, weight: .bold))
                 .monospacedDigit()
@@ -140,8 +142,11 @@ struct WheelPicker: View {
                 .font(.system(size: 11, weight: .medium))
                 .foregroundColor(.white.opacity(0.45))
                 .padding(.top, 2)
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
+        .frame(maxWidth: .infinity)
+        .frame(height: plateHeight)
         .containerRelativeFrame(.horizontal)
         .id(id)
     }
@@ -201,11 +206,16 @@ struct CalendarView: View {
     // horizontally scrollable pager — scroll/swipe it to move between days — with a
     // row of day-dots below that mirrors the selection and is also tappable.
     private var datePlate: some View {
-        VStack(alignment: .leading, spacing: 9) {
-            WheelPicker(selectedDate: $selectedDate, config: Config(), style: .plate)
-                .frame(height: 82)
-
-            WheelPicker(selectedDate: $selectedDate, config: Config(), style: .dots)
+        GeometryReader { geometry in
+            let plateHeight = max(0, geometry.size.height - 25)
+            VStack(alignment: .center, spacing: 9) {
+                WheelPicker(selectedDate: $selectedDate, config: Config(),
+                            style: .plate, plateHeight: plateHeight)
+                    .frame(height: plateHeight)
+                WheelPicker(selectedDate: $selectedDate, config: Config(), style: .dots)
+                    .frame(height: 16)
+            }
+            .frame(width: geometry.size.width, height: geometry.size.height)
         }
     }
 
@@ -276,6 +286,7 @@ struct EventListView: View {
     @Default(.callaTutorEnabled) private var callaTutorEnabled
     @Default(.callaCalendarEnabled) private var callaCalendarEnabled
     @Default(.callaCopilotEnabled) private var callaCopilotEnabled
+    @Default(.callaQuizEnabled) private var callaQuizEnabled
     @ObservedObject private var callaEngine = CallaEngineClient.shared
 
 
@@ -364,6 +375,16 @@ struct EventListView: View {
 
     }
 
+    /// Join opens the meeting and nothing else.
+    ///
+    /// It used to start Call capture for whichever event was clicked. The live
+    /// call is the Wave interview now — that was the one path left that could
+    /// start it as some other meeting, which would have run the interview
+    /// persona and the interview's knowledge against an unrelated call.
+    private func joinEvent(_ event: EventModel) {
+        openEvent(event)
+    }
+
     /// Turns the event's remaining time window into a Pomodoro plan and starts
     /// it, then jumps the notch to the timer.
     private func startPomodoro(for event: EventModel) {
@@ -392,12 +413,19 @@ struct EventListView: View {
     @ViewBuilder
     private func rowActions(_ event: EventModel) -> some View {
         if canPrepCopilot(for: event) {
-            Button(hasPrep(for: event) ? "Edit what the copilot knows…" : "Add knowledge…") {
+            Button(hasPrep(for: event) ? "Edit context…" : "Add context…") {
                 // Same surface a drop onto the notch lands on, already pointed at
                 // this meeting. Two ways in, one place to learn.
                 CallaKnowledgeAttach.shared.begin(for: event)
                 BoringViewCoordinator.shared.currentView = .knowledgeDrop
                 NotificationCenter.default.post(name: .callaKnowledgeWantsNotch, object: nil)
+            }
+        }
+        if callaQuizEnabled && callaCopilotEnabled && !event.isAllDay {
+            Button("Start Quiz…") {
+                callaEngine.prepareQuiz(for: CallaMeeting(event))
+                BoringViewCoordinator.shared.currentView = .copilot
+                NotificationCenter.default.post(name: .callaQuizWantsNotch, object: nil)
             }
         }
         if canStartPomodoro(for: event) {
@@ -417,7 +445,7 @@ struct EventListView: View {
     }
 
     private func canPrepCopilot(for event: EventModel) -> Bool {
-        callaCopilotEnabled && event.videoCallURL != nil && !event.isAllDay
+        callaCopilotEnabled && !event.isAllDay
     }
 
     /// Whether anything has been written for this meeting yet, so the menu can say
@@ -577,7 +605,7 @@ struct EventListView: View {
                     // easy to trigger by accident while scrolling.
                     if videoCallURL != nil {
                         Button {
-                            openEvent(event)
+                            joinEvent(event)
                         } label: {
                             Image(systemName: "video.fill")
                                 .font(.system(size: 10, weight: .semibold))

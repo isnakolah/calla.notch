@@ -11,6 +11,13 @@ struct HoverButton: View {
     var icon: String
     var iconColor: Color = .primary
     var scale: Image.Scale = .medium
+    /// What the button does, in words.
+    ///
+    /// Without it the glyph is the whole button and VoiceOver reads the SF
+    /// Symbol name — "forward dot fill" — which is the transport control every
+    /// media surface in the notch is built from. Declared before `action` so
+    /// the memberwise initializer still takes the action as a trailing closure.
+    var label: String? = nil
     var action: () -> Void
     var contentTransition: ContentTransition = .symbolEffect;
     
@@ -42,5 +49,7 @@ struct HoverButton: View {
                 isHovering = hovering
             }
         }
+        .help(label ?? "")
+        .accessibilityLabel(label ?? icon)
     }
 }

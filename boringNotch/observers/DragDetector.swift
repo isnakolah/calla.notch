@@ -29,10 +29,10 @@ final class DragDetector {
     private var isContentDragging: Bool = false
     private var hasEnteredNotchRegion: Bool = false
 
-    private let notchRegion: CGRect
+    private let notchRegion: () -> CGRect
     private let dragPasteboard = NSPasteboard(name: .drag)
 
-    init(notchRegion: CGRect) {
+    init(notchRegion: @escaping () -> CGRect) {
         self.notchRegion = notchRegion
     }
 
@@ -78,7 +78,7 @@ final class DragDetector {
                 self.onDragMove?(mouseLocation)
                 
                 // Track notch region entry/exit
-                let containsMouse = self.notchRegion.contains(mouseLocation)
+                let containsMouse = self.notchRegion().contains(mouseLocation)
                 if containsMouse && !self.hasEnteredNotchRegion {
                     self.hasEnteredNotchRegion = true
                     self.onDragEntersNotchRegion?()

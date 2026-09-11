@@ -86,9 +86,9 @@ struct TabSelectionView: View {
                 isForNotification: false
             )
         case .mirror:
-            circleButton(icon: item.icon) { vm.toggleCameraPreview() }
+            circleButton(icon: item.icon, label: item.label) { vm.toggleCameraPreview() }
         case .settings:
-            circleButton(icon: item.icon) {
+            circleButton(icon: item.icon, label: item.label) {
                 DispatchQueue.main.async {
                     SettingsWindowController.shared.showWindow()
                 }
@@ -116,28 +116,33 @@ struct TabSelectionView: View {
         }
     }
 
-    /// Selection is white; a live call keeps the copilot tab green even when
-    /// another tab is showing, since that is the state worth noticing mid-call.
+    /// Selection is the primary ink; an unselected tab is tertiary — the same
+    /// two steps every other surface uses, rather than `.white` and `.gray`,
+    /// which were a third and fourth grey in a vocabulary that has four.
+    ///
+    /// A live call keeps the copilot tab green even when another tab is showing,
+    /// since that is the state worth noticing mid-call.
     private func tint(for item: NotchHeaderItem, selected: Bool) -> Color {
         if item == .copilot, callaEngine.status.copilot.running, !selected {
             return NotchTint.healthy
         }
-        return selected ? .white : .gray
+        return selected ? NotchInk.primary : NotchInk.tertiary
     }
 
-    private func circleButton(icon: String, action: @escaping () -> Void) -> some View {
+    private func circleButton(icon: String, label: String, action: @escaping () -> Void) -> some View {
         Button(action: action) {
             Capsule()
                 .fill(.black)
-                .frame(width: 30, height: 30)
+                .frame(width: NotchGlassSpace.control, height: NotchGlassSpace.control)
                 .overlay {
                     Image(systemName: icon)
-                        .foregroundColor(.white)
-                        .padding()
-                        .imageScale(.medium)
+                        .font(NotchGlassType.glyph)
+                        .foregroundStyle(NotchInk.primary)
                 }
         }
         .buttonStyle(PlainButtonStyle())
+        .help(label)
+        .accessibilityLabel(label)
     }
 }
 

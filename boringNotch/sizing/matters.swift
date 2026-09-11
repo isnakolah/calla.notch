@@ -13,7 +13,11 @@ let downloadSneakSize: CGSize = .init(width: 65, height: 1)
 let batterySneakSize: CGSize = .init(width: 160, height: 1)
 
 let shadowPadding: CGFloat = 20
-let openNotchSize: CGSize = .init(width: 512, height: 168)
+let resizeEditorCanvasAllowance: CGFloat = NotchResizeGeometry.editorVerticalAllowance
+let resizeGripCanvasAllowance: CGFloat = 32
+
+/// Normal tabs all share this persisted profile.
+var openNotchSize: CGSize { NotchSizePreferences.size(.normal) }
 
 /// The notch while a call copilot session is live.
 ///
@@ -23,7 +27,7 @@ let openNotchSize: CGSize = .init(width: 512, height: 168)
 /// The default. What is actually used is `CallaPanelSize.full`, which lets the
 /// user resize the panel — how much of a call you want on screen is a matter of
 /// screen size and taste, and no single pair of numbers is right for everyone.
-let copilotNotchSize: CGSize = .init(width: 600, height: 340)
+let copilotNotchSize: CGSize = NotchSizeProfile.callExpanded.defaultSize
 
 /// How far the call panel may be resized.
 ///
@@ -33,12 +37,12 @@ let copilotNotchSize: CGSize = .init(width: 600, height: 340)
 /// silently cut off rather than shown, which is why the ceiling below is
 /// computed from these maxima and not from the defaults.
 enum CallaPanelBounds {
-    static let width: ClosedRange<CGFloat> = 460...900
-    static let fullHeight: ClosedRange<CGFloat> = 240...560
+    static let width: ClosedRange<CGFloat> = NotchSizeProfile.callExpanded.widthBounds
+    static let fullHeight: ClosedRange<CGFloat> = NotchSizeProfile.callExpanded.heightBounds
     /// The floor is not arbitrary: below about 150 the answer, the caption strip
     /// and the controls cannot all be on screen, and the answer is what gives
     /// way. See the note on `copilotCompactNotchSize`.
-    static let compactHeight: ClosedRange<CGFloat> = 150...420
+    static let compactHeight: ClosedRange<CGFloat> = NotchSizeProfile.callCollapsed.heightBounds
 
     static func clampWidth(_ value: CGFloat) -> CGFloat {
         min(max(value, width.lowerBound), width.upperBound)
@@ -76,7 +80,7 @@ enum CallaPanelBounds {
 // the newest words are still the ones on screen because it truncates from the
 // head. 200 takes the rest out of the gaps between recap lines, which had more
 // air than the lines needed.
-let copilotCompactNotchSize: CGSize = .init(width: openNotchSize.width, height: 200)
+let copilotCompactNotchSize: CGSize = NotchSizeProfile.callCollapsed.defaultSize
 
 /// The notch while a file is being filed against a meeting.
 ///
@@ -84,13 +88,23 @@ let copilotCompactNotchSize: CGSize = .init(width: openNotchSize.width, height: 
 /// width rather than a normal tab's. At `openNotchSize`'s 168pt the drop target
 /// and the list of what is already attached could not both be on screen, and the
 /// whole point of the surface is seeing the second while you use the first.
-let knowledgeNotchSize: CGSize = .init(width: copilotNotchSize.width, height: 300)
+var knowledgeNotchSize: CGSize {
+    NotchResizeGeometry.applyingMinimum(
+        CGSize(width: 600, height: 300),
+        to: NotchSizePreferences.size(.normal)
+    )
+}
 
 /// The notch while a dragged file is being aimed at one half or the other.
 ///
 /// Two tiles side by side need width more than height; taller than a normal tab
 /// only because each tile says what it will do rather than just naming itself.
-let dropChooserNotchSize: CGSize = .init(width: openNotchSize.width, height: 200)
+var dropChooserNotchSize: CGSize {
+    NotchResizeGeometry.applyingMinimum(
+        CGSize(width: 512, height: 200),
+        to: NotchSizePreferences.size(.normal)
+    )
+}
 
 /// The largest the open notch can ever be.
 ///
@@ -106,14 +120,17 @@ let dropChooserNotchSize: CGSize = .init(width: openNotchSize.width, height: 200
 /// panel bigger, and the symptom — a panel cut off at the bottom — would look
 /// like a layout bug rather than a window that was never big enough.
 let maxOpenNotchSize: CGSize = .init(
-    width: max(openNotchSize.width,
-               max(CallaPanelBounds.width.upperBound, knowledgeNotchSize.width)),
+    width: max(NotchSizeProfile.normal.widthBounds.upperBound,
+               max(CallaPanelBounds.width.upperBound, NotchSizeProfile.wave.widthBounds.upperBound)),
     height: max(
-        max(openNotchSize.height, dropChooserNotchSize.height),
+        NotchSizeProfile.normal.heightBounds.upperBound,
         max(CallaPanelBounds.compactHeight.upperBound,
-            max(CallaPanelBounds.fullHeight.upperBound, knowledgeNotchSize.height))))
+            max(CallaPanelBounds.fullHeight.upperBound, NotchSizeProfile.wave.heightBounds.upperBound))))
 
-let windowSize: CGSize = .init(width: maxOpenNotchSize.width, height: maxOpenNotchSize.height + shadowPadding)
+let windowSize: CGSize = .init(
+    width: maxOpenNotchSize.width + resizeGripCanvasAllowance,
+    height: maxOpenNotchSize.height + shadowPadding + resizeEditorCanvasAllowance
+)
 let cornerRadiusInsets: (opened: (top: CGFloat, bottom: CGFloat), closed: (top: CGFloat, bottom: CGFloat)) = (opened: (top: 19, bottom: 24), closed: (top: 6, bottom: 14))
 
 enum MusicPlayerImageSizes {
@@ -186,27 +203,79 @@ enum MusicPlayerImageSizes {
 /// at the bottom, which reads as a layout bug rather than a setting out of range.
 enum CallaPanelSize {
     static var full: CGSize {
-        CGSize(
-            width: CallaPanelBounds.clampWidth(CGFloat(Defaults[.callaPanelWidth])),
-            height: CallaPanelBounds.clampFullHeight(CGFloat(Defaults[.callaPanelHeight])))
+        NotchSizePreferences.size(.callExpanded)
     }
 
     static var compact: CGSize {
-        CGSize(
-            width: CallaPanelBounds.clampWidth(CGFloat(Defaults[.callaCompactPanelWidth])),
-            height: CallaPanelBounds.clampCompactHeight(
-                CGFloat(Defaults[.callaCompactPanelHeight])))
+        NotchSizePreferences.size(.callCollapsed)
     }
 
     /// Puts both layouts back to the shipped numbers.
     static func reset() {
-        Defaults[.callaPanelWidth] = Double(copilotNotchSize.width)
-        Defaults[.callaPanelHeight] = Double(copilotNotchSize.height)
-        Defaults[.callaCompactPanelWidth] = Double(copilotCompactNotchSize.width)
-        Defaults[.callaCompactPanelHeight] = Double(copilotCompactNotchSize.height)
+        NotchSizePreferences.reset(.callExpanded)
+        NotchSizePreferences.reset(.callCollapsed)
     }
 
     static var isDefault: Bool {
-        full == copilotNotchSize && compact == copilotCompactNotchSize
+        NotchSizePreferences.isDefault(.callExpanded)
+            && NotchSizePreferences.isDefault(.callCollapsed)
+    }
+}
+
+enum NotchSizePreferences {
+    static func size(_ profile: NotchSizeProfile) -> CGSize {
+        let stored: CGSize
+        switch profile {
+        case .codingExpanded, .codingCompact, .wave:
+            return size(profile.storageProfile)
+        case .normal:
+            stored = CGSize(width: Defaults[.normalNotchWidth],
+                            height: Defaults[.normalNotchHeight])
+        case .callExpanded:
+            stored = CGSize(width: Defaults[.callaPanelWidth],
+                            height: Defaults[.callaPanelHeight])
+        case .callCollapsed:
+            // One width for a call, not one per layout.
+            //
+            // The two layouts had a width each, so collapsing the transcript
+            // mid-call also changed how wide the notch was — the panel jumped
+            // sideways every time the reader hid or showed the transcript, and
+            // any auto layout change did it unprompted. Collapsing is about
+            // *height*: it drops the transcript column. `callaCompactPanelWidth`
+            // is left in Defaults unread rather than migrated; nothing writes it
+            // any more.
+            stored = CGSize(width: Defaults[.callaPanelWidth],
+                            height: Defaults[.callaCompactPanelHeight])
+        }
+        return NotchResizeGeometry.clamped(stored, for: profile)
+    }
+
+    static func set(_ size: CGSize, for profile: NotchSizeProfile) {
+        let clamped = NotchResizeGeometry.clamped(size, for: profile)
+        switch profile {
+        case .codingExpanded, .codingCompact, .wave:
+            set(clamped, for: profile.storageProfile)
+        case .normal:
+            Defaults[.normalNotchWidth] = Double(clamped.width)
+            Defaults[.normalNotchHeight] = Double(clamped.height)
+        case .callExpanded:
+            Defaults[.callaPanelWidth] = Double(clamped.width)
+            Defaults[.callaPanelHeight] = Double(clamped.height)
+        case .callCollapsed:
+            // Width is shared with the expanded layout — see `size(_:)`. Sizing
+            // either call profile sets the one width a call has.
+            Defaults[.callaPanelWidth] = Double(clamped.width)
+            Defaults[.callaCompactPanelHeight] = Double(clamped.height)
+        }
+    }
+
+    static func reset(_ profile: NotchSizeProfile) {
+        set(profile.defaultSize, for: profile)
+    }
+
+    static func isDefault(_ profile: NotchSizeProfile) -> Bool {
+        let size = size(profile)
+        return size.width == profile.defaultSize.width
+            && size.height == profile.defaultSize.height
     }
 }

@@ -3,6 +3,7 @@
 //  boringNotch
 //
 
+import KeyboardShortcuts
 import SwiftUI
 
 /// The vocabulary the notch's own surfaces are drawn from.
@@ -25,6 +26,12 @@ enum NotchInk {
     static let primary = Color.white
     /// The sentence that explains it.
     static let secondary = Color.white.opacity(0.70)
+    /// A sentence the reader is actually reading, at length, mid-interview.
+    ///
+    /// `secondary` is right for a supporting line beside something else. It is
+    /// wrong for a paragraph that *is* the content — at 70% on a black slab, a
+    /// two-line explanation read at a glance costs real effort.
+    static let reading = Color.white.opacity(0.93)
     /// Labels, units, and anything that is off.
     static let tertiary = Color.white.opacity(0.42)
     /// A rule or a track. Never text.
@@ -75,6 +82,24 @@ enum NotchGlassType {
     static let action = Font.system(size: 12, weight: .semibold)
     /// A chip's label.
     static let chipLabel = Font.system(size: 11, weight: .medium)
+    /// The state word in the header band either side of the camera housing.
+    ///
+    /// That band is not the card — it is narrower, split in two, and every label
+    /// in it is `fixedSize`. Both live headers had reached for the same bare
+    /// `.system(size: 11, weight: .semibold)` independently, which is how a
+    /// seventh size gets into the vocabulary without anyone deciding on it.
+    static let bandLabel = Font.system(size: 11, weight: .semibold)
+
+    /// The closed notch's badges, either side of the camera housing.
+    ///
+    /// The seventh and eighth sizes, and the reason is written down: that band
+    /// is about 22pt tall and the card's ramp does not fit in it. What it
+    /// replaces is worse — the Pomodoro badge drew its figure at 12.5 and the
+    /// usage badge drew its at 11.5, so the two things flanking one notch were
+    /// a point apart from each other for no reason anyone chose.
+    static let badgeFigure = Font.system(size: 12, weight: .bold, design: .rounded).monospacedDigit()
+    static let badgeLabel = Font.system(size: 8, weight: .semibold, design: .rounded)
+    static let badgeGlyph = Font.system(size: 14, weight: .semibold)
 
     /// Three glyph sizes, and no fourth. Icons had been drifting across 7, 8,
     /// 10, 12, 13 and 14pt in the same rows as each other.
@@ -245,24 +270,67 @@ struct NotchGlyphButton: View {
     }
 }
 
+/// The surface every chip and menu control in the notch sits on.
+///
+/// Three layers, because one flat wash was not enough on a black slab: a 8%
+/// white rectangle over the notch had nothing to sit against and read as a gap
+/// in the panel rather than as something you could press. Darkening first gives
+/// the chip a floor; a top-lit gradient lifts it off that floor the way a
+/// physical key catches light; and the border is brighter at the top edge than
+/// the bottom, which is what makes it look raised rather than cut out.
+///
+/// Hover raises all three at once rather than swapping a colour, so a pointer
+/// resting on a control reads as the control coming forward.
+struct NotchChipBackground: View {
+    var hovering = false
+    var tint: Color?
+    var radius: CGFloat = NotchGlassRadius.chip
+
+    var body: some View {
+        let shape = RoundedRectangle(cornerRadius: radius, style: .continuous)
+        ZStack {
+            shape.fill(Color.black.opacity(0.35))
+            shape.fill(
+                LinearGradient(
+                    colors: tint.map {
+                        [$0.opacity(hovering ? 0.38 : 0.28), $0.opacity(0.15)]
+                    } ?? [
+                        Color.white.opacity(hovering ? 0.24 : 0.17),
+                        Color.white.opacity(hovering ? 0.12 : 0.07)
+                    ],
+                    startPoint: .top, endPoint: .bottom))
+            shape.strokeBorder(
+                LinearGradient(
+                    colors: [
+                        (tint ?? .white).opacity(hovering ? 0.46 : 0.30),
+                        (tint ?? .white).opacity(0.08)
+                    ],
+                    startPoint: .top, endPoint: .bottom),
+                lineWidth: 1)
+        }
+    }
+}
+
 /// A chip: the standard secondary control.
 struct NotchChip<Content: View>: View {
     var tint: Color?
     var action: (() -> Void)?
     @ViewBuilder var content: Content
 
+    @State private var hovering = false
+
     var body: some View {
         let body = HStack(spacing: NotchGlassSpace.tight) { content }
             .padding(.horizontal, 11)
             .frame(height: NotchGlassSpace.control)
-            .background(tint?.opacity(0.16) ?? NotchPlane.chip,
-                        in: RoundedRectangle(cornerRadius: NotchGlassRadius.chip, style: .continuous))
-            .foregroundStyle(tint ?? NotchInk.secondary)
+            .background(NotchChipBackground(hovering: hovering && action != nil, tint: tint))
+            .foregroundStyle(tint ?? (hovering ? NotchInk.primary : NotchInk.secondary))
             .font(.system(size: 11, weight: tint == nil ? .medium : .semibold))
 
         if let action {
             Button(action: action) { body.contentShape(Rectangle()) }
                 .buttonStyle(.plain)
+                .onHover { hovering = $0 }
         } else {
             body
         }
@@ -302,5 +370,94 @@ struct NotchCardHeader<Trailing: View>: View {
 extension NotchCardHeader where Trailing == EmptyView {
     init(state: String, live: Bool = false, tint: Color = .effectiveAccent, figure: String? = nil) {
         self.init(state: state, live: live, tint: tint, figure: figure) { EmptyView() }
+    }
+}
+
+/// One key, or a pair of them, with the word that says what they do.
+///
+/// The word matters more than the glyph: an earlier version put an up arrow
+/// beside `⌥⌘↑` and a left chevron beside `⌥⌘←`, so each item said the same
+/// thing twice and nothing said what the key was *for*. Two directions of one
+/// action belong together rather than reading as two unrelated bindings.
+struct NotchKeyHint: View {
+    let label: String
+    let chords: [String]
+
+    var body: some View {
+        HStack(spacing: NotchGlassSpace.hair + 1) {
+            Text(label)
+                .font(NotchGlassType.caption)
+                .foregroundStyle(NotchInk.tertiary)
+            ForEach(chords, id: \.self) { chord in
+                Text(chord)
+                    .font(NotchGlassType.minorFigure)
+                    .foregroundStyle(NotchInk.secondary)
+                    .padding(.horizontal, 4)
+                    .padding(.vertical, 1)
+                    .background(NotchPlane.chip,
+                                in: RoundedRectangle(cornerRadius: 4, style: .continuous))
+            }
+        }
+        .lineLimit(1)
+        .fixedSize()
+    }
+}
+
+/// The keys that work on the live surface, drawn where they can be seen.
+///
+/// This was Quiz's alone. Every other live surface left its keys discoverable
+/// only in Settings ▸ Shortcuts or behind a modal, which is not where anyone is
+/// looking mid-question. Now that one key means one action on every surface
+/// (`NotchSessionRouter`), one row can say so anywhere.
+struct NotchSessionHints: View {
+    let surface: NotchSessionSurface
+    /// A live panel has room for a handful, not for the whole reference.
+    var limit: Int = 6
+    /// Keys that belong to this panel but not to the session vocabulary —
+    /// Quiz's code wrapping, the notch pin. Drawn after the routed ones.
+    var extras: [(label: String, name: KeyboardShortcuts.Name)] = []
+
+    var body: some View {
+        HStack(spacing: NotchGlassSpace.snug) {
+            ForEach(hints, id: \.label) { hint in
+                NotchKeyHint(label: hint.label, chords: hint.chords)
+            }
+            Spacer(minLength: 0)
+        }
+        .frame(height: 16)
+        // Every one of these is a global shortcut a VoiceOver reader reaches
+        // without the notch. Reading the row out is noise.
+        .accessibilityHidden(true)
+    }
+
+    private var hints: [(label: String, chords: [String])] {
+        var result: [(label: String, chords: [String])] = []
+        var used: Set<NotchSessionAction> = []
+
+        func pair(_ label: String, _ actions: [NotchSessionAction]) {
+            let chords = actions.compactMap { NotchSessionShortcuts.chord(for: $0) }
+            guard chords.count == actions.count,
+                  actions.allSatisfy({ NotchSessionRouter.effect(for: $0, on: surface) != nil })
+            else { return }
+            actions.forEach { used.insert($0) }
+            result.append((label, chords))
+        }
+
+        // The two directions of one action, together.
+        pair(surface == .coding ? "Step" : "Answer", [.previous, .next])
+        pair("Scroll", [.scrollUp, .scrollDown])
+
+        for action in NotchSessionRouter.hintedActions(for: surface) where !used.contains(action) {
+            guard result.count < limit, let chord = NotchSessionShortcuts.chord(for: action) else { continue }
+            result.append((NotchSessionShortcuts.label(for: action), [chord]))
+        }
+
+        for extra in extras {
+            guard result.count < limit,
+                  let chord = KeyboardShortcuts.getShortcut(for: extra.name)?.description else { continue }
+            result.append((extra.label, [chord]))
+        }
+
+        return Array(result.prefix(limit))
     }
 }

@@ -61,21 +61,29 @@ struct PomodoroNotchBadge: View {
         .onHover { hovering in
             if hovering { onBadgeHover?() }
         }
+        // The closed notch is where this spends its life, and a bare glyph plus
+        // a clock read out as nothing at all.
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(accessibilityReadout)
+    }
+
+    private var accessibilityReadout: String {
+        let phase = pomodoro.runState == .paused ? "Paused" : pomodoro.phase.title
+        return "\(phase), \(notchClockString(pomodoro.remaining)) remaining"
     }
 
     private var phaseIcon: some View {
         Image(systemName: pomodoro.statusIcon)
-            .font(.system(size: 15, weight: .semibold))
+            .font(NotchGlassType.badgeGlyph)
             .foregroundStyle(tint)
             .contentTransition(.symbolEffect)
     }
 
     private var readout: some View {
         Text(notchClockString(pomodoro.remaining))
-            .font(.system(size: 12.5, weight: .bold, design: .rounded))
-            .monospacedDigit()
+            .font(NotchGlassType.badgeFigure)
             .contentTransition(.numericText())
-            .foregroundStyle(isFinalStretch ? .red : .white)
+            .foregroundStyle(isFinalStretch ? NotchTint.stuck : NotchInk.primary)
         .fixedSize()
         .animation(.smooth(duration: 0.25), value: pomodoro.remaining)
     }
