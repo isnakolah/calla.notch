@@ -19,33 +19,36 @@ struct MusicPlayerView: View {
     @State private var isHovering = false
 
     var body: some View {
-        ZStack {
-            HStack(spacing: 8) {
-                AlbumArtView(vm: vm, albumArtNamespace: albumArtNamespace)
-                    .frame(width: 46, height: 46)
-                    .padding(.all, 3)
-                MusicControlsView().compositingGroup()
-            }
-            .blur(radius: isHovering ? 4 : 0)
-            .opacity(isHovering ? 0.25 : 1)
+        GeometryReader { geometry in
+            let artworkSize = max(36, min(160, geometry.size.width - 12,
+                                           geometry.size.height - 44))
+            VStack(spacing: 8) {
+                ZStack {
+                    AlbumArtView(vm: vm, albumArtNamespace: albumArtNamespace,
+                                 keepsFullSize: true)
+                        .frame(width: artworkSize, height: artworkSize)
+                        .blur(radius: isHovering ? 4 : 0)
+                        .opacity(isHovering ? 0.25 : 1)
 
-            // Transport controls reveal on hover, centered across the full media
-            // width (incl. the album art) so all three icons fit without clipping.
-            transportControls
-                .opacity(isHovering ? 1 : 0)
-                .allowsHitTesting(isHovering)
-        }
-        .overlay(alignment: .bottomLeading) {
-            // Small pill naming the source app; tapping it opens that app. Replaces
-            // the old tap-the-album-art-to-open behavior.
-            appPill
-                .opacity(isHovering ? 1 : 0)
-                .allowsHitTesting(isHovering)
+                    transportControls
+                        .opacity(isHovering ? 1 : 0)
+                        .allowsHitTesting(isHovering)
+                        .accessibilityHidden(!isHovering)
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .overlay(alignment: .bottom) {
+                    appPill
+                        .opacity(isHovering ? 1 : 0)
+                        .allowsHitTesting(isHovering)
+                        .accessibilityHidden(!isHovering)
+                }
+
+                MusicControlsView().frame(height: 36)
+            }
+            .frame(width: geometry.size.width, height: geometry.size.height)
         }
         .onHover { hovering in
-            withAnimation(.easeInOut(duration: 0.18)) {
-                isHovering = hovering
-            }
+            withAnimation(.easeInOut(duration: 0.18)) { isHovering = hovering }
         }
     }
 
@@ -68,45 +71,47 @@ struct MusicPlayerView: View {
     }
 
     private var transportControls: some View {
-        HStack(spacing: 8) {
-            HoverButton(icon: "backward.fill", scale: .medium) {
-                MusicManager.shared.previousTrack()
+        HStack(spacing: 18) {
+            playbackButton("backward.fill", label: "Previous track") {
+                musicManager.previousTrack()
             }
-            HoverButton(icon: musicManager.isPlaying ? "pause.fill" : "play.fill", scale: .large) {
-                MusicManager.shared.togglePlay()
+            playbackButton(musicManager.isPlaying ? "pause.fill" : "play.fill",
+                           label: musicManager.isPlaying ? "Pause" : "Play", primary: true) {
+                musicManager.togglePlay()
             }
-            HoverButton(icon: "forward.fill", scale: .medium) {
-                MusicManager.shared.nextTrack()
+            playbackButton("forward.fill", label: "Next track") {
+                musicManager.nextTrack()
             }
         }
-        .frame(maxWidth: .infinity, alignment: .center)
+        .frame(maxWidth: .infinity)
     }
+
+    private func playbackButton(_ symbol: String, label: String, primary: Bool = false,
+                                action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Image(systemName: symbol)
+                .font(.system(size: primary ? 17 : 13, weight: .semibold))
+                .frame(width: 32, height: 32)
+                .background(primary ? Color.white.opacity(0.12) : .clear, in: Circle())
+                .contentShape(Circle())
+        }
+        .buttonStyle(.plain)
+        .help(label)
+        .accessibilityLabel(label)
+    }
+
 }
 
 struct AlbumArtView: View {
     @ObservedObject var musicManager = MusicManager.shared
     @ObservedObject var vm: BoringViewModel
     let albumArtNamespace: Namespace.ID
+    var keepsFullSize = false
 
     var body: some View {
         ZStack(alignment: .bottomTrailing) {
-            if Defaults[.lightingEffect] {
-                albumArtBackground
-            }
             albumArtButton
         }
-    }
-
-    private var albumArtBackground: some View {
-        Image(nsImage: musicManager.albumArt)
-            .resizable()
-            .clipped()
-            .clipShape(RoundedRectangle(cornerRadius: 13, style: .continuous))
-            .aspectRatio(1, contentMode: .fit)
-            .scaleEffect(x: 1.3, y: 1.4)
-            .rotationEffect(.degrees(92))
-            .blur(radius: 40)
-            .opacity(musicManager.isPlaying ? 0.5 : 0)
     }
 
     // The album art is now display-only; opening the source app moves to the
@@ -117,7 +122,7 @@ struct AlbumArtView: View {
                 albumArtImage
                 appIconOverlay
             }
-            .scaleEffect(musicManager.isPlaying ? 1 : 0.85)
+            .scaleEffect(keepsFullSize || musicManager.isPlaying ? 1 : 0.85)
 
             albumArtDarkOverlay
         }
@@ -133,12 +138,15 @@ struct AlbumArtView: View {
                 
 
     private var albumArtImage: some View {
-        Image(nsImage: musicManager.albumArt)
-            .resizable()
-            .aspectRatio(1, contentMode: .fit)
-            .matchedGeometryEffect(id: "albumArt", in: albumArtNamespace)
-            .clipped()
-            .clipShape(RoundedRectangle(cornerRadius: 13, style: .continuous))
+        GeometryReader { geometry in
+            Image(nsImage: musicManager.albumArt)
+                .resizable()
+                .aspectRatio(contentMode: .fill)
+                .frame(width: geometry.size.width, height: geometry.size.height)
+                .clipped()
+                .clipShape(RoundedRectangle(cornerRadius: 13, style: .continuous))
+                .matchedGeometryEffect(id: "albumArt", in: albumArtNamespace)
+        }
     }
 
     @ViewBuilder
@@ -165,22 +173,22 @@ struct MusicControlsView: View {
     @Default(.musicControlSlots) private var slotConfig
     @Default(.musicControlSlotLimit) private var slotLimit
 
-    // Just the song info + progress; transport controls live in MusicPlayerView and
-    // overlay this on hover.
+    // Only the timeline is visible below the artwork; transport appears on hover.
     var body: some View {
-        songInfoAndSlider
+        musicSlider
             .buttonStyle(PlainButtonStyle())
     }
 
     private var songInfoAndSlider: some View {
         GeometryReader { geo in
             VStack(alignment: .leading, spacing: 4) {
-                songInfo(width: geo.size.width)
+                if !musicManager.songTitle.isEmpty || !musicManager.artistName.isEmpty {
+                    songInfo(width: geo.size.width)
+                }
                 musicSlider
             }
         }
-        .padding(.top, 6)
-        .padding(.leading, 5)
+
     }
 
     private func songInfo(width: CGFloat) -> some View {
@@ -218,7 +226,6 @@ struct MusicControlsView: View {
             ) { newValue in
                 MusicManager.shared.seek(to: newValue)
             }
-            .padding(.top, 5)
             .frame(height: 36)
         }
     }
@@ -226,13 +233,14 @@ struct MusicControlsView: View {
     // Minimal, fixed transport controls for the compact home view: prev / play / next.
     private var slotToolbar: some View {
         HStack(spacing: 8) {
-            HoverButton(icon: "backward.fill", scale: .medium) {
+            HoverButton(icon: "backward.fill", scale: .medium, label: "Previous track") {
                 MusicManager.shared.previousTrack()
             }
-            HoverButton(icon: musicManager.isPlaying ? "pause.fill" : "play.fill", scale: .large) {
+            HoverButton(icon: musicManager.isPlaying ? "pause.fill" : "play.fill", scale: .large,
+                        label: musicManager.isPlaying ? "Pause" : "Play") {
                 MusicManager.shared.togglePlay()
             }
-            HoverButton(icon: "forward.fill", scale: .medium) {
+            HoverButton(icon: "forward.fill", scale: .medium, label: "Next track") {
                 MusicManager.shared.nextTrack()
             }
         }
@@ -259,23 +267,25 @@ struct MusicControlsView: View {
     private func slotView(for slot: MusicControlButton) -> some View {
         switch slot {
         case .shuffle:
-            HoverButton(icon: "shuffle", iconColor: musicManager.isShuffled ? .red : .primary, scale: .medium) {
+            HoverButton(icon: "shuffle", iconColor: musicManager.isShuffled ? .red : .primary, scale: .medium,
+                        label: musicManager.isShuffled ? "Shuffle on" : "Shuffle off") {
                 MusicManager.shared.toggleShuffle()
             }
         case .previous:
-            HoverButton(icon: "backward.fill", scale: .medium) {
+            HoverButton(icon: "backward.fill", scale: .medium, label: "Previous track") {
                 MusicManager.shared.previousTrack()
             }
         case .playPause:
-            HoverButton(icon: musicManager.isPlaying ? "pause.fill" : "play.fill", scale: .large) {
+            HoverButton(icon: musicManager.isPlaying ? "pause.fill" : "play.fill", scale: .large,
+                        label: musicManager.isPlaying ? "Pause" : "Play") {
                 MusicManager.shared.togglePlay()
             }
         case .next:
-            HoverButton(icon: "forward.fill", scale: .medium) {
+            HoverButton(icon: "forward.fill", scale: .medium, label: "Next track") {
                 MusicManager.shared.nextTrack()
             }
         case .repeatMode:
-            HoverButton(icon: repeatIcon, iconColor: repeatIconColor, scale: .medium) {
+            HoverButton(icon: repeatIcon, iconColor: repeatIconColor, scale: .medium, label: repeatLabel) {
                 MusicManager.shared.toggleRepeat()
             }
         case .volume:
@@ -283,11 +293,11 @@ struct MusicControlsView: View {
         case .favorite:
             FavoriteControlButton()
         case .goBackward:
-            HoverButton(icon: "gobackward.15", scale: .medium) {
+            HoverButton(icon: "gobackward.15", scale: .medium, label: "Back 15 seconds") {
                 MusicManager.shared.skip(seconds: -15)
             }
         case .goForward:
-            HoverButton(icon: "goforward.15", scale: .medium) {
+            HoverButton(icon: "goforward.15", scale: .medium, label: "Forward 15 seconds") {
                 MusicManager.shared.skip(seconds: 15)
             }
         case .none:
@@ -306,6 +316,17 @@ struct MusicControlsView: View {
         }
     }
 
+    /// Repeat has three states behind two glyphs — "repeat" is both off and
+    /// all — so the colour is the only thing telling them apart. VoiceOver
+    /// cannot see colour.
+    private var repeatLabel: String {
+        switch musicManager.repeatMode {
+        case .off: return "Repeat off"
+        case .all: return "Repeat all"
+        case .one: return "Repeat one"
+        }
+    }
+
     private var repeatIconColor: Color {
         switch musicManager.repeatMode {
         case .off:
@@ -320,7 +341,8 @@ struct FavoriteControlButton: View {
     @ObservedObject var musicManager = MusicManager.shared
 
     var body: some View {
-        HoverButton(icon: iconName, iconColor: iconColor, scale: .medium) {
+        HoverButton(icon: iconName, iconColor: iconColor, scale: .medium,
+                    label: musicManager.isFavoriteTrack ? "Remove from favourites" : "Add to favourites") {
             MusicManager.shared.toggleFavoriteTrack()
         }
         .disabled(!musicManager.canFavoriteTrack)
@@ -474,7 +496,7 @@ struct NotchHomeView: View {
 
                 if Defaults[.showCalendar] {
                     CalendarView()
-                        .frame(width: calendarWidth)
+                        .frame(width: calendarWidth, height: geo.size.height)
                         .onHover { isHovering in
                             vm.isHoveringCalendar = isHovering
                         }
@@ -511,19 +533,7 @@ struct MusicSliderView: View {
 
 
     var body: some View {
-        VStack {
-            CustomSlider(
-                value: $sliderValue,
-                range: 0...duration,
-                color: Defaults[.sliderColor] == SliderColorEnum.albumArt
-                    ? Color(nsColor: color).ensureMinimumBrightness(factor: 0.8)
-                    : Defaults[.sliderColor] == SliderColorEnum.accent ? .effectiveAccent : .white,
-                dragging: $dragging,
-                lastDragged: $lastDragged,
-                onValueChange: onValueChange
-            )
-            .frame(height: 10, alignment: .center)
-
+        VStack(spacing: 4) {
             HStack {
                 Text(timeString(from: sliderValue))
                 Spacer()
@@ -536,7 +546,20 @@ struct MusicSliderView: View {
             )
             .font(.caption2)
             .monospacedDigit()
+
+            CustomSlider(
+                value: $sliderValue,
+                range: 0...duration,
+                color: Defaults[.sliderColor] == SliderColorEnum.albumArt
+                    ? Color(nsColor: color).ensureMinimumBrightness(factor: 0.8)
+                    : Defaults[.sliderColor] == SliderColorEnum.accent ? .effectiveAccent : .white,
+                dragging: $dragging,
+                lastDragged: $lastDragged,
+                onValueChange: onValueChange
+            )
+            .frame(height: 16, alignment: .center)
         }
+        .frame(height: 36, alignment: .bottom)
         .onChange(of: currentDate) {
            guard !dragging, timestampDate.timeIntervalSince(lastDragged) > -1 else { return }
             sliderValue = MusicManager.shared.estimatedPlaybackPosition(at: currentDate)
@@ -586,6 +609,7 @@ struct CustomSlider: View {
             }
             .cornerRadius(height / 2)
             .frame(height: 10)
+            .frame(maxHeight: .infinity, alignment: .center)
             .contentShape(Rectangle())
             .gesture(
                 DragGesture(minimumDistance: 0)
