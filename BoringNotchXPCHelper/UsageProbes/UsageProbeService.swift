@@ -15,13 +15,13 @@ actor UsageProbeService {
 
     private var inFlight: [String: Task<UsageReportDTO, Never>] = [:]
 
-    func fetchUsage(provider: String) async -> UsageReportDTO {
+    func fetchUsage(provider: String, securitySessionID: String?) async -> UsageReportDTO {
         if let existing = inFlight[provider] {
             return await existing.value
         }
 
-        let task = Task<UsageReportDTO, Never> { [provider] in
-            await Self.runProbe(provider: provider)
+        let task = Task<UsageReportDTO, Never> { [provider, securitySessionID] in
+            await Self.runProbe(provider: provider, securitySessionID: securitySessionID)
         }
         inFlight[provider] = task
         let result = await task.value
@@ -29,11 +29,11 @@ actor UsageProbeService {
         return result
     }
 
-    private static func runProbe(provider: String) async -> UsageReportDTO {
+    private static func runProbe(provider: String, securitySessionID: String?) async -> UsageReportDTO {
         let probe: UsageProbe
         switch provider {
         case "claude":
-            probe = ClaudeUsageProbe()
+            probe = ClaudeUsageProbe(securitySessionID: securitySessionID)
         case "codex":
             probe = CodexUsageProbe()
         default:

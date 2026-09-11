@@ -4,9 +4,11 @@ import Foundation
 struct DefaultCLIExecutor: CLIExecutor {
     /// Environment variable keys to exclude from the subprocess environment.
     private let environmentExclusions: [String]
+    private let environmentOverrides: [String: String]
 
-    init(environmentExclusions: [String] = []) {
+    init(environmentExclusions: [String] = [], environmentOverrides: [String: String] = [:]) {
         self.environmentExclusions = environmentExclusions
+        self.environmentOverrides = environmentOverrides
     }
 
     func locate(_ binary: String) -> String? {
@@ -29,6 +31,7 @@ struct DefaultCLIExecutor: CLIExecutor {
             arguments: args,
             autoResponses: autoResponses,
             environmentExclusions: environmentExclusions,
+            environmentOverrides: environmentOverrides,
             completionMarkers: completionMarkers
         )
 

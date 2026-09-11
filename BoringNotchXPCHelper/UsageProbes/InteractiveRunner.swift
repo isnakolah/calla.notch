@@ -1,5 +1,6 @@
 import Darwin
 import Foundation
+import Security
 
 /// Runs CLI commands in an interactive terminal session.
 ///
@@ -38,6 +39,8 @@ public struct InteractiveRunner: Sendable {
         /// Use this to prevent env vars like `CLAUDE_CODE_OAUTH_TOKEN` from being
         /// inherited by the subprocess, forcing it to use stored credentials instead.
         public var environmentExclusions: [String]
+        /// Explicit values passed from an app-owned authenticated context.
+        public var environmentOverrides: [String: String]
         /// Substrings (matched against the ANSI-normalized buffer) that mark the
         /// command's final output. Until at least one appears, the idle-exit is
         /// suppressed so a TUI that renders "loading…" then goes silent during a
@@ -50,6 +53,7 @@ public struct InteractiveRunner: Sendable {
             arguments: [String] = [],
             autoResponses: [String: String] = [:],
             environmentExclusions: [String] = [],
+            environmentOverrides: [String: String] = [:],
             completionMarkers: [String] = []
         ) {
             self.timeout = timeout
@@ -57,6 +61,7 @@ public struct InteractiveRunner: Sendable {
             self.arguments = arguments
             self.autoResponses = autoResponses
             self.environmentExclusions = environmentExclusions
+            self.environmentOverrides = environmentOverrides
             self.completionMarkers = completionMarkers
         }
     }
@@ -218,7 +223,10 @@ public struct InteractiveRunner: Sendable {
         process.standardInput = terminalHandle
         process.standardOutput = terminalHandle
         process.standardError = terminalHandle
-        process.environment = Self.terminalEnvironment(excluding: options.environmentExclusions)
+        process.environment = Self.terminalEnvironment(
+            excluding: options.environmentExclusions,
+            overrides: options.environmentOverrides
+        )
 
         if let workingDirectory = options.workingDirectory {
             process.currentDirectoryURL = workingDirectory
@@ -259,6 +267,7 @@ public struct InteractiveRunner: Sendable {
 
         let completionMarkers = options.completionMarkers.map { $0.lowercased() }
         var completionSeen = completionMarkers.isEmpty
+        var completionDeadline: Date?
 
         while Date() < deadline {
             let previousSize = buffer.count
@@ -285,10 +294,16 @@ public struct InteractiveRunner: Sendable {
             // Note once the command's final output has appeared.
             if !completionSeen, completionMarkers.contains(where: { normalized.contains($0) }) {
                 completionSeen = true
+                // Claude keeps redrawing its complete Usage screen forever.
+                // Once an explicit final marker appears, capture a small tail
+                // for the last reset row, then return regardless of redraws.
+                completionDeadline = Date().addingTimeInterval(3)
             }
 
             // Exit if process stopped
             if !process.isRunning { break }
+
+            if let completionDeadline, Date() >= completionDeadline { break }
 
             // Exit if we have meaningful output and no new meaningful data for
             // idleTimeout — but only after any required completion marker appeared,
@@ -348,28 +363,14 @@ public struct InteractiveRunner: Sendable {
     /// OSC sequences like `ESC ] 0 ; title BEL` are used for terminal title updates
     /// and should not reset the idle timer.
     private func isMeaningfulData(_ data: Data) -> Bool {
-        guard let text = String(data: data, encoding: .utf8) else {
+        guard String(data: data, encoding: .utf8) != nil else {
             return !data.isEmpty  // Non-UTF8 binary data is considered meaningful
         }
-
-        // Strip OSC sequences (terminal title updates like "✶ Claude Code")
-        // OSC format: ESC ] ... BEL  or  ESC ] ... ESC \
-        var stripped = text
-        if let oscRegex = Self.oscRegex {
-            stripped = oscRegex.stringByReplacingMatches(
-                in: stripped,
-                range: NSRange(stripped.startIndex..., in: stripped),
-                withTemplate: ""
-            )
-        }
-
-        // Strip other non-printing control sequences
-        stripped = stripped.replacingOccurrences(of: "\u{1B}", with: "")
-        stripped = stripped.replacingOccurrences(of: "\u{07}", with: "")  // BEL
-
-        // Check if anything meaningful remains
-        let meaningful = stripped.trimmingCharacters(in: .whitespacesAndNewlines)
-        return !meaningful.isEmpty
+        // Claude continuously emits CSI cursor redraws after quota rows render.
+        // Treating those bytes as content resets idle time forever, so the probe
+        // never returns and Boring keeps its stale cache. Use same ANSI-normalized
+        // representation as prompt/completion matching.
+        return !normalizedForMatching(data).trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
     }
     
     // MARK: - ANSI Escape Sequence Handling
@@ -452,7 +453,10 @@ public struct InteractiveRunner: Sendable {
     /// Ensures CLI tools behave as they would in a normal terminal.
     /// - Parameter excluding: Environment variable keys to remove from the subprocess.
     ///   Use this to prevent tokens like `CLAUDE_CODE_OAUTH_TOKEN` from being inherited.
-    private static func terminalEnvironment(excluding: [String] = []) -> [String: String] {
+    private static func terminalEnvironment(
+        excluding: [String] = [],
+        overrides: [String: String] = [:]
+    ) -> [String: String] {
         var env = ProcessInfo.processInfo.environment
         // Remove excluded keys before setting defaults
         for key in excluding {
@@ -460,10 +464,31 @@ public struct InteractiveRunner: Sendable {
         }
         env["PATH"] = ensureCommonPathsIncluded(BinaryLocator.shellPath())
         env["HOME"] = env["HOME"] ?? NSHomeDirectory()
+        // XPC launch environments omit terminal identity variables. Claude uses
+        // these together with SECURITYSESSIONID to locate subscription Keychain
+        // credentials; without them it falls back to API Usage Billing.
+        env["USER"] = env["USER"] ?? NSUserName()
+        env["LOGNAME"] = env["LOGNAME"] ?? NSUserName()
+        env["SHELL"] = env["SHELL"] ?? "/bin/zsh"
+        env["TMPDIR"] = env["TMPDIR"] ?? NSTemporaryDirectory()
         env["TERM"] = env["TERM"] ?? "xterm-256color"
         env["COLORTERM"] = env["COLORTERM"] ?? "truecolor"
         env["LANG"] = env["LANG"] ?? "en_US.UTF-8"
         env["CI"] = env["CI"] ?? "0"
+        // Finder/XPC launches do not inherit terminal-only SECURITYSESSIONID.
+        // Claude then cannot read its login Keychain item and shows API billing
+        // instead of subscription quota rows. Reconstruct caller's Security
+        // session for the child process, using macOS public AuthSession API.
+        if env["SECURITYSESSIONID"] == nil {
+            var sessionID: SecuritySessionId = 0
+            if SessionGetInfo(callerSecuritySession, &sessionID, nil) == errSecSuccess {
+                env["SECURITYSESSIONID"] = String(sessionID, radix: 16)
+            }
+        }
+        for (key, value) in overrides where key == "SECURITYSESSIONID"
+            && !value.isEmpty && value.allSatisfy({ $0.isHexDigit }) {
+            env[key] = value
+        }
         return env
     }
 

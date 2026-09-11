@@ -9,6 +9,7 @@ import Foundation
 
 /// The protocol that this service will vend as its API. This protocol will also need to be visible to the process hosting the service.
 @objc protocol BoringNotchXPCHelperProtocol {
+    func zenYouTubeArtworkURL(_ title: String, with reply: @escaping (String?) -> Void)
     func isAccessibilityAuthorized(with reply: @escaping (Bool) -> Void)
     func requestAccessibilityAuthorization()
     func ensureAccessibilityAuthorization(_ promptIfNeeded: Bool, with reply: @escaping (Bool) -> Void)
@@ -21,7 +22,7 @@ import Foundation
     func currentScreenBrightness(with reply: @escaping (NSNumber?) -> Void)
     func setScreenBrightness(_ value: Float, with reply: @escaping (Bool) -> Void)
     // CLI usage probing (Claude / Codex) — reply is a JSON-encoded UsageReportDTO
-    func fetchUsage(_ provider: String, with reply: @escaping (Data?) -> Void)
+    func fetchUsage(_ provider: String, securitySessionID: String?, with reply: @escaping (Data?) -> Void)
 }
 
 /*

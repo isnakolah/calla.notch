@@ -22,12 +22,19 @@ final class ClaudeUsageProbe: UsageProbe, @unchecked Sendable {
 
     init(
         claudeBinary: String = "claude",
-        timeout: TimeInterval = 20.0,
+        // Claude 2.1 can spend over 20 seconds connecting before it renders its
+        // quota rows. A short timeout silently preserved Boring's old cache.
+        timeout: TimeInterval = 60.0,
+        securitySessionID: String? = nil,
         cliExecutor: CLIExecutor? = nil
     ) {
         self.claudeBinary = claudeBinary
         self.timeout = timeout
-        self.cliExecutor = cliExecutor ?? DefaultCLIExecutor(environmentExclusions: Self.envExclusions)
+        let overrides = securitySessionID.map { ["SECURITYSESSIONID": $0] } ?? [:]
+        self.cliExecutor = cliExecutor ?? DefaultCLIExecutor(
+            environmentExclusions: Self.envExclusions,
+            environmentOverrides: overrides
+        )
         self.terminalRenderer = TerminalRenderer(cols: 160, rows: 50)
     }
 
@@ -67,9 +74,14 @@ final class ClaudeUsageProbe: UsageProbe, @unchecked Sendable {
                 // /usage screen and would send stray Enters that navigate the TUI
                 // tabs, scrolling the quota rows out of view.
                 autoResponses: [
-                    // claude 2.1.x folder-trust prompt — "Yes, I trust this folder"
-                    // is pre-highlighted, so a single Enter confirms it.
-                    "Yes, I trust this folder": "\r",
+                    // claude's folder-trust prompt. Up to 2.1.207 "Yes, I trust
+                    // this folder" was pre-highlighted and a bare Enter took it;
+                    // by 2.1.250 the highlight starts on "No, exit", which the
+                    // same bare Enter now *confirms* — the probe was quitting
+                    // claude on its own trust prompt. Arrow down to the second
+                    // option first. The probe directory is pre-trusted by
+                    // `writeClaudeTrust`, so this only runs when that failed.
+                    "Yes, I trust this folder": "\u{1B}[B\r",
                     "Ready to code here?": "\r",
                     "Press Enter to continue": "\r",
                 ],
@@ -120,8 +132,12 @@ final class ClaudeUsageProbe: UsageProbe, @unchecked Sendable {
 
         guard let sessionPct else {
             AppLog.probes.error("Claude parse failed: could not find 'Current session' percentage")
-            AppLog.probes.debug("Rendered output:\n\(clean)")
-            AppLog.probes.debug("Flattened output:\n\(flat)")
+            // Public, because the alternative is what this cost last time: the
+            // only record of *why* the screen did not parse was redacted, so
+            // diagnosing it meant reproducing the probe by hand. A usage screen
+            // carries quota numbers and reset times, and no credential.
+            AppLog.probes.error("Rendered output:\n\(clean, privacy: .public)")
+            AppLog.probes.error("Flattened output:\n\(flat, privacy: .public)")
             throw ProbeError.parseFailed("Could not find session usage")
         }
 
@@ -541,10 +557,20 @@ final class ClaudeUsageProbe: UsageProbe, @unchecked Sendable {
             guard process.terminationStatus == 0,
                   let raw = String(data: data, encoding: .utf8)?.trimmingCharacters(in: .whitespacesAndNewlines),
                   !raw.isEmpty,
-                  // Sanity-check it's the expected token JSON before writing.
-                  (try? JSONSerialization.jsonObject(with: Data(raw.utf8))) != nil,
-                  raw.contains("claudeAiOauth") || raw.contains("accessToken") else {
-                AppLog.probes.debug("Keychain credential mirror skipped (no valid token read)")
+                  Self.isUsableCredentialBlob(raw) else {
+                // The Keychain had nothing usable. If the file we wrote earlier
+                // is itself unusable, delete it: the file outranks the Keychain,
+                // so a blank one pins every `claude` on this machine to a token
+                // that cannot authenticate. No file at all is strictly better —
+                // claude falls back to the Keychain, which is where a working
+                // credential normally lives.
+                if let existing = try? String(contentsOf: credURL, encoding: .utf8),
+                   !Self.isUsableCredentialBlob(existing) {
+                    try? FileManager.default.removeItem(at: credURL)
+                    AppLog.probes.error("Removed unusable mirrored credential file at \(credURL.path, privacy: .public)")
+                } else {
+                    AppLog.probes.debug("Keychain credential mirror skipped (no valid token read)")
+                }
                 return
             }
             try? FileManager.default.createDirectory(at: home, withIntermediateDirectories: true)
@@ -554,6 +580,33 @@ final class ClaudeUsageProbe: UsageProbe, @unchecked Sendable {
         } catch {
             AppLog.probes.debug("Keychain credential mirror failed: \(error.localizedDescription)")
         }
+    }
+
+    /// Whether a credential blob can actually authenticate.
+    ///
+    /// The old check was "is it JSON and does the word accessToken appear in
+    /// it", which a *logged-out* blob passes: claude writes one with empty
+    /// token strings and `expiresAt: 0` while it rotates a token, and mirroring
+    /// that over a working file broke every `claude` on the machine — the file
+    /// takes precedence over the Keychain, so the probe kept authenticating as
+    /// nobody and `/usage` degraded to the billing screen with no quota rows.
+    /// The symptom is a Claude usage tile that stops updating and never says
+    /// why.
+    static func isUsableCredentialBlob(_ raw: String) -> Bool {
+        guard let object = try? JSONSerialization.jsonObject(with: Data(raw.utf8)),
+              let root = object as? [String: Any],
+              let oauth = root["claudeAiOauth"] as? [String: Any] else { return false }
+
+        let accessToken = oauth["accessToken"] as? String ?? ""
+        let refreshToken = oauth["refreshToken"] as? String ?? ""
+        guard !accessToken.isEmpty else { return false }
+
+        // An access token past its expiry is still worth mirroring when there is
+        // a refresh token behind it — claude renews it on the next run. With
+        // neither, the blob is dead weight.
+        let expiresAt = (oauth["expiresAt"] as? Double) ?? 0
+        let nowMilliseconds = Date().timeIntervalSince1970 * 1000
+        return expiresAt > nowMilliseconds || !refreshToken.isEmpty
     }
 
     private func probeWorkingDirectory() -> URL {

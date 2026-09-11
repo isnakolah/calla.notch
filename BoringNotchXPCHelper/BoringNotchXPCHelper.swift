@@ -1,3 +1,4 @@
+import OSLog
 //
 //  BoringNotchXPCHelper.swift
 //  BoringNotchXPCHelper
@@ -6,12 +7,69 @@
 //
 
 import Foundation
+import AppKit
 import ApplicationServices
 import IOKit
 import CoreGraphics
 
 class BoringNotchXPCHelper: NSObject, BoringNotchXPCHelperProtocol {
     
+    /// Only the active Zen document matching the system media title is eligible.
+    /// Uses existing Accessibility authorization without prompting or reading history.
+    @objc func zenYouTubeArtworkURL(_ title: String, with reply: @escaping (String?) -> Void) {
+        guard AXIsProcessTrusted(), !title.isEmpty, title.count < 1000 else { Logger(subsystem: "theboringteam.boringnotch", category: "artwork").notice("Zen artwork: accessibility unavailable or title invalid"); reply(nil); return }
+        DispatchQueue.main.async {
+            guard let app = NSRunningApplication.runningApplications(withBundleIdentifier: "app.zen-browser.zen").first else { reply(nil); return }
+            let root = AXUIElementCreateApplication(app.processIdentifier)
+            AXUIElementSetMessagingTimeout(root, 0.25)
+            func attribute(_ element: AXUIElement, _ name: String) -> CFTypeRef? {
+                var result: CFTypeRef?
+                return AXUIElementCopyAttributeValue(element, name as CFString, &result) == .success ? result : nil
+            }
+            // Firefox-family browsers may expose no focused window while the
+            // notch is active. Match a window title before reading its document.
+            var windows = attribute(root, kAXWindowsAttribute) as? [AXUIElement] ?? []
+            if let focused = attribute(root, kAXFocusedWindowAttribute),
+               CFGetTypeID(focused) == AXUIElementGetTypeID() {
+                windows.insert(unsafeBitCast(focused, to: AXUIElement.self), at: 0)
+            }
+            guard let window = windows.first(where: {
+                (attribute($0, kAXTitleAttribute) as? String)?.contains(title) == true
+            }) else { Logger(subsystem: "theboringteam.boringnotch", category: "artwork").notice("Zen artwork: no matching accessible window"); reply(nil); return }
+            var queue = [window]
+            let deadline = Date().addingTimeInterval(1)
+            var index = 0
+            while index < queue.count && index < 250 && Date() < deadline {
+                let element = queue[index]; index += 1
+                let role = attribute(element, kAXRoleAttribute) as? String
+                if role == "AXWebArea" {
+                    let pageTitle = [attribute(element, kAXTitleAttribute) as? String,
+                                     attribute(element, kAXDescriptionAttribute) as? String]
+                        .compactMap { $0 }.first(where: { !$0.isEmpty }) ?? ""
+                    guard pageTitle.isEmpty || pageTitle.contains(title) else {
+                        Logger(subsystem: "theboringteam.boringnotch", category: "artwork").notice("Zen artwork: web document title did not match")
+                        continue
+                    }
+                    let raw = attribute(element, kAXURLAttribute)
+                    let address = (raw as? URL)?.absoluteString ?? (raw as? String) ?? ""
+                    guard let url = URL(string: address),
+                          let host = url.host?.lowercased(), ["youtube.com", "www.youtube.com", "m.youtube.com"].contains(host),
+                          url.path == "/watch",
+                          let id = URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems?.first(where: { $0.name == "v" })?.value,
+                          id.range(of: "^[A-Za-z0-9_-]{11}$", options: .regularExpression) != nil else { continue }
+                    Logger(subsystem: "theboringteam.boringnotch", category: "artwork").notice("Zen artwork: matched active YouTube document")
+                    reply("https://i.ytimg.com/vi/\(id)/hqdefault.jpg")
+                    return
+                }
+                if let children = attribute(element, kAXChildrenAttribute) as? [AXUIElement] {
+                    queue.append(contentsOf: children.prefix(250 - min(queue.count, 250)))
+                }
+            }
+            Logger(subsystem: "theboringteam.boringnotch", category: "artwork").notice("Zen artwork: no matching document after \(index) nodes")
+            reply(nil)
+        }
+    }
+
     @objc func isAccessibilityAuthorized(with reply: @escaping (Bool) -> Void) {
         reply(AXIsProcessTrusted())
     }
@@ -141,11 +199,11 @@ class BoringNotchXPCHelper: NSObject, BoringNotchXPCHelperProtocol {
 
     // MARK: - CLI Usage Probing
 
-    @objc func fetchUsage(_ provider: String, with reply: @escaping (Data?) -> Void) {
+    @objc func fetchUsage(_ provider: String, securitySessionID: String?, with reply: @escaping (Data?) -> Void) {
         // Hop off the serial XPC message queue — the Claude probe can take ~20s
         // and must not block brightness/accessibility calls on the same connection.
         Task.detached {
-            let dto = await UsageProbeService.shared.fetchUsage(provider: provider)
+            let dto = await UsageProbeService.shared.fetchUsage(provider: provider, securitySessionID: securitySessionID)
             reply(try? UsageReportDTO.encoder.encode(dto))
         }
     }

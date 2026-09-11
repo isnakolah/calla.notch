@@ -30,6 +30,19 @@ struct UsageReportDTO: Codable, Equatable {
     var weekly: Quota?
     var capturedAt: Date
 
+    var weeklyExhausted: Bool { weekly.map { $0.percentRemaining <= 0 } ?? false }
+
+    /// Usable session allowance. An exhausted weekly quota blocks the session
+    /// even when its independent five-hour bucket still has capacity.
+    /// Keep the provider's raw quota and reset time intact for caching.
+    var effectiveSession: Quota? {
+        guard var quota = session else { return nil }
+        if weeklyExhausted {
+            quota.percentRemaining = 0
+        }
+        return quota
+    }
+
     /// Shared JSON coders — `.secondsSince1970` dates on both sides of the XPC boundary.
     static let encoder: JSONEncoder = {
         let e = JSONEncoder()
