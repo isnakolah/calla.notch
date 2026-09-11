@@ -108,6 +108,15 @@ final class XPCHelperClient: NSObject {
         }
     }
     
+    nonisolated func zenYouTubeArtworkURL(title: String) async -> String? {
+        do {
+            let service = await MainActor.run { ensureRemoteService() }
+            return try await service.withContinuation { service, continuation in
+                service.zenYouTubeArtworkURL(title) { continuation.resume(returning: $0) }
+            }
+        } catch { return nil }
+    }
+
     nonisolated func isAccessibilityAuthorized() async -> Bool {
         do {
             let service = await MainActor.run {
@@ -247,13 +256,13 @@ final class XPCHelperClient: NSObject {
     /// Fetches usage for a provider ("claude" | "codex") from the non-sandboxed
     /// helper. Returns nil only on transport failure — probe-level errors are
     /// encoded inside the returned DTO's `status`/`errorDescription`.
-    nonisolated func fetchUsage(provider: String) async -> UsageReportDTO? {
+    nonisolated func fetchUsage(provider: String, securitySessionID: String? = nil) async -> UsageReportDTO? {
         do {
             let service = await MainActor.run {
                 ensureRemoteService()
             }
             let data: Data? = try await service.withContinuation { service, continuation in
-                service.fetchUsage(provider) { continuation.resume(returning: $0) }
+                service.fetchUsage(provider, securitySessionID: securitySessionID) { continuation.resume(returning: $0) }
             }
             guard let data else { return nil }
             return try UsageReportDTO.decoder.decode(UsageReportDTO.self, from: data)
@@ -266,5 +275,4 @@ final class XPCHelperClient: NSObject {
 extension Notification.Name {
     static let accessibilityAuthorizationChanged = Notification.Name("accessibilityAuthorizationChanged")
 }
-
 
