@@ -1,0 +1,124 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <style>
+    body { margin: 0; background: #0A0A0C; }
+    a { color: #85E6C7; } a:hover { color: #A6FAD9; }
+    .rounded { font-family: ui-rounded, "SF Pro Rounded", system-ui, -apple-system, sans-serif; }
+    .caps { font: 700 9px/1 system-ui, -apple-system, sans-serif; letter-spacing: 0.08em; text-transform: uppercase; }
+    .mono { font-family: ui-monospace, "SF Mono", Menlo, monospace; }
+    .row { display: flex; align-items: center; }
+    .glyph { width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex: none; }
+    .cl { display: flex; height: 16.5px; align-items: center; }
+    .num { width: 30px; flex: none; text-align: right; font: 400 10px/16.5px ui-monospace, "SF Mono", Menlo, monospace; color: rgba(255,255,255,0.30); font-variant-numeric: tabular-nums; }
+    .sg { width: 16px; flex: none; text-align: center; font: 600 10px/16.5px ui-monospace, "SF Mono", Menlo, monospace; }
+    .src { font: 400 11px/16.5px ui-monospace, "SF Mono", Menlo, monospace; white-space: pre; }
+    .k { color: #B3A6FF; } .s { color: #A3DBAB; } .n { color: #FFC280; } .c { color: #969696; } .p { color: #E3EAF5; }
+    .mark { width: 13px; height: 13px; border-radius: 50%; background: #85E6C7; color: #05130E; font: 700 8px/13px system-ui, sans-serif; text-align: center; flex: none; margin-left: 10px; }
+    .key { font: 400 10px/1 ui-rounded, "SF Pro Rounded", system-ui, sans-serif; color: rgba(255,255,255,0.70); background: rgba(255,255,255,0.08); border-radius: 4px; padding: 2px 4px; font-variant-numeric: tabular-nums; }
+  </style>
+</helmet>
+
+<div style="width: 600px; height: 380px; background: #0A0A0C; box-sizing: border-box; display: flex; flex-direction: column; overflow: hidden;">
+
+  <!-- BAND — either side of the camera housing. Every session control lives here now, as bare glyphs. -->
+  <div class="row" style="height: 34px; flex: none; padding: 0 14px; gap: 7px;">
+    <span style="width: 7px; height: 7px; border-radius: 50%; background: #85E6C7; box-shadow: 0 0 9px rgba(133,230,199,0.85); flex: none;"></span>
+    <span style="font: 600 11px/1 system-ui, -apple-system, sans-serif; color: #85E6C7;">Listening</span>
+    <span class="rounded" style="font-size: 11px; color: rgba(255,255,255,0.70); font-variant-numeric: tabular-nums;">4:18</span>
+    <span class="mono" style="font-size: 10px; color: rgba(255,255,255,0.42);">Wave · Part 2</span>
+    <span style="flex-grow: 1;"></span>
+    <span class="glyph" title="Retarget window"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.42)" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="7"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg></span>
+    <span class="glyph" title="Hold"><svg width="13" height="13" viewBox="0 0 24 24" fill="rgba(255,255,255,0.42)"><rect x="7" y="5" width="3.5" height="14" rx="1.2"/><rect x="13.5" y="5" width="3.5" height="14" rx="1.2"/></svg></span>
+    <span class="glyph" title="Compact panel"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.42)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 9l7-5 7 5M5 15l7 5 7-5"/></svg></span>
+    <span class="glyph" title="Hidden from screen recording"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.42)" stroke-width="1.8" stroke-linecap="round"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="2.6"/><path d="M3 3l18 18"/></svg></span>
+    <span class="glyph" title="Pin notch open"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.42)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3h6l-1 6 4 3v2H6v-2l4-3z"/><path d="M12 14v7"/></svg></span>
+    <span class="glyph" title="End interview"><svg width="13" height="13" viewBox="0 0 24 24" fill="rgba(255,69,58,0.85)"><rect x="6" y="6" width="12" height="12" rx="2"/></svg></span>
+  </div>
+
+  <!-- PANEL — 600 × 340. Tab insets 4 / 12 / 10; the card is everything. -->
+  <div style="height: 340px; flex: none; box-sizing: border-box; padding: 4px 12px 10px; position: relative;">
+    <div style="position: absolute; left: 0; right: 0; top: 0; height: 40px; background: linear-gradient(180deg, rgba(255,255,255,0.07), rgba(255,255,255,0)); pointer-events: none;"></div>
+    <div style="position: absolute; left: 40px; top: 70px; width: 320px; height: 180px; border-radius: 50%; background: radial-gradient(closest-side, rgba(133,230,199,0.15), rgba(133,230,199,0)); filter: blur(30px); pointer-events: none;"></div>
+
+    <div style="height: 326px; box-sizing: border-box; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.06); border-radius: 16px; padding: 12px; display: flex; flex-direction: column; position: relative;">
+
+      <!-- meta: which step, and exactly where it lands -->
+      <div class="row" style="height: 13px; flex: none; gap: 8px;">
+        <span class="caps" style="color: #85E6C7;">Step 4 · Edit</span>
+        <span style="flex-grow: 1;"></span>
+        <span class="mono" style="font-size: 10px; color: rgba(255,255,255,0.42); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">engine/sheet.py · Sheet.set · 118</span>
+      </div>
+
+      <!-- the step, at title size, full width -->
+      <div style="margin-top: 5px; flex: none; font: 600 14px/1.35 system-ui, -apple-system, sans-serif; color: #FFFFFF; letter-spacing: -0.008em;">Invalidate dependents before you recompute</div>
+
+      <!-- CODE — the hero. Real file line numbers, change signs, dimmed context, anchored callouts. -->
+      <div style="margin-top: 9px; flex-grow: 1; min-height: 0; background: #0B0E11; border: 1px solid rgba(255,255,255,0.085); border-radius: 12px; overflow: hidden; display: flex; flex-direction: column;">
+
+        <div class="row" style="height: 16px; flex: none; padding: 0 10px 0 0;">
+          <span class="num" style="line-height: 16px; color: rgba(255,255,255,0.22);">⋯</span>
+          <span class="mono" style="font-size: 9.5px; line-height: 16px; color: rgba(255,255,255,0.30); margin-left: 16px;">115 lines above</span>
+        </div>
+
+        <div style="flex: none;">
+          <div class="cl"><span class="num">116</span><span class="sg" style="color: rgba(255,255,255,0.22);">·</span><span class="src" style="opacity: 0.55;"><span class="k">def</span><span class="p"> set(</span><span class="k">self</span><span class="p">, ref, value):</span></span></div>
+          <div class="cl"><span class="num">117</span><span class="sg" style="color: rgba(255,255,255,0.22);">·</span><span class="src" style="opacity: 0.55;"><span class="p">    </span><span class="k">self</span><span class="p">.cells[ref] = value</span></span></div>
+          <div class="cl" style="background: rgba(133,230,199,0.07); box-shadow: inset 2px 0 0 #85E6C7;"><span class="num"></span><span class="sg" style="color: #85E6C7;">+</span><span class="src"><span class="p">    </span><span class="k">for</span><span class="p"> dep </span><span class="k">in</span><span class="p"> </span><span class="k">self</span><span class="p">._dependents(ref):</span></span></div>
+          <div class="cl" style="background: rgba(133,230,199,0.07); box-shadow: inset 2px 0 0 #85E6C7;"><span class="num"></span><span class="sg" style="color: #85E6C7;">+</span><span class="src"><span class="p">        </span><span class="k">self</span><span class="p">._dirty.add(dep)</span></span><span class="mark">1</span></div>
+          <div class="cl" style="background: rgba(255,69,58,0.07); box-shadow: inset 2px 0 0 rgba(255,69,58,0.7);"><span class="num" style="color: rgba(255,69,58,0.55);">118</span><span class="sg" style="color: #FF453A;">−</span><span class="src" style="opacity: 0.5;"><span class="p">    </span><span class="k">self</span><span class="p">.recompute_all()</span></span></div>
+          <div class="cl" style="background: rgba(133,230,199,0.07); box-shadow: inset 2px 0 0 #85E6C7;"><span class="num"></span><span class="sg" style="color: #85E6C7;">+</span><span class="src"><span class="p">    </span><span class="k">self</span><span class="p">._recompute(</span><span class="k">self</span><span class="p">._dirty)</span></span><span class="mark">2</span></div>
+          <div class="cl"><span class="num">119</span><span class="sg" style="color: rgba(255,255,255,0.22);">·</span><span class="src" style="opacity: 0.55;"><span class="p">    </span><span class="k">return</span><span class="p"> </span><span class="k">self</span><span class="p">.cells[ref]</span></span></div>
+        </div>
+
+        <span style="flex-grow: 1;"></span>
+        <div style="height: 1px; background: rgba(255,255,255,0.07); flex: none;"></div>
+        <div style="flex: none; padding: 7px 12px 8px; display: flex; flex-direction: column; gap: 4px;">
+          <div style="display: flex; gap: 8px; align-items: flex-start;">
+            <span class="mark" style="margin-left: 0; margin-top: 1px;">1</span>
+            <span style="font: 400 11px/1.35 system-ui, -apple-system, sans-serif; color: rgba(255,255,255,0.70);">Mark, don't compute — a 40-cell chain would otherwise recompute 40 times.</span>
+          </div>
+          <div style="display: flex; gap: 8px; align-items: flex-start;">
+            <span class="mark" style="margin-left: 0; margin-top: 1px;">2</span>
+            <span style="font: 400 11px/1.35 system-ui, -apple-system, sans-serif; color: rgba(255,255,255,0.70);">One pass over the dirty set — the O(dependents) claim they asked about.</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- about the code, so it sits with the code -->
+      <div class="row" style="margin-top: 8px; flex: none; gap: 8px;">
+        <span class="caps" style="color: #FF9F0A; flex: none;">Watch</span>
+        <span style="font: 400 11px/1.35 system-ui, -apple-system, sans-serif; color: rgba(255,255,255,0.70); min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">A cell that depends on itself will not terminate here.</span>
+      </div>
+
+      <!-- what you say, and the one line that defends it -->
+      <div class="row" style="margin-top: 6px; flex: none; gap: 8px;">
+        <span class="caps" style="color: #85E6C7; flex: none;">Say</span>
+        <span style="font: 500 12px/1.35 system-ui, -apple-system, sans-serif; color: #FFFFFF; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Mark the dependents dirty first, then recompute once.</span>
+      </div>
+      <div class="row" style="margin-top: 4px; flex: none; gap: 8px;">
+        <span class="caps" style="color: rgba(255,255,255,0.42); flex: none;">Why</span>
+        <span style="font: 400 11px/1.35 system-ui, -apple-system, sans-serif; color: rgba(255,255,255,0.70); min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">They asked what a 40-cell chain costs. This is the answer in code.</span>
+      </div>
+
+      <!-- keys, the way Quiz shows them: a word, then the cap -->
+      <div class="row" style="margin-top: 9px; height: 16px; flex: none; gap: 10px;">
+        <span class="row" style="gap: 3px;"><span style="font: 400 10px/1 system-ui, sans-serif; color: rgba(255,255,255,0.42);">Step</span><span class="key">⌥⌘←</span><span class="key">⌥⌘→</span></span>
+        <span class="row" style="gap: 3px;"><span style="font: 400 10px/1 system-ui, sans-serif; color: rgba(255,255,255,0.42);">Copy</span><span class="key">⌥⌘C</span></span>
+        <span class="row" style="gap: 3px;"><span style="font: 400 10px/1 system-ui, sans-serif; color: rgba(255,255,255,0.42);">Run</span><span class="key">⌥⌘R</span></span>
+        <span class="row" style="gap: 3px;"><span style="font: 400 10px/1 system-ui, sans-serif; color: rgba(255,255,255,0.42);">Ask</span><span class="key">⌥⌘Q</span></span>
+        <span class="row" style="gap: 3px;"><span style="font: 400 10px/1 system-ui, sans-serif; color: rgba(255,255,255,0.42);">Next</span><span class="key">⌥⌘↩</span></span>
+      </div>
+
+    </div>
+  </div>
+</div>
+</x-dc>
+</body>
+</html>

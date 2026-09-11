@@ -1,0 +1,17 @@
+{
+  "artboards": [
+    { "file": "Main.dc.html", "title": "Expanded — band + 340pt card", "x": 0, "y": 0, "w": 600, "h": 380 },
+    { "file": "Collapsed.dc.html", "title": "Collapsed — band + 200pt card", "x": 700, "y": 0, "w": 600, "h": 240 },
+    { "file": "Payload.dc.html", "title": "What a step has to come back as", "x": 0, "y": 520, "w": 880, "h": 470 }
+  ],
+  "annotations": [
+    { "id": "rule-chrome", "x": -340, "y": 0, "w": 280, "text": "WHERE THE SPACE WENT\n\nThe shipped panel spends four rows on chrome before any content: the band, then a second LIVE CODE / Listening row that repeats it, then Hold and Compact as 30pt chips, then a file row, then a five-button row.\n\nAll of it is gone. Controls are bare glyphs in the band, the way Quiz does it — tertiary ink, no chip, a circle only on hover. Keys drop to one 16pt hint row: a word, then the cap.\n\nThe card keeps 302 of the 340. The code plane alone holds 186 of that." },
+
+    { "id": "rule-code", "x": -340, "y": 300, "w": 280, "text": "THE CODE\n\nFour things make a step readable at a glance, and the current renderer has none of them:\n\n1. Real file line numbers. `CodingCodeFormatter` numbers 1..n from the snippet — useless next to an editor sitting on line 118.\n2. A change sign per line: + added, − removed, · context. Context drops to 55% so the eye lands on what is new.\n3. Notes anchored to a line, not appended as prose. Two at most, each saying why that line is there.\n4. An honest window: the fold marker says how much is above.\n\nSyntax colours are the shipped ones — keyword #B3A6FF, string #A3DBAB, number #FFC280, comment #969696." },
+
+    { "id": "rule-desc", "x": -340, "y": 660, "w": 280, "text": "THE DESCRIPTION\n\nToday `codeWithGuidance` appends Why / Limitation / Pending / Say next / Check / Watch into the code scroll, so you scroll past the code to read them — and Say next then draws a second time below the pane.\n\nSplit by what each one is about:\n\n· About the step — the title, full width above the code.\n· About a line — a numbered note in the code plane's footer.\n· About the conversation — Say and Why, one line each, under the code where you look up from typing.\n· About the run — Check is the Run key, not a sentence.\n\nCollapsed keeps Say and the code. Support drops, the panel does not." },
+
+    { "id": "rule-payload", "x": -340, "y": 1020, "w": 280, "text": "IT HAS TO COME BACK THIS WAY\n\nNone of the above can be rendered from `code: String?`. The engine cannot infer which lines are new, which file line they land on, or what is worth a note — so the model has to say.\n\nThe sheet below is the shape, and the rules the engine enforces before a move is ever shown. A move that fails them is refused and asked again rather than drawn plain." }
+  ],
+  "launch": { "view": "canvas" }
+}

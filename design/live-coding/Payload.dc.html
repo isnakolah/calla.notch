@@ -1,0 +1,91 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <style>
+    body { margin: 0; background: #0A0A0C; }
+    a { color: #85E6C7; } a:hover { color: #A6FAD9; }
+    .caps { font: 700 9px/1 system-ui, -apple-system, sans-serif; letter-spacing: 0.08em; text-transform: uppercase; }
+    .row { display: flex; align-items: center; }
+    .j { font: 400 9.5px/14.5px ui-monospace, "SF Mono", Menlo, monospace; white-space: pre; }
+    .jk { color: #B3A6FF; } .jv { color: #A3DBAB; } .jn { color: #FFC280; } .jp { color: rgba(227,234,245,0.55); }
+    .lbl { font: 400 11px/1.4 system-ui, -apple-system, sans-serif; color: rgba(255,255,255,0.70); }
+    .cl { display: flex; height: 16.5px; align-items: center; }
+    .num { width: 26px; flex: none; text-align: right; font: 400 10px/16.5px ui-monospace, "SF Mono", Menlo, monospace; color: rgba(255,255,255,0.30); font-variant-numeric: tabular-nums; }
+    .sg { width: 15px; flex: none; text-align: center; font: 600 10px/16.5px ui-monospace, "SF Mono", Menlo, monospace; }
+    .src { font: 400 11px/16.5px ui-monospace, "SF Mono", Menlo, monospace; white-space: pre; color: #E3EAF5; }
+    .plane { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.06); border-radius: 14px; }
+  </style>
+</helmet>
+
+<div style="width: 880px; height: 470px; background: #0A0A0C; box-sizing: border-box; padding: 22px 24px; display: flex; flex-direction: column; gap: 14px; overflow: hidden;">
+
+  <div style="display: flex; align-items: baseline; gap: 12px; flex: none;">
+    <span style="font: 700 17px/1 system-ui, -apple-system, sans-serif; color: #FFFFFF; letter-spacing: -0.01em;">What a step has to come back as</span>
+    <span class="lbl" style="color: rgba(255,255,255,0.42);">The notch can only draw what the move carries. Today <span style="color: rgba(255,255,255,0.70);">code</span> is one string, so every line looks the same.</span>
+  </div>
+
+  <div style="display: flex; gap: 14px; flex-grow: 1; min-height: 0;">
+
+    <div class="plane" style="flex-grow: 1; min-width: 0; padding: 12px 14px; display: flex; flex-direction: column; gap: 9px;">
+      <span class="caps" style="color: #85E6C7;">CodingMove.patch</span>
+      <div style="min-width: 0; overflow: hidden;">
+<div class="j"><span class="jp">{</span></div>
+<div class="j">  <span class="jk">"say"</span><span class="jp">: </span><span class="jv">"Invalidate dependents before you recompute"</span><span class="jp">,</span></div>
+<div class="j">  <span class="jk">"anchor"</span><span class="jp">: { </span><span class="jk">"path"</span><span class="jp">: </span><span class="jv">"engine/sheet.py"</span><span class="jp">, </span><span class="jk">"symbol"</span><span class="jp">: </span><span class="jv">"Sheet.set"</span><span class="jp">, </span><span class="jk">"line"</span><span class="jp">: </span><span class="jn">118</span><span class="jp"> },</span></div>
+<div class="j">  <span class="jk">"patch"</span><span class="jp">: {</span></div>
+<div class="j">    <span class="jk">"language"</span><span class="jp">: </span><span class="jv">"python"</span><span class="jp">,   </span><span class="jk">"startLine"</span><span class="jp">: </span><span class="jn">116</span><span class="jp">,</span></div>
+<div class="j">    <span class="jk">"lines"</span><span class="jp">: [</span></div>
+<div class="j">      <span class="jp">{ </span><span class="jk">"kind"</span><span class="jp">: </span><span class="jv">"context"</span><span class="jp">, </span><span class="jk">"text"</span><span class="jp">: </span><span class="jv">"def set(self, ref, value):"</span><span class="jp"> },</span></div>
+<div class="j">      <span class="jp">{ </span><span class="jk">"kind"</span><span class="jp">: </span><span class="jv">"context"</span><span class="jp">, </span><span class="jk">"text"</span><span class="jp">: </span><span class="jv">"    self.cells[ref] = value"</span><span class="jp"> },</span></div>
+<div class="j">      <span class="jp">{ </span><span class="jk">"kind"</span><span class="jp">: </span><span class="jv">"add"</span><span class="jp">,     </span><span class="jk">"text"</span><span class="jp">: </span><span class="jv">"    for dep in self._dependents(ref):"</span><span class="jp"> },</span></div>
+<div class="j">      <span class="jp">{ </span><span class="jk">"kind"</span><span class="jp">: </span><span class="jv">"add"</span><span class="jp">,     </span><span class="jk">"text"</span><span class="jp">: </span><span class="jv">"        self._dirty.add(dep)"</span><span class="jp">, </span><span class="jk">"note"</span><span class="jp">: </span><span class="jn">1</span><span class="jp"> },</span></div>
+<div class="j">      <span class="jp">{ </span><span class="jk">"kind"</span><span class="jp">: </span><span class="jv">"remove"</span><span class="jp">,  </span><span class="jk">"text"</span><span class="jp">: </span><span class="jv">"    self.recompute_all()"</span><span class="jp"> },</span></div>
+<div class="j">      <span class="jp">{ </span><span class="jk">"kind"</span><span class="jp">: </span><span class="jv">"add"</span><span class="jp">,     </span><span class="jk">"text"</span><span class="jp">: </span><span class="jv">"    self._recompute(self._dirty)"</span><span class="jp">, </span><span class="jk">"note"</span><span class="jp">: </span><span class="jn">2</span><span class="jp"> },</span></div>
+<div class="j">      <span class="jp">{ </span><span class="jk">"kind"</span><span class="jp">: </span><span class="jv">"context"</span><span class="jp">, </span><span class="jk">"text"</span><span class="jp">: </span><span class="jv">"    return self.cells[ref]"</span><span class="jp"> }</span></div>
+<div class="j">    <span class="jp">],</span></div>
+<div class="j">    <span class="jk">"notes"</span><span class="jp">: [</span></div>
+<div class="j">      <span class="jp">{ </span><span class="jk">"id"</span><span class="jp">: </span><span class="jn">1</span><span class="jp">, </span><span class="jk">"text"</span><span class="jp">: </span><span class="jv">"Mark, don't compute — 40 cells would recompute 40×."</span><span class="jp"> },</span></div>
+<div class="j">      <span class="jp">{ </span><span class="jk">"id"</span><span class="jp">: </span><span class="jn">2</span><span class="jp">, </span><span class="jk">"text"</span><span class="jp">: </span><span class="jv">"One pass over the dirty set — the O(dependents) claim."</span><span class="jp"> }</span></div>
+<div class="j">    <span class="jp">]</span></div>
+<div class="j">  <span class="jp">},</span></div>
+<div class="j">  <span class="jk">"sayNext"</span><span class="jp">: </span><span class="jv">"Mark the dependents dirty first, then recompute once."</span><span class="jp">,</span></div>
+<div class="j">  <span class="jk">"why"</span><span class="jp">: </span><span class="jv">"They asked what a 40-cell chain costs."</span><span class="jp">,</span></div>
+<div class="j">  <span class="jk">"check"</span><span class="jp">: { </span><span class="jk">"command"</span><span class="jp">: </span><span class="jv">"pytest -k dependents"</span><span class="jp"> }</span></div>
+<div class="j"><span class="jp">}</span></div>
+      </div>
+    </div>
+
+    <div style="width: 300px; flex: none; display: flex; flex-direction: column; gap: 12px; min-height: 0;">
+
+      <div class="plane" style="padding: 12px 14px; display: flex; flex-direction: column; gap: 9px; flex: none;">
+        <span class="caps" style="color: rgba(255,255,255,0.42);">How each kind draws</span>
+        <div style="background: #0B0E11; border: 1px solid rgba(255,255,255,0.085); border-radius: 10px; overflow: hidden; padding: 4px 0;">
+          <div class="cl" style="background: rgba(133,230,199,0.07); box-shadow: inset 2px 0 0 #85E6C7;"><span class="num"></span><span class="sg" style="color: #85E6C7;">+</span><span class="src">what you type now</span></div>
+          <div class="cl" style="background: rgba(255,69,58,0.07); box-shadow: inset 2px 0 0 rgba(255,69,58,0.7);"><span class="num" style="color: rgba(255,69,58,0.55);">118</span><span class="sg" style="color: #FF453A;">−</span><span class="src" style="opacity: 0.5;">what comes out</span></div>
+          <div class="cl"><span class="num">119</span><span class="sg" style="color: rgba(255,255,255,0.22);">·</span><span class="src" style="opacity: 0.55;">what is already there</span></div>
+        </div>
+        <span class="lbl" style="color: rgba(255,255,255,0.42);">Numbers are the file's own, and an added line has none — it is not in the file yet. So numbering advances on context and removals only.</span>
+      </div>
+
+      <div class="plane" style="padding: 12px 14px; display: flex; flex-direction: column; gap: 7px; flex-grow: 1; min-height: 0;">
+        <span class="caps" style="color: rgba(255,255,255,0.42);">Refused, and asked again</span>
+        <span class="lbl">No <span style="color:#FFFFFF;">add</span> line — a step that changes nothing is not a step.</span>
+        <span class="lbl">Over 12 lines, or more than 3 context lines a side. Split it.</span>
+        <span class="lbl">More than 2 notes, or a note over 80 characters.</span>
+        <span class="lbl">A note that restates the line instead of saying why it is there.</span>
+        <span class="lbl">Prose inside <span style="color:#FFFFFF;">text</span>. It is source, byte for byte.</span>
+        <span class="lbl"><span style="color:#FFFFFF;">sayNext</span> longer than one spoken sentence.</span>
+      </div>
+
+    </div>
+  </div>
+</div>
+</x-dc>
+</body>
+</html>
