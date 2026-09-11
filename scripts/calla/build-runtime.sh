@@ -20,6 +20,10 @@ swift_build() {
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 DESTINATION="${1:?usage: build-runtime.sh <resource-directory>}"
+if [[ "${CALLA_COMPILE_ONLY:-0}" == "1" ]]; then
+  echo "Calla runtime: skipped for compile-only source validation"
+  exit 0
+fi
 PACKAGE="$ROOT/Tutor/apps/macos/TutorHost"
 CONFIGURATION="${CONFIGURATION:-Debug}"
 SWIFT_CONFIGURATION="debug"

@@ -138,7 +138,7 @@ verify_signed_bundle "$SRC" "$APP_BUNDLE_ID"
 verify_signed_bundle "$SRC/$HELPER_RELATIVE_PATH" "$HELPER_BUNDLE_ID"
 verify_signed_bundle "$SRC/$CALLA_ENGINE_RELATIVE_PATH" "$CALLA_ENGINE_BUNDLE_ID"
 verify_signed_bundle "$SRC/$SWEEP_SERVICE_RELATIVE_PATH" "$SWEEP_SERVICE_BUNDLE_ID"
-for required_resource in Calla/openclaw Calla/packs Calla/agent-workspace Calla/scripts Calla/Gateway; do
+for required_resource in Calla/scripts Calla/Gateway; do
   [[ -d "$SRC/Contents/Resources/$required_resource" ]] || { echo "✗ Missing embedded Tutor resource: $required_resource" >&2; exit 1; }
 done
 for required_file in \
@@ -147,8 +147,6 @@ for required_file in \
   Contents/XPCServices/BoringCallaEngine.xpc/Contents/Resources/CallaRuntime/scripts/calla-course.sh \
   Contents/XPCServices/BoringCallaEngine.xpc/Contents/Resources/CallaRuntime/scripts/calla-feedback.sh \
   Contents/XPCServices/BoringCallaEngine.xpc/Contents/Resources/CallaRuntime/scripts/calla-gateway-check.sh \
-  Contents/Resources/Calla/openclaw/openclaw.plugin.json \
-  Contents/Resources/Calla/scripts/calla-node-host.sh \
   Contents/Resources/Calla/scripts/gateway-update.sh \
   Contents/Resources/Calla/Gateway/calla-gateway.tar.gz \
   Contents/XPCServices/BoringCallaEngine.xpc/Contents/Resources/CallaRuntime/CallaCallHost.app/Contents/MacOS/CallaCallHost \
@@ -166,6 +164,10 @@ done
 tar -tzf "$SRC/Contents/Resources/Calla/Gateway/calla-gateway.tar.gz" | grep -qx 'release/manifest.json' \
   || { echo "✗ Embedded Calla Gateway archive lacks release manifest" >&2; exit 1; }
 for forbidden_file in \
+  Contents/Resources/Calla/openclaw \
+  Contents/Resources/Calla/packs \
+  Contents/Resources/Calla/agent-workspace \
+  Contents/Resources/Calla/scripts/calla-node-host.sh \
   Contents/Resources/Calla/scripts/bootstrap-calla-mac.sh \
   Contents/Resources/Calla/scripts/setup-macos.sh \
   Contents/XPCServices/BoringCallaEngine.xpc/Contents/Resources/CallaRuntime/scripts/bootstrap-calla-mac.sh; do
@@ -223,9 +225,18 @@ fi
   && echo "  ✓ Calla engine embedded" \
   || { echo "  ✗ Calla engine NOT found" >&2; exit 1; }
 
-# Boring owns the replacement plugin path and launch labels. This never deletes
-# retired Calla plists/data; it unloads only their active jobs after the new
-# Boring resources have been verified and installed.
+# Prepare Quiz device-only Keychain material from ordinary signed Engine
+# process. XPC services cannot present legacy Keychain ACL UI; running same
+# executable here creates ACL for same designated requirement without prompt.
+QUIZ_KEY_PREPARER="$DEST/$CALLA_ENGINE_RELATIVE_PATH/Contents/MacOS/BoringCallaEngine"
+if ! "$QUIZ_KEY_PREPARER" --prepare-quiz-key; then
+  echo "  ✗ Quiz encryption key preparation failed" >&2
+  exit 1
+fi
+echo "  ✓ Quiz encryption key ready"
+
+# Boring owns local TutorHost launch labels; OpenClaw stays on Gateway. Runtime
+# install disables/removes known local node jobs after new bundle is verified.
 echo "▸ Installing Boring Calla local runtime…"
 CALLA_RUNTIME_LAUNCH="$LAUNCH" /bin/bash "$PROJECT_DIR/scripts/calla/runtime-install.sh"
 [[ -d "$DEST/$SWEEP_SERVICE_RELATIVE_PATH" ]] \
