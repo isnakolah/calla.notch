@@ -15,9 +15,9 @@ Implemented foundation:
 - Calla tab starts/resumes/stops courses and Ask through XPC. Tutor Settings
   owns course visibility and Calendar event bindings. Eligible event bindings
   start a course plus event-bounded Pomodoro; direct Calla starts do not.
-- Embedded OpenClaw plugin, packs, agent workspace, and only runtime-needed
-  Tutor scripts. Retired bootstrap, setup, signing, and separate-host scripts
-  are excluded from Boring bundles.
+- One immutable Gateway release archive plus its private SSH updater. Raw
+  OpenClaw plugin, packs, agent workspace, node launcher, bootstrap, setup,
+  signing, and separate-host scripts are excluded from Boring bundles.
 - Every Boring build bundles one immutable Gateway release archive. Installed
   Boring launch requests its private `nomonhomelab` update; same manifest
   returns without a Gateway transaction. Debug keeps its separate staged
@@ -31,19 +31,16 @@ courses are untouched. See [intelligence.md](intelligence.md).
 - Deployment validation for engine and embedded Tutor resources.
 - Gateway release builder/installer with digest, protocol-range, pack/contract
   verification, configuration backup/rollback, stable `current` adapters,
-  stale-node contract release, and three-release retention. Gateway sends the
-  internal-only v2/v3 capability handshake before its first Calla prompt. A
-  successful Gateway update now proves Gateway RPC, active Tutor plugin,
-  course-control socket, and paired-node `session_start`; first-release and
-  existing-release failures restore config/packs/current state.
+  and three-release retention. Migration clears stale Mac `nodeId`, disables
+  old node enroller, and proves Gateway RPC, active Tutor plugin, and owner-only
+  course-control socket. First-release and existing-release failures restore
+  config/packs/current state.
 
 Runtime corrections, 2026-08-17:
 
-- Both children's stdio is redirected to `<root>/logs/{tutor-host,node-host}.log`.
-  Before this the only node log on disk was the one the retired
-  `com.calla.openclaw-node-host` agent wrote, so disabling that agent also
-  blinded `BackendStatus`. `StepTiming` moved to the same 0700 root; it is the
-  one diagnostic that records a rectangle.
+- TutorHost stdio is redirected to `<root>/logs/tutor-host.log`.
+  `StepTiming` moved to the same 0700 root; it is the one diagnostic that
+  records a rectangle.
 - Permission state is a receipt, `<root>/host-status.json`, written by
   `TutorSettings.refreshPermissionStatus` and read by the engine. TCC grants are
   per executable and CallaTutorHost is what captures, so the engine's own
@@ -51,15 +48,12 @@ Runtime corrections, 2026-08-17:
   file and not a socket call: the UI polls status every 2-4s and a socket round
   trip would block on the host's main actor, which a lesson turn holds for tens
   of seconds. `request_accessibility` now routes to the host for the same reason.
-- `isRunning` is set once the host is up, before the node is started. A missing
-  plugin file used to leave the engine permanently "still starting" with a
-  healthy host, refusing every command.
+- `isRunning` is set once TutorHost is up. No OpenClaw node starts on Mac.
 - `hostReady` (a socket connect probe) is separate from `gatewayReachable`. The
   notch reports `.degraded` when the host is up and the Gateway is not, because
   cached courses and the fast lesson path need no Gateway.
-- `foreignNodeProcess` refuses to start a second node, and `detectConflicts`
-  reports a legacy host or node as a diagnostic. Detection only; nothing is
-  killed.
+- Startup reclaims only old Boring-recorded node PID/config receipts from prior
+  builds. It never scans for or launches generic OpenClaw work.
 - `CallaTutorHost` is named "Boring Notch Tutor" in the Screen Recording pane.
   It previously shared "Boring Calla Engine" with the XPC service, so the two
   rows were indistinguishable. `CFBundleIdentifier` is unchanged, so existing
@@ -83,9 +77,7 @@ Not cut over:
 - Existing Calla launch agents are disabled and unloaded by explicit
   `scripts/calla/runtime-install.sh`; their plists, logs, app, and data are
   never deleted. `launchctl disable` is used rather than `bootout` alone
-  because bootout does not survive login: both installs would start a node
-  named `Calla Mac`, the Gateway evicts the duplicate, `KeepAlive` respawns it,
-  and the pair flap indefinitely. Reverse with
+  because bootout does not survive login. Reverse with
   `launchctl enable gui/$UID/com.calla.tutor-host` and the same for
   `com.calla.openclaw-node-host`.
 - Real Gateway promotion, installed production Boring deployment, Screen
@@ -106,11 +98,9 @@ observation, verifier and overlay executor only. It has no model process,
 shell relay or durable Tutor writer in engine mode. Standalone remains an
 explicit Tutor-only rollback mode; Boring cannot select or fall back into it.
 
-Gateway node still exposes `tutor.host` for pairing compatibility, but only
-for capability, catalogue, lifecycle, runtime and health snapshots. It forwards
-those bounded, sequenced snapshots to Engine ingress. Model-visible operations
-(`observe`, `guide`, `plan`, `narrate`, `point`, `verify`, learning writes and
-actions) fail with `OPERATION_NOT_AVAILABLE_IN_ENGINE_MODE`.
+Boring never loads Gateway plugin or `tutor.host` on Mac. Course control and
+feedback use owner-only SSH adapters into Gateway; deterministic lesson runtime
+stays local. Legacy standalone node support remains outside Boring deployment.
 
 An exact published runtime revision is required for a new run and continuation.
 Missing, stale, invalid or incompatible runtime blocks progression and requests
