@@ -1,5 +1,6 @@
 import AVFoundation
 import Foundation
+import CallaContracts
 import os.log
 
 private let archiveLog = Logger(subsystem: "theboringteam.boringnotch.callhost", category: "archive")
@@ -97,6 +98,10 @@ public final class CallArchive: @unchecked Sendable {
         }
     }
 
+    public func record(event: CallEvent) {
+        appendLine(event, to: "events.jsonl")
+    }
+
     public func write(meta: Meta) {
         queue.async { [weak self] in
             guard let self else { return }
@@ -142,7 +147,7 @@ public final class CallArchive: @unchecked Sendable {
         return file
     }
 
-    private func appendLine<T: Encodable>(_ value: T, to name: String) {
+    private func appendLine<T: Encodable & Sendable>(_ value: T, to name: String) {
         queue.async { [weak self] in
             guard let self else { return }
             do {

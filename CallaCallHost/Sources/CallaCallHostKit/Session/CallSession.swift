@@ -30,6 +30,7 @@ public enum CallHostPaths {
     public static var permissionsFile: URL { root.appendingPathComponent("permissions.json") }
     public static var modelDownloadFile: URL { root.appendingPathComponent("model-download.json") }
     public static var socketFile: URL { root.appendingPathComponent("call-host.sock") }
+    public static var eventSocketFile: URL { root.appendingPathComponent("call-events.sock") }
     /// Written by the engine to tell a prewarmed host to start recording.
     ///
     /// A file rather than a socket because there is no live command channel to a
@@ -72,6 +73,7 @@ public enum CallHostPaths {
     }
 
     public static func remove(_ url: URL) {
+        guard FileManager.default.fileExists(atPath: url.path) else { return }
         try? FileManager.default.removeItem(at: url)
     }
 }
@@ -159,9 +161,12 @@ public struct CallProfile: Codable, Sendable {
     /// structured — the call row is keyed on it, so history can link back to the
     /// calendar event and the end-of-call summary knows what to file itself under.
     public var meeting: MeetingContext?
+    /// Nil selects matching scopes automatically; empty means explicit empty pack.
+    public var selectedKnowledgeNoteIDs: [String]?
 
     enum CodingKeys: String, CodingKey {
         case about, knowledge, meeting
+        case selectedKnowledgeNoteIDs = "selected_knowledge_note_ids"
         case personaGuidance = "persona_guidance"
         case baseGuidance = "base_guidance"
     }
@@ -428,6 +433,10 @@ public actor CallSession {
     private var lifecycleState: CallLifecycleState
     private var lifecycleError: String?
     private var recapProgress: Double?
+    private var eventHandler: (@Sendable (CallEvent) -> Void)?
+    private var eventSequence = 0
+    private var lastEventQuestionSignature: String?
+    private var lastEventAnswerID: String?
 
     /// The startup checklist the live panel draws. Kept as state rather than
     /// derived, because "the model is loaded" and "the brain is warm" become true
@@ -468,6 +477,7 @@ public actor CallSession {
         socket = CopilotSocket(url: config.gatewayURL)
         advisor = CopilotAdvisor(config: .init(
             callID: config.callID,
+            generation: config.generation,
             persona: config.persona,
             profile: config.profile,
             preferred: config.provider,
@@ -489,6 +499,22 @@ public actor CallSession {
             gatewayWarm: config.gatewayStandby == .off ? nil : false)
     }
 
+    public func setEventHandler(_ handler: @escaping @Sendable (CallEvent) -> Void) {
+        eventHandler = handler
+    }
+
+    private func emit(kind: CallEventKind, lifecycle: CallLifecycleSnapshot? = nil,
+                      transcript: CallTranscriptEvent? = nil, question: CallQuestion? = nil,
+                      answer: CallAnswer? = nil, message: String? = nil) {
+        eventSequence += 1
+        let event = CallEvent(
+            callID: config.callID, generation: config.generation, sequence: eventSequence,
+            kind: kind, lifecycle: lifecycle, transcript: transcript,
+            question: question, answer: answer, message: message)
+        archive.record(event: event)
+        eventHandler?(event)
+    }
+
     /// Brings the call up, shortest path to a live microphone first.
     ///
     /// The ordering here is the whole point. Everything that recording does not
@@ -505,6 +531,10 @@ public actor CallSession {
     public func start() async throws {
         try CallHostPaths.ensureRoot()
 
+        // Freeze selected/auto-scoped knowledge before capture. Empty pack is a
+        // valid snapshot; any selected source must already be extracted/indexed.
+        try await prepareCallPack()
+
         await advance(stage: .model)
         try await transcriber.prepare()
         startup.modelLoaded = true
@@ -513,11 +543,19 @@ public actor CallSession {
             guard let self else { return }
             Task { await self.handle(turn: turn) }
         }
+        await transcriber.setGapHandler { gap in
+            Task { [weak self] in
+                await self?.emit(kind: .transcriptGap, message: gap.reason)
+            }
+        }
 
         await advisor.setHandlers(
             onActivity: { [weak self] in
                 guard let self else { return }
                 Task { await self.writeStatus() }
+            },
+            onQuestion: { [weak self] question in
+                Task { await self?.publishQuestion(question) }
             },
             onSuggestion: { [weak self] suggestion, _ in
                 guard let self else { return }
@@ -587,6 +625,49 @@ public actor CallSession {
 
         try await beginCapture()
         sessionLog.notice("call \(self.config.callID, privacy: .public) started")
+    }
+
+    private func prepareCallPack() async throws {
+        guard let store = config.store else { return }
+        let meeting = config.profile?.meeting
+        try await store.beginCall(CallRecord(
+            id: config.callID, eventID: meeting?.eventID, seriesID: meeting?.seriesID,
+            eventTitle: meeting?.title, eventStart: meeting?.startsAt,
+            persona: config.persona, startedAt: startedAt,
+            liveModel: config.model.name, provider: config.provider.rawValue))
+
+        let notes: [KnowledgeNote]
+        if let selected = config.profile?.selectedKnowledgeNoteIDs {
+            let selectedIDs = Set(selected)
+            notes = try await store.notes().filter { selectedIDs.contains($0.id) }
+            if let missing = selectedIDs.subtracting(notes.map(\.id)).sorted().first {
+                throw CallKnowledgeSnapshotError.sourceMissing(missing)
+            }
+        } else if let meeting {
+            notes = try await store.notes(for: meeting, persona: config.persona)
+        } else {
+            var selected = try await store.notes(in: .always)
+            if !config.persona.isEmpty {
+                selected += try await store.notes(in: .persona(config.persona))
+            }
+            var seen = Set<String>()
+            notes = selected.filter { seen.insert($0.id).inserted }
+        }
+        // Frozen rows copy source embeddings. Finish exact selected indexing
+        // before freeze so immutable retrieval stays hybrid for whole call.
+        await store.prepareKnowledge(noteIDs: notes.map(\.id))
+        var glossary = notes.flatMap { note in
+            Self.glossaryTerms(from: note.originName ?? note.title)
+        }
+        glossary += Self.vocabulary(for: config.profile)
+        await transcriber.setVocabulary(glossary)
+        do {
+            _ = try await store.freezeKnowledge(
+                callID: config.callID, generation: config.generation,
+                noteIDs: notes.map(\.id), glossary: glossary)
+        } catch CallKnowledgeSnapshotError.alreadyFrozen {
+            // Reclaimed host keeps exact original snapshot.
+        }
     }
 
     /// The two pieces of bookkeeping a call owes the rest of the app: a metadata
@@ -757,9 +838,14 @@ public actor CallSession {
                 : nil)
     }
 
-    public func answerSelectedText(_ text: String) async {
-        await advisor.askManual(text)
+    private func publishQuestion(_ question: CallQuestion) {
+        emit(kind: .question, question: question)
+    }
+
+    @discardableResult public func answerSelectedText(_ text: String, questionID: UUID? = nil, codingEvidence: CodingDialogueEvidence? = nil) async -> Bool {
+        let accepted = await advisor.askManual(text, questionID: questionID, codingEvidence: codingEvidence)
         await writeStatus()
+        return accepted
     }
 
     /// Whether the capture legs are running. Distinct from `micActive`, which
@@ -1039,6 +1125,11 @@ public actor CallSession {
                     confidence: turn.confidence),
                 callID: config.callID)
         }
+        emit(kind: .transcript, transcript: CallTranscriptEvent(
+            utteranceID: turn.utteranceID?.uuidString ?? "turn-\(turn.seq)",
+            transcriptSequence: turn.seq, source: turn.source.rawValue,
+            startSeconds: turn.t0, endSeconds: turn.t1, text: turn.text,
+            confidence: turn.confidence))
         // The local brain is asked about complete statements, not every phrase the
         // VAD closes. The gateway gets every turn, because it batches on its own
         // side and must be able to take over instantly.
@@ -1194,6 +1285,15 @@ public actor CallSession {
         return parts
     }
 
+    /// Filename/title vocabulary, including sentence-initial acronyms and domain
+    /// components that free-text proper-noun extraction intentionally skips.
+    static func glossaryTerms(from label: String) -> [String] {
+        let ignored: Set<String> = ["pdf", "doc", "docx", "txt", "md", "rtf", "pages"]
+        return label.split(whereSeparator: { !$0.isLetter && !$0.isNumber })
+            .map(String.init)
+            .filter { $0.count > 1 && !ignored.contains($0.lowercased()) }
+    }
+
     /// What sort of item a recap line is.
     ///
     /// Every item ever written was stamped `actionItem`, including plain
@@ -1340,11 +1440,13 @@ public actor CallSession {
         let headline: String
         let angles: [String]
         let confirm: [String]
+        let question: String?
 
         init(_ suggestion: CopilotFrame.Suggestion) {
             headline = suggestion.headline
             angles = suggestion.angles
             confirm = suggestion.confirm
+            question = suggestion.question
         }
     }
 
@@ -1372,10 +1474,27 @@ public actor CallSession {
                     headline: suggestion.headline,
                     angles: suggestion.angles,
                     confirm: suggestion.confirm,
+                    question: suggestion.question,
                     summary: suggestion.summary,
                     openQuestions: suggestion.openQuestions,
                     latencyMs: suggestion.latencyMs),
                 callID: config.callID)
+        }
+        if let store = config.store {
+            if let question = try? await store.questions(forCall: config.callID).last {
+                let signature = "\(question.id.uuidString):\(question.state.rawValue)"
+                if signature != lastEventQuestionSignature {
+                    lastEventQuestionSignature = signature
+                    emit(kind: .question, question: question)
+                }
+            }
+            if let answer = try? await store.answers(forCall: config.callID).last,
+               answer.id != lastEventAnswerID {
+                lastEventAnswerID = answer.id
+                emit(kind: .answer, answer: answer)
+            }
+        } else {
+            emit(kind: .answer, message: "Answer available")
         }
 
         // The gateway's own `latency_ms` is its model call and nothing else.
@@ -1423,6 +1542,7 @@ public actor CallSession {
         encoder.dateEncodingStrategy = .iso8601
         guard let data = try? encoder.encode(status) else { return }
         try? CallHostPaths.writeAtomically(data, to: CallHostPaths.activeCallFile)
+        emit(kind: .lifecycle, lifecycle: lifecycle)
     }
 
     /// The same shape as the live status file, parked inside the call's own

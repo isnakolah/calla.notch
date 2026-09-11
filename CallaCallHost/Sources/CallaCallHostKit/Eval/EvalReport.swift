@@ -81,23 +81,25 @@ public struct EvalReport: Sendable, Codable {
     /// them down as the numbers come down.
     public struct Gate: Sendable {
         public var maxEchoSurvivorsPerMinute: Double
+        public var maxWERThem: Double
+        public var maxWERMe: Double
         public var minMicCoverage: Double
         public var maxShortTurnRate: Double
         public var maxArtifactTurns: Int
         public var maxUngroundedRate: Double
 
-        /// Measured on the 54-call corpus before any of this work: echo leak
-        /// 35.8% of microphone turns, 19.1% of turns three words or shorter, 65
-        /// bracketed non-speech turns, 6.5% of suggestions asserting something
-        /// nothing supported.
+        /// Live Call v3 release thresholds. These are acceptance targets, not
+        /// baseline headroom; a corpus that misses one must fail release gate.
         public static let baseline = Gate(
-            maxEchoSurvivorsPerMinute: 1.0,
+            maxEchoSurvivorsPerMinute: 0,
+            maxWERThem: 0.152,
+            maxWERMe: 0.359,
             // The over-suppression guard. A detector that deletes the user's
             // half of the call scores perfectly on every other line here.
             // Measured at 0.92 on headset calls after the echo work.
             minMicCoverage: 0.80,
             maxShortTurnRate: 0.20,
-            maxArtifactTurns: 5,
+            maxArtifactTurns: 0,
             // Scored over *stored* suggestions, which a replay does not
             // regenerate — so this tracks how strict the claim guard is, not
             // what the current pipeline would say. It rose from 6.5% to 7.4%
@@ -108,12 +110,16 @@ public struct EvalReport: Sendable, Codable {
 
         public init(
             maxEchoSurvivorsPerMinute: Double,
+            maxWERThem: Double,
+            maxWERMe: Double,
             minMicCoverage: Double,
             maxShortTurnRate: Double,
             maxArtifactTurns: Int,
             maxUngroundedRate: Double
         ) {
             self.maxEchoSurvivorsPerMinute = maxEchoSurvivorsPerMinute
+            self.maxWERThem = maxWERThem
+            self.maxWERMe = maxWERMe
             self.minMicCoverage = minMicCoverage
             self.maxShortTurnRate = maxShortTurnRate
             self.maxArtifactTurns = maxArtifactTurns
@@ -128,6 +134,14 @@ public struct EvalReport: Sendable, Codable {
             failures.append(String(
                 format: "echo survivors/min %.2f exceeds %.2f",
                 echo, gate.maxEchoSurvivorsPerMinute))
+        }
+        if let wer = medianWERThem, wer > gate.maxWERThem {
+            failures.append(String(
+                format: "remote WER %.1f%% exceeds %.1f%%", wer * 100, gate.maxWERThem * 100))
+        }
+        if let wer = medianWERMe, wer > gate.maxWERMe {
+            failures.append(String(
+                format: "self WER %.1f%% exceeds %.1f%%", wer * 100, gate.maxWERMe * 100))
         }
         if let coverage = medianMicCoverage, coverage < gate.minMicCoverage {
             failures.append(String(

@@ -83,4 +83,10 @@ final class AttendeeVocabularyTests: XCTestCase {
         XCTAssertTrue(CallSession.nameParts(of: "   ").isEmpty)
         XCTAssertTrue(CallSession.nameParts(of: "a b").isEmpty, "single letters are not names")
     }
+
+    func testSelectedFilenameContributesAcronymsAndDomainButNotExtension() {
+        XCTAssertEqual(
+            CallSession.glossaryTerms(from: "Q3_OKR-acme.io.pdf"),
+            ["Q3", "OKR", "acme", "io"])
+    }
 }

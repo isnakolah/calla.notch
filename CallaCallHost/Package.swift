@@ -49,6 +49,6 @@ let package = Package(
             dependencies: ["CallaCallHostKit", .product(name: "CallaContracts", package: "CallaContracts")]),
         .testTarget(
             name: "CallaCallHostKitTests",
-            dependencies: ["CallaCallHostKit"]),
+            dependencies: ["CallaCallHostKit", .product(name: "CallaContracts", package: "CallaContracts")]),
     ]
 )

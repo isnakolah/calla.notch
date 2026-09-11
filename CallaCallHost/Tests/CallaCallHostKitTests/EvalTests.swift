@@ -436,7 +436,9 @@ final class FabricationRegressionTests: XCTestCase {
 /// The gates themselves, so a change that guts them fails rather than passes.
 final class EvalGateTests: XCTestCase {
     private func score(
-        echo: Double = 0.1,
+        echo: Double = 0,
+        werMe: Double? = nil,
+        werThem: Double? = nil,
         mic: Double = 0.95,
         short: Double = 0.1,
         artifacts: Int = 0,
@@ -445,7 +447,7 @@ final class EvalGateTests: XCTestCase {
     ) -> CallScore {
         CallScore(
             callID: "c", isReplay: true, turns: 100, durationSeconds: 600,
-            werMe: nil, werThem: nil, cerOverall: nil,
+            werMe: werMe, werThem: werThem, cerOverall: nil,
             meTurns: 50, echoOverlappingTurns: 0, echoExactDuplicates: 0,
             echoLeakRate: 0, echoSurvivorsPerMinute: echo, meTurnsPerMinute: 3,
             micCoverage: mic,
@@ -465,6 +467,16 @@ final class EvalGateTests: XCTestCase {
         let failures = EvalReport(calls: [score(echo: 5)]).failures()
         XCTAssertEqual(failures.count, 1)
         XCTAssertTrue(failures[0].contains("echo survivors"))
+    }
+
+    func testV3RemoteWERThresholdFails() {
+        let failures = EvalReport(calls: [score(werThem: 0.153)]).failures()
+        XCTAssertTrue(failures.contains { $0.contains("remote WER") })
+    }
+
+    func testV3SelfWERThresholdFails() {
+        let failures = EvalReport(calls: [score(werMe: 0.36)]).failures()
+        XCTAssertTrue(failures.contains { $0.contains("self WER") })
     }
 
     func testDeletingTheUsersSpeechFails() {

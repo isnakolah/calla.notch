@@ -15,6 +15,9 @@ public enum CopilotFrame {
         public var headline: String
         public var angles: [String]
         public var confirm: [String]
+        public var question: String?
+        public var citations: [String]
+        public var grounding: String?
         /// Where the conversation has got to. Sent on every reply, including
         /// the ones with no headline — between questions it is the only thing
         /// the panel has to show, and a blank panel is worse than a plain one.
@@ -30,6 +33,9 @@ public enum CopilotFrame {
             case headline
             case angles
             case confirm
+            case question
+            case citations
+            case grounding
             case summary
             case openQuestions = "open_questions"
             case latencyMs = "latency_ms"
@@ -52,6 +58,9 @@ public enum CopilotFrame {
             headline = try container.decodeIfPresent(String.self, forKey: .headline) ?? ""
             angles = try container.decodeIfPresent([String].self, forKey: .angles) ?? []
             confirm = try container.decodeIfPresent([String].self, forKey: .confirm) ?? []
+            question = try container.decodeIfPresent(String.self, forKey: .question)
+            citations = try container.decodeIfPresent([String].self, forKey: .citations) ?? []
+            grounding = try container.decodeIfPresent(String.self, forKey: .grounding)
             summary = try container.decodeIfPresent(String.self, forKey: .summary) ?? ""
             openQuestions = try container.decodeIfPresent([String].self, forKey: .openQuestions) ?? []
             latencyMs = try container.decodeIfPresent(Int.self, forKey: .latencyMs) ?? 0
@@ -63,6 +72,9 @@ public enum CopilotFrame {
             headline: String,
             angles: [String] = [],
             confirm: [String] = [],
+            question: String? = nil,
+            citations: [String] = [],
+            grounding: String? = nil,
             summary: String = "",
             openQuestions: [String] = [],
             latencyMs: Int = 0
@@ -72,6 +84,9 @@ public enum CopilotFrame {
             self.headline = headline
             self.angles = angles
             self.confirm = confirm
+            self.question = question
+            self.citations = citations
+            self.grounding = grounding
             self.summary = summary
             self.openQuestions = openQuestions
             self.latencyMs = latencyMs

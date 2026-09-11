@@ -9,8 +9,16 @@ private let transcriberLog = Logger(subsystem: "theboringteam.boringnotch.callho
 /// onto it so publish order is stable — a transcript whose turns interleave
 /// unpredictably is worse than a slightly late one.
 public actor CallTranscriber {
+    public struct Gap: Sendable, Equatable {
+        public var utteranceID: UUID
+        public var source: TurnSource
+        public var startSeconds: Double
+        public var reason: String
+    }
+
     /// Emitted for every accepted turn, in `seq` order.
-    public var onTurn: ((CallTurn) -> Void)?
+    public var onTurn: (@Sendable (CallTurn) -> Void)?
+    public var onGap: (@Sendable (Gap) -> Void)?
 
     private let engine: WhisperEngine
     private let speechGate: SileroVAD?
@@ -29,8 +37,16 @@ public actor CallTranscriber {
     private var context: DecodingContext
 
     private var nextSeq = 0
-    private var pendingWork = 0
-    private var chain: Task<Void, Never>?
+    private struct Work: Sendable {
+        var id: UUID
+        var samples: [Float]
+        var source: TurnSource
+        var startSeconds: Double
+        var endpointedAt: Date
+    }
+    private var queue: [Work] = []
+    private var worker: Task<Void, Never>?
+    private var active = false
     private var loaded = false
     private var stopped = false
 
@@ -54,8 +70,20 @@ public actor CallTranscriber {
         self.backlogLimit = backlogLimit
     }
 
-    public func setTurnHandler(_ handler: @escaping (CallTurn) -> Void) {
+    public func setTurnHandler(_ handler: @escaping @Sendable (CallTurn) -> Void) {
         onTurn = handler
+    }
+
+    public func setGapHandler(_ handler: @escaping @Sendable (Gap) -> Void) {
+        onGap = handler
+    }
+
+    /// Replaces fixed ASR glossary before capture. Call-pack selection resolves
+    /// after this actor is constructed, so selected filenames must be applied
+    /// here rather than only persisted in snapshot metadata.
+    public func setVocabulary(_ terms: [String]) {
+        guard !active, queue.isEmpty else { return }
+        context = DecodingContext(vocabulary: terms)
     }
 
     public func prepare() async throws {
@@ -76,32 +104,60 @@ public actor CallTranscriber {
         guard !stopped else { return }
         guard !samples.isEmpty, !AudioSignal.isSilent(samples) else { return }
 
-        if source == .me, pendingWork >= backlogLimit {
+        if source == .me, queue.count + (active ? 1 : 0) >= backlogLimit {
             droppedSelfTurns += 1
-            transcriberLog.notice("dropping own utterance under backlog (\(self.pendingWork, privacy: .public) queued)")
+            let id = UUID()
+            onGap?(Gap(utteranceID: id, source: source, startSeconds: startSeconds,
+                       reason: "self_audio_dropped_under_backlog"))
+            transcriberLog.notice("dropping own utterance under backlog")
             return
         }
 
-        pendingWork += 1
-        let previous = chain
-        chain = Task { [weak self] in
-            await previous?.value
-            await self?.process(
-                samples: samples,
-                source: source,
-                startSeconds: startSeconds,
-                endpointedAt: endpointedAt)
+        if source == .them {
+            // Remote arrival moves ahead of queued self work. Dropped self work is
+            // observable; remote audio is never discarded.
+            let dropped = queue.filter { $0.source == .me }
+            queue.removeAll { $0.source == .me }
+            for work in dropped {
+                droppedSelfTurns += 1
+                onGap?(Gap(utteranceID: work.id, source: work.source,
+                           startSeconds: work.startSeconds,
+                           reason: "self_audio_preempted_by_remote"))
+            }
         }
+        let work = Work(id: UUID(), samples: samples, source: source,
+                        startSeconds: startSeconds, endpointedAt: endpointedAt)
+        if source == .them, let firstSelf = queue.firstIndex(where: { $0.source == .me }) {
+            queue.insert(work, at: firstSelf)
+        } else {
+            queue.append(work)
+        }
+        startWorkerIfNeeded()
+    }
+
+    private func startWorkerIfNeeded() {
+        guard worker == nil else { return }
+        worker = Task { [weak self] in await self?.runQueue() }
+    }
+
+    private func runQueue() async {
+        while !queue.isEmpty, !stopped {
+            let work = queue.removeFirst()
+            active = true
+            await process(work)
+            active = false
+        }
+        worker = nil
     }
 
     /// Waits for queued work to drain.
     public func drain() async {
-        await chain?.value
+        await worker?.value
     }
 
     public func stop() async {
         stopped = true
-        await chain?.value
+        await worker?.value
         await engine.shutdown()
         await speechGate?.shutdown()
     }
@@ -169,13 +225,11 @@ public actor CallTranscriber {
         return confidence < CallTurn.lowConfidence
     }
 
-    private func process(
-        samples: [Float],
-        source: TurnSource,
-        startSeconds: Double,
-        endpointedAt: Date
-    ) async {
-        defer { pendingWork -= 1 }
+    private func process(_ work: Work) async {
+        let samples = work.samples
+        let source = work.source
+        let startSeconds = work.startSeconds
+        let endpointedAt = work.endpointedAt
         guard !stopped else { return }
 
         // Wall clock, not the stream clock in `CallTurn.t0`/`t1`. Those are
@@ -260,12 +314,14 @@ public actor CallTranscriber {
                 if !turnIsAGuess(segment) { context.record(text, for: source) }
 
                 let turn = CallTurn(
+                    utteranceID: work.id,
                     seq: nextSeq,
                     source: source,
                     t0: startSeconds + segment.start,
                     t1: startSeconds + segment.end,
                     text: text,
-                    confidence: segment.confidence)
+                    confidence: segment.confidence,
+                    speechEndedAt: work.endpointedAt)
                 nextSeq += 1
                 onTurn?(turn)
             }

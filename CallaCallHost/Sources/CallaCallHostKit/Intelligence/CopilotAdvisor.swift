@@ -27,6 +27,7 @@ public actor CopilotAdvisor {
 
     public struct Configuration: Sendable {
         public var callID: String
+        public var generation: Int
         public var persona: String
         public var profile: CallProfile?
         /// Preferred brain. `gateway` means the local provider is never asked.
@@ -43,6 +44,7 @@ public actor CopilotAdvisor {
 
         public init(
             callID: String,
+            generation: Int = 0,
             persona: String,
             profile: CallProfile?,
             preferred: Provider,
@@ -53,6 +55,7 @@ public actor CopilotAdvisor {
             store: CallaStore? = nil
         ) {
             self.callID = callID
+            self.generation = max(0, generation)
             self.persona = persona
             self.profile = profile
             self.preferred = preferred
@@ -66,6 +69,7 @@ public actor CopilotAdvisor {
 
     private let config: Configuration
     private let provider: AgyProvider
+    private let router: IntelligenceRouter
     private var segmenter: StatementSegmenter
     private let blocks: PromptBlocks
     /// What the account and fold lanes are told about the call.
@@ -93,21 +97,26 @@ public actor CopilotAdvisor {
     /// Not just pacing: `AgyProvider` reads its session state before the await and
     /// writes it back after, so two concurrent requests on the same conversation key
     /// can bootstrap twice or lose the conversation id between them.
+    private var acceptedManualIDs: Set<UUID> = []
     private var askInFlight = false
-    /// The question that arrived while one was being answered. Only the newest is
-    /// kept — by the time the model answers, an older question has been overtaken
-    /// by the one the other side actually just asked.
-    private var queuedQuestion: [Statement]?
+    private var answerLane = false
+    /// Independent questions remain FIFO. Continuations can be superseded only
+    /// through `CallQuestionQueue`, never by arrival timing alone.
+    private var queuedQuestions: [([Statement], CallQuestion)] = []
+    private var questionQueue = CallQuestionQueue()
+    private var confirmationStatements: [UUID: [Statement]] = [:]
 
     private var onSuggestion: (@Sendable (CopilotFrame.Suggestion, Provider) -> Void)?
     private var onProviderChange: (@Sendable (Provider, String?) -> Void)?
     /// Fired when the copilot starts or stops working, so the panel can say so.
     private var onActivity: (@Sendable () -> Void)?
+    private var onQuestion: (@Sendable (CallQuestion) -> Void)?
 
     /// The audio position of the last turn and when it was seen, so silence is
     /// measured on the same scale the turns use.
     private var lastTurnEnd: Double = 0
     private var lastTurnObservedAt = Date()
+    private var speechEndedAtBySeq: [Int: Date] = [:]
 
     /// Where the audio has got to, extrapolated from the last turn.
     private func audioNow() -> Double {
@@ -150,7 +159,8 @@ public actor CopilotAdvisor {
         let line = "\(stamp) [\(config.callID)] \(message)\n"
         let url = diagnosticsURL
         try? FileManager.default.createDirectory(
-            at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
+            at: url.deletingLastPathComponent(), withIntermediateDirectories: true,
+            attributes: [.posixPermissions: 0o700])
         if let handle = try? FileHandle(forWritingTo: url) {
             defer { try? handle.close() }
             _ = try? handle.seekToEnd()
@@ -158,6 +168,7 @@ public actor CopilotAdvisor {
         } else {
             try? Data(line.utf8).write(to: url)
         }
+        try? FileManager.default.setAttributes([.posixPermissions: 0o600], ofItemAtPath: url.path)
     }
 
     public init(config: Configuration) {
@@ -168,7 +179,15 @@ public actor CopilotAdvisor {
         background = CopilotLocalPrompt.background(profile: config.profile)
         startedAt = Date()
         activeProvider = config.preferred
-        provider = AgyProvider(configuration: .init(runtimeRoot: config.runtimeRoot))
+        let provider = AgyProvider(configuration: .init(runtimeRoot: config.runtimeRoot))
+        self.provider = provider
+        router = IntelligenceRouter(
+            providers: [provider],
+            policy: .init(preferred: ["copilot.suggest": .localAgy,
+                                      "copilot.brief": .localAgy,
+                                      "copilot.exec": .localAgy,
+                                      "copilot.summary": .localAgy],
+                          fallbackEnabled: false))
         store = config.store
         // Everything the user has told us about themselves before the call
         // started. A suggestion may draw on any of it without being called
@@ -189,10 +208,12 @@ public actor CopilotAdvisor {
 
     public func setHandlers(
         onActivity: (@Sendable () -> Void)? = nil,
+        onQuestion: (@Sendable (CallQuestion) -> Void)? = nil,
         onSuggestion: @escaping @Sendable (CopilotFrame.Suggestion, Provider) -> Void,
         onProviderChange: @escaping @Sendable (Provider, String?) -> Void
     ) {
         self.onActivity = onActivity
+        self.onQuestion = onQuestion
         self.onSuggestion = onSuggestion
         self.onProviderChange = onProviderChange
     }
@@ -233,7 +254,9 @@ public actor CopilotAdvisor {
             sessionKey: briefSessionKey,
             system: ledgerBlocks(CopilotBriefPrompt.text)
         )
-        let (openedQuestion, openedChunks) = await (question, chunks)
+        async let interruption = provider.openSession(task: CopilotTasks.suggest,
+            sessionKey: config.callID + ":interruption", system: blocks)
+        let (openedQuestion, openedChunks, _) = await (question, chunks, interruption)
         trace("prepare: question lane opened=\(openedQuestion) chunk lane opened=\(openedChunks)")
     }
 
@@ -248,6 +271,13 @@ public actor CopilotAdvisor {
     /// elsewhere; this only decides what the local brain is asked about.
     public func ingest(turn: CallTurn) {
         turnsSeen += 1
+        if let speechEndedAt = turn.speechEndedAt {
+            speechEndedAtBySeq[turn.seq] = speechEndedAt
+            if speechEndedAtBySeq.count > 160 {
+                let floor = turn.seq - 120
+                speechEndedAtBySeq = speechEndedAtBySeq.filter { $0.key >= floor }
+            }
+        }
         // Before the local-provider guard: the transcript is evidence whether or
         // not this call is using the local brain.
         if turn.source == .me {
@@ -294,12 +324,29 @@ public actor CopilotAdvisor {
 
     /// User-triggered questions may quote either speaker. They bypass remote-only
     /// automatic detection but still serialize through question lane.
-    public func askManual(_ text: String) {
+    @discardableResult public func askManual(_ text: String, questionID: UUID? = nil, codingEvidence: CodingDialogueEvidence? = nil) -> Bool {
+        if let questionID, acceptedManualIDs.contains(questionID) { return true }
+        guard queuedQuestions.count < 8 else { return false }
         let text = text.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !text.isEmpty, text.count <= 1_200, config.preferred == .local, !localGaveUp else { return }
+        guard !text.isEmpty, text.count <= 1_200, config.preferred == .local, !localGaveUp else { return false }
+        if questionID == nil, let pending = questionQueue.questions.last(where: { $0.state == .needsConfirmation }),
+           let original = confirmationStatements.removeValue(forKey: pending.id),
+           let first = original.first, let last = original.last {
+            questionQueue.confirm(pending.id, editedPrompt: text)
+            guard let confirmed = questionQueue.questions.first(where: { $0.id == pending.id }) else { return false }
+            let edited = [Statement(fromSeq: first.fromSeq, toSeq: last.toSeq, speaker: .local,
+                                    text: text, span: last.span, truncated: false)]
+            if let store { Task { try? await store.record(question: confirmed) } }
+            queueReadyQuestion(edited, question: confirmed)
+            return true
+        }
         let seq = max((ledger.lastSeq ?? 0) + 1, turnsSeen + 1)
-        enqueueQuestion([Statement(fromSeq: seq, toSeq: seq, speaker: .local,
-                                   text: text, span: 0, truncated: false)])
+        enqueueQuestion([Statement(fromSeq: codingEvidence?.anchor.fromSequence ?? seq,
+                                   toSeq: codingEvidence?.anchor.toSequence ?? seq,
+                                   speaker: codingEvidence?.speaker == .them ? .remote : .local,
+                                   text: text, span: 0, truncated: false)], questionID: questionID)
+        if let questionID { acceptedManualIDs.insert(questionID) }
+        return true
     }
 
     /// Call on a timer (~250ms) so a trailed-off sentence and a floor-delayed
@@ -336,6 +383,9 @@ public actor CopilotAdvisor {
         // is also what makes the answer fast: commentary on ordinary statements used
         // to occupy the provider, so a question could arrive behind a request nobody
         // asked for. Now the queue is almost always empty when one lands.
+        // Code owns automatic admission; Call still records every turn, retrieves
+        // knowledge, answers coordinated requests, and builds history/recaps.
+        guard codingContext() == nil else { closeChunkIfDue(); return }
         let questions = statements.filter { $0.speaker == .remote && $0.invitesAnAnswer }
         guard !questions.isEmpty else {
             trace("no question in \(statements.count) statement(s); ledger only")
@@ -346,31 +396,95 @@ public actor CopilotAdvisor {
         enqueueQuestion(questions)
     }
 
-    /// One question in flight, the newest one queued behind it.
+    /// One question in flight, every independent question queued behind it.
     ///
     /// Answering two at once is worse than it sounds: they share the question lane's
     /// conversation, whose session state in `AgyProvider` is read before the await
     /// and written after it, so the second can bootstrap a conversation the first
     /// then overwrites. And the older answer is discarded on arrival anyway.
-    private func enqueueQuestion(_ statements: [Statement]) {
-        guard !askInFlight else {
-            if let dropped = queuedQuestion?.last?.toSeq {
-                trace("dropped queued question through seq \(dropped); a newer one arrived")
+    private func enqueueQuestion(_ statements: [Statement], questionID: UUID? = nil) {
+        guard let first = statements.first, let last = statements.last else { return }
+        let prompt = statements.map(\.text).joined(separator: " ")
+        let kind: CallQuestionKind = first.speaker == .local ? .manual
+            : (prompt.contains("?") ? .direct : .imperative)
+        var question = CallQuestion(
+            fromSeq: first.fromSeq, toSeq: last.toSeq, prompt: prompt, kind: kind,
+            confidence: prompt.contains("[unclear]") ? 0.45 : (statements.contains(where: \.truncated) ? 0.55 : 0.95),
+            state: .queued, callID: config.callID, generation: config.generation,
+            speechEndedAt: statements.compactMap { speechEndedAtBySeq[$0.toSeq] }.max())
+        if let questionID { question.id = questionID }
+        if question.confidence < 0.6 {
+            question.state = .needsConfirmation
+            questionQueue.enqueue(question)
+            confirmationStatements[question.id] = statements
+            onQuestion?(question)
+            if let store {
+                let recordedQuestion = question
+                Task { try? await store.record(question: recordedQuestion) }
             }
-            queuedQuestion = statements
+            var frame = lastSuggestion ?? CopilotFrame.Suggestion(
+                callID: config.callID, afterSeq: last.toSeq, headline: "")
+            frame.afterSeq = last.toSeq
+            frame.question = prompt.replacingOccurrences(of: " [unclear]", with: "")
+            frame.confirm = ["Transcript uncertain · edit question and press Answer"]
+            frame.summary = ledger.panelSummary()
+            lastSuggestion = frame
+            onSuggestion?(frame, activeProvider)
             return
         }
-        askInFlight = true
-        Task { await self.runQuestion(statements) }
+        var material = statements
+        if questionID == nil, askInFlight, Self.isQuestionContinuation(prompt), let previous = queuedQuestions.popLast() {
+            material = previous.0 + statements
+            question.fromSeq = previous.1.fromSeq
+            question.prompt = previous.1.prompt + " " + prompt
+            questionQueue.enqueue(question, continuing: true)
+            if let superseded = questionQueue.questions.first(where: { $0.id == previous.1.id }),
+               let store {
+                Task { try? await store.record(question: superseded) }
+            }
+        } else {
+            questionQueue.enqueue(question)
+        }
+        if let store {
+            let recordedQuestion = question
+            Task { try? await store.record(question: recordedQuestion) }
+        }
+        queueReadyQuestion(material, question: question)
     }
 
-    private func runQuestion(_ statements: [Statement]) async {
+    static func isQuestionContinuation(_ value: String) -> Bool {
+        let words = value.split(whereSeparator: { $0.isWhitespace })
+        guard words.count <= 14 else { return false }
+        let lower = value.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        return ["and ", "also ", "what about ", "how about ", "why is that",
+                "when is that", "does that ", "can you expand", "can you clarify"]
+            .contains { lower.hasPrefix($0) }
+    }
+
+    private func queueReadyQuestion(_ statements: [Statement], question: CallQuestion) {
+        onQuestion?(question)
+        guard !askInFlight else {
+            queuedQuestions.append((statements, question))
+            trace("queued question \(question.id.uuidString) through seq \(question.toSeq)")
+            return
+        }
+        guard let answering = questionQueue.beginNext() else { return }
+        if let store { Task { try? await store.record(question: answering) } }
+        askInFlight = true
+        Task { await self.runQuestion(statements, question: answering) }
+    }
+
+    private func runQuestion(_ statements: [Statement], question: CallQuestion) async {
         var batch = statements
+        var activeQuestion = question
         while true {
-            await ask(batch)
-            guard let next = queuedQuestion else { break }
-            queuedQuestion = nil
-            batch = next
+            await ask(batch, question: activeQuestion)
+            guard !queuedQuestions.isEmpty else { break }
+            let next = queuedQuestions.removeFirst()
+            batch = next.0
+            guard let answering = questionQueue.beginNext() else { continue }
+            activeQuestion = answering
+            if let store { try? await store.record(question: answering) }
         }
         askInFlight = false
         // A chunk that came due while the question held the lane goes now.
@@ -423,7 +537,7 @@ public actor CopilotAdvisor {
             statementsEmitted += trailing.count
             ledger.append(trailing)
         }
-        guard !chunkInFlight, !ledger.tail.isEmpty else { return }
+        guard !chunkInFlight, !askInFlight, queuedQuestions.isEmpty, !ledger.tail.isEmpty else { return }
         chunkInFlight = true
         await closeChunk(ledger.takeTail())
     }
@@ -546,10 +660,12 @@ public actor CopilotAdvisor {
             task: CopilotTasks.brief,
             sessionKey: briefSessionKey,
             system: ledgerBlocks(CopilotBriefPrompt.text),
-            input: input
+            input: input,
+            priority: .background,
+            queuePolicy: .coalescing
         )
         do {
-            let response = try await provider.respond(to: request)
+            let response = try await router.respond(to: request)
             chunkRolloverPending = response.attribution.rollovers > chunkRollovers
             chunkRollovers = response.attribution.rollovers
             guard let payload = response.payload,
@@ -667,10 +783,12 @@ public actor CopilotAdvisor {
 
             Points to fold into it:
             \(chunks.flatMap(\.points).joined(separator: "\n"))
-            """
+            """,
+            priority: .offline,
+            queuePolicy: .coalescing
         )
         do {
-            let response = try await provider.respond(to: request)
+            let response = try await router.respond(to: request)
             guard let payload = response.payload,
                   let object = try? JSONSerialization.jsonObject(with: payload) as? [String: Any],
                   let standing = object["standing"] as? String
@@ -753,27 +871,63 @@ public actor CopilotAdvisor {
     /// notes filed under `.always`. Across 43 recorded calls the word "recalled"
     /// never once appears in `intelligence.log`: retrieval had never run.
     ///
-    /// It is not an academic gap. Documents reach the model *only* through this
-    /// path — `CallaStore.promptBlock` deliberately packs typed notes whole and
-    /// gives a document nothing but a manifest line — so with retrieval off, no
-    /// attached document had ever reached the model. That is why a call where the
-    /// interviewer said "I don't see that in the CV" produced an invented
-    /// Computer Science degree with the user's actual CV sitting in the store.
-    private func recall(for statements: [Statement]) async -> [String] {
-        guard let store else { return [] }
+    /// Call-pack content reaches the model only through this path. Start freezes
+    /// copied chunks; no selected note or file is packed wholesale into bootstrap.
+    private struct RecallResult {
+        var passages: [String] = []
+        var citations: [KnowledgeCitation] = []
+    }
+
+    private func recall(for statements: [Statement]) async -> RecallResult {
+        guard let store else { return RecallResult() }
         let question = statements
             .filter { $0.speaker == .remote && $0.invitesAnAnswer }
             .map(\.text)
             .joined(separator: " ")
-        let query = question.isEmpty ? statements.map(\.text).joined(separator: " ") : question
-        guard !query.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return [] }
-        let hits = await store.search(query: query, scopes: retrievalScopes(), limit: 3)
-        guard !hits.isEmpty else {
-            trace("recalled nothing for \(query.prefix(60))")
-            return []
+        var query = question.isEmpty ? statements.map(\.text).joined(separator: " ") : question
+        // Pronouns in a completed question often refer to a name from the two
+        // preceding turns. Add only proper nouns, never the full older turns.
+        let preceding = ledger.tail.dropLast(min(statements.count, ledger.tail.count)).suffix(2)
+        let properNouns = preceding.flatMap { statement in
+            statement.text.split(whereSeparator: { !$0.isLetter && !$0.isNumber })
+                .filter { $0.first?.isUppercase == true && $0.count > 1 }
         }
-        trace("recalled \(hits.count) chunk(s): \(hits.map(\.title).joined(separator: ", "))")
-        return hits.map { "\($0.title): \($0.text)" }
+        if !properNouns.isEmpty { query += " " + properNouns.joined(separator: " ") }
+        guard !query.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return RecallResult() }
+
+        if (try? await store.knowledgeSnapshot(forCall: config.callID)) != nil {
+            let frozen = (try? await store.searchSnapshot(query: query, callID: config.callID)) ?? []
+            guard !frozen.isEmpty else {
+                trace("recalled no frozen Call pack chunks")
+                return RecallResult()
+            }
+            trace("recalled \(frozen.count) frozen Call pack chunk(s)")
+            return RecallResult(
+                passages: frozen.map { "[\($0.citation.id)] \($0.citation.label): \($0.text)" },
+                citations: frozen.map(\.citation))
+        }
+
+        let hits = await store.search(query: query, scopes: retrievalScopes(), limit: 4)
+        guard !hits.isEmpty else {
+            trace("recalled no knowledge chunks")
+            return RecallResult()
+        }
+        var remaining = 1_800
+        var passages: [String] = []
+        var citations: [KnowledgeCitation] = []
+        for (index, hit) in hits.enumerated() where remaining > 0 {
+            let id = "live-\(hit.noteID)-\(index)"
+            let text = String(hit.text.prefix(remaining))
+            guard !text.isEmpty else { continue }
+            passages.append("[\(id)] \(hit.title): \(text)")
+            citations.append(KnowledgeCitation(
+                id: id, kind: hit.source == KnowledgeSource.document
+                    ? KnowledgeCitationKind.document : KnowledgeCitationKind.note,
+                label: hit.title, sourceID: hit.noteID, page: hit.page, section: hit.section))
+            remaining -= text.count
+        }
+        trace("recalled \(passages.count) scoped knowledge chunk(s)")
+        return RecallResult(passages: passages, citations: citations)
     }
 
     /// General to specific, matching `MeetingContext.scopes(persona:)`. The
@@ -788,9 +942,18 @@ public actor CopilotAdvisor {
         return scopes
     }
 
-    private func ask(_ statements: [Statement]) async {
+    private func codingContext() -> WaveCallContext? {
+        let file = config.runtimeRoot.appendingPathComponent("wave-" + config.callID + ".json")
+        guard let data = try? Data(contentsOf: file), data.count <= 128 * 1024,
+              let context = try? JSONDecoder().decode(WaveCallContext.self, from: data),
+              context.callID == config.callID, context.generation == config.generation else { return nil }
+        return context
+    }
+
+    private func ask(_ statements: [Statement], question: CallQuestion) async {
         guard let afterSeq = statements.last?.toSeq else { return }
 
+        let initialCodingRevision = codingContext()?.revision
         let batch = statements
         let asked = batch.contains { $0.speaker == .remote && $0.invitesAnAnswer }
 
@@ -803,21 +966,24 @@ public actor CopilotAdvisor {
 
         let system = blocks
         let recalled = await recall(for: batch)
+        answerLane.toggle()
 
         let request = IntelligenceRequest(
             task: CopilotTasks.suggest,
-            sessionKey: config.callID,
+            sessionKey: answerLane ? config.callID : config.callID + ":interruption",
             system: system,
             // What the notes say, then the account as established fact, then the
             // last few statements verbatim, then the question. Sent in full every
             // time rather than left to the conversation to remember, so a context
             // rollover — or a host restart — is invisible instead of amnesia.
-            input: ledger.questionContext(batch, recalled: recalled),
-            tier: config.liveTier
+            input: ledger.questionContext(batch, recalled: recalled.passages) + (codingContext().map { "\n\n" + $0.answerContext } ?? ""),
+            tier: config.liveTier,
+            priority: .urgent,
+            queuePolicy: .fifo
         )
 
         do {
-            let response = try await provider.respond(to: request)
+            let response = try await router.respond(to: request)
             guard let payload = response.payload else {
                 throw IntelligenceFailure.unparseable("no contract payload")
             }
@@ -855,7 +1021,17 @@ public actor CopilotAdvisor {
                 trace("dropped a late answer for seq \(afterSeq); seq \(lastAnswerSeq) is newer")
                 return
             }
+            guard codingContext()?.revision == initialCodingRevision else {
+                trace("discarded answer after coding session or requirements changed")
+                return
+            }
             var published = suggestion
+            if codingContext() != nil {
+                published.headline = CodingInterviewPublication.prose(published.headline) ?? ""
+                published.angles = published.angles.compactMap { CodingInterviewPublication.prose($0) }
+                published.confirm = published.confirm.compactMap { CodingInterviewPublication.prose($0) }
+            }
+            published.question = question.prompt
             // The prompts have said "never invent employers, dates, numbers or
             // systems the user has not mentioned" from the beginning, and a real
             // call produced "I hold a degree in Computer Science" anyway. A
@@ -864,30 +1040,99 @@ public actor CopilotAdvisor {
             let verdict = ClaimGuard.check(
                 headline: published.headline,
                 angles: published.angles,
-                against: claimEvidence.adding(recalled))
-            if !verdict.isGrounded {
+                against: claimEvidence.adding(recalled.passages))
+            let evidenceRequired = Self.requiresCallEvidence(question.prompt)
+            if !verdict.isGrounded, evidenceRequired {
                 ungroundedSuggestions += 1
-                advisorLog.notice(
-                    "withheld an unsupported claim after seq \(afterSeq, privacy: .public): \(verdict.unsupported.joined(separator: ", "), privacy: .public)")
-                trace("UNGROUNDED after seq \(afterSeq): \(verdict.unsupported.joined(separator: ", "))")
-                // The angles survive. They are fragments of direction — "name the
-                // bottleneck", "give the result first" — and are worth keeping
-                // even when the sentence built on them was not earned. What is
-                // dropped is the part that reads as ready to speak.
-                published.headline = ""
-                published.confirm = []
+                advisorLog.notice("withheld unsupported call-specific claim after seq \(afterSeq, privacy: .public)")
+                trace("withheld unsupported call-specific claim after seq \(afterSeq)")
+                published.headline = "Not found in call knowledge"
+                published.angles = []
+                published.confirm = ["Check transcript or Call pack"]
+            }
+            if published.headline == "Not found in call knowledge" {
+                published.grounding = CallGrounding.refused.rawValue
+                published.citations = []
+            } else if !recalled.citations.isEmpty {
+                published.grounding = CallGrounding.callPack.rawValue
+                published.citations = recalled.citations.map { citation in
+                    if let page = citation.page { return "\(citation.label) · p. \(page)" }
+                    return citation.label
+                }
+            } else if verdict.isGrounded {
+                published.grounding = CallGrounding.transcript.rawValue
+                published.citations = ["Transcript"]
+            } else {
+                published.grounding = CallGrounding.generalKnowledge.rawValue
+                published.citations = ["General knowledge"]
             }
             published.summary = ledger.panelSummary()
             published.openQuestions = ledger.openQuestions
             lastSuggestion = published
             lastAnswerSeq = afterSeq
             lastAnswerWasToAQuestion = asked
+            if let store {
+                var citations = recalled.citations
+                var grounding: CallGrounding
+                if published.headline == "Not found in call knowledge" {
+                    grounding = .refused
+                    citations = []
+                } else if !citations.isEmpty {
+                    grounding = .callPack
+                } else if verdict.isGrounded {
+                    grounding = .transcript
+                    citations = [.init(id: "transcript-\(question.fromSeq)-\(question.toSeq)",
+                                       kind: .transcript, label: "Transcript",
+                                       fromSeq: question.fromSeq, toSeq: question.toSeq)]
+                } else {
+                    grounding = .generalKnowledge
+                    citations = [.init(id: "general-knowledge", kind: .generalKnowledge,
+                                       label: "General knowledge")]
+                }
+                let answer = CallAnswer(
+                    callID: config.callID, generation: config.generation,
+                    questionID: question.id, question: question.prompt,
+                    main: published.headline, points: published.angles,
+                    warning: published.confirm.first, grounding: grounding,
+                    citations: citations, provider: "Agy · Google remote",
+                    model: response.attribution.model,
+                    timing: .init(speechEndedAt: question.speechEndedAt,
+                                  questionDetectedAt: question.detectedAt,
+                                  requestStartedAt: Date().addingTimeInterval(-response.attribution.latency),
+                                  providerCompletedAt: Date()))
+                try? await store.record(answer: answer)
+                questionQueue.answer(question.id, answerID: answer.id)
+                if let completed = questionQueue.questions.first(where: { $0.id == question.id }) {
+                    try? await store.record(question: completed)
+                }
+            }
             onSuggestion?(published, .local)
         } catch let failure as IntelligenceFailure {
+            questionQueue.fail(question.id, reason: failure.code)
+            if let store {
+                if let failed = questionQueue.questions.first(where: { $0.id == question.id }) {
+                    try? await store.record(question: failed)
+                }
+            }
             note(failure: failure)
         } catch {
+            questionQueue.fail(question.id, reason: "transport")
+            if let store {
+                if let failed = questionQueue.questions.first(where: { $0.id == question.id }) {
+                    try? await store.record(question: failed)
+                }
+            }
             note(failure: .transport(String(describing: error)))
         }
+    }
+
+    private static func requiresCallEvidence(_ question: String) -> Bool {
+        let lower = question.lowercased()
+        let personal = [" i ", " me ", " my ", " we ", " our ", " us ", "company",
+                        "customer", "client", "price", "pricing", "cost", "date",
+                        "deadline", "name", "commit", "promise", "renewal"]
+        let padded = " \(lower) "
+        return personal.contains { padded.contains($0) }
     }
 
     /// A local failure is only interesting if it changes who answers. Everything
@@ -919,7 +1164,8 @@ public actor CopilotAdvisor {
     /// (so it can take over instantly) but its suggestions are suppressed — two
     /// brains writing to one panel would flicker between them.
     public func acceptsGatewaySuggestion() -> Bool {
-        config.preferred == .gateway || localGaveUp
+        guard codingContext() == nil else { return false }
+        return config.preferred == .gateway || localGaveUp
     }
 
     // MARK: - End of call
@@ -947,10 +1193,12 @@ public actor CopilotAdvisor {
             \(ledger.closingBrief(with: segmenter.drain(now: audioNow())))
             """,
             tier: .deep,
-            exactModel: config.summaryModel
+            exactModel: config.summaryModel,
+            priority: .offline,
+            queuePolicy: .fifo
         )
         do {
-            let response = try await provider.respond(to: request)
+            let response = try await router.respond(to: request)
             guard let payload = response.payload else { return nil }
             let closing = try CopilotClosingSummary.decode(payload)
             // Kept so the recap can be built from the deep model's own words

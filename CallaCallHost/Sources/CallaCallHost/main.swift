@@ -2,6 +2,7 @@ import CallaCallHostKit
 import CallaContracts
 import IntelligenceCore
 import IntelligenceStore
+import ApplicationServices
 import CoreGraphics
 import Foundation
 
@@ -69,6 +70,11 @@ func usage() -> Never {
                                                 Replay a canned call to a gateway
       CallaCallHost probe-local [--tier <t>]    Replay the same call through local agy,
                                                 reporting per-suggestion latency
+      CallaCallHost quiz-windows                List capturable windows as Quiz v1 JSON
+      CallaCallHost quiz-capture --generation N
+                                                Capture target JSON read from stdin
+      CallaCallHost quiz-scroll                 Post validated scroll command read from stdin
+      CallaCallHost quiz-permissions [--check]  Request or report Quiz capture permissions
 
     SERVE OPTIONS:
       --gateway <url>     Required. Used for fallback even when --provider local.
@@ -191,8 +197,12 @@ func copilotProvider() -> CopilotAdvisor.Provider {
     }
 }
 
+/// Measured: the fast tier answers in ~1.9s against ~5.2s for balanced on the
+/// same prompt and the same warm host. The app sends `--tier` on every call, so
+/// this fallback is only reached by a host launched by hand — and a hand-launched
+/// host is usually a rehearsal, which is the last place to be three seconds slow.
 func liveTier() -> ModelTier {
-    ModelTier(rawValue: value(for: "--tier") ?? "") ?? .balanced
+    ModelTier(rawValue: value(for: "--tier") ?? "") ?? .fast
 }
 
 /// When the gateway socket opens. Unrecognised spellings warm it, which is what
@@ -256,6 +266,147 @@ func ensureModel(_ model: WhisperModel) async throws -> URL {
 guard let command = arguments.first else { usage() }
 
 switch command {
+case "quiz-permissions":
+    let checkOnly = arguments.contains("--check")
+    var screen = CGPreflightScreenCaptureAccess()
+    var accessibility = AXIsProcessTrusted()
+    if !checkOnly {
+        if !screen { screen = CGRequestScreenCaptureAccess() }
+        if !accessibility {
+            // Literal value avoids importing mutable C global into Swift 6
+            // concurrency checking. It is public Accessibility API key value.
+            let options = ["AXTrustedCheckOptionPrompt": true] as CFDictionary
+            accessibility = AXIsProcessTrustedWithOptions(options)
+        }
+    }
+    do {
+        FileHandle.standardOutput.write(try JSONEncoder().encode(
+            QuizPermissionReadiness(screenRecording: screen, accessibility: accessibility)))
+        exit((screen && accessibility) ? 0 : 1)
+    } catch { exit(1) }
+
+case "quiz-windows":
+    do {
+        let windows = try await QuizWindowCatalog.list()
+        let encoder = JSONEncoder(); encoder.dateEncodingStrategy = .iso8601
+        FileHandle.standardOutput.write(try encoder.encode(windows))
+        exit(0)
+    } catch {
+        complain("quiz window listing failed: \(error.localizedDescription)\n")
+        exit(1)
+    }
+
+case "quiz-capture":
+    do {
+        let input = FileHandle.standardInput.readDataToEndOfFile()
+        let target = try JSONDecoder().decode(QuizWindowTarget.self, from: input)
+        let captureGeneration = Int(value(for: "--generation") ?? "0") ?? 0
+        let resolutionValue = value(for: "--resolution")
+            ?? QuizContract.defaultCaptureResolution.rawValue
+        guard let resolution = QuizCaptureResolution(rawValue: resolutionValue) else {
+            throw QuizWindowCaptureFailure.invalidCaptureResolution
+        }
+        // Default stays `solve` so an older engine asking without the flag still
+        // gets a full frame.
+        let detail = QuizCaptureDetail(rawValue: value(for: "--detail") ?? "solve") ?? .solve
+        let captured = try await QuizWindowCapture().capture(target, resolution: resolution,
+                                                            detail: detail)
+        let frame = QuizHostFrame(
+            target: captured.target, captureGeneration: captureGeneration,
+            width: captured.width, height: captured.height, jpeg: captured.jpeg,
+            normalizedOCR: captured.normalizedOCR, tileHashes: captured.tileHashes,
+            visualHash: captured.visualHash, anchors: captured.anchors,
+            headlines: captured.headlines)
+        guard frame.isBounded else { throw QuizWindowCaptureFailure.captureTooLarge }
+        let encoder = JSONEncoder(); encoder.dateEncodingStrategy = .iso8601
+        FileHandle.standardOutput.write(try encoder.encode(frame))
+        exit(0)
+    } catch {
+        let value = error as NSError
+        complain("quiz capture failed: \(value.domain) \(value.code): \(value.localizedDescription)\n")
+        exit(1)
+    }
+
+case "quiz-watch":
+    // One process, one stream, frames until the engine closes stdout or the
+    // window goes away. Replaces spawning this whole binary twice a second.
+    do {
+        // One line, not to EOF. `readDataToEndOfFile` waits for the writer to
+        // close, and stdin deliberately stays open here so the engine can ask for
+        // a solve frame over it — reading to EOF deadlocked before the stream was
+        // ever opened, and the engine then waited forever on stdout that was
+        // never going to arrive.
+        guard let line = readLine(strippingNewline: true),
+              let input = line.data(using: .utf8) else {
+            throw QuizWindowCaptureFailure.targetMissing
+        }
+        let target = try JSONDecoder().decode(QuizWindowTarget.self, from: input)
+        let resolutionValue = value(for: "--resolution")
+            ?? QuizContract.defaultCaptureResolution.rawValue
+        guard let resolution = QuizCaptureResolution(rawValue: resolutionValue) else {
+            throw QuizWindowCaptureFailure.invalidCaptureResolution
+        }
+        let milliseconds = Int(value(for: "--interval-ms") ?? "500") ?? 500
+        // Progress markers on stderr, which the engine captures and logs.
+        //
+        // The engine sees this process spawn and then produce nothing for twenty
+        // seconds, with stderr empty — so there is no way to tell whether the
+        // target was read, the stream started, or frames simply never arrived.
+        // Standalone the same binary streams fine, so the difference is in how it
+        // is launched, and that needs saying from in here.
+        complain("quiz-watch: target read \(target.applicationName) \(target.windowID)\n")
+        let (stream, frames) = try await QuizWindowStream.frames(
+            target: target, resolution: resolution,
+            interval: .milliseconds(max(100, min(5_000, milliseconds))))
+        complain("quiz-watch: stream started at \(resolution.rawValue)\n")
+        let session = QuizWatchSession(target: target)
+
+        // The engine asks for the frame the council will answer over this same
+        // pipe. It used to spawn a whole second `CallaCallHost` per question to
+        // get one — a cost the probe/solve split introduced. The stream already
+        // holds a current image, so answering costs an analysis and nothing else.
+        let requests = Task {
+            while let line = readLine(strippingNewline: true) {
+                guard let data = line.data(using: .utf8),
+                      let object = try? JSONSerialization.jsonObject(with: data)
+                        as? [String: Any],
+                      object["request"] as? String == "solve" else { continue }
+                await session.emitSolveFrame()
+            }
+        }
+
+        var seen = 0
+        for await image in frames {
+            seen += 1
+            if seen == 1 { complain("quiz-watch: first frame\n") }
+            await session.emitProbe(image)
+        }
+        complain("quiz-watch: stream ended after \(seen) frames\n")
+        requests.cancel()
+        stream.stop()
+        exit(0)
+    } catch {
+        let value = error as NSError
+        complain("quiz watch failed: \(value.domain) \(value.code): \(value.localizedDescription)\n")
+        exit(1)
+    }
+
+case "quiz-scroll":
+    do {
+        let input = FileHandle.standardInput.readDataToEndOfFile()
+        let command = try JSONDecoder().decode(QuizCommand.self, from: input)
+        guard let target = command.target,
+              command.command == .scrollUp || command.command == .scrollDown else {
+            throw QuizWindowCaptureFailure.targetIdentityChanged
+        }
+        try await QuizWindowCapture().scroll(target, direction: command.command)
+        print("ok")
+        exit(0)
+    } catch {
+        complain("quiz scroll failed: \(error.localizedDescription)\n")
+        exit(1)
+    }
+
 case "models":
     // `--fetch` is the engine's spelling, `--model` the human one; both mean
     // "make sure this model is on disk".
@@ -283,7 +434,12 @@ case "serve":
     let generation = callGeneration()
     // Fixed now rather than inside `CallSession.Configuration`, because the notch
     // has to be told which call is starting before there is a session to ask.
-    let callID = "call-\(UUID().uuidString.lowercased().prefix(16))"
+    let requestedCallID = value(for: "--call-id")
+    if let requestedCallID,
+       requestedCallID.range(of: #"^call-[a-z0-9-]{8,80}$"#, options: .regularExpression) == nil {
+        usage()
+    }
+    let callID = requestedCallID ?? "call-\(UUID().uuidString.lowercased().prefix(16))"
 
     // The first thing this process does that anyone else can see.
     //
@@ -356,6 +512,10 @@ case "serve":
             prewarm: prewarm,
             generation: generation)
         let session = try CallSession(config: config, modelURL: modelURL, speechGate: gate)
+        let events = CallEventChannel()
+        try events.start()
+        defer { events.stop() }
+        await session.setEventHandler { event in events.publish(event) }
         // A DispatchSource handler runs even though the default SIGINT
         // disposition is ignored, which is what lets the async teardown finish
         // instead of the process dying mid-write.
@@ -397,10 +557,11 @@ case "serve":
                     return CallHostEvent(callID: config.callID, generation: config.generation,
                                          kind: .fatal, snapshot: snapshot)
                 }
-                await session.answerSelectedText(text)
-                let snapshot = await session.lifecycleSnapshot()
+                let accepted = await session.answerSelectedText(text, questionID: command.questionID, codingEvidence: command.codingEvidence)
+                var snapshot = await session.lifecycleSnapshot()
+                if !accepted { snapshot.actionableError = "Question was not queued; check the Call provider and retry." }
                 return CallHostEvent(callID: config.callID, generation: config.generation,
-                                     kind: .answer, snapshot: snapshot)
+                                     kind: accepted ? .answer : .fatal, snapshot: snapshot)
             case .stop:
                 await session.stop()
                 stopped.trigger()
