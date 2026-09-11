@@ -26,8 +26,13 @@ let package = Package(
         // overridden without a rebuild. `PromptPack` falls back to compiled-in
         // wording if the resource is ever missing, so this is a convenience for
         // the reader rather than a load-bearing dependency.
-        .target(name: "IntelligenceCore", resources: [.copy("Resources/Prompts")]),
-        .target(name: "IntelligenceProviders", dependencies: ["IntelligenceCore"]),
+        .target(
+            name: "IntelligenceCore",
+            dependencies: [.product(name: "CallaContracts", package: "CallaContracts")],
+            resources: [.copy("Resources/Prompts")]),
+        .target(name: "IntelligenceProviders", dependencies: [
+            "IntelligenceCore", .product(name: "CallaContracts", package: "CallaContracts")
+        ]),
         // Knowledge and call history on SQLite. Deliberately not folded into
         // IntelligenceCore: this one links SQLite3 and NaturalLanguage and owns a
         // file on disk, and Core's whole value is that it does neither.
@@ -35,8 +40,13 @@ let package = Package(
             name: "IntelligenceStore",
             dependencies: ["IntelligenceCore", .product(name: "CallaContracts", package: "CallaContracts")],
             linkerSettings: [.linkedLibrary("sqlite3")]),
-        .testTarget(name: "IntelligenceCoreTests", dependencies: ["IntelligenceCore"]),
-        .testTarget(name: "IntelligenceProvidersTests", dependencies: ["IntelligenceProviders"]),
+        .testTarget(name: "IntelligenceCoreTests", dependencies: [
+            "IntelligenceCore", .product(name: "CallaContracts", package: "CallaContracts")
+        ]),
+        .testTarget(name: "IntelligenceProvidersTests", dependencies: [
+            "IntelligenceProviders", "IntelligenceCore",
+            .product(name: "CallaContracts", package: "CallaContracts")
+        ]),
         .testTarget(name: "IntelligenceStoreTests", dependencies: ["IntelligenceStore", .product(name: "CallaContracts", package: "CallaContracts")]),
     ]
 )
