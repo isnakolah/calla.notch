@@ -21,8 +21,7 @@ public enum PackageInstaller {
         var files = ["Contents/MacOS/boringNotch", Layout.callHost,
                      "Contents/Helpers/boring-notch", "Contents/Helpers/calla-gateway",
                      "Contents/XPCServices/BoringNotchXPCHelper.xpc/Contents/MacOS/BoringNotchXPCHelper",
-                     "Contents/XPCServices/BoringCallaEngine.xpc/Contents/MacOS/BoringCallaEngine",
-                     "Contents/XPCServices/SweepService.xpc/Contents/MacOS/SweepService"]
+                     "Contents/XPCServices/BoringCallaEngine.xpc/Contents/MacOS/BoringCallaEngine"]
         if release.tangit != nil {
             files += ["Contents/Helpers/tangit", "Contents/Resources/Tangit/Providers/codex/bin/codex",
                       "Contents/Resources/Tangit/Providers/claude/bin/claude", "Contents/Resources/Tangit/Providers/agy/bin/agy"]
