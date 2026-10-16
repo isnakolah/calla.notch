@@ -26,6 +26,8 @@ struct DynamicNotchApp: App {
     let updaterController: SPUStandardUpdaterController
 
     init() {
+        // Before any migration or view reads a setting.
+        if PrivateDistribution.enabled { SettingsTransfer.applyBundledIfNeeded() }
         Self.migratePomodoroStartPauseShortcut()
         NotchHeaderItem.migrateRemovedItems()
         updaterController = SPUStandardUpdaterController(
@@ -405,6 +407,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         if PrivateDistribution.isInstallerCopy { return }
 
         CallaCopilotSettings.migrate()
+        if CommandLine.arguments.contains("--export-settings") { SettingsTransfer.export() }
 
         configureLaunchAtLoginIfNeeded()
         if Defaults[.callaCopilotEnabled] {

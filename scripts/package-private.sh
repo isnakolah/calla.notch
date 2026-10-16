@@ -9,6 +9,7 @@ VERSION=""
 BUILD=""
 SOURCE_APP=""
 TANGIT_SOURCE="$ROOT/../tangit"
+SETTINGS=""
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --version) VERSION="${2:?missing version}"; shift 2 ;;
@@ -16,11 +17,17 @@ while [[ $# -gt 0 ]]; do
     --identity) IDENTITY="${2:?missing identity}"; shift 2 ;;
     --app) SOURCE_APP="${2:?missing built app}"; shift 2 ;;
     --tangit-source) TANGIT_SOURCE="${2:?missing Tangit source}"; shift 2 ;;
-    -h|--help) echo "Usage: scripts/package-private.sh [--version X.Y.Z] [--build N] [--identity NAME] [--app PREBUILT.app] [--tangit-source DIRECTORY]"; exit 0 ;;
+    # A snapshot from About › Export settings. The installed app applies it once.
+    --settings) SETTINGS="${2:?missing settings snapshot}"; shift 2 ;;
+    -h|--help) echo "Usage: scripts/package-private.sh [--version X.Y.Z] [--build N] [--identity NAME] [--app PREBUILT.app] [--tangit-source DIRECTORY] [--settings SNAPSHOT.plist]"; exit 0 ;;
     *) echo "Unknown argument: $1" >&2; exit 2 ;;
   esac
 done
 mkdir -p "$OUT"
+if [[ -n "$SETTINGS" ]]; then
+  plutil -lint -s "$SETTINGS" && [[ "$(plutil -extract format raw -o - "$SETTINGS" 2>/dev/null)" == 1 ]] \
+    || { echo "Not a settings snapshot: $SETTINGS" >&2; exit 2; }
+fi
 if [[ -z "$VERSION" ]]; then VERSION="$(sed -n 's/.*MARKETING_VERSION = \([^;]*\);/\1/p' "$ROOT/boringNotch.xcodeproj/project.pbxproj" | head -1)"; fi
 if [[ -z "$BUILD" ]]; then
   previous="$(sed -n 's/.*CURRENT_PROJECT_VERSION = \([^;]*\);/\1/p' "$ROOT/boringNotch.xcodeproj/project.pbxproj" | head -1)"
@@ -67,6 +74,7 @@ ditto "$ROOT/Distribution/Licenses" "$PRIVATE/Licenses"
 ditto "$BINARIES/boring-notch" "$APP/Contents/Helpers/boring-notch"
 ditto "$BINARIES/calla-gateway" "$APP/Contents/Helpers/calla-gateway"
 ditto "$ROOT/Distribution/START HERE.txt" "$PRIVATE/START HERE.txt"
+[[ -z "$SETTINGS" ]] || install -m 0644 "$SETTINGS" "$PRIVATE/settings.plist"
 python3 - "$ROOT" "$APP" "$VERSION" "$BUILD" <<'PY'
 import json, pathlib, plistlib, subprocess, sys
 root, app = map(pathlib.Path, sys.argv[1:3]); version, build = sys.argv[3:5]

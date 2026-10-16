@@ -29,6 +29,8 @@ import CallaContracts
     func copilotControl(_ command: Data, with reply: @escaping (Data) -> Void)
     /// Opens a call's folder in ~/Documents/Calls, or the root for an empty id.
     func revealCallFolder(_ callID: String, with reply: @escaping (Data) -> Void)
+    /// Writes the app's settings snapshot to Downloads, for carrying to another Mac.
+    func saveSettingsSnapshot(_ data: Data, with reply: @escaping (Data) -> Void)
     /// Writes a folder for every past call that lacks one.
     func exportPastCalls(with reply: @escaping (Data) -> Void)
     /// Turns newer than `seq`. Pass -1 for the whole tail.
@@ -1215,6 +1217,11 @@ final class CallaEngineClient: ObservableObject {
 
     func exportPastCalls() {
         invoke { $0.exportPastCalls(with: $1) }
+    }
+
+    /// Hands the settings snapshot to the engine, which writes it to Downloads.
+    func saveSettingsSnapshot(_ data: Data) {
+        invoke { $0.saveSettingsSnapshot(data, with: $1) }
     }
 
     func setCallPersona(_ persona: String) {

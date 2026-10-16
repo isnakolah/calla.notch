@@ -140,3 +140,77 @@ enum PrivateDistribution {
         }
     }
 }
+
+/// Carries this Mac's settings to another one.
+///
+/// Every setting lives in the app's own defaults domain, inside its sandbox
+/// container. The container is privacy-protected, so nothing outside the app
+/// can read it, not even a script. The app exports the domain itself, the
+/// engine writes it to Downloads, and the private package can embed that file
+/// (`package-private.sh --settings`) so the installed app applies it once on
+/// first launch.
+enum SettingsTransfer {
+    static let bundledPath = "PrivateSetup/settings.plist"
+    private static let appliedKey = "appliedBundledSettingsID"
+
+    /// Keys that describe this Mac or this install rather than a choice:
+    /// - whether setup has run (it must run again: permissions and sign-in
+    ///   happen there);
+    /// - this Mac's display and window ids;
+    /// - the LocalSend and KDE device identities, which two Macs must not share
+    ///   on one network;
+    /// - cached usage reports, which are data, not settings;
+    /// - window frames and Sparkle state.
+    private static let excludedKeys: Set<String> = [
+        "didCompletePrivateSetup", appliedKey, "preferred_screen_uuid", "callaQuizTargetWindowID",
+        "kdeConnectDeviceID", "localSendIdentity", "cachedClaudeUsage", "cachedCodexUsage",
+    ]
+    private static let excludedPrefixes = ["NSWindow Frame", "NSStatusItem", "NSNav", "NSSplitView",
+                                           "NSToolbar", "NSOSPLast", "SU", "Apple", "com.apple.", "_",
+                                           "usage.report."]
+
+    static func snapshot() -> Data? {
+        guard let domain = Bundle.main.bundleIdentifier,
+              let settings = UserDefaults.standard.persistentDomain(forName: domain) else { return nil }
+        let kept = settings.filter { key, _ in
+            !excludedKeys.contains(key) && !excludedPrefixes.contains(where: key.hasPrefix)
+        }
+        let envelope: [String: Any] = [
+            "format": 1,
+            "id": UUID().uuidString,
+            "exportedAt": Date(),
+            "sourceVersion": Bundle.main.releaseVersionNumber ?? "",
+            "settings": kept,
+        ]
+        return try? PropertyListSerialization.data(fromPropertyList: envelope, format: .binary, options: 0)
+    }
+
+    @MainActor
+    static func export() {
+        guard let data = snapshot() else {
+            CallaEngineClient.shared.reportLocalFailure("Could not read settings to export"); return
+        }
+        CallaEngineClient.shared.saveSettingsSnapshot(data)
+    }
+
+    /// Applies the snapshot shipped inside a private package, once per
+    /// snapshot. Runs before anything reads its settings.
+    static func applyBundledIfNeeded() {
+        guard let url = Bundle.main.resourceURL?.appendingPathComponent(bundledPath),
+              let data = try? Data(contentsOf: url),
+              let envelope = try? PropertyListSerialization.propertyList(from: data, format: nil) as? [String: Any],
+              envelope["format"] as? Int == 1,
+              let id = envelope["id"] as? String,
+              let settings = envelope["settings"] as? [String: Any] else { return }
+        let defaults = UserDefaults.standard
+        guard defaults.string(forKey: appliedKey) != id else { return }
+        for (key, value) in settings
+        where !excludedKeys.contains(key) && !excludedPrefixes.contains(where: key.hasPrefix) {
+            defaults.set(value, forKey: key)
+        }
+        // These are the choices; setup's first-run defaults must not replace them.
+        defaults.set(true, forKey: "didConfigurePrivateMeetingSetup")
+        defaults.set(id, forKey: appliedKey)
+        NSLog("[Settings] applied %d bundled settings", settings.count)
+    }
+}

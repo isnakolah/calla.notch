@@ -4013,6 +4013,34 @@ extension BoringCallaEngine {
         }
     }
 
+    /// The sandboxed app cannot write outside its container without a save
+    /// panel, so its settings snapshot comes here to be written where the user
+    /// can pick it up. Only a property-list dictionary is accepted, and only
+    /// to one fixed file name in Downloads.
+    func saveSettingsSnapshot(_ data: Data, with reply: @escaping (Data) -> Void) {
+        queue.async {
+            guard data.count < 4_000_000,
+                  (try? PropertyListSerialization.propertyList(from: data, format: nil)) is [String: Any] else {
+                self.copilotResult = "Settings export rejected: not a settings snapshot"
+                reply(self.encodedStatus()); return
+            }
+            let file = URL(fileURLWithPath: Self.userHome, isDirectory: true)
+                .appendingPathComponent("Downloads/Boring Notch Settings.plist")
+            do {
+                try data.write(to: file, options: .atomic)
+                try self.fileManager.setAttributes([.posixPermissions: 0o600], ofItemAtPath: file.path)
+                self.copilotResult = "Settings saved to Downloads › Boring Notch Settings.plist"
+                let process = Process()
+                process.executableURL = URL(fileURLWithPath: "/usr/bin/open")
+                process.arguments = ["-R", file.path]
+                try? process.run()
+            } catch {
+                self.copilotResult = "Could not save settings: \(error.localizedDescription)"
+            }
+            reply(self.encodedStatus())
+        }
+    }
+
     /// Writes a folder for every call in the store, oldest first, and indexes
     /// each for retrieval. Safe to repeat: finished exports are skipped.
     func exportPastCalls(with reply: @escaping (Data) -> Void) {

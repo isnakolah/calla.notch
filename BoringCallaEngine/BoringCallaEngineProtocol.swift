@@ -31,6 +31,8 @@ import Foundation
     func copilotControl(_ command: Data, with reply: @escaping (Data) -> Void)
     /// Opens a call's folder in ~/Documents/Calls, or the root for an empty id.
     func revealCallFolder(_ callID: String, with reply: @escaping (Data) -> Void)
+    /// Writes the app's settings snapshot to Downloads, for carrying to another Mac.
+    func saveSettingsSnapshot(_ data: Data, with reply: @escaping (Data) -> Void)
     /// Writes a folder for every past call that lacks one.
     func exportPastCalls(with reply: @escaping (Data) -> Void)
     /// Turns of the current call newer than `seq`; -1 asks for the whole tail.

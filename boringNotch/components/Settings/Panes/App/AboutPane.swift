@@ -39,6 +39,13 @@ struct About: View {
                 }
             }
 
+            SettingCard("Move to another Mac") {
+                Text("Saves every setting to Downloads as Boring Notch Settings.plist. Build the private package with --settings and the other Mac starts with them; sign-ins, permissions and call history stay on this Mac.")
+                    .font(NotchType.rowDetail).foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                Button("Export settings") { SettingsTransfer.export() }
+            }
+
             SettingCard("Source") {
                 HStack(spacing: 8) {
                     Image("Github")
