@@ -485,8 +485,10 @@ public struct InteractiveRunner: Sendable {
                 env["SECURITYSESSIONID"] = String(sessionID, radix: 16)
             }
         }
-        for (key, value) in overrides where key == "SECURITYSESSIONID"
-            && !value.isEmpty && value.allSatisfy({ $0.isHexDigit }) {
+        // Every override applies (e.g. CLAUDE_CONFIG_DIR for a Tangit profile);
+        // only SECURITYSESSIONID is validated, since it steers Keychain lookup.
+        for (key, value) in overrides {
+            if key == "SECURITYSESSIONID", value.isEmpty || !value.allSatisfy({ $0.isHexDigit }) { continue }
             env[key] = value
         }
         return env

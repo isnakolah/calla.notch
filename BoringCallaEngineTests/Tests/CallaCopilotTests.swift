@@ -18,7 +18,7 @@ final class CallaCopilotCommandValidationTests: XCTestCase {
     func testOnlyTheKnownActionsAreAccepted() {
         // Every entry, not most of them. This is how `set_detail` sat in a security allowlist with no
         // sender and no handler for as long as it did.
-        for action in ["start", "stop", "answer", "set_persona", "set_provider", "archive",
+        for action in ["start", "stop", "answer", "screenshot", "set_persona", "set_provider", "archive",
                        "fetch_model", "login", "test_login", "sign_out", "restore_login"] {
             XCTAssertEqual(CallaCopilotCommandValidation.action(action), action)
         }
@@ -33,7 +33,7 @@ final class CallaCopilotCommandValidationTests: XCTestCase {
     /// names is accepted. This proves nothing *else* is.
     func testTheAllowlistHasNothingUnreachableInIt() {
         let handled: Set<String> = [
-            "start", "stop", "answer", "set_persona", "set_provider", "archive",
+            "start", "stop", "answer", "screenshot", "set_persona", "set_provider", "archive",
             "fetch_model", "login", "test_login", "sign_out", "restore_login",
         ]
         XCTAssertEqual(

@@ -57,6 +57,14 @@ enum AgyProcessRunner {
         workingDirectory: URL? = nil,
         timeout: TimeInterval
     ) async throws -> Result {
+        if arguments.contains("-p") || arguments.contains("--print") || arguments.first == "models" {
+            guard AgyLocator.hasCredentials() else {
+                throw IntelligenceFailure.unauthenticated("Sign in to AGY from Boring Notch")
+            }
+            guard await AgyConnectivity.canReachGoogle() else {
+                throw IntelligenceFailure.transport("Cannot reach Google. Check your internet connection; your sign-in is unchanged")
+            }
+        }
         let process = Process()
         process.executableURL = URL(fileURLWithPath: binary)
         process.arguments = arguments

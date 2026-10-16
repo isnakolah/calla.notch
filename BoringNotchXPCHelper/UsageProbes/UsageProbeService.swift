@@ -15,27 +15,42 @@ actor UsageProbeService {
 
     private var inFlight: [String: Task<UsageReportDTO, Never>] = [:]
 
-    func fetchUsage(provider: String, securitySessionID: String?) async -> UsageReportDTO {
-        if let existing = inFlight[provider] {
+    func fetchUsage(provider: String, profileID: String?, securitySessionID: String?) async -> UsageReportDTO {
+        if let existing = inFlight[provider + ":" + (profileID ?? "shared")] {
             return await existing.value
         }
 
-        let task = Task<UsageReportDTO, Never> { [provider, securitySessionID] in
-            await Self.runProbe(provider: provider, securitySessionID: securitySessionID)
+        let task = Task<UsageReportDTO, Never> { [provider, profileID, securitySessionID] in
+            await Self.runProbe(provider: provider, profileID: profileID, securitySessionID: securitySessionID)
         }
-        inFlight[provider] = task
+        inFlight[provider + ":" + (profileID ?? "shared")] = task
         let result = await task.value
-        inFlight[provider] = nil
+        inFlight[provider + ":" + (profileID ?? "shared")] = nil
         return result
     }
 
-    private static func runProbe(provider: String, securitySessionID: String?) async -> UsageReportDTO {
+    private static func runProbe(provider: String, profileID: String?, securitySessionID: String?) async -> UsageReportDTO {
+        if provider == "agy" { return await AGYUsageProbe.fetchReport() }
+        guard let profileID, let profile = TangitUsageProfile.resolve(profileID, provider: provider) else {
+            return UsageReportDTO(provider: provider, status: .notLoggedIn,
+                errorDescription: "Select a valid Tangit profile and sign in with its CLI", session: nil,
+                weekly: nil, capturedAt: Date(), profileID: profileID)
+        }
+        let signedIn = provider == "claude"
+            ? ClaudeProfileCredentials.sync(directory: profile.directory, securitySessionID: securitySessionID)
+            : FileManager.default.fileExists(atPath: profile.directory.appendingPathComponent("auth.json").path)
+        if !signedIn {
+            return UsageReportDTO(provider: provider, status: .notLoggedIn,
+                errorDescription: "Run tangit login \(profile.id) \(provider)",
+                session: nil, weekly: nil, capturedAt: Date(), profileID: profile.id,
+                accountIdentity: ProfileIdentity.read(provider: provider, directory: profile.directory))
+        }
         let probe: UsageProbe
         switch provider {
         case "claude":
-            probe = ClaudeUsageProbe(securitySessionID: securitySessionID)
+            probe = ClaudeUsageProbe(securitySessionID: securitySessionID, configDirectory: profile.directory)
         case "codex":
-            probe = CodexUsageProbe()
+            probe = CodexUsageProbe(codexHome: profile.directory.path)
         default:
             return UsageReportDTO(
                 provider: provider,
@@ -43,7 +58,8 @@ actor UsageProbeService {
                 errorDescription: "Unknown provider '\(provider)'",
                 session: nil,
                 weekly: nil,
-                capturedAt: Date()
+                capturedAt: Date(), profileID: profileID,
+                accountIdentity: ProfileIdentity.read(provider: provider, directory: profile.directory)
             )
         }
 
@@ -54,15 +70,23 @@ actor UsageProbeService {
                 errorDescription: "\(provider) CLI not found",
                 session: nil,
                 weekly: nil,
-                capturedAt: Date()
+                capturedAt: Date(), profileID: profileID,
+                accountIdentity: ProfileIdentity.read(provider: provider, directory: profile.directory)
             )
         }
 
         do {
             let snapshot = try await probe.probe()
-            return map(snapshot: snapshot, provider: provider)
+            var report = map(snapshot: snapshot, provider: provider)
+            report.profileID = profileID
+            report.accountIdentity = ProfileIdentity.read(provider: provider, directory: profile.directory)
+            return report
         } catch let error as ProbeError {
-            return map(error: error, provider: provider)
+            AppLog.probes.error("\(provider, privacy: .public) probe failed: \(String(describing: error), privacy: .public)")
+            var report = map(error: error, provider: provider)
+            report.profileID = profileID
+            report.accountIdentity = ProfileIdentity.read(provider: provider, directory: profile.directory)
+            return report
         } catch {
             return UsageReportDTO(
                 provider: provider,
@@ -70,7 +94,8 @@ actor UsageProbeService {
                 errorDescription: error.localizedDescription,
                 session: nil,
                 weekly: nil,
-                capturedAt: Date()
+                capturedAt: Date(), profileID: profileID,
+                accountIdentity: ProfileIdentity.read(provider: provider, directory: profile.directory)
             )
         }
     }

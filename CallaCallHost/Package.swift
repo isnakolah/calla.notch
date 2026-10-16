@@ -1,4 +1,4 @@
-// swift-tools-version: 6.0
+// swift-tools-version: 6.2
 import PackageDescription
 
 // Deliberately a separate package from Tutor/apps/macos/TutorHost:
@@ -19,6 +19,10 @@ let package = Package(
         // paths, because SPM refuses a target path outside its own package root
         // and the app, the XPC engine and this host all need the same types.
         .package(path: "../Intelligence"),
+        // Post-call speaker diarization (pyannote + WeSpeaker + VBx on CoreML).
+        // Apache-2.0. `traits: []` drops the NeMo text-normalization engine, a
+        // prebuilt Rust staticlib that only TTS and ITN use.
+        .package(url: "https://github.com/FluidInference/FluidAudio.git", exact: "0.17.7", traits: []),
     ],
     targets: [
         // Prebuilt, checksummed. Same pin Mila ships, so the two apps agree on
@@ -38,6 +42,7 @@ let package = Package(
                 .product(name: "IntelligenceCore", package: "Intelligence"),
                 .product(name: "IntelligenceProviders", package: "Intelligence"),
                 .product(name: "IntelligenceStore", package: "Intelligence"),
+                .product(name: "FluidAudio", package: "FluidAudio"),
             ],
             // The only model that ships inside the bundle: under a megabyte,
             // and the gate that keeps whisper from hallucinating words onto a

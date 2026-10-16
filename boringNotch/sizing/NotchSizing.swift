@@ -37,13 +37,13 @@ enum NotchSizeProfile: String, CaseIterable, Identifiable, Sendable {
         case .wave, .codingExpanded: Self.callExpanded.defaultSize
         case .codingCompact: Self.callCollapsed.defaultSize
         case .normal: CGSize(width: 512, height: 168)
-        case .callExpanded: CGSize(width: 600, height: 340)
+        case .callExpanded: CGSize(width: 720, height: 400)
         // Same width as expanded: a call has one width, and collapsing changes
         // only the height (it drops the transcript column). Storage backs both
         // with the same key — see `NotchSizePreferences.size(_:)` — so a
         // different default here would make a freshly installed compact layout
         // report itself as already customised.
-        case .callCollapsed: CGSize(width: 600, height: 200)
+        case .callCollapsed: CGSize(width: 720, height: 270)
         }
     }
 

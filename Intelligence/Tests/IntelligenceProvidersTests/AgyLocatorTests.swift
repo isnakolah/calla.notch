@@ -49,10 +49,19 @@ final class AgyLocatorTests: XCTestCase {
         let installs = AgyLocator.installations()
         try XCTSkipIf(installs.count < 2, "needs two installs to be meaningful")
         let chosen = try XCTUnwrap(AgyLocator.bestInstallation())
+        if chosen.path == AgyLocator.managedPath { return }
         for other in installs where other.isSupported {
             XCTAssertGreaterThanOrEqual(
                 AgyLocator.compare(chosen.components, other.components), 0,
                 "chose \(chosen.version) over \(other.version)")
         }
+    }
+
+    func testManagedInstallationWinsOverNewerGlobalInstallation() {
+        let managed = AgyLocator.Installation(path: AgyLocator.managedPath, version: "1.3.5")
+        let global = AgyLocator.Installation(path: "/usr/local/bin/agy", version: "9.0.0")
+        XCTAssertEqual(AgyLocator.selectInstallation([global, managed]), managed)
+        XCTAssertEqual(AgyLocator.selectInstallation([global]), global)
+        XCTAssertFalse(AgyLocator.managedPath.contains("/Library/Containers/"))
     }
 }

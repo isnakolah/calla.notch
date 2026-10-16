@@ -897,14 +897,23 @@ public actor CopilotAdvisor {
 
         if (try? await store.knowledgeSnapshot(forCall: config.callID)) != nil {
             let frozen = (try? await store.searchSnapshot(query: query, callID: config.callID)) ?? []
-            guard !frozen.isEmpty else {
-                trace("recalled no frozen Call pack chunks")
+            // A frozen pack holds what the user picked for this call. Earlier
+            // calls of the same kind are not in it, and are searched beside it.
+            let history = await store.search(query: query, scopes: retrievalScopes(), limit: 2,
+                                             sources: [.callHistory])
+            guard !frozen.isEmpty || !history.isEmpty else {
+                trace("recalled no frozen Call pack or call history chunks")
                 return RecallResult()
             }
-            trace("recalled \(frozen.count) frozen Call pack chunk(s)")
+            trace("recalled \(frozen.count) frozen Call pack and \(history.count) call history chunk(s)")
+            let past = history.enumerated().map { index, hit in
+                (passage: "[history-\(hit.noteID)-\(index)] \(hit.title): \(hit.text.prefix(700))",
+                 citation: KnowledgeCitation(id: "history-\(hit.noteID)-\(index)", kind: .note,
+                                             label: hit.title, sourceID: hit.noteID))
+            }
             return RecallResult(
-                passages: frozen.map { "[\($0.citation.id)] \($0.citation.label): \($0.text)" },
-                citations: frozen.map(\.citation))
+                passages: frozen.map { "[\($0.citation.id)] \($0.citation.label): \($0.text)" } + past.map(\.passage),
+                citations: frozen.map(\.citation) + past.map(\.citation))
         }
 
         let hits = await store.search(query: query, scopes: retrievalScopes(), limit: 4)
@@ -1221,6 +1230,14 @@ public actor CopilotAdvisor {
             advisorLog.error("summary pass failed: \(String(describing: error), privacy: .public)")
             return nil
         }
+    }
+
+    /// Text from a screenshot the user took, so a question about what is being
+    /// shown can be answered and its numbers are not mistaken for inventions.
+    public func addScreenContext(_ text: String, offset: Double) {
+        let total = max(0, Int(offset))
+        ledger.addScreen(text, at: String(format: "%d:%02d", total / 60, total % 60))
+        claimEvidence.add(text)
     }
 
     /// The end-of-call pass's result, once it has one.

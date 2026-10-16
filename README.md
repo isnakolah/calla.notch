@@ -41,6 +41,11 @@ Say hello to **Boring Notch**, the coolest way to make your MacBook’s notch th
 
 ## Installation
 
+For this customized checkout, see [private installation and guided setup](docs/private-installation.md).
+Build a transferable installer with `scripts/package-private.sh`; the receiving
+Mac uses the included setup launcher to install the app, AGY, speech models,
+and optional Gateway connectivity.
+
 **System Requirements:**
 - macOS **14 Sonoma** or later
 - Apple Silicon or Intel Mac

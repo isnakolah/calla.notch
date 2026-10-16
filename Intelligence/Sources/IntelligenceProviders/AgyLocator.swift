@@ -7,6 +7,9 @@ import Foundation
 /// executable. A GUI app inherits a minimal `PATH`, so the well-known install
 /// locations are checked directly before falling back to a login shell.
 public enum AgyLocator {
+    public static var managedPath: String {
+        AgyEnvironment.userHome + "/Library/Application Support/boringNotch/Managed/agy/current/agy"
+    }
     public static let knownPaths = [
         "~/.local/bin/agy",
         "/opt/homebrew/bin/agy",
@@ -59,7 +62,7 @@ public enum AgyLocator {
     private static func discover() -> [Installation] {
         var seen: Set<String> = []
         var found: [Installation] = []
-        var candidates = knownPaths.map { expand($0) }
+        var candidates = [managedPath] + knownPaths.map { expand($0) }
         if let shellPath = viaLoginShell() { candidates.append(shellPath) }
 
         for path in candidates {
@@ -92,7 +95,7 @@ public enum AgyLocator {
     /// place only the login shell knows about is watched too, so an upgrade there
     /// invalidates this as well.
     private static func fingerprint(alsoWatching extra: [String]) -> String {
-        let paths = Set(knownPaths.map { expand($0) } + extra).sorted()
+        let paths = Set([managedPath] + knownPaths.map { expand($0) } + extra).sorted()
         return paths.map { path in
             guard let attributes = try? FileManager.default.attributesOfItem(atPath: path),
                   let size = attributes[.size] as? Int,
@@ -110,7 +113,14 @@ public enum AgyLocator {
 
     /// The newest install this code can drive, or nil.
     public static func bestInstallation() -> Installation? {
-        installations().first(where: \.isSupported)
+        selectInstallation(installations())
+    }
+
+    static func selectInstallation(_ found: [Installation]) -> Installation? {
+        // A private package deliberately pins its own CLI. A newer unrelated
+        // global install must not silently replace that tested dependency.
+        return found.first(where: { $0.path == managedPath && $0.isSupported })
+            ?? found.filter(\.isSupported).max { compare($0.components, $1.components) < 0 }
     }
 
     public static func locate() -> String? {
@@ -170,6 +180,7 @@ public enum AgyLocator {
         let process = Process()
         process.executableURL = URL(fileURLWithPath: binary)
         process.arguments = ["--version"]
+        process.environment = AgyEnvironment.processEnvironment()
         let pipe = Pipe()
         process.standardOutput = pipe
         process.standardError = FileHandle.nullDevice

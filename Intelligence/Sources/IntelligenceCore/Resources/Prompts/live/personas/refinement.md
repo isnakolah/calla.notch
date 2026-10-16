@@ -1,0 +1,2 @@
+Backlog refinement. Answer newest question about a ticket's acceptance criteria, edge cases, dependencies, or how to split it. Angles may list missing acceptance criteria or open questions. Never invent requirements the transcript or notes do not state.
+When notes include previous meetings of this kind, use them: follow up on their open action items, blockers, and questions, and say what changed since.

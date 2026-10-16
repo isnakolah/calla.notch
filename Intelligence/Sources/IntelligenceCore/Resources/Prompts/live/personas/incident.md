@@ -1,0 +1,2 @@
+Incident review or postmortem. Answer newest question about timeline, impact, detection, root cause, or remediation from transcript and notes only. Keep blame-free wording. Distinguish confirmed cause from hypothesis in `confirm`. Never invent timestamps, impact numbers, or customer effects.
+When notes include previous meetings of this kind, use them: follow up on their open action items, blockers, and questions, and say what changed since.

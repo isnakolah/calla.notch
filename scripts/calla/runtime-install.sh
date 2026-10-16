@@ -38,7 +38,8 @@ for label in com.calla.tutor-host com.calla.openclaw-node-host "$NODE_LABEL"; do
   launchctl disable "$GUI_DOMAIN/$label" 2>/dev/null || true
   launchctl bootout "$GUI_DOMAIN/$label" 2>/dev/null || true
 done
-rm -f "$AGENT_DIRECTORY/$NODE_LABEL.plist" "$AGENT_DIRECTORY/com.calla.openclaw-node-host.plist"
+rm -f "$AGENT_DIRECTORY/$NODE_LABEL.plist" "$AGENT_DIRECTORY/com.calla.openclaw-node-host.plist" \
+  "$AGENT_DIRECTORY/com.calla.tutor-host.plist"
 
 # Boring's own restore label must be explicitly enabled first: `bootstrap`
 # against a label sitting in the disabled database succeeds and loads nothing,

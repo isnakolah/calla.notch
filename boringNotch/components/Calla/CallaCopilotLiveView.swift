@@ -3,53 +3,34 @@
 //  boringNotch
 //
 
+import AppKit
+import CallaContracts
 import Defaults
 import KeyboardShortcuts
 import SwiftUI
 
-/// The notch during a live call, drawn from `NotchGlass`.
+/// The notch during a live call, at either of its open sizes.
 ///
-/// Replaces the standalone window this feature shipped with. That window was
-/// readable but visible in every screen share, which for a call copilot is the
-/// one failure that cannot be traded away — so the surface moved into the notch
-/// panel, which already knows how to drop out of a recording.
+/// Lives in the notch rather than a window because a window is visible in every
+/// screen share — for a call copilot, the one failure that cannot be traded away.
 ///
-/// Two layouts, one slab. A call keeps `copilotNotchSize` in both: collapsing
-/// drops the transcript, never the panel, because a notch that shrinks mid-call
-/// reads as the call having ended.
+/// **Compact** is the answer alone, or the running account alone: the line to
+/// say set large, then the order to say it in. **Full** puts the same thing
+/// beside the live transcript, with where the call stands under the answer.
+/// Zen, the resting size, is `CallaCopilotAmbientView`.
 ///
-/// **Collapsed** is the resting layout — one answer, the line that prompted it,
-/// and nothing else. It is read in the half-second before you have to speak.
-/// **Expanded** gives the answer the left column and lets the transcript earn
-/// the rest: three turns, newest at full ink, the two before it at tertiary.
-/// Nothing older, because reading further costs more time than it saves
-/// mid-sentence — the archive is a settings pane.
+/// One answer is on screen at a time. A new suggestion replaces the one before
+/// it; the earlier ones stay reachable with the Answer keys and the pager.
 ///
-/// One answer is on screen at a time in both. A new suggestion replaces the one
-/// before it; it does not stack.
-///
-/// Colour has exactly two jobs here, and they are split by band. In the header
-/// band, green and amber report *capture* — whether both sides are being heard,
-/// whether the panel is out of the screen share. Inside the card, the accent
-/// marks *the newest thing*: the live answer's heading, the rail on the point
-/// that just landed, the label on the turn being spoken. Amber inside the card
-/// is reserved for what needs checking before it is said aloud. Nothing else is
-/// coloured — four turns of grey and one accented line is what gives the column
-/// a place for the eye to land.
+/// Colour: amber is an answer, blue is the account, coral is capture trouble
+/// (`CallaCallInk`). Nothing else is tinted.
 struct CallaCopilotLiveView: View {
     @ObservedObject private var engine = CallaEngineClient.shared
     @ObservedObject private var session = CopilotLiveSession.shared
 
     @State private var turns: [CallaCallTurn] = []
-    @State private var now = Date()
     @State private var showsManualQuestion = false
     @State private var manualQuestion = ""
-
-    /// Controls are an overlay on the card, not a band under it, and they stay
-    /// out of the way until the pointer is on the panel. A permanent row cost
-    /// the card 36pt of a surface that was already short — and on a call the
-    /// thing worth reading is the answer, not four buttons that do not change.
-    @State private var showsControls = false
 
     @Default(.callaCopilotPanelSurface) private var surface
 
@@ -73,14 +54,7 @@ struct CallaCopilotLiveView: View {
     /// Fast enough that a turn appears while it is still the thing being
     /// answered. The engine hands back only what is newer than `lastSeq`, so
     /// the cost of the shorter interval is a near-empty reply, not a re-read.
-    ///
-    /// A third of a second because the collapsed panel is subtitles now, and
-    /// subtitles that arrive up to 0.8s after the words did read as lag rather
-    /// than as captions. There is no interim transcript to poll for — turns are
-    /// whole utterances, cut by the VAD — so this is the only part of the delay
-    /// the app owns, and it should not be the part that shows.
     private let transcriptTick = Timer.publish(every: 0.3, on: .main, in: .common).autoconnect()
-    private let clockTick = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
 
     private var copilot: CallaCopilotStatus { engine.status.copilot }
 
@@ -93,131 +67,51 @@ struct CallaCopilotLiveView: View {
         )
     }
 
+    private var compact: Bool { session.layout == .compact }
+
     var body: some View {
-        VStack(alignment: .leading, spacing: NotchGlassSpace.snug) {
-            // A geometry reader rather than a fixed column width. With the
-            // answer pinned at 300pt and the transcript sized to its own ideal
-            // width, the pair measured 512pt inside a 600pt panel and the root's
-            // leading alignment dumped the whole 88pt remainder against the
-            // right edge. Splitting the width that is actually there cannot do
-            // that: the columns always add up to the panel.
-            GeometryReader { geometry in
-                HStack(spacing: 0) {
-                    // The answer is the reason the panel exists, so it takes the
-                    // wider half rather than splitting evenly.
-                    answerColumn
-                        .frame(width: session.layout == .full
-                               ? max(0, (geometry.size.width - 1) * 0.54)
-                               : geometry.size.width,
-                               alignment: .leading)
-                    if session.layout == .full {
-                        NotchColumnDivider()
-                        transcriptColumn
-                            .frame(maxWidth: .infinity, alignment: .leading)
+        Group {
+            if compact {
+                primary
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+            } else {
+                HStack(alignment: .top, spacing: 0) {
+                    VStack(alignment: .leading, spacing: 10) {
+                        primary
+                            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+                        if content == .answer, let lead = account.lead {
+                            standingStrip(lead)
+                        }
                     }
-                }
-                // Padded *inside* the geometry, never outside it. This was
-                // `.frame(height: geometry.size.height)` followed by
-                // `.padding(.top, 2)`, which makes the view two points taller
-                // than the space it was given — so the bottom two points were
-                // always drawn past the floor and cut by the clip. Small, and
-                // exactly the kind of small that slices a caption in half.
-                .frame(width: geometry.size.width - 4,
-                       height: geometry.size.height - 2,
-                       alignment: .leading)
-                .padding(.top, 2)
-                .padding(.horizontal, 2)
-            }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-            // Content that outgrows its share is cut, never allowed to push.
-            // Without this the card's intrinsic height wins the layout and the
-            // footer is shoved past the frame — the controls end up drawn under
-            // the notch's lower curve, which is where they went in the compact
-            // panel during a real call.
-            // The controls' strip is reserved always — never conditionally on
-            // hover, which reflowed the whole panel under the pointer — but only
-            // in the expanded panel, where the buttons are the content that band
-            // holds. Collapsed reserves nothing: its caption belongs on the floor
-            // of the panel, and 38pt of black under it was the "space at the
-            // bottom" that kept coming up. Hovering a collapsed panel puts the
-            // controls over the caption, which is a fair trade for a surface
-            // whose whole job is a glance.
-            .padding(.bottom, session.layout == .full ? NotchGlassSpace.control + 8 : 0)
-            .clipped()
-            // No card. The panel is already a surface — the notch's own glass —
-            // and drawing a bordered card on it put a second edge a few points
-            // inside the first, which is nesting rather than structure. The two
-            // columns are separated by their divider and their headings; that is
-            // all the structure this content needs, and dropping the fill hands
-            // its padding and border back to the text.
-            // The scrim is a sibling of the controls, not their background.
-            //
-            // As a background it inherited the footer's 12pt side padding, so it
-            // stopped short of both panel edges and drew two vertical seams down
-            // a surface that has none — and its two-stop ramp from clear to 92%
-            // black put a visible horizontal edge across the middle of the
-            // transcript. Full-bleed, taller, and eased through a middle stop:
-            // the controls get their contrast and the panel keeps looking like
-            // one sheet.
-            .overlay(alignment: .bottom) {
-                if showsControls {
-                    ZStack(alignment: .bottom) {
-                        LinearGradient(
-                            stops: [
-                                .init(color: .black.opacity(0), location: 0),
-                                .init(color: .black.opacity(0.34), location: 0.42),
-                                .init(color: .black.opacity(0.72), location: 0.72),
-                                .init(color: .black.opacity(0.88), location: 1)
-                            ],
-                            startPoint: .top, endPoint: .bottom)
-                            .frame(height: 92)
-                            .frame(maxWidth: .infinity)
-                            // Over-extended past the content's own inset so the
-                            // wash runs under the panel's rounded corners and is
-                            // clipped by them, rather than stopping a few points
-                            // short and drawing an edge of its own.
-                            .padding(.horizontal, -10)
-                            .allowsHitTesting(false)
-                        footer
-                            .padding(.horizontal, 12)
-                            .padding(.bottom, 2)
-                    }
-                    .frame(maxWidth: .infinity)
-                    .transition(.opacity)
+                    .padding(.trailing, 16)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+
+                    Rectangle()
+                        .fill(Color.white.opacity(0.08))
+                        .frame(width: 1)
+                    transcriptColumn
+                        .padding(.leading, 14)
+                        .frame(width: 230)
+                        .frame(maxHeight: .infinity, alignment: .topLeading)
+                        .transition(.opacity)
                 }
             }
         }
-        .onHover { hovering in
-            withAnimation(.easeOut(duration: 0.16)) { showsControls = hovering }
-        }
-        // Tighter than a tab's. This panel is the one surface whose whole value
-        // is how much of the conversation is on screen at once.
-        // The card starts directly under the header band. Ten points of gap
-        // between the state line and the first heading made the two read as
-        // separate surfaces stacked on one another rather than one panel.
-        .padding(.top, 0)
-        .padding(.horizontal, 6)
-        .padding(.bottom, 2)
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .onReceive(clockTick) { value in now = value }
+        .foregroundStyle(NotchInk.primary)
+        // One padding for both layouts, so collapsing changes the size of the
+        // content and nothing around it jumps.
+        .padding(.horizontal, 20)
+        .padding(.top, 6)
+        .padding(.bottom, 12)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        .animation(.smooth(duration: 0.35), value: content)
+        .animation(.smooth(duration: 0.35), value: displayedAnswer?.id)
         .onChange(of: copilot.suggestionAfterSeq) { _, _ in
             guard captureCurrentAnswer() else { return }
-            // A pointer that *answers a question put to you* is the one copilot
-            // event worth taking the panel for. Everything else — a remark on a
-            // statement, the same advice with a refreshed account under it —
-            // lights the unread dot and waits, which is the rule that stopped a
-            // recap being yanked away mid-read.
-            //
-            // Without this the answer lane was never reached on its own: the
-            // panel opens on "summary" by default, so a question could be asked,
-            // answered, and shown as nothing but a dot next to the capture
-            // glyphs. The answer was one chip-press away and read as absent.
-            if copilot.answering {
-                withAnimation(.easeOut(duration: 0.18)) { surface = "question" }
-                session.clearUnreadAnswer()
-            } else if surface != "question" {
-                session.markUnreadAnswer()
-            }
+            // Never take the panel. A new answer — even one to a question put
+            // to you — lights the unread dot in the band and waits; the reader
+            // switches to Answers when they choose to.
+            if surface != "question" { session.markUnreadAnswer() }
         }
         .onReceive(transcriptTick) { _ in refresh() }
         .onReceive(NotificationCenter.default.publisher(for: .callaCallAskQuestion)) { _ in
@@ -237,11 +131,9 @@ struct CallaCopilotLiveView: View {
             restoreAnswers()
             // `onChange` fires only for changes *after* this view exists, so an
             // answer that landed before the panel was drawn — or before a layout
-            // swap rebuilt it — was never recorded. The lane then had nothing to
-            // show for an answer that plainly existed.
+            // swap rebuilt it — was never recorded.
             _ = captureCurrentAnswer()
         }
-        .animation(.smooth(duration: 0.25), value: session.layout)
         .alert("Answer this", isPresented: $showsManualQuestion) {
             TextField("Selected transcript text", text: $manualQuestion, axis: .vertical)
             Button("Answer") {
@@ -255,168 +147,10 @@ struct CallaCopilotLiveView: View {
         }
     }
 
-    // MARK: - The answer
-
-    /// The one column both layouts keep.
-    ///
-    /// Its rule is that it is never blank. A call panel showing nothing is
-    /// indistinguishable from a broken one, and an earlier version managed exactly
-    /// that — before the first recap was compiled and before anything had been
-    /// asked, the panel showed an empty box for the first minute of every call.
-    ///
-    /// So it falls through, most useful first: the live answer, the recap once
-    /// there is one, and what was just said until then.
-    private var answerColumn: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            // No `Spacer` here any more. Collapsed still stacks upward from the
-            // caption strip — `recapBody` and `answerBody` bottom-align inside
-            // their own frames, which is what actually produces that — but a
-            // spacer *plus* a child asking for infinite height is two greedy
-            // children in one stack, and between them they took the space the
-            // caption strip needed. The strip has priority, so it was never
-            // supposed to lose; what it lost to was the stack being handed less
-            // room than it asked for and resolving the shortfall by overflowing.
-            // No heading here. It is drawn in the notch's header band, beside
-            // the clock — a two-word label was costing a line of a panel whose
-            // whole complaint was that the answer would not fit.
-            Group {
-                switch content {
-                case .answer:
-                    answerBody
-                case .noAnswer:
-                    note(copilot.detectedQuestion != nil && !copilot.confirm.isEmpty
-                            ? "Check detected question"
-                            : (answerIsComing ? "Finding an answer" : "No answer yet"),
-                         detail: answerIsComing
-                            ? "The transcript is still running underneath."
-                            : (copilot.detectedQuestion ?? "One appears here the moment a question worth answering is asked."),
-                         tint: NotchInk.secondary)
-                case .halfDeaf:
-                    note("Only your side is being heard",
-                         detail: "Grant Screen Recording so the other side of the call is transcribed.",
-                         tint: NotchTint.attention)
-                case .recap:
-                    recapBody
-                case .listening:
-                    // No title: the heading above already says LISTENING, and
-                    // "LISTENING / Listening…" spent two lines saying it twice.
-                    Text("What is said appears here, then a running account, then an answer the moment there is a question worth one.")
-                        .font(NotchGlassType.detail)
-                        .foregroundStyle(NotchInk.secondary)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-            }
-
-            // Collapsed keeps the only transcript there is: a caption strip
-            // along the bottom.
-            if session.layout == .compact, !turns.isEmpty {
-                // Never the part that gives way. Everything above it can be
-                // trimmed by a point or a line; the running caption is why the
-                // collapsed panel is on screen at all.
-                captionStream
-                    // Off the floor of the panel. The strip itself is a fixed 21
-                    // (see `captionStream`); this is clearance under it, so the
-                    // last line of the call is not touching the lower curve.
-                    .padding(.bottom, 4)
-                    .layoutPriority(1)
-                    // Its height is 1pt of rule, 5 of spacing and one 15pt line:
-                    // a fixed 21, and nothing above it may borrow from it.
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-        }
-        // Both layouts keep the same margin on both sides. Collapsed used to sit
-        // 5pt from the leading edge against 10 on the trailing one, to buy the
-        // recap lines a little width — five points it never noticeably gained,
-        // paid for by an answer that reads as falling off the left edge of the
-        // panel while the right edge keeps its margin.
-        .padding(.horizontal, 10)
-        // NOTE: the clip is applied *after* the frame below, not here. Clipping
-        // first cuts to the column's own intrinsic bounds — which, when the
-        // content overflows, are larger than the space available, so the clip
-        // does nothing and the overflow is cut by the window instead: through
-        // the middle of the caption line rather than through the oldest recap
-        // line the mask was designed to take.
-        // Top, level with the transcript's heading beside it.
-        //
-        // This was centred for a while, to stop a short answer floating above a
-        // hand's width of empty card. With four recap points that reversed:
-        // "SO FAR" sank a hundred points below "TRANSCRIPT" and the two columns
-        // of one card read as two unrelated things. Two headings that begin at
-        // different heights is the worse fault of the two, and the dead space
-        // under a short answer belongs at the bottom where nothing has to align
-        // with it.
-        //
-        // Collapsed anchors to the *bottom* instead, and that is the whole fix
-        // for content being cut off at the floor of the panel. Top-aligned, an
-        // account longer than the space overflows downward and the clip takes
-        // the caption strip and the newest recap line with it — the two things
-        // the collapsed panel exists to show. Anchored to the bottom, the same
-        // overflow leaves through the top, where the mask already dissolves the
-        // oldest line on purpose.
-        // Both layouts anchor to the bottom. The account grows by appending, so
-        // the newest line is the one worth reading and it belongs nearest the
-        // eye — directly above the caption strip in the collapsed panel, and
-        // level with the newest transcript turn beside it in the expanded one.
-        // Top-aligned, a short account left the lower two thirds of the column
-        // empty and a long one pushed its newest line off the floor.
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomLeading)
-        // Now that the bounds are the real ones, the clip cuts what it was meant
-        // to cut and nothing reaches the window's edge.
-        .clipped()
-    }
-
-    /// The collapsed panel's transcript: subtitles, not a log.
-    ///
-    /// It used to be one line prefixed "THEM, JUST NOW". The label was the
-    /// larger half of a line whose whole job is the words, and who is speaking
-    /// is already legible from the words themselves — so it reads as captions
-    /// do: no speaker, no timestamp, the newest words always in view.
-    ///
-    /// Truncation is from the head for exactly that reason. A live turn grows
-    /// at its end, so tail truncation would pin the panel to the start of a
-    /// sentence and ellipsise the part being said right now.
-    private var captionStream: some View {
-        VStack(alignment: .leading, spacing: 5) {
-            Rectangle()
-                .fill(NotchInk.hairline)
-                .frame(height: 1)
-            Text(captionText)
-                .font(NotchGlassType.detail)
-                .foregroundStyle(NotchInk.secondary)
-                .lineLimit(1)
-                .truncationMode(.head)
-                // One line, filled from the bottom. It was two, and the second
-                // line was the cheapest 15pt in the panel to give back when the
-                // collapsed size came down: head truncation means the newest
-                // words are on screen either way, and what the second line held
-                // was the part already said.
-                .frame(height: 15, alignment: .bottomLeading)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .contentTransition(.opacity)
-                .animation(.easeOut(duration: 0.18), value: captionText)
-                .textSelection(.enabled)
-        }
-    }
-
-    /// The tail of the conversation as one running line. Two turns, because one
-    /// leaves the strip empty every time a speaker changes.
-    private var captionText: String {
-        turns.suffix(2)
-            .map { $0.text.trimmingCharacters(in: .whitespacesAndNewlines) }
-            .filter { !$0.isEmpty }
-            .joined(separator: "  ")
-    }
+    // MARK: - What is shown
 
     private enum Content { case answer, noAnswer, recap, listening, halfDeaf }
 
-    /// What the panel shows. **The reader's choice owns this**, and an arriving
-    /// answer never takes the panel away from them.
-    ///
-    /// This flipped on its own: any answer while `mode == .suggesting` switched
-    /// the panel to it, so a recap being read mid-call was yanked away and
-    /// replaced by "Answer". Both lanes keep working regardless of which one
-    /// is on screen; a new answer while the recap is up lights the unread dot on
-    /// the Answers chip and waits to be asked for.
     /// The engine is working on one right now, so the empty lane says "coming"
     /// rather than "none" — four seconds of "No answer yet" while one is being
     /// written reads as the feature having given up.
@@ -424,371 +158,441 @@ struct CallaCopilotLiveView: View {
         copilot.questionWorking || copilot.working == "answer"
     }
 
+    private var catchingUp: Bool {
+        copilot.summaryWorking || copilot.working == "summary"
+    }
+
+    /// What the panel shows. **The reader's choice owns this**, and an arriving
+    /// answer never takes the panel away from them — a new answer while the
+    /// recap is up lights the unread dot in the band and waits to be asked for.
     private var content: Content {
         if mode == .halfDeaf, answers.isEmpty { return .halfDeaf }
         if surface == "question" {
             if !answers.isEmpty { return .answer }
             if let headline = copilot.headline, !headline.isEmpty { return .answer }
-            // The reader asked for the answer lane and there is nothing in it
-            // yet. This used to fall through to the recap, so pressing Answers
-            // left the same running account on screen — the chip read as broken
-            // when what had actually happened was that no answer existed. The
-            // lane says so itself now, and switches the moment one lands.
+            // A question has been heard and its answer is being written: show
+            // the question now, not the recap, so the wait has a subject.
+            if answerIsComing || copilot.detectedQuestion != nil { return .noAnswer }
+            if !account.isEmpty { return .recap }
             return .noAnswer
         }
-        // The recap lane still falls back: it is the resting surface, and the
-        // account is what there is to read when no question is on the table.
-        if let summary = copilot.summary, !summary.isEmpty { return .recap }
+        if !account.isEmpty { return .recap }
         return .listening
     }
+
+    private var account: CallaCallAccount { CallaCallAccount(copilot.summary) }
 
     private var displayedAnswer: LiveAnswer? {
         guard !answers.isEmpty else { return nil }
         return answers[max(0, answers.count - 1 - min(answerHistoryOffset, answers.count - 1))]
     }
 
-    /// Compact keeps main answer plus first two points. Expanded adds third point,
-    /// warning, citations, latency, and answer-history controls.
-    @ViewBuilder private var answerBody: some View {
-        let latest = displayedAnswer
-        let headline = CallaCopilotPresentation.headlineLine(latest?.headline ?? copilot.headline,
-                                                            limit: session.layout == .compact ? 150 : 110)
-        let angles = CallaCopilotPresentation.angleLines(latest?.angles ?? copilot.angles,
-                                                        limit: session.layout == .compact ? 2 : 3,
-                                                        characters: 78)
-        let question = latest?.question ?? copilot.detectedQuestion
-        let warning = latest?.warning ?? copilot.confirm.first
-        let citations = latest?.citations ?? copilot.citationLabels
-        let latency = latest?.latencyMs ?? copilot.answerLatencyMs
+    @ViewBuilder private var primary: some View {
+        switch content {
+        case .answer: answerBlock
+        case .recap: accountBlock
+        case .noAnswer: pendingBlock
+        case .halfDeaf: halfDeafBlock
+        case .listening: listeningBlock
+        }
+    }
 
-        VStack(alignment: .leading, spacing: session.layout == .compact ? 8 : 11) {
-            if let question, !question.isEmpty {
-                Text(question)
-                    .font(NotchGlassType.caption)
-                    .foregroundStyle(NotchInk.tertiary)
-                    .lineLimit(session.layout == .compact ? 1 : 2)
+    // MARK: - Answer
+
+    /// The question in small type, the line to say set large, then the order to
+    /// say it in. Read in the half-second before speaking, so the line is the
+    /// only thing at full ink.
+    private var answerBlock: some View {
+        let latest = displayedAnswer
+        let question = (latest?.question ?? copilot.detectedQuestion).flatMap { $0.isEmpty ? nil : $0 }
+        let headline = CallaCopilotPresentation.headlineLine(latest?.headline ?? copilot.headline, limit: 200)
+        let beats = CallaCopilotPresentation.angleLines(latest?.angles ?? copilot.angles,
+                                                       limit: 3, characters: 120)
+        let warning = (latest?.warning ?? copilot.confirm.first).flatMap { $0.isEmpty ? nil : $0 }
+
+        return VStack(alignment: .leading, spacing: compact ? 6 : 8) {
+            HStack(spacing: 8) {
+                CallaEyebrow(answerEyebrow, tint: CallaCallInk.answer)
+                Spacer(minLength: 4)
+                if let source = answerSource {
+                    Text(source)
+                        .font(.system(size: 10, design: .monospaced))
+                        .foregroundStyle(NotchInk.tertiary)
+                        .lineLimit(1)
+                        .truncationMode(.middle)
+                        .help(source)
+                }
+                if answers.count > 1 { pager }
             }
-            if let headline {
-                Text(headline)
-                    .font(session.layout == .compact
-                          ? NotchGlassType.answerLarge
-                          : NotchGlassType.answer)
-                    .foregroundStyle(NotchInk.primary)
-                    .lineLimit(4)
-                    // The answer takes the lines it needs and nothing else gives
-                    // way for it. Without these it was the flexible element in a
-                    // column where the caption and the supporting lines had both
-                    // been pinned, so it collapsed to one ellipsised line — the
-                    // sentence you are supposed to say, unreadable.
-                    .fixedSize(horizontal: false, vertical: true)
-                    .layoutPriority(2)
+            .frame(height: 22)
+
+            if let question {
+                Text("“\(question)”")
+                    .font(CallaCallType.question)
+                    .foregroundStyle(.white.opacity(0.62))
+                    .lineLimit(compact ? 1 : 2)
+                    .help(question)
                     .textSelection(.enabled)
             }
-            ForEach(Array(angles.enumerated()), id: \.offset) { _, angle in
-                supportingLine(angle, tint: NotchInk.hairline)
-            }
-            // Kept visually distinct on purpose: this is the part that stops a
-            // confident wrong answer.
-            if session.layout == .full, let warning, !warning.isEmpty {
-                supportingLine(warning, tint: NotchTint.attention.opacity(0.6))
-            }
-            if session.layout == .full, !citations.isEmpty || latency != nil || answers.count > 1 {
-                HStack(spacing: 6) {
-                    ForEach(Array(citations.prefix(3)), id: \.self) { label in
-                        Text(label).lineLimit(1)
+
+            // Scrolls rather than clips: a long answer is read in full, never cut
+            // off at whatever the panel happens to hold.
+            ScrollView(.vertical, showsIndicators: false) {
+                VStack(alignment: .leading, spacing: compact ? 9 : 12) {
+                    if let headline {
+                        Text(headline)
+                            .font(.system(size: compact ? 17 : 19, weight: .semibold))
+                            .tracking(-0.2)
+                            .lineSpacing(1)
+                            .foregroundStyle(.white)
+                            .fixedSize(horizontal: false, vertical: true)
+                            .textSelection(.enabled)
                     }
-                    if let latency { Text("\(latency) ms") }
-                    Spacer(minLength: 0)
-                    if answers.count > 1 {
-                        Button { answerHistoryOffset = min(answerHistoryOffset + 1, answers.count - 1) } label: {
-                            Image(systemName: "chevron.left")
+                    if let warning {
+                        HStack(alignment: .firstTextBaseline, spacing: 7) {
+                            CallaTag(text: "check", tint: CallaCallInk.problem)
+                            Text(warning)
+                                .font(.system(size: 11.5))
+                                .foregroundStyle(NotchInk.secondary)
+                                .fixedSize(horizontal: false, vertical: true)
                         }
-                        .disabled(answerHistoryOffset >= answers.count - 1)
-                        .help(shortcutHelp("Previous answer", .sessionPrevious))
-                        Text("\(answers.count - answerHistoryOffset)/\(answers.count)")
-                        Button { answerHistoryOffset = max(0, answerHistoryOffset - 1) } label: {
-                            Image(systemName: "chevron.right")
+                    }
+                    if !beats.isEmpty {
+                        VStack(alignment: .leading, spacing: 0) {
+                            if compact {
+                                Rectangle().fill(Color.white.opacity(0.08)).frame(height: 1)
+                                    .padding(.bottom, 9)
+                            }
+                            CallaBeats(beats: beats, horizontal: compact)
                         }
-                        .disabled(answerHistoryOffset == 0)
-                        .help(shortcutHelp("Next answer", .sessionNext))
                     }
                 }
-                .font(NotchGlassType.caption)
-                .foregroundStyle(NotchInk.tertiary)
-                .buttonStyle(.plain)
+                .frame(maxWidth: .infinity, alignment: .topLeading)
             }
-            Spacer(minLength: 0)
+            .id(latest?.id)
+            .transition(.opacity.combined(with: .offset(y: -4)))
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
-    /// The running account, when no question is on the table. Only the tail
-    /// fits, and the last line reads loudest: it is what is being discussed now.
-    @ViewBuilder private var recapBody: some View {
-        let account = splitSummary(copilot.summary ?? "")
-        // Collapsed runs as a teleprompter: it takes everything it has and the
-        // column keeps only what fits, so each new point pushes the oldest off
-        // the top rather than the account being capped at two lines nobody can
-        // scroll past. Expanded is a fixed four, because it shares its height
-        // with the transcript column.
-        // Six, not eight. Each point may wrap to two lines, so eight of them can
-        // want more height than the collapsed panel has — and because the list
-        // is anchored to its floor, the overflow lands on the *newest* line,
-        // which is the one line the panel exists to show. It was being sliced
-        // through the middle of its second line.
-        let recent = Array(account.points.suffix(session.layout == .compact ? 6 : 4))
+    private var answerEyebrow: String {
+        guard let answer = displayedAnswer,
+              let turn = turns.last(where: { $0.seq <= answer.id && $0.isRemote }) else { return "They asked" }
+        return "They asked · \(turn.clock)"
+    }
 
-        VStack(alignment: .leading, spacing: session.layout == .compact ? 6 : 8) {
-            ForEach(Array(recent.enumerated()), id: \.offset) { index, point in
-                let isNewest = index == recent.count - 1
-                // The line that just landed is the one worth reading from across
-                // a desk; the ones behind it are context. They used to be four
-                // lines of one size behind four identical dots, which gave the
-                // column no focal point at all — and the dot column spent 12pt
-                // of width saying nothing the ink could not.
-                Text(point)
-                    .font(isNewest
-                          ? .system(size: 13, weight: .medium)
-                          : NotchGlassType.detail)
-                    .foregroundStyle(isNewest ? NotchInk.primary : NotchInk.tertiary)
-                    .lineLimit(2)
-                    .textSelection(.enabled)
-                    // The newest line takes the height it needs and nothing
-                    // gives way for it — it is the reason the panel is on
-                    // screen, and it was the line being cut.
+    /// What the answer stands on, and how long it took.
+    private var answerSource: String? {
+        var parts = Array((displayedAnswer?.citations ?? copilot.citationLabels).prefix(compact ? 1 : 2))
+        if let latency = displayedAnswer?.latencyMs ?? copilot.answerLatencyMs {
+            parts.append(String(format: "%.1fs", Double(latency) / 1000))
+        }
+        return parts.isEmpty ? nil : parts.joined(separator: " · ")
+    }
+
+    /// Older and newer answers. The keys do the same; this is for the pointer.
+    private var pager: some View {
+        HStack(spacing: 5) {
+            pagerButton("chevron.left", label: "Older answer",
+                        enabled: answerHistoryOffset < answers.count - 1) {
+                NotificationCenter.default.post(name: .callaCallPreviousAnswer, object: nil)
+            }
+            Text("\(answers.count - answerHistoryOffset) / \(answers.count)")
+                .font(CallaCallType.figure)
+                .foregroundStyle(NotchInk.secondary)
+                .fixedSize()
+            pagerButton("chevron.right", label: "Newer answer", enabled: answerHistoryOffset > 0) {
+                NotificationCenter.default.post(name: .callaCallNextAnswer, object: nil)
+            }
+        }
+    }
+
+    private func pagerButton(_ symbol: String, label: String, enabled: Bool,
+                             action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Image(systemName: symbol)
+                .font(.system(size: 9, weight: .bold))
+                .frame(width: 22, height: 22)
+                .background(RoundedRectangle(cornerRadius: 6).fill(Color.white.opacity(enabled ? 0.08 : 0.04)))
+                .foregroundStyle(.white.opacity(enabled ? 0.75 : 0.3))
+        }
+        .buttonStyle(.plain)
+        .disabled(!enabled)
+        .accessibilityLabel(label)
+    }
+
+    // MARK: - Account
+
+    /// Where the call stands in one sentence, then what has settled and what is
+    /// still open — the two questions a reader actually has mid-call.
+    private var accountBlock: some View {
+        let account = account
+        let lately = account.trail(compact ? 2 : 3)
+        let open = Array(copilot.openQuestions.prefix(2))
+
+        return VStack(alignment: .leading, spacing: compact ? 8 : 10) {
+            HStack(spacing: 8) {
+                CallaEyebrow(surface == "question" ? "No answer yet · where it stands" : "Where it stands",
+                             tint: CallaCallInk.summary)
+                Spacer(minLength: 4)
+                if catchingUp {
+                    HStack(spacing: 6) {
+                        CallaWaveBars(tint: CallaCallInk.summary)
+                        Text("catching up")
+                            .font(.system(size: 10, design: .monospaced))
+                            .foregroundStyle(NotchInk.tertiary)
+                    }
+                    .transition(.opacity)
+                }
+            }
+            .frame(height: 22)
+
+            if let lead = account.lead {
+                Text(lead)
+                    .font(.system(size: compact ? 15.5 : 17, weight: .medium))
+                    .tracking(-0.15)
+                    .lineSpacing(1.5)
+                    .foregroundStyle(.white.opacity(0.96))
+                    .lineLimit(compact ? 3 : 4)
                     .fixedSize(horizontal: false, vertical: true)
-                    .layoutPriority(isNewest ? 2 : 0)
-                    // Hugging the left edge. This was 10pt on top of the
-                    // column's own 10, so every line began 20pt in and the
-                    // panel wore a margin it had no room for.
-                    .padding(.leading, 7)
-                    .background(alignment: .leading) {
-                        if isNewest {
-                            RoundedRectangle(cornerRadius: 2, style: .continuous)
-                                .fill(Color.effectiveAccent)
-                                .frame(width: 3)
+                    .textSelection(.enabled)
+                    .help(lead)
+                    .id(lead)
+                    .transition(.opacity)
+            }
+
+            if !lately.isEmpty || !open.isEmpty {
+                VStack(alignment: .leading, spacing: 0) {
+                    Rectangle().fill(Color.white.opacity(0.08)).frame(height: 1)
+                        .padding(.bottom, 9)
+                    HStack(alignment: .top, spacing: 16) {
+                        if !lately.isEmpty {
+                            accountColumn("Lately", symbol: "checkmark", tint: CallaCallInk.summary,
+                                          lines: lately, ink: .white.opacity(0.72))
+                        }
+                        if !open.isEmpty {
+                            accountColumn("Still open", symbol: "circle", tint: CallaCallInk.answer,
+                                          lines: open, ink: .white.opacity(0.9))
                         }
                     }
+                }
+            }
+        }
+    }
+
+    private func accountColumn(_ title: String, symbol: String, tint: Color,
+                               lines: [String], ink: Color) -> some View {
+        VStack(alignment: .leading, spacing: 5) {
+            HStack(spacing: 5) {
+                Image(systemName: symbol)
+                    .font(.system(size: 8, weight: .bold))
+                    .foregroundStyle(tint)
+                CallaEyebrow(title, tint: NotchInk.tertiary)
+            }
+            ForEach(Array(lines.enumerated()), id: \.offset) { _, line in
+                Text(line)
+                    .font(.system(size: 11.5))
+                    .foregroundStyle(ink)
+                    .lineLimit(2)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .help(line)
+                    .textSelection(.enabled)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .topLeading)
+    }
+
+    /// Under the answer in full: the account, cut to its one sentence.
+    private func standingStrip(_ lead: String) -> some View {
+        VStack(alignment: .leading, spacing: 3) {
+            CallaEyebrow("Where it stands", tint: CallaCallInk.summary)
+            Text(lead)
+                .font(.system(size: 12))
+                .foregroundStyle(.white.opacity(0.8))
+                .lineLimit(2)
+                .help(lead)
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 9)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(RoundedRectangle(cornerRadius: 11).fill(Color.white.opacity(0.05)))
+    }
+
+    // MARK: - Between answers
+
+    /// A question is in and its answer is being written — or the reader asked
+    /// for answers before there was one.
+    private var pendingBlock: some View {
+        let question = copilot.detectedQuestion.flatMap { $0.isEmpty ? nil : $0 }
+        let uncertain = question != nil && !copilot.confirm.isEmpty
+
+        return VStack(alignment: .leading, spacing: 10) {
+            HStack(spacing: 8) {
+                CallaEyebrow(uncertain ? "Check the question"
+                                : (answerIsComing ? (question == nil ? "Finding an answer" : "Question heard")
+                                                  : "No answer yet"),
+                             tint: uncertain ? CallaCallInk.problem : CallaCallInk.answer)
+                Spacer(minLength: 4)
+                if answerIsComing { CallaWaveBars(tint: CallaCallInk.answer) }
+            }
+            .frame(height: 22)
+
+            if let question {
+                Text("“\(question)”")
+                    .font(.system(size: compact ? 15.5 : 17, weight: .medium))
+                    .foregroundStyle(.white.opacity(0.96))
+                    .lineLimit(3)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .textSelection(.enabled)
+            }
+            if answerIsComing {
+                VStack(alignment: .leading, spacing: 7) {
+                    CallaShimmerLine(widthFraction: 0.92)
+                    CallaShimmerLine(widthFraction: 0.6)
+                }
+                .padding(.top, 2)
+            } else {
+                Text(uncertain
+                     ? "The transcript is uncertain. Edit the question and press Answer."
+                     : "One appears here the moment a question worth answering is asked.")
+                    .font(.system(size: 12.5))
+                    .foregroundStyle(NotchInk.secondary)
                     .fixedSize(horizontal: false, vertical: true)
             }
-            // Only where there is room for it. In compact this was the fourth
-            // band of a panel that has room for three.
-            if session.layout == .full, let first = copilot.openQuestions.first {
-                supportingLine("Still open: \(first)", tint: NotchTint.attention.opacity(0.6))
-            }
-            if session.layout == .full {
-                Spacer(minLength: 0)
-            }
-        }
-        // Collapsed: fill the column and sit on its floor, so the list grows
-        // upward and the oldest line leaves through the top. Aligned any other
-        // way vertically, an account longer than the space overflows downward
-        // and takes the caption strip with it — the clip would cut the newest
-        // line rather than the stalest one.
-        //
-        // `.bottomLeading`, not `.bottom`: `Alignment.bottom` is centre
-        // horizontally, so the whole column was being centred on the panel. The
-        // stack inside is `.leading`, but it hugs its widest line — so with one
-        // short point on screen the block was narrow and sat in the middle,
-        // and the account appeared to drift left and right as lines of
-        // different lengths arrived.
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomLeading)
-        .clipped()
-        .mask(alignment: .bottom) {
-            if session.layout == .compact {
-                // Dissolve at the top rather than slice: a half-line cut by a
-                // hard edge reads as a rendering fault.
-                LinearGradient(colors: [.clear, .black, .black],
-                               startPoint: .top,
-                               endPoint: .init(x: 0.5, y: 0.28))
-            } else {
-                Rectangle()
-            }
         }
     }
 
-    private func supportingLine(_ text: String, tint: Color) -> some View {
-        HStack(alignment: .top, spacing: 9) {
-            Text(text)
-                .font(NotchGlassType.detail)
-                .foregroundStyle(NotchInk.secondary)
-                .lineLimit(2)
-                .textSelection(.enabled)
-        }
-        // The rail is a background rather than a sibling. As a sibling it was a
-        // Shape with a width and no height — vertically flexible — so in a column
-        // with spare height it swallowed the lot and left the two lines floating
-        // 80pt apart with tall bars beside them.
-        .padding(.leading, 12)
-        .background(alignment: .leading) {
-            RoundedRectangle(cornerRadius: 2, style: .continuous)
-                .fill(tint)
-                .frame(width: 3)
-        }
-        .fixedSize(horizontal: false, vertical: true)
-    }
-
-    private func note(_ title: String, detail: String, tint: Color) -> some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text(title)
-                .font(NotchGlassType.title)
-                .foregroundStyle(tint == NotchInk.secondary ? NotchInk.primary : tint)
-            Text(detail)
-                .font(NotchGlassType.detail)
-                .foregroundStyle(NotchInk.secondary)
+    private var listeningBlock: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(spacing: 8) {
+                CallaEyebrow("Listening", tint: CallaCallInk.summary)
+                Spacer(minLength: 4)
+                CallaWaveBars(tint: CallaCallInk.summary, active: copilot.speaking != nil)
+            }
+            .frame(height: 22)
+            Text("What's said becomes a running account here, and an answer appears the moment there's a question worth one.")
+                .font(.system(size: compact ? 15 : 16, weight: .medium))
+                .foregroundStyle(.white.opacity(0.8))
                 .fixedSize(horizontal: false, vertical: true)
         }
     }
 
+    private var halfDeafBlock: some View {
+        HStack(alignment: .top, spacing: 12) {
+            Image(systemName: "speaker.slash.fill")
+                .font(.system(size: 15, weight: .medium))
+                .foregroundStyle(CallaCallInk.problem)
+                .frame(width: 34, height: 34)
+                .background(RoundedRectangle(cornerRadius: 10).fill(CallaCallInk.problem.opacity(0.14)))
+            VStack(alignment: .leading, spacing: 5) {
+                Text("Their side isn't coming through")
+                    .font(.system(size: 14.5, weight: .semibold))
+                    .foregroundStyle(.white)
+                Text("Only your microphone is being captured, so answers will be thin. Grant Screen Recording so the other side is transcribed too.")
+                    .font(.system(size: 12))
+                    .foregroundStyle(NotchInk.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                Button {
+                    if let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenCapture") {
+                        NSWorkspace.shared.open(url)
+                    }
+                } label: {
+                    Text("Open Screen Recording settings")
+                        .font(.system(size: 11.5, weight: .semibold))
+                        .foregroundStyle(.black)
+                        .padding(.horizontal, 11)
+                        .padding(.vertical, 5)
+                        .background(RoundedRectangle(cornerRadius: 8).fill(Color.white.opacity(0.95)))
+                }
+                .buttonStyle(.plain)
+                .padding(.top, 3)
+            }
+        }
+        .padding(.top, 6)
+    }
+
     // MARK: - Transcript
 
-    /// Three turns. Newest at full ink, the two before it at tertiary, and the
-    /// speaker named in caps rather than implied by which side the bubble sits
-    /// on — the old alignment split cost 32pt of an already narrow column.
+    /// Whole turns, newest at the floor and dissolved at the top so the oldest
+    /// is what leaves. The turn that was answered is marked, so the reader can
+    /// see what the answer beside it is answering.
     private var transcriptColumn: some View {
-        VStack(alignment: .leading, spacing: NotchGlassSpace.snug) {
-            HStack(spacing: NotchGlassSpace.tight) {
-                NotchCaps("Transcript")
-                Rectangle().fill(NotchInk.hairline).frame(height: 1)
+        VStack(alignment: .leading, spacing: 10) {
+            HStack {
+                CallaEyebrow("Transcript", tint: NotchInk.tertiary)
+                Spacer(minLength: 4)
+                Text(copilot.systemAudioActive ? "Both sides" : "Only you")
+                    .font(.system(size: 10.5))
+                    .foregroundStyle(copilot.systemAudioActive ? NotchInk.tertiary : CallaCallInk.problem)
             }
+            .frame(height: 22)
 
             if turns.isEmpty {
                 Text(copilot.systemAudioActive
                      ? "Turns appear here as they are transcribed on this Mac."
                      : "Grant Screen Recording so the other side is transcribed too.")
-                    .font(NotchGlassType.detail)
+                    .font(.system(size: 11.5))
                     .foregroundStyle(NotchInk.tertiary)
                     .fixedSize(horizontal: false, vertical: true)
                 Spacer(minLength: 0)
             } else {
-                Spacer(minLength: 0)
-                // Whole turns only. This used to be a scroll view over every turn
-                // of the call, masked at the top — which meant the oldest line on
-                // screen was always sliced through the middle of a sentence.
-                // Four, because the column has the height for four and leaving it
-                // short is the same waste as the answer stranded at the top.
-                // The speaker is named only where it changes. Four consecutive
-                // turns from the same person carried four identical THEM
-                // labels, and the label was the loudest thing in the column.
-                // Four, not five. Turns are no longer capped at three lines, so
-                // a long one takes the room it needs; asking for five whole
-                // turns is asking for more height than the column has.
-                let shown = Array(turns.suffix(4))
+                let shown = Array(turns.suffix(6))
                 VStack(alignment: .leading, spacing: 9) {
-                    ForEach(Array(shown.enumerated()), id: \.element.seq) { index, turn in
-                        turnRow(turn,
-                                isNewest: turn.seq == shown.last?.seq,
-                                showsSpeaker: index == 0
-                                    || shown[index - 1].isRemote != turn.isRemote)
+                    ForEach(shown, id: \.seq) { turn in
+                        turnRow(turn, isNewest: turn.seq == shown.last?.seq,
+                                isQuestion: turn.seq == questionTurnSeq)
                     }
                 }
                 .animation(.easeOut(duration: 0.2), value: turns.last?.seq)
-                // Anchored to the floor and dissolved at the top, the way the
-                // recap column is. When whole turns do not fit, the oldest is
-                // what should go — cutting the newest would hide the words
-                // being said right now.
-                // Bounded, then anchored to its floor and dissolved at the
-                // top, the way the recap column is. When whole turns do not
-                // fit, the oldest is what should go — cutting the newest would
-                // hide the words being said right now.
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomLeading)
+                .clipped()
                 .mask(alignment: .bottom) {
                     LinearGradient(colors: [.clear, .black, .black],
-                                   startPoint: .top,
-                                   endPoint: .init(x: 0.5, y: 0.22))
+                                   startPoint: .top, endPoint: .init(x: 0.5, y: 0.25))
                 }
             }
         }
-        .padding(.horizontal, 10)
-        .clipped()
-        // The heading stays at the top; the turns below it are bottom-anchored
-        // by their own frame, so new turns arrive at the floor and the oldest
-        // leave through the dissolve above them.
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
     }
 
-    private func turnRow(_ turn: CallaCallTurn, isNewest: Bool, showsSpeaker: Bool) -> some View {
-        VStack(alignment: .leading, spacing: 2) {
-            if showsSpeaker || isNewest {
-                NotchCaps(isNewest ? (turn.isRemote ? "Them · now" : "You · now")
-                                   : (turn.isRemote ? "Them" : "You"),
-                          tint: isNewest ? Color.effectiveAccent : NotchInk.tertiary)
+    /// The last thing they said before the displayed answer was written.
+    private var questionTurnSeq: Int? {
+        guard content == .answer, let answer = displayedAnswer else { return nil }
+        return turns.last(where: { $0.seq <= answer.id && $0.isRemote })?.seq
+    }
+
+    private func turnRow(_ turn: CallaCallTurn, isNewest: Bool, isQuestion: Bool) -> some View {
+        HStack(alignment: .firstTextBaseline, spacing: 8) {
+            Text(turn.clock)
+                .font(.system(size: 9.5, design: .monospaced).monospacedDigit())
+                .foregroundStyle(NotchInk.tertiary)
+                .frame(width: 34, alignment: .leading)
+            VStack(alignment: .leading, spacing: 2) {
+                HStack(spacing: 5) {
+                    Text(turn.speakerLabel)
+                        .font(.system(size: 10.5, weight: .semibold))
+                        .foregroundStyle(turn.isRemote ? CallaCallInk.summary : NotchInk.tertiary)
+                    if isQuestion {
+                        CallaEyebrow("question", tint: CallaCallInk.answer)
+                    }
+                }
+                Text(turn.text)
+                    .font(.system(size: 11.5))
+                    .foregroundStyle(.white.opacity(isNewest || isQuestion ? 0.9 : 0.6))
+                    .textSelection(.enabled)
+                    .fixedSize(horizontal: false, vertical: true)
             }
-            Text(turn.text)
-                .font(NotchGlassType.detail)
-                // Explicit whites rather than .primary/.secondary: the panel is
-                // translucent, so semantic colours land on whatever happens to
-                // be behind it.
-                .foregroundStyle(isNewest ? NotchInk.primary : NotchInk.tertiary)
-                .textSelection(.enabled)
-                // Whole turns. Three lines cut the long ones, and a transcript
-                // that ends a sentence in an ellipsis is not a transcript — it
-                // is the part of the call you cannot check. The column shows
-                // fewer turns when they are long, which is the right trade.
-                .fixedSize(horizontal: false, vertical: true)
         }
-        // Your own turns sit in from the edge. Two speakers on one column need
-        // to be told apart at a glance, and an indent does it without spending
-        // a word on every line.
-        .padding(.leading, turn.isRemote ? 0 : 14)
+        .padding(isQuestion ? 7 : 0)
+        .background {
+            if isQuestion {
+                RoundedRectangle(cornerRadius: 9).fill(CallaCallInk.answer.opacity(0.10))
+            }
+        }
+        .padding(.horizontal, isQuestion ? -7 : 0)
         .frame(maxWidth: .infinity, alignment: .leading)
         .transition(.opacity.combined(with: .offset(y: 6)))
     }
 
-    // MARK: - Footer
-
-    /// The same four controls in both layouts, in the same order. Only the
-    /// transcript verb flips — a control that moves between layouts has to be
-    /// found again every time the panel changes size.
-    private var footer: some View {
-        HStack(spacing: 9) {
-            NotchChip(action: { beginManualQuestion() }) {
-                Image(systemName: "mic.fill").font(NotchGlassType.glyph)
-                Text("Ask")
-                shortcutLabel(.sessionAsk)
-            }
-
-            NotchChip(action: { toggleSurface() }) {
-                Image(systemName: surface == "question" ? "bubble.left.fill" : "text.alignleft")
-                    .font(NotchGlassType.glyph)
-                Text(surface == "question" ? "Answers" : "Recap")
-                shortcutLabel(.sessionSurface)
-                if session.unreadAnswer, surface != "question" {
-                    Circle().fill(Color.effectiveAccent).frame(width: 5, height: 5)
-                }
-            }
-
-            NotchChip(action: { session.toggleLayout() }) {
-                Image(systemName: session.layout == .full ? "list.bullet.indent" : "list.bullet")
-                    .font(NotchGlassType.glyph)
-                Text(session.layout == .full ? "Hide transcript" : "Show transcript")
-            }
-
-            Spacer(minLength: 0)
-
-            NotchChip(tint: NotchTint.stuck, action: { engine.endCall() }) {
-                Text("End call")
-                shortcutLabel(.copilotToggleCall)
-            }
-            .fixedSize()
-        }
-        .frame(height: NotchGlassSpace.control)
-        .frame(maxWidth: .infinity)
-    }
-
-    @ViewBuilder
-    private func shortcutLabel(_ name: KeyboardShortcuts.Name) -> some View {
-        if let shortcut = KeyboardShortcuts.getShortcut(for: name) {
-            Text(shortcut.description)
-                    .font(NotchGlassType.minorFigure)
-                    .foregroundStyle(NotchInk.tertiary)
-        }
-    }
-
-    private func shortcutHelp(_ label: String, _ name: KeyboardShortcuts.Name) -> String {
-        guard let shortcut = KeyboardShortcuts.getShortcut(for: name) else { return label }
-        return "\(label) — \(shortcut.description)"
-    }
+    // MARK: - Actions
 
     private func beginManualQuestion() {
         guard copilot.running else { return }
@@ -802,82 +606,7 @@ struct CallaCopilotLiveView: View {
         if surface == "question" { session.clearUnreadAnswer() }
     }
 
-    // MARK: - Activity
-
-    private enum Activity {
-        case them, you, answering, summarising, idle
-
-        var label: String {
-            switch self {
-            case .them: "Them speaking"
-            case .you: "You speaking"
-            case .answering: "Finding an answer"
-            // Named differently because it takes longer: four seconds labelled
-            // "finding an answer" reads as a stall; the same wait labelled
-            // "catching up" reads as work.
-            case .summarising: "Catching up"
-            case .idle: "Listening"
-            }
-        }
-
-        var symbol: String {
-            switch self {
-            case .them: "waveform"
-            case .you: "mic.fill"
-            case .answering: "sparkles"
-            case .summarising: "text.append"
-            case .idle: "ear"
-            }
-        }
-
-        /// Only the working states animate. A panel where everything moves tells
-        /// you nothing about which thing is moving.
-        var animates: Bool { self == .answering || self == .summarising }
-    }
-
-    private var activity: Activity {
-        if surface == "question", copilot.questionWorking { return .answering }
-        if surface == "summary", copilot.summaryWorking { return .summarising }
-        // Older hosts expose the single legacy status only.
-        switch copilot.working {
-        case "answer" where surface == "question": return .answering
-        case "summary" where surface == "summary": return .summarising
-        default: break
-        }
-        switch copilot.speaking {
-        case "them": return .them
-        case "me": return .you
-        default: return .idle
-        }
-    }
-
     // MARK: - Data
-
-    /// One point per line, as the recap writes them.
-    ///
-    /// Strips any bullet character a model added despite being asked not to,
-    /// because the alternative is a stray "-" sitting in the panel.
-    private func summaryPoints(_ summary: String) -> [String] {
-        summary
-            .split(separator: "\n", omittingEmptySubsequences: true)
-            .map { $0.trimmingCharacters(in: CharacterSet(charactersIn: " \t-•*·")) }
-            .filter { !$0.isEmpty }
-    }
-
-    /// The account arrives as one string: the standing paragraph, a blank line,
-    /// then the points. One field rather than two because the gateway writes this
-    /// same frame and knows nothing about a fold — with no blank line, everything
-    /// is points, which is exactly what it used to be.
-    private func splitSummary(_ summary: String) -> (standing: String, points: [String]) {
-        guard let gap = summary.range(of: "\n\n") else {
-            return ("", summaryPoints(summary))
-        }
-        return (
-            String(summary[summary.startIndex ..< gap.lowerBound])
-                .trimmingCharacters(in: .whitespacesAndNewlines),
-            summaryPoints(String(summary[gap.upperBound...]))
-        )
-    }
 
     /// Records the engine's current suggestion, if it is one we have not kept.
     /// Returns whether anything was added.
@@ -910,6 +639,8 @@ struct CallaCopilotLiveView: View {
                 // filtering on it is enough to stay ordered and duplicate-free.
                 let known = Set(turns.map(\.seq))
                 turns.append(contentsOf: fresh.filter { !known.contains($0.seq) })
+                // Only the tail is drawn; a long call would otherwise hold every turn.
+                if turns.count > 200 { turns.removeFirst(turns.count - 200) }
             }
         }
     }
@@ -997,6 +728,33 @@ struct CallaCopilotLiveHeader: View {
 
     @Default(.callaCopilotPanelSurface) private var surface
 
+    /// What the screenshot button last did, said in the heading's place for a
+    /// moment so a press never goes unanswered.
+    @State private var shotNote: (text: String, failed: Bool)?
+    @State private var shotNoteTask: Task<Void, Never>?
+    @State private var shutter = false
+    /// The control under the pointer, named in the band.
+    @State private var hint: NotchHint?
+
+    private func noteShot(_ text: String, failed: Bool = false, for seconds: Double) {
+        withAnimation(.smooth(duration: 0.2)) { shotNote = (text, failed) }
+        shotNoteTask?.cancel()
+        shotNoteTask = Task { @MainActor in
+            try? await Task.sleep(for: .seconds(seconds))
+            guard !Task.isCancelled else { return }
+            withAnimation(.smooth(duration: 0.3)) { shotNote = nil }
+        }
+    }
+
+    private func takeScreenshot() {
+        engine.takeScreenshot()
+        // The shutter: a quick blink of the glyph, then the note.
+        withAnimation(.easeOut(duration: 0.08)) { shutter = true }
+        withAnimation(.easeIn(duration: 0.3).delay(0.12)) { shutter = false }
+        NSHapticFeedbackManager.defaultPerformer.perform(.generic, performanceTime: .now)
+        noteShot("Taking screenshot…", for: 20)
+    }
+
     private var mode: CallaCopilotPresentation.Mode {
         CallaCopilotPresentation.mode(
             available: copilot.available,
@@ -1026,161 +784,288 @@ struct CallaCopilotLiveHeader: View {
     }
 
     private var headingTint: Color {
-        if workingLabel != nil { return .effectiveAccent }
-        if mode == .halfDeaf { return NotchTint.attention }
+        if copilot.questionWorking || copilot.working == "answer" { return CallaCallInk.answer }
+        if workingLabel != nil { return CallaCallInk.summary }
+        if mode == .halfDeaf { return CallaCallInk.problem }
         return NotchInk.primary
     }
 
     var body: some View {
-        HStack(spacing: 0) {
-            // Every label here is `fixedSize`, because the row it sits in is
-            // split into two halves around a rigid camera housing and each half
-            // is narrower than it looks. Without it SwiftUI meets the shortfall
-            // by wrapping the text — "Hearing both sides" breaks mid-word, and a
-            // clock reading "0:" over "…" is worse than no clock at all.
+        // Each half is exactly its share of the band. The halves used to size to
+        // their labels, and a longer one — "Taking screenshot…" — pushed the band
+        // past the panel, and the black slab grew with it. Now a label that does
+        // not fit gives way inside its half and the notch keeps its width.
+        GeometryReader { proxy in
+            let half = max(0, (proxy.size.width - vm.closedNotchSize.width) / 2)
+            HStack(spacing: 0) {
+                leading
+                    .frame(width: half, height: proxy.size.height, alignment: .leading)
+                    .clipped()
+                // The camera housing. Nothing may be drawn here.
+                Color.clear.frame(width: vm.closedNotchSize.width)
+                trailing
+                    .frame(width: half, height: proxy.size.height, alignment: .trailing)
+                    // A hovered control names itself in the band, on the left,
+                    // instead of in a bubble that has nowhere good to go: over
+                    // the glyphs, or down across the answer being read.
+                    .environment(\.notchHintSink) { next in
+                        withAnimation(.easeOut(duration: 0.12)) { hint = next }
+                    }
+            }
+        }
+        .padding(.horizontal, 14)
+        .onReceive(clockTick) { now = $0 }
+        .onChange(of: copilot.screenshotCount) { old, new in
+            guard new > old else { return }
+            noteShot(new == 1 ? "Screenshot added" : "Screenshot added · \(new)", for: 2.2)
+        }
+        .onChange(of: copilot.lastResult) { _, result in
+            guard let result, shotNote != nil,
+                  result.localizedCaseInsensitiveContains("screenshot"),
+                  !result.localizedCaseInsensitiveContains("added"),
+                  !result.localizedCaseInsensitiveContains("taking") else { return }
+            noteShot(result.count > 60 ? "Screenshot failed" : result, failed: true, for: 4)
+        }
+    }
+
+    /// The pulse, the Summary | Answers switch, and the clock — or, while a
+    /// control on the right is hovered, that control's name and key. The pills
+    /// are the first to go when the half is short; the clock is the last.
+    @ViewBuilder private var leading: some View {
+        if let hint {
+            hintRow(hint)
+                .transition(.opacity)
+        } else if let shotNote {
             HStack(spacing: NotchGlassSpace.tight) {
                 LivePulse(active: copilot.running && copilot.systemAudioActive)
-                // What the panel below is showing — "Answer", "So far" — where
-                // the state pill used to be. The pulse already carries whether
-                // both sides are heard, which is what the pill was mostly for,
-                // and the panel gets its line back.
+                Label(shotNote.text, systemImage: shotNote.failed ? "exclamationmark.triangle.fill" : "camera.fill")
+                    .font(NotchGlassType.bandLabel)
+                    .foregroundStyle(shotNote.failed ? CallaCallInk.problem : CallaCallInk.summary)
+                    .lineLimit(1)
+                    .truncationMode(.tail)
+            }
+            .transition(.opacity)
+        } else {
+            ViewThatFits(in: .horizontal) {
+                leadingRow(badge: true, persona: session.layout == .full)
+                leadingRow(badge: true, persona: false)
+                leadingRow(badge: false, persona: false)
+            }
+            .transition(.opacity)
+        }
+    }
+
+    private func hintRow(_ hint: NotchHint) -> some View {
+        HStack(spacing: 7) {
+            if let symbol = hint.symbol {
+                Image(systemName: symbol)
+                    .font(.system(size: 10.5, weight: .semibold))
+                    .foregroundStyle(.white.opacity(0.9))
+            }
+            Text(hint.text)
+                .font(NotchGlassType.bandLabel)
+                .foregroundStyle(.white.opacity(0.92))
+                .lineLimit(1)
+                .truncationMode(.tail)
+            if let shortcut = hint.shortcut {
+                Text(shortcut)
+                    .font(.system(size: 10, weight: .medium, design: .monospaced))
+                    .foregroundStyle(.white.opacity(0.7))
+                    .padding(.horizontal, 5)
+                    .padding(.vertical, 1)
+                    .overlay(RoundedRectangle(cornerRadius: 4).strokeBorder(Color.white.opacity(0.2), lineWidth: 1))
+                    .fixedSize()
+            }
+        }
+    }
+
+    private func leadingRow(badge: Bool, persona: Bool) -> some View {
+        HStack(spacing: NotchGlassSpace.tight) {
+            LivePulse(active: copilot.running && copilot.systemAudioActive)
+            if session.isCoding {
                 Text(heading)
                     .font(NotchGlassType.bandLabel)
                     .foregroundStyle(headingTint)
                     .lineLimit(1)
+                    .truncationMode(.tail)
+            } else {
+                surfaceSwitch
+            }
+            if let elapsed = CallaCopilotPresentation.elapsed(since: copilot.startedAt, now: now) {
+                Text(elapsed)
+                    .font(NotchGlassType.inlineFigure)
+                    .foregroundStyle(NotchInk.secondary)
+                    .lineLimit(1)
                     .fixedSize()
-                if let elapsed = CallaCopilotPresentation.elapsed(since: copilot.startedAt, now: now) {
-                    Text(elapsed)
-                        .font(NotchGlassType.inlineFigure)
-                        .foregroundStyle(NotchInk.secondary)
-                        .lineLimit(1)
-                        .fixedSize()
-                }
-                // Shown only when the brain answering is not the one chosen in
-                // Settings — an automatic handover to the gateway is otherwise
-                // indistinguishable from a copilot that has quietly gone vague.
-                if let badge = CallaCopilotPresentation.providerBadge(
-                    active: copilot.activeProvider,
-                    preferred: preferredProvider,
-                    running: copilot.running
-                ) {
-                    CallaPill(text: badge.text, tint: tint(for: badge.tone))
-                }
-                // The persona is set before the call and does not change during
-                // it, so it is the first thing to go when the row is halved.
-                if session.layout == .full {
-                    CallaPill(text: CallaCopilotPersona.title(copilot.persona), tint: NotchInk.tertiary)
-                }
-                Spacer(minLength: 0)
+                    .layoutPriority(2)
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
-
-            // The camera housing. Nothing may be drawn here.
-            Color.clear.frame(width: vm.closedNotchSize.width)
-
-            HStack(spacing: NotchGlassSpace.tight) {
-                Spacer(minLength: 0)
-                // Two facts worth one glyph each: is it hearing both sides, and
-                // is it out of the screen share.
-                // An answer landed while something else is on screen. A dot
-                // beside the capture glyphs, because the alternative — swapping
-                // the panel to it — is the thing that made a live call feel like
-                // it was being taken out of your hands mid-sentence.
-                if session.unreadAnswer {
-                    Circle()
-                        .fill(Color.effectiveAccent)
-                        .frame(width: 6, height: 6)
-                        .transition(.scale.combined(with: .opacity))
-                        .help("An answer is waiting")
-                }
-                Image(systemName: copilot.micActive ? "mic.fill" : "mic.slash.fill")
-                    .font(NotchGlassType.glyphSmall)
-                    .foregroundStyle(copilot.micActive ? NotchInk.secondary : NotchTint.attention)
-                    .help(copilot.micActive ? "Your microphone is being captured" : "Your microphone is not being captured")
-                // Reports the setting rather than asserting a guarantee. The
-                // panel is hidden from captures when "Hide from screen
-                // recording" is on and visible when it is off, call or no call,
-                // and a crossed-out eye that means neither is the one glyph
-                // here that could cost someone the thing this feature exists to
-                // protect.
-                Image(systemName: hiddenFromCapture ? "eye.slash.fill" : "eye.fill")
-                    .font(NotchGlassType.glyphSmall)
-                    .foregroundStyle(hiddenFromCapture ? NotchInk.secondary : NotchTint.attention)
-                    .help(hiddenFromCapture
-                          ? "Hidden from screen recordings and shares"
-                          : "Visible in screen recordings and shares — turn on Hide from screen recording in Settings")
-
-                if session.layout == .full,
-                   let shortcut = KeyboardShortcuts.getShortcut(for: .copilotToggleLayout) {
-                    Text(shortcut.description)
-                        .font(NotchGlassType.minorFigure)
-                        .foregroundStyle(NotchInk.tertiary)
-                        .lineLimit(1)
-                        .fixedSize()
-                        .padding(.horizontal, 5)
-                        .padding(.vertical, 2)
-                        .background(NotchPlane.chip,
-                                    in: RoundedRectangle(cornerRadius: 5, style: .continuous))
-                }
-
-                // A coding interview's two session-level controls. They were
-                // 30pt chips inside the panel, which is the surface the step is
-                // supposed to have; up here they cost nothing the step was
-                // using. Everything else the panel offered has a key, and the
-                // hint row under the step names them.
-                if session.isCoding {
-                    Button {
-                        NotificationCenter.default.post(name: .callaCodingAction, object: "hold")
-                    } label: {
-                        Image(systemName: session.codingHeld ? "play.fill" : "pause.fill")
-                            .font(NotchGlassType.glyphSmall)
-                    }
-                    .buttonStyle(.plain)
-                    .foregroundStyle(session.codingHeld ? Color.effectiveAccent : NotchInk.secondary)
-                    .help(session.codingHeld
-                          ? "Resume — the panel follows the interview again"
-                          : "Hold this step on screen; listening continues")
-                    .accessibilityLabel(session.codingHeld ? "Resume presentation" : "Hold presentation")
-
-                    Button {
-                        NotificationCenter.default.post(name: .callaCodingAction, object: "end")
-                    } label: {
-                        Image(systemName: "stop.fill")
-                            .font(NotchGlassType.glyphSmall)
-                    }
-                    .buttonStyle(.plain)
-                    .foregroundStyle(NotchTint.stuck)
-                    .help("End the interview")
-                    .accessibilityLabel("End the interview")
-                }
-
-                // Collapse to the answer alone and back. The transcript is the
-                // part worth surrendering first: it is the half you can
-                // reconstruct by listening, where the answer is not.
-                Button { session.toggleLayout() } label: {
-                    Image(systemName: session.layout == .full
-                          ? "arrow.down.right.and.arrow.up.left"
-                          : "arrow.up.left.and.arrow.down.right")
-                        .font(NotchGlassType.glyphSmall)
-                }
-                .buttonStyle(.plain)
-                .foregroundStyle(NotchInk.secondary)
-                .help(session.layout == .full ? "Collapse to the answer" : "Show the transcript again")
-
-                // Pin belongs to the notch, while Call contributes a temporary
-                // automatic hold. The same action is available system-wide.
-                Button { AppDelegate.shared?.toggleUniversalNotchPin(for: vm) } label: {
-                    Image(systemName: (vm.isPinned || session.pinsNotchOpen) ? "pin.fill" : "pin")
-                        .font(NotchGlassType.glyphSmall)
-                }
-                .buttonStyle(.plain)
-                .foregroundStyle(NotchInk.secondary)
-                .help((vm.isPinned || session.pinsNotchOpen) ? "Unpin notch" : "Pin notch open")
+            // Shown only when the brain answering is not the one chosen in
+            // Settings — an automatic handover to the gateway is otherwise
+            // indistinguishable from a copilot that has quietly gone vague.
+            if badge, let pill = CallaCopilotPresentation.providerBadge(
+                active: copilot.activeProvider,
+                preferred: preferredProvider,
+                running: copilot.running
+            ) {
+                CallaPill(text: pill.text, tint: tint(for: pill.tone))
             }
-            .frame(maxWidth: .infinity, alignment: .trailing)
+            if persona {
+                CallaPill(text: CallaCopilotPersona.title(copilot.persona), tint: NotchInk.tertiary)
+            }
         }
-        .padding(.horizontal, 14)
-        .onReceive(clockTick) { now = $0 }
+        .fixedSize(horizontal: false, vertical: true)
+    }
+
+    /// What the panel shows, as two labelled segments rather than one glyph
+    /// whose picture had to be decoded. Each segment carries its own colour and
+    /// its own working state; Answers carries the unread dot.
+    private var surfaceSwitch: some View {
+        let answering = copilot.questionWorking || copilot.working == "answer"
+        let catchingUp = copilot.summaryWorking || copilot.working == "summary"
+        return HStack(spacing: 1) {
+            surfaceSegment("Summary", value: "summary", tint: CallaCallInk.summary,
+                           working: catchingUp, dot: false)
+            surfaceSegment("Answers", value: "question", tint: CallaCallInk.answer,
+                           working: answering, dot: session.unreadAnswer)
+        }
+        .padding(2)
+        .background(Capsule().fill(Color.white.opacity(0.07)))
+        .fixedSize()
+        .help(shortcutHelp("Switch between the summary and answers", .sessionSurface))
+    }
+
+    private func surfaceSegment(_ title: String, value: String, tint: Color,
+                                working: Bool, dot: Bool) -> some View {
+        let selected = surface == value
+        return Button {
+            guard surface != value else { return }
+            NotificationCenter.default.post(name: .callaCallToggleSurface, object: nil)
+        } label: {
+            HStack(spacing: 4) {
+                if working {
+                    CallaWaveBars(tint: selected ? .black : tint)
+                        .scaleEffect(0.75)
+                        .frame(width: 10)
+                }
+                Text(title)
+                    .font(.system(size: 10.5, weight: selected ? .semibold : .medium))
+                if dot && !selected {
+                    Circle().fill(tint).frame(width: 5, height: 5)
+                }
+            }
+            .foregroundStyle(selected ? Color.black : Color.white.opacity(0.7))
+            .padding(.horizontal, 8)
+            .padding(.vertical, 2.5)
+            .background(Capsule().fill(selected ? tint : Color.clear))
+            .contentShape(Capsule())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(title)
+        .accessibilityAddTraits(selected ? .isSelected : [])
+        .animation(.smooth(duration: 0.2), value: selected)
+    }
+
+    private var trailing: some View {
+        HStack(spacing: NotchGlassSpace.tight) {
+            Image(systemName: copilot.micActive ? "mic.fill" : "mic.slash.fill")
+                .font(NotchGlassType.glyphSmall)
+                .foregroundStyle(copilot.micActive ? NotchInk.secondary : NotchTint.attention)
+                .padding(2)
+                .contentShape(Rectangle())
+                .notchTooltip(copilot.micActive ? "Your microphone is being captured"
+                                                : "Your microphone is not being captured",
+                              symbol: copilot.micActive ? "mic.fill" : "mic.slash.fill")
+            // Reports the setting rather than asserting a guarantee: hidden from
+            // captures when "Hide from screen recording" is on, visible when off.
+            Image(systemName: hiddenFromCapture ? "eye.slash.fill" : "eye.fill")
+                .font(NotchGlassType.glyphSmall)
+                .foregroundStyle(hiddenFromCapture ? NotchInk.secondary : NotchTint.attention)
+                .padding(2)
+                .contentShape(Rectangle())
+                .notchTooltip(hiddenFromCapture ? "Hidden from screen shares"
+                                                : "Visible in screen shares — turn on Hide in Settings",
+                              symbol: hiddenFromCapture ? "eye.slash.fill" : "eye.fill")
+
+            if session.isCoding {
+                NotchGlyphButton(symbol: session.codingHeld ? "play.fill" : "pause.fill",
+                                 tint: session.codingHeld ? Color.effectiveAccent : NotchInk.tertiary) {
+                    NotificationCenter.default.post(name: .callaCodingAction, object: "hold")
+                }
+                .notchTooltip(session.codingHeld ? "Resume following the interview" : "Hold this step on screen",
+                              symbol: session.codingHeld ? "play.fill" : "pause.fill")
+                .accessibilityLabel(session.codingHeld ? "Resume presentation" : "Hold presentation")
+            } else {
+                NotchGlyphButton(symbol: "questionmark.bubble") {
+                    NotificationCenter.default.post(name: .callaCallAskQuestion, object: nil)
+                }
+                .notchTooltip("Ask about what was just said", symbol: "questionmark.bubble",
+                              shortcut: shortcutKeys(.sessionAsk))
+                .accessibilityLabel("Ask about what was just said")
+
+                // What is being shared becomes context: the words on it go to
+                // the copilot, and the picture is filed with the call.
+                NotchGlyphButton(symbol: "camera",
+                                 tint: shotNote == nil ? NotchInk.tertiary : CallaCallInk.summary) {
+                    takeScreenshot()
+                }
+                .scaleEffect(shutter ? 0.78 : 1)
+                .opacity(shutter ? 0.4 : 1)
+                .overlay(alignment: .topTrailing) {
+                    if copilot.screenshotCount > 0 {
+                        CallaSuperscript(count: copilot.screenshotCount)
+                            .offset(x: 4, y: -1)
+                            .transition(.scale.combined(with: .opacity))
+                    }
+                }
+                .animation(.spring(response: 0.3, dampingFraction: 0.7), value: copilot.screenshotCount)
+                .notchTooltip(copilot.screenshotCount > 0
+                              ? "Screenshot the shared screen · \(copilot.screenshotCount) so far"
+                              : "Screenshot the shared screen",
+                              symbol: "camera")
+                .accessibilityLabel("Take a screenshot for context")
+            }
+
+            // Collapse to the answer alone and back.
+            NotchGlyphButton(symbol: session.layout == .full
+                                ? "arrow.down.right.and.arrow.up.left"
+                                : "arrow.up.left.and.arrow.down.right") {
+                session.toggleLayout()
+            }
+            .notchTooltip(session.layout == .full ? "Compact" : "Full, with the transcript",
+                          symbol: session.layout == .full ? "arrow.down.right.and.arrow.up.left"
+                                                          : "arrow.up.left.and.arrow.down.right",
+                          shortcut: shortcutKeys(.copilotToggleLayout))
+            .accessibilityLabel(session.layout == .full ? "Compact layout" : "Full layout")
+
+            // Pin belongs to the notch, while Call contributes a temporary
+            // automatic hold. The same action is available system-wide.
+            NotchGlyphButton(symbol: (vm.isPinned || session.pinsNotchOpen) ? "pin.fill" : "pin") {
+                AppDelegate.shared?.toggleUniversalNotchPin(for: vm)
+            }
+            .notchTooltip((vm.isPinned || session.pinsNotchOpen) ? "Unpin the notch" : "Pin the notch open",
+                          symbol: (vm.isPinned || session.pinsNotchOpen) ? "pin.fill" : "pin")
+            .accessibilityLabel((vm.isPinned || session.pinsNotchOpen) ? "Unpin notch" : "Pin notch open")
+
+            NotchGlyphButton(symbol: "stop.fill", tint: NotchTint.stuck) {
+                if session.isCoding {
+                    NotificationCenter.default.post(name: .callaCodingAction, object: "end")
+                } else {
+                    engine.endCall()
+                }
+            }
+            .notchTooltip(session.isCoding ? "End the interview" : "End the call", symbol: "stop.fill",
+                          shortcut: shortcutKeys(.copilotToggleCall))
+            .accessibilityLabel(session.isCoding ? "End the interview" : "End call")
+        }
+    }
+
+    private func shortcutKeys(_ name: KeyboardShortcuts.Name) -> String? {
+        KeyboardShortcuts.getShortcut(for: name)?.description
+    }
+
+    private func shortcutHelp(_ label: String, _ name: KeyboardShortcuts.Name) -> String {
+        guard let shortcut = KeyboardShortcuts.getShortcut(for: name) else { return label }
+        return "\(label) — \(shortcut.description)"
     }
 
     private func tint(for tone: CallaCopilotPresentation.Tone) -> Color {
@@ -1189,5 +1074,544 @@ struct CallaCopilotLiveHeader: View {
         case .ready: return .effectiveAccent
         case .warning: return NotchTint.attention
         }
+    }
+}
+
+// MARK: - Ambient (zen)
+
+/// The band beside the notch while a call rests in zen mode: the clock on the
+/// left, what the copilot is doing on the right. The hardware cutout sits
+/// between them, so the band reads as the notch itself carrying status.
+struct CallaAmbientWings: View {
+    @ObservedObject private var engine = CallaEngineClient.shared
+    @EnvironmentObject private var vm: BoringViewModel
+    @State private var now = Date()
+    private let clockTick = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
+
+    private var copilot: CallaCopilotStatus { engine.status.copilot }
+
+    /// What is happening, in the colour of what it will produce.
+    private var status: (text: String, tint: Color, moving: Bool) {
+        if copilot.running && !copilot.systemAudioActive { return ("Only you", CallaCallInk.problem, false) }
+        if copilot.questionWorking || copilot.working == "answer" { return ("Drafting", CallaCallInk.answer, true) }
+        if copilot.summaryWorking || copilot.working == "summary" { return ("Catching up", CallaCallInk.summary, true) }
+        if copilot.hasSuggestion { return ("Answer", CallaCallInk.answer, copilot.speaking != nil) }
+        return ("Listening", CallaCallInk.summary, copilot.speaking != nil)
+    }
+
+    var body: some View {
+        let status = status
+        HStack(spacing: 0) {
+            HStack(spacing: 8) {
+                Circle()
+                    .fill(status.tint)
+                    .frame(width: 6, height: 6)
+                    .background(Circle().fill(status.tint.opacity(0.25)).frame(width: 12, height: 12))
+                if let elapsed = CallaCopilotPresentation.elapsed(since: copilot.startedAt, now: now) {
+                    Text(elapsed)
+                        .font(.system(size: 11.5, design: .monospaced).monospacedDigit())
+                        .foregroundStyle(.white.opacity(0.88))
+                }
+                Spacer(minLength: 0)
+            }
+            .lineLimit(1)
+            .padding(.leading, 20)
+            .frame(maxWidth: .infinity)
+
+            // The camera housing. Nothing may be drawn here.
+            Color.clear.frame(width: vm.closedNotchSize.width)
+
+            HStack(spacing: 7) {
+                Spacer(minLength: 0)
+                if copilot.screenshotCount > 0 {
+                    Image(systemName: "camera.fill")
+                        .font(.system(size: 10, weight: .medium))
+                        .foregroundStyle(.white.opacity(0.55))
+                        .overlay(alignment: .topTrailing) {
+                            CallaSuperscript(count: copilot.screenshotCount)
+                                .offset(x: 6, y: -4)
+                        }
+                        .padding(.trailing, 6)
+                        .accessibilityLabel("\(copilot.screenshotCount) screenshots")
+                }
+                CallaWaveBars(tint: status.tint, active: status.moving)
+                Text(status.text)
+                    .font(.system(size: 11.5, weight: .medium))
+                    .foregroundStyle(status.tint)
+                    .contentTransition(.opacity)
+            }
+            .lineLimit(1)
+            .padding(.trailing, 20)
+            .frame(maxWidth: .infinity)
+        }
+        .animation(.smooth(duration: 0.3), value: status.text)
+        .onReceive(clockTick) { now = $0 }
+    }
+}
+
+/// The call at rest: the notch grown into an island showing where the
+/// conversation has got to. One sentence set large, the newest points under
+/// it, and anything still waiting on you tagged open. A fresh answer takes the
+/// island for a while — the line to say, large — then the account returns.
+/// Hovering opens the compact panel.
+struct CallaCopilotAmbientView: View {
+    @ObservedObject private var engine = CallaEngineClient.shared
+    @ObservedObject private var session = CopilotLiveSession.shared
+    @EnvironmentObject private var vm: BoringViewModel
+    @State private var answer: HeldAnswer?
+    @State private var answerTask: Task<Void, Never>?
+
+    struct HeldAnswer: Equatable {
+        let question: String?
+        let headline: String
+        let angles: [String]
+        let shownAt: Date
+    }
+
+    /// How long a fresh answer holds the island before the account returns.
+    static let answerSeconds: Double = 25
+    /// The island grows with its text up to this, then the oldest lines give way.
+    static let maximumHeight: CGFloat = 300
+
+    private var copilot: CallaCopilotStatus { engine.status.copilot }
+    private var account: CallaCallAccount { CallaCallAccount(copilot.summary) }
+
+    var body: some View {
+        Group {
+            if let answer {
+                answerView(answer)
+                    .transition(.opacity.combined(with: .offset(y: -6)))
+            } else if copilot.questionWorking || copilot.working == "answer",
+                      let question = copilot.detectedQuestion, !question.isEmpty {
+                heardView(question)
+                    .transition(.opacity)
+            } else if let lead = account.lead {
+                accountView(lead)
+                    .transition(.opacity)
+            }
+            // Nothing yet: nothing below the notch. "Listening" is already
+            // said in the band beside the camera.
+        }
+        // Every line in full: wrapping, never an ellipsis.
+        .fixedSize(horizontal: false, vertical: true)
+        .textSelection(.enabled)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.horizontal, 24)
+        .padding(.top, 6)
+        .background {
+            GeometryReader { proxy in
+                Color.clear.preference(key: AmbientHeightKey.self, value: proxy.size.height)
+            }
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+        .overlay(alignment: .bottom) {
+            if let answer { holdBar(answer) }
+        }
+        .onPreferenceChange(AmbientHeightKey.self) { content in
+            // The notch band, this text, and the island's bottom inset — or the
+            // band alone when there is nothing to show under it.
+            let band = vm.effectiveClosedNotchHeight
+            let wanted = content < 8
+                ? band + 12
+                : min(Self.maximumHeight, max(96, band + content + 28))
+            guard abs(wanted - session.ambientHeight) > 1 else { return }
+            session.ambientHeight = wanted
+            NotificationCenter.default.post(name: .copilotLiveDidChange, object: nil)
+        }
+        // Movement only to mark an update.
+        .animation(.smooth(duration: 0.45), value: account)
+        .animation(.smooth(duration: 0.45), value: answer)
+        .animation(.smooth(duration: 0.45), value: copilot.questionWorking)
+        .onChange(of: copilot.suggestionAfterSeq) { _, _ in showLatestAnswer() }
+        .onDisappear { answerTask?.cancel() }
+    }
+
+    private func accountView(_ lead: String) -> some View {
+        let trail = account.trail(2)
+        let open = copilot.openQuestions.first
+        return VStack(alignment: .leading, spacing: 9) {
+            CallaEyebrow("Where it stands", tint: CallaCallInk.summary)
+            Text(lead)
+                .font(.system(size: 15.5, weight: .medium))
+                .tracking(-0.15)
+                .lineSpacing(1.5)
+                .foregroundStyle(.white.opacity(0.96))
+            if !trail.isEmpty || open != nil {
+                VStack(alignment: .leading, spacing: 5) {
+                    ForEach(Array(trail.enumerated()), id: \.element) { index, point in
+                        pointRow(point, ink: .white.opacity(index == trail.count - 1 ? 0.7 : 0.5))
+                    }
+                    if let open {
+                        HStack(alignment: .firstTextBaseline, spacing: 7) {
+                            marker(CallaCallInk.answer)
+                            Text(open)
+                                .font(.system(size: 12))
+                                .foregroundStyle(.white.opacity(0.9))
+                            CallaTag(text: "open", tint: CallaCallInk.answer)
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private func pointRow(_ point: String, ink: Color) -> some View {
+        HStack(alignment: .firstTextBaseline, spacing: 7) {
+            marker(.white.opacity(0.3))
+            Text(point)
+                .font(.system(size: 12))
+                .foregroundStyle(ink)
+        }
+        .transition(.opacity.combined(with: .move(edge: .bottom)))
+    }
+
+    private func marker(_ tint: Color) -> some View {
+        Circle().fill(tint).frame(width: 4, height: 4)
+            .alignmentGuide(.firstTextBaseline) { $0[VerticalAlignment.center] + 4 }
+    }
+
+    private func heardView(_ question: String) -> some View {
+        VStack(alignment: .leading, spacing: 9) {
+            CallaEyebrow("Question heard", tint: CallaCallInk.answer)
+            Text("“\(question)”")
+                .font(.system(size: 15.5, weight: .medium))
+                .foregroundStyle(.white.opacity(0.96))
+            VStack(alignment: .leading, spacing: 6) {
+                CallaShimmerLine(widthFraction: 0.92, height: 8)
+                CallaShimmerLine(widthFraction: 0.6, height: 8)
+            }
+            .padding(.top, 2)
+        }
+    }
+
+    private func answerView(_ answer: HeldAnswer) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            CallaEyebrow("They asked", tint: CallaCallInk.answer)
+            if let question = answer.question {
+                Text("“\(question)”")
+                    .font(CallaCallType.question)
+                    .foregroundStyle(.white.opacity(0.62))
+                    .lineLimit(2)
+            }
+            Text(answer.headline)
+                .font(.system(size: 17, weight: .semibold))
+                .tracking(-0.2)
+                .lineSpacing(1)
+                .foregroundStyle(.white)
+            if !answer.angles.isEmpty {
+                // Both follow-ups when they fit side by side; the first alone
+                // when they do not, rather than a chip cut mid-word.
+                ViewThatFits(in: .horizontal) {
+                    HStack(spacing: 6) {
+                        ForEach(Array(answer.angles.prefix(2).enumerated()), id: \.offset) { _, angle in
+                            CallaChip(text: angle).fixedSize()
+                        }
+                    }
+                    CallaChip(text: answer.angles[0])
+                }
+                .padding(.top, 2)
+            }
+        }
+        .padding(.bottom, 8)
+    }
+
+    /// How long until the account comes back, as a draining line.
+    private func holdBar(_ answer: HeldAnswer) -> some View {
+        TimelineView(.periodic(from: answer.shownAt, by: 0.1)) { context in
+            let left = max(0, 1 - context.date.timeIntervalSince(answer.shownAt) / Self.answerSeconds)
+            GeometryReader { proxy in
+                ZStack(alignment: .leading) {
+                    Capsule().fill(Color.white.opacity(0.08))
+                    Capsule().fill(CallaCallInk.answer.opacity(0.8))
+                        .frame(width: proxy.size.width * left)
+                }
+            }
+            .frame(height: 2)
+        }
+        .padding(.horizontal, 24)
+        .padding(.bottom, 8)
+        .accessibilityHidden(true)
+    }
+
+    private func showLatestAnswer() {
+        guard let headline = copilot.headline?.trimmingCharacters(in: .whitespacesAndNewlines),
+              !headline.isEmpty else { return }
+        let question = copilot.detectedQuestion.flatMap { $0.isEmpty ? nil : $0 }
+        let angles = CallaCopilotPresentation.angleLines(copilot.angles, limit: 2, characters: 60)
+        answer = HeldAnswer(question: question, headline: headline, angles: angles, shownAt: Date())
+        answerTask?.cancel()
+        answerTask = Task { @MainActor in
+            try? await Task.sleep(for: .seconds(Self.answerSeconds))
+            guard !Task.isCancelled else { return }
+            answer = nil
+        }
+    }
+}
+
+private struct AmbientHeightKey: PreferenceKey {
+    static let defaultValue: CGFloat = 0
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) { value = max(value, nextValue()) }
+}
+
+// MARK: - Call design vocabulary
+
+/// The live call's own vocabulary, shared by zen, compact and full so the three
+/// read as one surface that changes size rather than three panels.
+///
+/// One colour per job, so what the notch is showing is known before a word of
+/// it is read: amber is an answer, blue is the running account, coral is
+/// something wrong with capture. Nothing else in a call is tinted.
+enum CallaCallInk {
+    static let answer = Color(red: 1.0, green: 0.70, blue: 0.14)
+    static let summary = Color(red: 0.49, green: 0.72, blue: 1.0)
+    static let problem = Color(red: 1.0, green: 0.52, blue: 0.40)
+    static let ended = Color.white.opacity(0.55)
+}
+
+enum CallaCallType {
+    static let eyebrow = Font.system(size: 9.5, weight: .medium, design: .monospaced)
+    static let figure = Font.system(size: 11, weight: .regular, design: .monospaced).monospacedDigit()
+    static let question = Font.system(size: 12.5)
+}
+
+/// The caps label that names what a block is — "They asked", "Where it stands".
+struct CallaEyebrow: View {
+    let text: String
+    let tint: Color
+
+    init(_ text: String, tint: Color) {
+        self.text = text
+        self.tint = tint
+    }
+
+    var body: some View {
+        Text(text.uppercased())
+            .font(CallaCallType.eyebrow)
+            .tracking(1.3)
+            .foregroundStyle(tint)
+            .lineLimit(1)
+            .fixedSize()
+    }
+}
+
+/// Five bars that move while someone is talking or the copilot is working.
+/// Still when nothing is happening: a meter that always moves reports nothing.
+struct CallaWaveBars: View {
+    let tint: Color
+    var active = true
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    private let phases: [Double] = [0, 0.55, 1.1, 0.3, 0.85]
+
+    var body: some View {
+        TimelineView(.animation(minimumInterval: 1 / 30, paused: !active || reduceMotion)) { context in
+            let t = context.date.timeIntervalSinceReferenceDate
+            HStack(spacing: 2) {
+                ForEach(phases.indices, id: \.self) { index in
+                    let level = active && !reduceMotion
+                        ? 0.3 + 0.7 * (0.5 + 0.5 * sin(t * 5.6 + phases[index] * .pi))
+                        : 0.3
+                    Capsule()
+                        .fill(tint)
+                        .frame(width: 2, height: 12 * level)
+                }
+            }
+            .frame(height: 12)
+        }
+        .accessibilityHidden(true)
+    }
+}
+
+/// A small outlined tag beside a line — "open".
+struct CallaTag: View {
+    let text: String
+    let tint: Color
+
+    var body: some View {
+        Text(text.uppercased())
+            .font(.system(size: 8.5, weight: .medium, design: .monospaced))
+            .tracking(0.8)
+            .foregroundStyle(tint)
+            .padding(.horizontal, 5)
+            .padding(.vertical, 1)
+            .overlay(RoundedRectangle(cornerRadius: 4).strokeBorder(tint.opacity(0.8), lineWidth: 1))
+            .fixedSize()
+    }
+}
+
+/// A follow-up angle as a pill.
+struct CallaChip: View {
+    let text: String
+
+    var body: some View {
+        Text(text)
+            .font(.system(size: 11))
+            .foregroundStyle(.white.opacity(0.78))
+            .lineLimit(1)
+            .padding(.horizontal, 9)
+            .padding(.vertical, 4)
+            .background(Capsule().fill(Color.white.opacity(0.08)))
+            .help(text)
+    }
+}
+
+/// The order to say an answer in: numbered beats in the answer's colour.
+/// Side by side in compact, where height is scarce; stacked in full.
+struct CallaBeats: View {
+    let beats: [String]
+    let horizontal: Bool
+
+    var body: some View {
+        if horizontal {
+            HStack(alignment: .top, spacing: 14) {
+                ForEach(Array(beats.enumerated()), id: \.offset) { index, beat in
+                    VStack(alignment: .leading, spacing: 3) {
+                        number(index)
+                        Text(beat)
+                            .font(.system(size: 11.5))
+                            .foregroundStyle(.white.opacity(0.74))
+                            .lineLimit(3)
+                            .fixedSize(horizontal: false, vertical: true)
+                            .textSelection(.enabled)
+                    }
+                    .frame(maxWidth: .infinity, alignment: .topLeading)
+                }
+            }
+        } else {
+            VStack(alignment: .leading, spacing: 7) {
+                ForEach(Array(beats.enumerated()), id: \.offset) { index, beat in
+                    HStack(alignment: .firstTextBaseline, spacing: 8) {
+                        number(index)
+                        Text(beat)
+                            .font(.system(size: 12.5))
+                            .foregroundStyle(.white.opacity(0.76))
+                            .fixedSize(horizontal: false, vertical: true)
+                            .textSelection(.enabled)
+                    }
+                }
+            }
+        }
+    }
+
+    private func number(_ index: Int) -> some View {
+        Text(String(format: "%02d", index + 1))
+            .font(CallaCallType.figure)
+            .foregroundStyle(CallaCallInk.answer)
+    }
+}
+
+/// The running account as the recap writes it: a standing paragraph, a blank
+/// line, then one point per line. With no blank line everything is points.
+struct CallaCallAccount: Equatable {
+    let standing: String
+    let points: [String]
+
+    init(_ summary: String?) {
+        let summary = summary ?? ""
+        func split(_ text: String) -> [String] {
+            text.split(separator: "\n", omittingEmptySubsequences: true)
+                // Strips bullets a model added despite being asked not to.
+                .map { $0.trimmingCharacters(in: CharacterSet(charactersIn: " \t-•*·")) }
+                .filter { !$0.isEmpty }
+        }
+        if let gap = summary.range(of: "\n\n") {
+            standing = String(summary[..<gap.lowerBound]).trimmingCharacters(in: .whitespacesAndNewlines)
+            points = split(String(summary[gap.upperBound...]))
+        } else {
+            standing = ""
+            points = split(summary)
+        }
+    }
+
+    var isEmpty: Bool { standing.isEmpty && points.isEmpty }
+
+    /// The sentence set large: the standing paragraph, or the newest point when
+    /// the writer gave none.
+    var lead: String? { standing.isEmpty ? points.last : standing }
+
+    /// The points under the lead, newest last, never repeating it.
+    func trail(_ count: Int) -> [String] {
+        Array((standing.isEmpty ? points.dropLast() : points[...]).suffix(count))
+    }
+}
+
+/// A placeholder line for text that is still being written.
+struct CallaShimmerLine: View {
+    var widthFraction: CGFloat = 1
+    var height: CGFloat = 9
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    var body: some View {
+        GeometryReader { proxy in
+            TimelineView(.animation(minimumInterval: 1 / 30, paused: reduceMotion)) { context in
+                let phase = context.date.timeIntervalSinceReferenceDate.truncatingRemainder(dividingBy: 1.4) / 1.4
+                RoundedRectangle(cornerRadius: height / 2)
+                    .fill(Color.white.opacity(0.07))
+                    .overlay {
+                        if !reduceMotion {
+                            LinearGradient(colors: [.clear, .white.opacity(0.12), .clear],
+                                           startPoint: .leading, endPoint: .trailing)
+                                .frame(width: proxy.size.width * 0.5)
+                                .offset(x: proxy.size.width * (CGFloat(phase) * 1.5 - 0.75))
+                        }
+                    }
+                    .clipShape(RoundedRectangle(cornerRadius: height / 2))
+                    .frame(width: proxy.size.width * widthFraction)
+            }
+        }
+        .frame(height: height)
+        .accessibilityHidden(true)
+    }
+}
+
+/// A count set as a superscript on a glyph — screenshots taken.
+struct CallaSuperscript: View {
+    let count: Int
+
+    var body: some View {
+        Text("\(count)")
+            .font(.system(size: 8, weight: .bold).monospacedDigit())
+            .foregroundStyle(.white)
+            .fixedSize()
+            .accessibilityHidden(true)
+    }
+}
+
+/// What a hovered control is called, and its key.
+struct NotchHint: Equatable {
+    let symbol: String?
+    let text: String
+    let shortcut: String?
+}
+
+private struct NotchHintSinkKey: EnvironmentKey {
+    static let defaultValue: ((NotchHint?) -> Void)? = nil
+}
+
+extension EnvironmentValues {
+    /// Where a hovered control reports its name. The call band sets it and
+    /// draws the name inline; `.help` never appears in the notch, which is a
+    /// non-activating panel, and a floating bubble had nowhere good to go.
+    var notchHintSink: ((NotchHint?) -> Void)? {
+        get { self[NotchHintSinkKey.self] }
+        set { self[NotchHintSinkKey.self] = newValue }
+    }
+}
+
+struct NotchTooltip: ViewModifier {
+    let hint: NotchHint
+    @Environment(\.notchHintSink) private var sink
+
+    func body(content: Content) -> some View {
+        content
+            .onHover { inside in sink?(inside ? hint : nil) }
+            .onDisappear { sink?(nil) }
+            .accessibilityHint(hint.text)
+    }
+}
+
+extension View {
+    func notchTooltip(_ text: String, symbol: String? = nil, shortcut: String? = nil) -> some View {
+        modifier(NotchTooltip(hint: NotchHint(symbol: symbol, text: text, shortcut: shortcut)))
     }
 }

@@ -232,6 +232,8 @@ public extension CallaStore {
 
     func deleteCall(id: String) throws {
         try run("DELETE FROM call WHERE id = ?", [.text(id)])
+        try run("DELETE FROM knowledge_note WHERE source = 'call_history' AND id IN (?, ?)",
+                [.text(CallHistoryIndex.summaryID(id)), .text(CallHistoryIndex.transcriptID(id))])
     }
 
     private func snapshotChunks(callID: String) throws -> [CallKnowledgeChunk] {

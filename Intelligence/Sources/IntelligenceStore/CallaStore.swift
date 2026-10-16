@@ -188,15 +188,18 @@ public actor CallaStore {
         FROM knowledge_note
         """
         let ordering = " ORDER BY updated_at DESC"
+        // Call history is searchable only; listing it would bury the notes the
+        // user wrote under every call they ever had.
+        let visible = " source != 'call_history'"
         if let scope {
             let clause = scope.key == nil
-                ? " WHERE scope = ? AND scope_key IS NULL"
-                : " WHERE scope = ? AND scope_key = ?"
+                ? " WHERE\(visible) AND scope = ? AND scope_key IS NULL"
+                : " WHERE\(visible) AND scope = ? AND scope_key = ?"
             var bindings: [SQLiteValue] = [.text(scope.kind)]
             if let key = scope.key { bindings.append(.text(key)) }
             return try database.query(sql + clause + ordering, bindings, row: Self.note)
         }
-        return try database.query(sql + ordering, row: Self.note)
+        return try database.query(sql + " WHERE" + visible + ordering, row: Self.note)
     }
 
     /// Every note that applies to a meeting, most general first.
@@ -324,12 +327,13 @@ public actor CallaStore {
     public func search(
         query: String,
         scopes: [KnowledgeScope],
-        limit: Int = 3
+        limit: Int = 3,
+        sources: Set<KnowledgeSource>? = nil
     ) async -> [KnowledgeHit] {
         let trimmed = query.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty, limit > 0, !scopes.isEmpty else { return [] }
 
-        let candidates = (try? candidateChunks(scopes: scopes)) ?? []
+        let candidates = (try? candidateChunks(scopes: scopes, sources: sources)) ?? []
         guard !candidates.isEmpty else { return [] }
         let allowed = Set(candidates.map(\.id))
 
@@ -419,12 +423,16 @@ public actor CallaStore {
         let section: String?
     }
 
-    private func candidateChunks(scopes: [KnowledgeScope]) throws -> [Candidate] {
+    private func candidateChunks(scopes: [KnowledgeScope], sources: Set<KnowledgeSource>? = nil) throws -> [Candidate] {
         // One predicate per scope, OR-ed. Built rather than parameterised as a
         // list because SQLite has no array binding, and the pieces are enum-derived
         // literals — `scope.kind` is never user text.
         var clauses: [String] = []
         var bindings: [SQLiteValue] = []
+        // Source names are enum raw values, never user text.
+        let sourceClause = sources.map { set in
+            " AND n.source IN (" + set.map { "'\($0.rawValue)'" }.sorted().joined(separator: ", ") + ")"
+        } ?? ""
         for scope in scopes {
             if let key = scope.key {
                 clauses.append("(n.scope = ? AND n.scope_key = ?)")
@@ -440,7 +448,7 @@ public actor CallaStore {
                n.origin_name, c.page, c.section
         FROM knowledge_chunk c
         JOIN knowledge_note n ON n.id = c.note_id
-        WHERE \(clauses.joined(separator: " OR "))
+        WHERE (\(clauses.joined(separator: " OR ")))\(sourceClause)
         """
         return try database.query(sql, bindings) { row in
             Candidate(

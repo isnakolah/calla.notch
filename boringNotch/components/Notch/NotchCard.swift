@@ -252,6 +252,9 @@ struct NotchStatusDot: View {
 struct NotchGlyphButton: View {
     let symbol: String
     var help: String?
+    /// Resting ink. Tertiary unless the glyph means something on its own —
+    /// End is red, a held session is the accent.
+    var tint: Color = NotchInk.tertiary
     let action: () -> Void
 
     @State private var hovering = false
@@ -260,7 +263,7 @@ struct NotchGlyphButton: View {
         Button(action: action) {
             Image(systemName: symbol)
                 .font(NotchGlassType.glyphSmall)
-                .foregroundStyle(hovering ? NotchInk.primary : NotchInk.tertiary)
+                .foregroundStyle(hovering && tint == NotchInk.tertiary ? NotchInk.primary : tint)
                 .padding(4)
                 .background(Circle().fill(hovering ? Color.primary.opacity(0.12) : .clear))
         }
@@ -341,7 +344,7 @@ struct NotchChip<Content: View>: View {
 /// controls that belong to it.
 ///
 /// This replaces a full-width chrome row that named the tab it was in. The tab
-/// is already selected in the header above; saying "TUTOR ·" again cost a band
+/// is already selected in the header above; saying "USAGE ·" again cost a band
 /// of a 168pt surface to tell the reader something they did by hand.
 struct NotchCardHeader<Trailing: View>: View {
     let state: String
@@ -416,6 +419,9 @@ struct NotchSessionHints: View {
     /// Keys that belong to this panel but not to the session vocabulary —
     /// Quiz's code wrapping, the notch pin. Drawn after the routed ones.
     var extras: [(label: String, name: KeyboardShortcuts.Name)] = []
+    /// A surface's own word for a routed action, where the shared one is wrong
+    /// for it — the call's `.surface` flips answers and recap, not history.
+    var relabel: [NotchSessionAction: String] = [:]
 
     var body: some View {
         HStack(spacing: NotchGlassSpace.snug) {
@@ -444,12 +450,12 @@ struct NotchSessionHints: View {
         }
 
         // The two directions of one action, together.
-        pair(surface == .coding ? "Step" : "Answer", [.previous, .next])
+        pair(relabel[.previous] ?? (surface == .coding ? "Step" : "Answer"), [.previous, .next])
         pair("Scroll", [.scrollUp, .scrollDown])
 
         for action in NotchSessionRouter.hintedActions(for: surface) where !used.contains(action) {
             guard result.count < limit, let chord = NotchSessionShortcuts.chord(for: action) else { continue }
-            result.append((NotchSessionShortcuts.label(for: action), [chord]))
+            result.append((relabel[action] ?? NotchSessionShortcuts.label(for: action), [chord]))
         }
 
         for extra in extras {

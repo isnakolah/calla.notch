@@ -27,8 +27,9 @@ struct DynamicNotchApp: App {
 
     init() {
         Self.migratePomodoroStartPauseShortcut()
+        NotchHeaderItem.migrateRemovedItems()
         updaterController = SPUStandardUpdaterController(
-            startingUpdater: true, updaterDelegate: nil, userDriverDelegate: nil)
+            startingUpdater: !PrivateDistribution.enabled, updaterDelegate: nil, userDriverDelegate: nil)
 
         // Initialize the settings window controller with the updater controller
         SettingsWindowController.shared.setUpdaterController(updaterController)
@@ -39,11 +40,13 @@ struct DynamicNotchApp: App {
         // before their view lifecycle starts, so their monitor owns refreshes
         // from app launch onward.
         DispatchQueue.main.async {
+            // The disk-image copy only installs; the installed app runs these.
+            guard !PrivateDistribution.isInstallerCopy else { return }
             _ = UsageMonitorManager.shared
             // Ice is Boring-owned and does not trigger an Accessibility prompt.
             // Its runtime reports a blocked state until Settings asks explicitly.
             IceMenuBarController.shared.start()
-            guard Defaults[.callaTutorEnabled] else { return }
+            guard Defaults[.callaCopilotEnabled] else { return }
             CallaEngineClient.shared.start()
             CallaEngineClient.shared.applyCurrentPreferences()
         }
@@ -63,7 +66,9 @@ struct DynamicNotchApp: App {
     }
 
     var body: some Scene {
-        MenuBarExtra(isInserted: $showMenuBarIcon) {
+        MenuBarExtra(isInserted: Binding(
+            get: { showMenuBarIcon && !PrivateDistribution.isInstallerCopy },
+            set: { showMenuBarIcon = $0 })) {
             if pomodoro.isActive {
                 Button(pomodoro.isRunning ? "Pause timer" : "Resume timer") {
                     pomodoro.toggle()
@@ -139,6 +144,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     func applicationWillTerminate(_ notification: Notification) {
+        guard !PrivateDistribution.isInstallerCopy else { return }
         NotificationCenter.default.removeObserver(self)
         if let observer = screenLockedObserver {
             DistributedNotificationCenter.default().removeObserver(observer)
@@ -154,7 +160,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         XPCHelperClient.shared.stopMonitoringAccessibilityAuthorization()
         IceMenuBarController.shared.stop()
         // Quitting the notch takes its helpers with it: the capture host holding the
-        // microphone, the Tutor runtime, and any resident `agy` language server.
+        // microphone and any resident `agy` language server.
         // Otherwise they are reparented to launchd and survive until a restart.
         CallaEngineClient.shared.shutdownAndWait()
     }
@@ -384,27 +390,33 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         window.alphaValue = 1
     }
 
+    func application(_ application: NSApplication, open urls: [URL]) {
+        for url in urls { PrivateDistribution.handle(url) }
+    }
+
+    func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
+        if PrivateDistribution.enabled && sender.isActive { PrivateDistribution.openSetup() }
+        return true
+    }
+
     func applicationDidFinishLaunching(_ notification: Notification) {
         Self.shared = self
+        PrivateDistribution.prepareFirstLaunch()
+        // A second notch from the disk image beside the installed one is the
+        // most confusing thing a new Mac can show. The installer copy is a
+        // setup window and nothing more.
+        if PrivateDistribution.isInstallerCopy { return }
 
         CallaCopilotSettings.migrate()
 
         configureLaunchAtLoginIfNeeded()
-        if Defaults[.callaTutorEnabled] {
-            // Retain one XPC connection for app lifetime so node requests keep
-            // reaching Boring-owned engine instead of a visible TutorHost app.
-            CallaEngineClient.shared.start()
-            CallaEngineClient.shared.applyCurrentPreferences()
-            // Watch for lessons started outside the notch so the notch can
-            // raise itself onto the Tutor tab when teaching begins.
-            CallaEngineClient.shared.startMonitoring()
-        }
-
         if Defaults[.callaCopilotEnabled] {
             // Touching the session here builds its status bridge before the first
-            // poll. Starting capture remains an explicit user action.
+            // poll. Starting capture remains an explicit user action. One XPC
+            // connection is kept for the app's lifetime.
             _ = CopilotLiveSession.shared
             CallaEngineClient.shared.start()
+            CallaEngineClient.shared.applyCurrentPreferences()
             CallaEngineClient.shared.startMonitoring()
         }
 
@@ -552,7 +564,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         // KeyboardShortcuts registers a Carbon global hotkey, so this callback
         // arrives even while another application is active. Resolve the notch
         // under the pointer here and mutate it directly; a session-owned state
-        // object cannot represent pinning Home, Shelf, Pomodoro, or Tutor.
+        // object cannot represent pinning Home, Shelf, or Pomodoro.
         KeyboardShortcuts.onKeyDown(for: .copilotTogglePin) { [weak self] in
             Task { @MainActor in
                 self?.toggleUniversalNotchPin()
@@ -635,7 +647,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
         setupDragDetectors()
 
-        if coordinator.firstLaunch {
+        if PrivateDistribution.enabled {
+            // The dedicated setup window owns first run, including permissions.
+        } else if coordinator.firstLaunch {
             DispatchQueue.main.async {
                 self.showOnboardingWindow()
             }
@@ -652,6 +666,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private func configureLaunchAtLoginIfNeeded() {
+        guard !PrivateDistribution.enabled else { return }
         let defaults = UserDefaults.standard
         guard !defaults.bool(forKey: Self.didConfigureLaunchAtLoginKey) else { return }
 
@@ -815,7 +830,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         NSApplication.shared.terminate(self)
     }
 
-    private func showOnboardingWindow(step: OnboardingStep = .welcome) {
+    func showOnboardingWindow(step: OnboardingStep = .welcome) {
         if onboardingWindowController == nil {
             let window = NSWindow(
                 contentRect: NSRect(x: 0, y: 0, width: 400, height: 600),

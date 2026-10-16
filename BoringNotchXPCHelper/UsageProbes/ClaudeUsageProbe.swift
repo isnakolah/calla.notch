@@ -13,6 +13,8 @@ import SwiftTerm
 final class ClaudeUsageProbe: UsageProbe, @unchecked Sendable {
     private let claudeBinary: String
     private let timeout: TimeInterval
+    private let securitySessionID: String?
+    private let configDirectory: URL?
     private let cliExecutor: CLIExecutor
     private let terminalRenderer: TerminalRenderer
 
@@ -26,11 +28,17 @@ final class ClaudeUsageProbe: UsageProbe, @unchecked Sendable {
         // quota rows. A short timeout silently preserved Boring's old cache.
         timeout: TimeInterval = 60.0,
         securitySessionID: String? = nil,
+        configDirectory: URL? = nil,
         cliExecutor: CLIExecutor? = nil
     ) {
         self.claudeBinary = claudeBinary
+        self.configDirectory = configDirectory
         self.timeout = timeout
-        let overrides = securitySessionID.map { ["SECURITYSESSIONID": $0] } ?? [:]
+        self.securitySessionID = securitySessionID.flatMap { id in
+            !id.isEmpty && id.allSatisfy(\.isHexDigit) ? id : nil
+        }
+        var overrides = self.securitySessionID.map { ["SECURITYSESSIONID": $0] } ?? [:]
+        if let configDirectory { overrides["CLAUDE_CONFIG_DIR"] = configDirectory.path }
         self.cliExecutor = cliExecutor ?? DefaultCLIExecutor(
             environmentExclusions: Self.envExclusions,
             environmentOverrides: overrides
@@ -51,12 +59,6 @@ final class ClaudeUsageProbe: UsageProbe, @unchecked Sendable {
         // Pre-trust the probe dir so the first run skips the folder-trust /
         // onboarding prompt entirely (saves a full ~20s prompt+retry cycle).
         _ = writeClaudeTrust(for: workingDir)
-        // The XPC helper's claude subprocess can't read the login Keychain
-        // non-interactively, so it would fall back to the "API Usage Billing"
-        // screen with no quota bars. Mirror the Keychain OAuth token into
-        // ~/.claude/.credentials.json, which claude reads with higher precedence,
-        // so it authenticates as the real subscription.
-        syncClaudeCredentialsFile()
         AppLog.probes.info("Starting Claude probe with /usage command...")
 
         let usageResult: CLIResult
@@ -97,7 +99,9 @@ final class ClaudeUsageProbe: UsageProbe, @unchecked Sendable {
         AppLog.probes.info("Claude /usage output:\n\(usageResult.output)")
 
         do {
-            return try parseClaudeOutput(usageResult.output)
+            let snapshot = try parseClaudeOutput(usageResult.output)
+            AppLog.probes.info("Claude probe success: \(snapshot.quotas.count, privacy: .public) quotas found")
+            return snapshot
         } catch ProbeError.folderTrustRequired {
             AppLog.probes.info("Writing trust for probe directory and retrying...")
             if writeClaudeTrust(for: workingDir) {
@@ -131,6 +135,12 @@ final class ClaudeUsageProbe: UsageProbe, @unchecked Sendable {
             ?? extractPercentFlat(after: "current week (all models)", in: flat)
 
         guard let sessionPct else {
+            if flat.contains("api usage billing") {
+                AppLog.probes.error("Claude billing screen: \(String(clean.suffix(1500)), privacy: .public)")
+                throw ProbeError.executionFailed(
+                    "Claude opened API billing instead of subscription usage; the helper could not access the CLI login"
+                )
+            }
             AppLog.probes.error("Claude parse failed: could not find 'Current session' percentage")
             // Public, because the alternative is what this cost last time: the
             // only record of *why* the screen did not parse was redacted, so
@@ -472,8 +482,7 @@ final class ClaudeUsageProbe: UsageProbe, @unchecked Sendable {
     /// Writes a trust entry for the given directory to ~/.claude.json so the CLI
     /// won't show the workspace trust dialog on next invocation.
     private func writeClaudeTrust(for directory: URL) -> Bool {
-        let configDir = ProcessInfo.processInfo.environment["CLAUDE_CONFIG_DIR"]
-            .map { URL(fileURLWithPath: ($0 as NSString).expandingTildeInPath, isDirectory: true) }
+        let configDir = configDirectory
         let claudeJsonURL = (configDir ?? FileManager.default.homeDirectoryForCurrentUser)
             .appendingPathComponent(".claude.json")
 
@@ -495,7 +504,13 @@ final class ClaudeUsageProbe: UsageProbe, @unchecked Sendable {
             return false
         }
         var projects = root["projects"] as? [String: Any] ?? [:]
-        let key = directory.path
+        // claude keys trust by realpath, which carries the on-disk case
+        // ("boringNotch"); the case-insensitive URL we built ("BoringNotch")
+        // would never match and the probe would sit on the trust prompt.
+        let key = realpath(directory.path, nil).map { resolved in
+            defer { free(resolved) }
+            return String(cString: resolved)
+        } ?? directory.path
 
         if let existingEntry = projects[key], !(existingEntry is [String: Any]) {
             return false
@@ -527,86 +542,6 @@ final class ClaudeUsageProbe: UsageProbe, @unchecked Sendable {
             AppLog.probes.error("Failed to write trust: \(error.localizedDescription)")
             return false
         }
-    }
-
-    /// Mirrors the Keychain OAuth token into `~/.claude/.credentials.json`.
-    ///
-    /// The credentials file takes precedence over the Keychain when claude picks
-    /// an auth source, so seeding it lets the sandbox-isolated helper's claude
-    /// authenticate without needing interactive Keychain access. Best-effort: only
-    /// overwrites when the `security` CLI returns a valid JSON token. claude writes
-    /// refreshed tokens back to the Keychain, so re-mirroring each probe keeps the
-    /// file from going stale.
-    private func syncClaudeCredentialsFile() {
-        let home = ProcessInfo.processInfo.environment["CLAUDE_CONFIG_DIR"]
-            .map { URL(fileURLWithPath: ($0 as NSString).expandingTildeInPath, isDirectory: true) }
-            ?? FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent(".claude", isDirectory: true)
-        let credURL = home.appendingPathComponent(".credentials.json")
-
-        let process = Process()
-        process.executableURL = URL(fileURLWithPath: "/usr/bin/security")
-        process.arguments = ["find-generic-password", "-s", "Claude Code-credentials", "-w"]
-        let pipe = Pipe()
-        process.standardOutput = pipe
-        process.standardError = FileHandle.nullDevice
-
-        do {
-            try process.run()
-            let data = pipe.fileHandleForReading.readDataToEndOfFile()
-            process.waitUntilExit()
-            guard process.terminationStatus == 0,
-                  let raw = String(data: data, encoding: .utf8)?.trimmingCharacters(in: .whitespacesAndNewlines),
-                  !raw.isEmpty,
-                  Self.isUsableCredentialBlob(raw) else {
-                // The Keychain had nothing usable. If the file we wrote earlier
-                // is itself unusable, delete it: the file outranks the Keychain,
-                // so a blank one pins every `claude` on this machine to a token
-                // that cannot authenticate. No file at all is strictly better —
-                // claude falls back to the Keychain, which is where a working
-                // credential normally lives.
-                if let existing = try? String(contentsOf: credURL, encoding: .utf8),
-                   !Self.isUsableCredentialBlob(existing) {
-                    try? FileManager.default.removeItem(at: credURL)
-                    AppLog.probes.error("Removed unusable mirrored credential file at \(credURL.path, privacy: .public)")
-                } else {
-                    AppLog.probes.debug("Keychain credential mirror skipped (no valid token read)")
-                }
-                return
-            }
-            try? FileManager.default.createDirectory(at: home, withIntermediateDirectories: true)
-            try Data(raw.utf8).write(to: credURL, options: .atomic)
-            try? FileManager.default.setAttributes([.posixPermissions: 0o600], ofItemAtPath: credURL.path)
-            AppLog.probes.info("Mirrored Keychain credentials to \(credURL.path)")
-        } catch {
-            AppLog.probes.debug("Keychain credential mirror failed: \(error.localizedDescription)")
-        }
-    }
-
-    /// Whether a credential blob can actually authenticate.
-    ///
-    /// The old check was "is it JSON and does the word accessToken appear in
-    /// it", which a *logged-out* blob passes: claude writes one with empty
-    /// token strings and `expiresAt: 0` while it rotates a token, and mirroring
-    /// that over a working file broke every `claude` on the machine — the file
-    /// takes precedence over the Keychain, so the probe kept authenticating as
-    /// nobody and `/usage` degraded to the billing screen with no quota rows.
-    /// The symptom is a Claude usage tile that stops updating and never says
-    /// why.
-    static func isUsableCredentialBlob(_ raw: String) -> Bool {
-        guard let object = try? JSONSerialization.jsonObject(with: Data(raw.utf8)),
-              let root = object as? [String: Any],
-              let oauth = root["claudeAiOauth"] as? [String: Any] else { return false }
-
-        let accessToken = oauth["accessToken"] as? String ?? ""
-        let refreshToken = oauth["refreshToken"] as? String ?? ""
-        guard !accessToken.isEmpty else { return false }
-
-        // An access token past its expiry is still worth mirroring when there is
-        // a refresh token behind it — claude renews it on the next run. With
-        // neither, the blob is dead weight.
-        let expiresAt = (oauth["expiresAt"] as? Double) ?? 0
-        let nowMilliseconds = Date().timeIntervalSince1970 * 1000
-        return expiresAt > nowMilliseconds || !refreshToken.isEmpty
     }
 
     private func probeWorkingDirectory() -> URL {

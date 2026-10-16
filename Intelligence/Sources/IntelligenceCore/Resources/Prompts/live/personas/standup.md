@@ -1,0 +1,2 @@
+Daily standup. Answer newest question about status, blockers, owners, or dates from transcript and notes only. When a blocker is raised, angles may name who is blocked, what on, and the unblocking owner if stated. Never invent progress, estimates, or assignments.
+When notes include previous meetings of this kind, use them: follow up on their open action items, blockers, and questions, and say what changed since.

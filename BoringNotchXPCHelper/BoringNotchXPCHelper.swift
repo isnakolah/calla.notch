@@ -199,13 +199,23 @@ class BoringNotchXPCHelper: NSObject, BoringNotchXPCHelperProtocol {
 
     // MARK: - CLI Usage Probing
 
-    @objc func fetchUsage(_ provider: String, securitySessionID: String?, with reply: @escaping (Data?) -> Void) {
+    @objc func fetchUsage(_ provider: String, profileID: String?, securitySessionID: String?, with reply: @escaping (Data?) -> Void) {
         // Hop off the serial XPC message queue — the Claude probe can take ~20s
         // and must not block brightness/accessibility calls on the same connection.
         Task.detached {
-            let dto = await UsageProbeService.shared.fetchUsage(provider: provider, securitySessionID: securitySessionID)
+            let dto = await UsageProbeService.shared.fetchUsage(provider: provider, profileID: profileID, securitySessionID: securitySessionID)
             reply(try? UsageReportDTO.encoder.encode(dto))
         }
+    }
+
+    /// The app is sandboxed and cannot read Tangit's registry, so the helper
+    /// enumerates profiles for it.
+    @objc func listUsageProfiles(_ provider: String, with reply: @escaping (Data?) -> Void) {
+        // `demo` exists only for testing Tangit itself.
+        let options = TangitUsageProfile.all(provider: provider).filter { $0.id != "demo" }.map { profile in
+            ["id": profile.id, "identity": ProfileIdentity.read(provider: provider, directory: profile.directory) ?? ""]
+        }
+        reply(try? JSONSerialization.data(withJSONObject: options))
     }
 
     // MARK: - Private helpers for DisplayServices / IOKit access

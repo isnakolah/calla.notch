@@ -37,7 +37,7 @@ final class PromptPackTests: XCTestCase {
 
     func testTheBundledPackPassesItsOwnLint() {
         XCTAssertEqual(
-            PromptPack().lint(requiredPersonas: ["generic", "interview", "sales", "support"]),
+            PromptPack().lint(requiredPersonas: ["generic", "interview", "sales", "support", "standup", "planning", "refinement", "review", "retro", "design-review", "incident", "one-on-one"]),
             [])
     }
 

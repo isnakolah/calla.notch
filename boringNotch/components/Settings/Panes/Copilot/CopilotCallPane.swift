@@ -30,6 +30,11 @@ struct CopilotCallPane: View {
     @Default(.callaCopilotLiveModel) private var model
     @Default(.callaCopilotAutoReveal) private var autoReveal
     @Default(.callaCopilotGlassLevel) private var glassLevel
+    @Default(.callaCopilotAmbient) private var ambientEnabled
+    @Default(.callaCallFoldersEnabled) private var callFoldersEnabled
+    @Default(.callaCallFoldersAudio) private var callFoldersAudio
+    @Default(.callaRememberVoices) private var rememberVoices
+    @State private var rememberedVoices: [CallaCallSpeakers.Voice] = []
 
 
     private var copilot: CallaCopilotStatus { engine.status.copilot }
@@ -44,6 +49,8 @@ struct CopilotCallPane: View {
                 panelSizeLink
             }
             notchCard
+            callFoldersCard
+            speakersCard
             quizLink
             if let result = copilot.lastResult {
                 SettingCard("Last result") {
@@ -63,6 +70,72 @@ struct CopilotCallPane: View {
     }
 
     // MARK: - Cards
+
+    /// Every finished call as a folder the reader can open, search and share.
+    private var callFoldersCard: some View {
+        SettingCard("Call folders",
+                    detail: "Each call is saved to Documents › Calls, grouped by meeting type — Standup, Retro, General… — with its summary, action items, transcript, the copilot's answers, notes, screenshots and audio. Past calls are also searchable by later calls of the same kind.") {
+            SettingRow("Save each call to a folder") {
+                Toggle("", isOn: $callFoldersEnabled).labelsHidden().toggleStyle(.switch)
+            }
+            SettingRow("Include audio", detail: "Both sides, compressed — about 30 MB an hour.") {
+                Toggle("", isOn: $callFoldersAudio).labelsHidden().toggleStyle(.switch)
+            }
+            .disabled(!callFoldersEnabled)
+            HStack(spacing: NotchSpace.snug) {
+                Button("Show in Finder") { engine.revealCallFolder() }
+                Button("Save past calls") { engine.exportPastCalls() }
+                    .help("Writes a folder for every call already in History and makes it searchable.")
+                Spacer(minLength: 0)
+            }
+            .controlSize(.small)
+            .disabled(!callFoldersEnabled)
+        }
+        .onChange(of: callFoldersEnabled) { engine.applyCurrentPreferences() }
+        .onChange(of: callFoldersAudio) { engine.applyCurrentPreferences() }
+    }
+
+    /// Who said what on calls with several people. The voices are separated on
+    /// this Mac after the call; remembered voices never leave it.
+    private var speakersCard: some View {
+        SettingCard("Speakers",
+                    detail: "After a call, the other voices are told apart and labelled in History with who spoke and when. Names are guessed from attendees and the conversation; confirm or change them in the call.") {
+            SettingRow("Remember voices",
+                       detail: "Keep a voiceprint for each person you name, so later calls recognise them. Stored only on this Mac.") {
+                Toggle("", isOn: $rememberVoices).labelsHidden().toggleStyle(.switch)
+            }
+            if !rememberedVoices.isEmpty {
+                ForEach(rememberedVoices) { voice in
+                    SettingRow(voice.name, detail: "Last heard \(voice.updatedAt.formatted(date: .abbreviated, time: .omitted))") {
+                        Button("Forget") {
+                            engine.controlSpeakers(CallaSpeakerCommand(action: "forget_voice", personID: voice.personID)) {
+                                rememberedVoices = $0?.voices ?? rememberedVoices
+                            }
+                        }
+                        .controlSize(.small)
+                    }
+                }
+            }
+            HStack(spacing: NotchSpace.snug) {
+                Button("Forget all voices", role: .destructive) {
+                    engine.controlSpeakers(CallaSpeakerCommand(action: "forget_voices")) {
+                        rememberedVoices = $0?.voices ?? []
+                    }
+                }
+                .disabled(rememberedVoices.isEmpty)
+                Spacer(minLength: 0)
+            }
+            .controlSize(.small)
+        }
+        .task {
+            engine.controlSpeakers(CallaSpeakerCommand(action: "list")) { rememberedVoices = $0?.voices ?? [] }
+        }
+        .onChange(of: rememberVoices) { _, remember in
+            // Turning it off means it: what was kept goes too.
+            guard !remember else { return }
+            engine.controlSpeakers(CallaSpeakerCommand(action: "forget_voices")) { rememberedVoices = $0?.voices ?? [] }
+        }
+    }
 
     private var notInstalled: some View {
         SettingCard(tint: NotchTint.attention) {
@@ -234,6 +307,10 @@ struct CopilotCallPane: View {
                     SettingRow("Reveal new suggestions",
                                detail: "Peeks the newest pointer as it arrives instead of waiting to be opened.") {
                         Toggle("", isOn: $autoReveal).labelsHidden().toggleStyle(.switch)
+                    }
+                    SettingRow("Ambient summary",
+                               detail: "While a call runs, the notch rests as a small island showing the last few lines of the summary, and new answers for a moment. Hover to bring back the controls.") {
+                        Toggle("", isOn: $ambientEnabled).labelsHidden().toggleStyle(.switch)
                     }
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)

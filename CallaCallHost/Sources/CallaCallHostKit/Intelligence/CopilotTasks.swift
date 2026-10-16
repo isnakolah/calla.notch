@@ -81,7 +81,7 @@ public enum CopilotTasks {
     public static let summary = IntelligenceTask(
         id: "copilot.summary",
         defaultTier: .deep,
-        contract: .json(keys: ["summary", "open_questions"]),
+        contract: .json(keys: ["title", "summary", "decisions", "action_items", "open_questions"]),
         latencyBudget: 90,
         conversation: .perSession,
         batching: .manual,
@@ -284,16 +284,26 @@ public enum CopilotExecPrompt {
 /// durable recap was then built from the ledger instead. The most expensive pass
 /// in the system was decoration.
 public struct CopilotClosingSummary: Sendable, Equatable {
+    public var title: String
     public var overview: String
+    public var decisions: [String]
+    public var actionItems: [String]
     public var openQuestions: [String]
 
-    public init(overview: String, openQuestions: [String]) {
+    public init(title: String = "", overview: String, decisions: [String] = [],
+                actionItems: [String] = [], openQuestions: [String]) {
+        self.title = title
         self.overview = overview
+        self.decisions = decisions
+        self.actionItems = actionItems
         self.openQuestions = openQuestions
     }
 
     private struct Payload: Decodable {
+        let title: String?
         let summary: String?
+        let decisions: [String]?
+        let action_items: [String]?
         let open_questions: [String]?
         /// Tolerated because the fast lane's shape is what a mis-prompted model
         /// tends to fall back to, and an overview is worth having either way.
@@ -304,9 +314,19 @@ public struct CopilotClosingSummary: Sendable, Equatable {
         let decoded = try JSONDecoder().decode(Payload.self, from: payload)
         let overview = (decoded.summary ?? decoded.headline ?? "")
             .trimmingCharacters(in: .whitespacesAndNewlines)
+        func clean(_ list: [String]?) -> [String] {
+            (list ?? []).map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }.filter { !$0.isEmpty }
+        }
+        // Every key but the overview is optional: an older or mis-prompted reply
+        // still yields notes, just without the itemised parts.
+        let title = (decoded.title ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+            .split(separator: " ").prefix(8).joined(separator: " ")
         return CopilotClosingSummary(
+            title: title,
             overview: overview,
-            openQuestions: decoded.open_questions ?? [])
+            decisions: clean(decoded.decisions),
+            actionItems: clean(decoded.action_items),
+            openQuestions: clean(decoded.open_questions))
     }
 }
 

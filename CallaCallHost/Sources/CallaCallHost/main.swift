@@ -243,9 +243,10 @@ func ensureModel(_ model: WhisperModel) async throws -> URL {
     ModelDownloadStatus(model: model.name, receivedBytes: 0,
                         totalBytes: model.sizeBytes, state: "downloading").write()
     do {
+        // The store reports about once per percent; setup draws its progress
+        // bar from these lines, so every one is printed and flushed.
         let url = try await store.ensure(model) { fraction in
-            let percent = Int(fraction * 100)
-            if percent % 10 == 0 { print("  \(percent)%") }
+            print("  \(Int(fraction * 100))%"); fflush(stdout)
             ModelDownloadStatus(
                 model: model.name,
                 receivedBytes: Int64(Double(model.sizeBytes) * fraction),
@@ -408,6 +409,21 @@ case "quiz-scroll":
     }
 
 case "models":
+    if arguments.contains("--archive") {
+        do {
+            _ = try await ensureModel(.largeV3Turbo)
+            let store = ModelStore(directory: CallHostPaths.modelsDirectory)
+            let encoder = await store.ensureCoreML(.largeV3Turbo) { fraction in
+                print("Archive encoder: \(Int(fraction * 100))%"); fflush(stdout)
+            }
+            guard encoder != nil else { throw NSError(domain: "CallaModels", code: 1,
+                userInfo: [NSLocalizedDescriptionKey: "Archive encoder download failed; retry models --archive."]) }
+            exit(0)
+        } catch {
+            complain("archive model install failed: \(error.localizedDescription)\n")
+            exit(1)
+        }
+    }
     // `--fetch` is the engine's spelling, `--model` the human one; both mean
     // "make sure this model is on disk".
     let model = value(for: "--fetch").flatMap(WhisperModel.named) ?? resolveModel()
@@ -562,6 +578,12 @@ case "serve":
                 if !accepted { snapshot.actionableError = "Question was not queued; check the Call provider and retry." }
                 return CallHostEvent(callID: config.callID, generation: config.generation,
                                      kind: accepted ? .answer : .fatal, snapshot: snapshot)
+            case .capture:
+                let read = await session.captureScreen()
+                var snapshot = await session.lifecycleSnapshot()
+                if read == nil { snapshot.actionableError = "Screenshot failed. Check Screen & System Audio Recording for Boring Notch." }
+                return CallHostEvent(callID: config.callID, generation: config.generation,
+                                     kind: .screenshot, snapshot: snapshot)
             case .stop:
                 await session.stop()
                 stopped.trigger()
@@ -869,14 +891,27 @@ case "archive", "retranscribe":
                 if percent % 20 == 0 { print("  \(percent)%") }
             }
         }
+        let callStore = try? CallaStore(path: CallHostPaths.storeFile)
         let result = try await ArchiveTranscriber.retranscribe(
             callDirectory: directory,
             modelURL: modelURL,
             modelName: model.displayName,
             language: model.languageHint,
-            store: try? CallaStore(path: CallHostPaths.storeFile)) { print($0) }
+            store: callStore) { print($0) }
         print("wrote \(result.turns) turns in \(String(format: "%.1f", result.duration))s")
         print(directory.appendingPathComponent("transcript-archive.jsonl").path)
+        // The new transcript has new turns, so the voices are worked out again.
+        // No naming pass here: there is no call config to say which provider the
+        // user allows, and a rerun keeps any voiceprint matches.
+        if let callStore {
+            do {
+                if let speakers = try await SpeakerPass.run(callDirectory: directory, store: callStore) {
+                    print("speakers: \(speakers.remoteSpeakers) remote, \(speakers.recognised) recognised")
+                }
+            } catch {
+                print("speaker pass failed: \(error.localizedDescription)")
+            }
+        }
     } catch {
         complain("archive failed: \(error.localizedDescription)\n")
         exit(1)
@@ -947,7 +982,7 @@ case "prompts":
 
     case "lint":
         let problems = promptPack.lint(
-            requiredPersonas: ["generic", "interview", "sales", "support"])
+            requiredPersonas: ["generic", "interview", "sales", "support", "standup", "planning", "refinement", "review", "retro", "design-review", "incident", "one-on-one"])
         guard !problems.isEmpty else {
             let personas = promptPack.personaIDs()
             print("prompts OK — \(PromptPack.ID.allCases.count) prompts, personas: \(personas.joined(separator: ", "))")

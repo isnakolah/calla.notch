@@ -22,11 +22,15 @@ enum ProviderUsageState {
 
     /// The most recent report available, if any (loaded or carried through a sync).
     var report: UsageReportDTO? {
+        let value: UsageReportDTO?
         switch self {
-        case .idle: nil
-        case .syncing(let previous): previous
-        case .loaded(let dto): dto
+        case .idle: value = nil
+        case .syncing(let previous): value = previous
+        case .loaded(let dto): value = dto
         }
+        guard let value else { return nil }
+        if value.status == .ok && Date().timeIntervalSince(value.capturedAt) > 24 * 60 * 60 { return nil }
+        return value
     }
 
     var isSyncing: Bool {
@@ -38,10 +42,15 @@ enum ProviderUsageState {
 @MainActor
 final class UsageMonitorManager: ObservableObject {
     static let shared = UsageMonitorManager()
+    /// A cached percentage is useful across a short CLI/network outage, but it
+    /// must not be presented as a current quota for days or weeks.
+    private static let maximumCacheAge: TimeInterval = 24 * 60 * 60
 
     @Published private(set) var claude: ProviderUsageState = .idle
     @Published private(set) var codex: ProviderUsageState = .idle
+    @Published private(set) var agy: ProviderUsageState = .idle
     @Published private(set) var lastErrors: [String: String] = [:]
+    @Published private(set) var profileOptions: [String: [UsageProfileOption]] = [:]
 
     private var inFlight: Set<String> = []
     /// Usage badges can be recreated as the notch opens and closes. Keep the
@@ -52,8 +61,13 @@ final class UsageMonitorManager: ObservableObject {
     private init() {
         // Seed from the last successful reports so a fresh launch (or a launch
         // while Claude/Codex are unreachable) still shows the previous usage.
-        if let cached = Self.loadCachedReport(for: "claude") { claude = .loaded(cached) }
-        if let cached = Self.loadCachedReport(for: "codex") { codex = .loaded(cached) }
+        if let cached = Self.loadCachedReport(for: "claude", profile: selectedProfile(for: "claude")), Self.isCurrentEnough(cached) {
+            claude = .loaded(cached)
+        }
+        if let cached = Self.loadCachedReport(for: "codex", profile: selectedProfile(for: "codex")), Self.isCurrentEnough(cached) {
+            codex = .loaded(cached)
+        }
+        if let cached = Self.loadCachedReport(for: "agy", profile: nil), Self.isCurrentEnough(cached) { agy = .loaded(cached) }
         if let error = Defaults[.usageLastClaudeError] { lastErrors["claude"] = error }
         if let error = Defaults[.usageLastCodexError] { lastErrors["codex"] = error }
         startPeriodicRefresh()
@@ -98,30 +112,39 @@ final class UsageMonitorManager: ObservableObject {
 
     // MARK: - Persistent cache
 
-    private static func cacheKey(for provider: String) -> Defaults.Key<Data?> {
-        provider == "claude" ? .cachedClaudeUsage : .cachedCodexUsage
+    private static func cacheKey(for provider: String, profile: String?) -> String {
+        "usage.report.v2.\(provider).\(profile ?? "shared")"
     }
 
-    private static func loadCachedReport(for provider: String) -> UsageReportDTO? {
-        guard let data = Defaults[cacheKey(for: provider)] else { return nil }
-        return try? UsageReportDTO.decoder.decode(UsageReportDTO.self, from: data)
+    private static func loadCachedReport(for provider: String, profile: String?) -> UsageReportDTO? {
+        guard let data = UserDefaults.standard.data(forKey: cacheKey(for: provider, profile: profile)),
+              let report = try? UsageReportDTO.decoder.decode(UsageReportDTO.self, from: data),
+              report.provider == provider, report.profileID == profile else { return nil }
+        return report
     }
 
-    private static func persistReport(_ report: UsageReportDTO, for provider: String) {
-        Defaults[cacheKey(for: provider)] = try? UsageReportDTO.encoder.encode(report)
+    private static func persistReport(_ report: UsageReportDTO, for provider: String, profile: String?) {
+        UserDefaults.standard.set(try? UsageReportDTO.encoder.encode(report),
+                                  forKey: cacheKey(for: provider, profile: profile))
+    }
+
+    private static func isCurrentEnough(_ report: UsageReportDTO, now: Date = Date()) -> Bool {
+        now.timeIntervalSince(report.capturedAt) >= 0 && now.timeIntervalSince(report.capturedAt) <= maximumCacheAge
     }
 
     // MARK: - State access
 
     private func state(for provider: String) -> ProviderUsageState {
-        provider == "claude" ? claude : codex
+        provider == "claude" ? claude : (provider == "codex" ? codex : agy)
     }
 
     private func setState(_ state: ProviderUsageState, for provider: String) {
         if provider == "claude" {
             claude = state
-        } else {
+        } else if provider == "codex" {
             codex = state
+        } else {
+            agy = state
         }
     }
 
@@ -135,7 +158,7 @@ final class UsageMonitorManager: ObservableObject {
         }
         if provider == "claude" {
             Defaults[.usageLastClaudeError] = error
-        } else {
+        } else if provider == "codex" {
             Defaults[.usageLastCodexError] = error
         }
     }
@@ -150,6 +173,7 @@ final class UsageMonitorManager: ObservableObject {
         var out: [String] = []
         if Defaults[.usageShowClaude] { out.append("claude") }
         if Defaults[.usageShowCodex] { out.append("codex") }
+        out.append("agy")
         return out
     }
 
@@ -167,14 +191,23 @@ final class UsageMonitorManager: ObservableObject {
         periodicRefreshTask = Task { [weak self] in
             while !Task.isCancelled {
                 guard let self else { return }
+                self.expireOldReports()
                 self.refreshIfStale()
 
-                let interval = max(30, Defaults[.usageMonitorRefreshInterval])
+                let interval: TimeInterval = 30
                 do {
                     try await Task.sleep(for: .seconds(interval))
                 } catch {
                     return
                 }
+            }
+        }
+    }
+
+    private func expireOldReports() {
+        for provider in ["claude", "codex", "agy"] {
+            if let report = state(for: provider).report, !Self.isCurrentEnough(report) {
+                setState(.idle, for: provider)
             }
         }
     }
@@ -187,7 +220,7 @@ final class UsageMonitorManager: ObservableObject {
     }
 
     private func isStale(_ state: ProviderUsageState, interval: TimeInterval) -> Bool {
-        guard let report = state.report else { return true }
+        guard let report = state.report, Self.isCurrentEnough(report) else { return true }
         return Date().timeIntervalSince(report.capturedAt) >= interval
     }
 
@@ -198,6 +231,44 @@ final class UsageMonitorManager: ObservableObject {
         }
     }
 
+    func selectedProfile(for provider: String) -> String? {
+        switch provider {
+        case "claude": Defaults[.usageClaudeProfile]
+        case "codex": Defaults[.usageCodexProfile]
+        default: nil
+        }
+    }
+
+    func profiles(for provider: String) -> [UsageProfileOption] { profileOptions[provider] ?? [] }
+
+    /// Asks the helper for Tangit's profiles; the sandboxed app cannot read them.
+    func loadProfiles() {
+        Task {
+            for provider in ["claude", "codex"] {
+                let options = await XPCHelperClient.shared.listUsageProfiles(provider: provider)
+                await MainActor.run { self.profileOptions[provider] = options }
+            }
+        }
+    }
+
+    func selectProfile(_ id: String, for provider: String) {
+        guard profiles(for: provider).contains(where: { $0.id == id }) else { return }
+        if provider == "claude" { Defaults[.usageClaudeProfile] = id }
+        else if provider == "codex" { Defaults[.usageCodexProfile] = id }
+        else { return }
+        // Show this profile's last good numbers while it re-syncs, so a
+        // transient probe failure after a switch does not blank the column.
+        if let cached = Self.loadCachedReport(for: provider, profile: id), Self.isCurrentEnough(cached) {
+            setState(.loaded(cached), for: provider)
+        } else {
+            setState(.idle, for: provider)
+        }
+        setLastError(nil, for: provider)
+        refresh(provider: provider, force: true)
+    }
+
+    func refreshProvider(_ provider: String) { refresh(provider: provider, force: true) }
+
     private func refresh(provider: String, force: Bool) {
         guard !inFlight.contains(provider) else { return }
 
@@ -206,23 +277,29 @@ final class UsageMonitorManager: ObservableObject {
             if !isStale(state(for: provider), interval: interval) { return }
         }
 
+        let profile = selectedProfile(for: provider)
         inFlight.insert(provider)
-        setState(.syncing(previous: state(for: provider).report), for: provider)
+        setState(.syncing(previous: state(for: provider).report.flatMap { Self.isCurrentEnough($0) ? $0 : nil }), for: provider)
 
-        Task { [provider] in
+        Task { [provider, profile] in
             let dto = await XPCHelperClient.shared.fetchUsage(
                 provider: provider,
+                profileID: profile,
                 securitySessionID: Self.currentSecuritySessionID()
             )
             await MainActor.run {
                 self.inFlight.remove(provider)
+                guard self.selectedProfile(for: provider) == profile else {
+                    self.refresh(provider: provider, force: true)
+                    return
+                }
                 if let dto {
                     // A failed probe (network hiccup, CLI timeout) should not
                     // wipe real numbers — keep the last good report visible.
                     // cliNotInstalled/notLoggedIn are genuine states and replace it.
                     if dto.status == .error,
                        let previous = self.state(for: provider).report,
-                       previous.status == .ok {
+                       previous.status == .ok, Self.isCurrentEnough(previous) {
                         self.setLastError(dto.errorDescription ?? "Usage refresh failed", for: provider)
                         self.setState(.loaded(previous), for: provider)
                     } else {
@@ -230,7 +307,7 @@ final class UsageMonitorManager: ObservableObject {
                         self.setState(.loaded(dto), for: provider)
                         if dto.status == .ok {
                             self.setLastError(nil, for: provider)
-                            Self.persistReport(dto, for: provider)
+                            Self.persistReport(dto, for: provider, profile: profile)
                             self.announceIfNewlyLow(provider: provider, previous: before, current: dto)
                         } else {
                             self.setLastError(dto.errorDescription ?? "Usage refresh failed", for: provider)
@@ -240,7 +317,7 @@ final class UsageMonitorManager: ObservableObject {
                     // Transport failure — synthesize an error report so the column
                     // shows something actionable instead of spinning forever.
                     let previous = self.state(for: provider).report
-                    if let previous {
+                    if let previous, Self.isCurrentEnough(previous) {
                         self.setLastError("Helper unavailable", for: provider)
                         self.setState(.loaded(previous), for: provider)
                     } else {
@@ -257,4 +334,10 @@ final class UsageMonitorManager: ObservableObject {
             }
         }
     }
+}
+import Foundation
+
+struct UsageProfileOption: Identifiable, Equatable {
+    let id: String
+    let identity: String?
 }

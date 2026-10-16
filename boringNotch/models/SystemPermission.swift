@@ -8,7 +8,7 @@ import AppKit
 /// What macOS has to allow, and what stops working without it.
 ///
 /// Five panes had each invented their own permission row. HUD tinted a whole
-/// card; Calendar drew red centred text; Tutor and Copilot each wrote a private
+/// card; Calendar drew red centred text; Copilot wrote a private
 /// `permissionRow` with different spacing; Sweep drew a card of its own. They
 /// disagreed on the verb — "Request", "Grant", "Open Privacy Settings" — on
 /// whether "not asked yet" was a failure, and on which colour a missing
@@ -74,7 +74,7 @@ enum SystemPermission: String, CaseIterable, Identifiable {
         case .accessibility:
             return "Replacing the system volume and brightness HUDs with the notch's own."
         case .screenRecording:
-            return "Tutor watching the screen to know which step of a lesson you are on."
+            return "Quiz reading the window you point it at, and the call copilot hearing the other side."
         case .microphone:
             return "The call copilot hearing the call it is meant to be helping with."
         case .calendars:

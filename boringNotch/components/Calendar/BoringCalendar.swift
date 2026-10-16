@@ -283,8 +283,6 @@ struct EventListView: View {
     @Default(.showFullEventTitles) private var showFullEventTitles
     @Default(.pomodoroTab) private var pomodoroTab
     @Default(.pomodoroCalendarIcon) private var pomodoroCalendarIcon
-    @Default(.callaTutorEnabled) private var callaTutorEnabled
-    @Default(.callaCalendarEnabled) private var callaCalendarEnabled
     @Default(.callaCopilotEnabled) private var callaCopilotEnabled
     @Default(.callaQuizEnabled) private var callaQuizEnabled
     @ObservedObject private var callaEngine = CallaEngineClient.shared
@@ -431,17 +429,6 @@ struct EventListView: View {
         if canStartPomodoro(for: event) {
             Button("Start a focus timer") { startPomodoro(for: event) }
         }
-        if canStartTutor(for: event) {
-            if let courseID = CallaCalendarBindings.courseID(for: event.id) {
-                Button("Resume the Calla lesson") { startTutor(for: event, courseID: courseID) }
-            } else if !callaEngine.status.courses.isEmpty {
-                Menu("Start a Calla course") {
-                    ForEach(callaEngine.status.courses) { course in
-                        Button(course.title) { startTutor(for: event, courseID: course.id) }
-                    }
-                }
-            }
-        }
     }
 
     private func canPrepCopilot(for event: EventModel) -> Bool {
@@ -453,37 +440,6 @@ struct EventListView: View {
     /// over XPC per row — the calendar list redraws constantly.
     private func hasPrep(for event: EventModel) -> Bool {
         CallaKnowledgeFocus.shared.hasNotes(eventID: event.id, seriesID: event.seriesID)
-    }
-
-    private func canStartTutor(for event: EventModel) -> Bool {
-        callaTutorEnabled && callaCalendarEnabled && canStartPomodoro(for: event)
-    }
-
-    private func startTutor(for event: EventModel, courseID: String) {
-        // Calendar path is atomic from learner perspective: if its time window
-        // cannot make a Pomodoro plan, do not start a lesson that claims timer
-        // support. Deliberately retain an intentional existing binding.
-        let preset = PomodoroManager.shared.selectedPreset
-        let blocks = PomodoroPlanner.plan(for: event, preset: preset)
-        guard !blocks.isEmpty else {
-            callaEngine.reportLocalFailure("This event has no viable Pomodoro window; lesson was not started.")
-            BoringViewCoordinator.shared.currentView = .tutor
-            return
-        }
-        CallaCalendarBindings.bind(eventID: event.id, courseID: courseID)
-        callaEngine.startCourse(courseID) { status in
-            guard status.lastResult == "started" else {
-                BoringViewCoordinator.shared.currentView = .tutor
-                return
-            }
-            PomodoroManager.shared.start(
-                blocks: blocks,
-                preset: preset,
-                title: event.title,
-                sourceEventID: event.id
-            )
-            BoringViewCoordinator.shared.currentView = .tutor
-        }
     }
 
     // Soft, leading-aligned color wash behind a card, tinted by the event's calendar.

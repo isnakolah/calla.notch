@@ -1,0 +1,26 @@
+{
+  "agy": {
+    "version": "1.3.5",
+    "url": "https://storage.googleapis.com/antigravity-public/antigravity-cli/1.3.5-6164039479459840/darwin-arm/cli_mac_arm64.tar.gz",
+    "algorithm": "sha512",
+    "checksum": "8ed16057c9bd9e452b99f7bd424a4c63959faae75e5fa94b4f9b1bf20769f7c6deb8ec9c88f3c17944f09bcfaa04950b981fcb1eb6994bf65ae74772a9ffe080"
+  },
+  "codex": {
+    "version": "0.162.1",
+    "url": "https://github.com/openai/codex/releases/download/rust-v0.162.1/codex-package-aarch64-apple-darwin.tar.gz",
+    "algorithm": "sha256",
+    "checksum": "88e37ccddf5a0f4ea9dc1be13c66a2a94f9c2d1a04f3ace9053d71b3939e885d"
+  },
+  "claude": {
+    "version": "2.1.290",
+    "url": "https://downloads.claude.ai/claude-code-releases/2.1.290/darwin-arm64/claude",
+    "algorithm": "sha256",
+    "checksum": "b8412a3826b2dc8ecb1c0605970c28dea28355de5faa740407dd881acdd40237"
+  },
+  "tailscale": {
+    "version": "1.104.1",
+    "url": "https://pkgs.tailscale.com/stable/Tailscale-1.104.1-macos.pkg",
+    "algorithm": "sha256",
+    "checksum": "67ec55f18ee2afac0a8fb57f7811977f4ad6df1debd4a187fa0db3dbb5d401d5"
+  }
+}

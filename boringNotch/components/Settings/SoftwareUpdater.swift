@@ -29,8 +29,12 @@ struct CheckForUpdatesView: View {
     }
     
     var body: some View {
-        Button("Check for Updates…", action: updater.checkForUpdates)
-            .disabled(!checkForUpdatesViewModel.canCheckForUpdates)
+        if PrivateDistribution.enabled {
+            Button("Setup, Repair & Updates…") { PrivateDistribution.openSetup() }
+        } else {
+            Button("Check for Updates…", action: updater.checkForUpdates)
+                .disabled(!checkForUpdatesViewModel.canCheckForUpdates)
+        }
     }
 }
 

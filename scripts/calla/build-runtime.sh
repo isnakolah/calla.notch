@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Build Boring's hidden Tutor runtime into an XPC resource directory.
+# Build Boring's call runtime (CallaCallHost) into an XPC resource directory.
 set -euo pipefail
 trap 'echo "Calla runtime build failed at line $LINENO: $BASH_COMMAND" >&2' ERR
 
@@ -24,7 +24,6 @@ if [[ "${CALLA_COMPILE_ONLY:-0}" == "1" ]]; then
   echo "Calla runtime: skipped for compile-only source validation"
   exit 0
 fi
-PACKAGE="$ROOT/Tutor/apps/macos/TutorHost"
 CONFIGURATION="${CONFIGURATION:-Debug}"
 SWIFT_CONFIGURATION="debug"
 [[ "$CONFIGURATION" == "Release" ]] && SWIFT_CONFIGURATION="release"
@@ -43,46 +42,12 @@ if [[ -z "${EXPANDED_CODE_SIGN_IDENTITY:-}" || "${EXPANDED_CODE_SIGN_IDENTITY}" 
   fi
 fi
 
-swift_build --package-path "$PACKAGE" -c "$SWIFT_CONFIGURATION"
-BINARIES="$(xcrun swift build --package-path "$PACKAGE" -c "$SWIFT_CONFIGURATION" --show-bin-path)"
-for executable in CallaTutorHost CallaOverlayHelper; do
-  [[ -x "$BINARIES/$executable" ]] || { echo "missing Tutor runtime executable: $executable" >&2; exit 78; }
-done
-
-HOST_APP="$DESTINATION/CallaTutorHost.app"
-# The renderer that draws the pointer and tooltip is a nested application, the
-# first place TutorHost's helper lookup looks and the layout the original Calla
-# TutorHost shipped. Staged here as a loose binary instead, the lookup found
-# nothing, the renderer never started, and no lesson ever showed a cursor or a
-# tooltip while still reporting itself as started.
-HELPER_APP="$HOST_APP/Contents/Helpers/CallaOverlayHelper.app"
-/bin/rm -f "$DESTINATION/CallaTutorHost" "$DESTINATION/CallaOverlayHelper"
-# Engine mode cannot carry standalone shell teaching relay forward from a
-# previous incremental build. Standalone TutorHost bundles it separately.
-/bin/rm -f "$DESTINATION/scripts/calla-ask.sh"
-mkdir -p "$DESTINATION/assets/blender" "$DESTINATION/scripts" "$HOST_APP/Contents/MacOS" \
-  "$HOST_APP/Contents/Resources/assets/blender" "$HELPER_APP/Contents/MacOS"
-ditto "$BINARIES/CallaTutorHost" "$HOST_APP/Contents/MacOS/CallaTutorHost"
-ditto "$ROOT/scripts/calla/CallaTutorHost-Info.plist" "$HOST_APP/Contents/Info.plist"
-ditto "$BINARIES/CallaOverlayHelper" "$HELPER_APP/Contents/MacOS/CallaOverlayHelper"
-ditto "$ROOT/scripts/calla/CallaOverlayHelper-Info.plist" "$HELPER_APP/Contents/Info.plist"
-# Icon templates VisualLocator matches against, inside the host bundle so
-# `Bundle.main.resourceURL` resolves them. This must stay ABOVE the codesign
-# block: staging a resource into the bundle after it is sealed makes
-# `codesign --verify --deep --strict` fail with "a sealed resource is missing
-# or invalid", which is what deploy.sh runs.
-ditto "$ROOT/Tutor/apps/macos/TutorHost/assets/blender" "$HOST_APP/Contents/Resources/assets/blender"
-# TCC identifies each executable that calls CoreGraphics/ScreenCaptureKit.
-# Keep the embedded helpers under Boring's real signing identity; ad-hoc
-# signatures cannot receive the Screen Recording grant that Boring requests.
-# Nested bundle first: the host's seal has to cover the renderer inside it.
-if [[ "$SIGN_CALLA_RUNTIME" == "1" ]]; then
-  codesign --force --sign "$EXPANDED_CODE_SIGN_IDENTITY" "$HELPER_APP"
-  codesign --force --sign "$EXPANDED_CODE_SIGN_IDENTITY" "$HOST_APP"
-fi
-# The live-call capture host. A separate SwiftPM package because it pulls a
-# whisper.cpp xcframework that the Tutor host has no use for, but it ships in
-# the same runtime directory and under the same identity: TCC keys the
+mkdir -p "$DESTINATION"
+# Earlier builds staged a Tutor host, its overlay helper, lesson relays and
+# Blender templates here. Incremental builds must not carry them forward.
+/bin/rm -rf "$DESTINATION/CallaTutorHost.app" "$DESTINATION/CallaTutorHost" "$DESTINATION/CallaOverlayHelper" \
+  "$DESTINATION/scripts" "$DESTINATION/assets"
+# The live-call capture host. It ships under Boring's identity: TCC keys the
 # microphone and screen-recording grants to the signature, and an ad-hoc one
 # cannot hold either.
 CALLHOST_PACKAGE="$ROOT/CallaCallHost"
@@ -127,15 +92,6 @@ if [[ -d "$CALLHOST_PACKAGE" ]]; then
     exit 78
   fi
 fi
-
-# Old Tutor bootstrap/install/signing scripts create a second visible app and
-# old launch agents. The embedded runtime needs only these private relays.
-for script in calla-course.sh calla-feedback.sh calla-gateway-check.sh; do
-  ditto "$ROOT/Tutor/scripts/$script" "$DESTINATION/scripts/$script"
-  chmod 700 "$DESTINATION/scripts/$script"
-done
-ditto "$ROOT/Tutor/apps/macos/TutorHost/assets/blender" "$DESTINATION/assets/blender"
-chmod 700 "$HOST_APP/Contents/MacOS/CallaTutorHost" "$HELPER_APP/Contents/MacOS/CallaOverlayHelper"
 
 # This phase stages bytes into the engine's own Resources, which invalidates
 # whatever seal covers that bundle. On a full build Xcode's implicit CodeSign

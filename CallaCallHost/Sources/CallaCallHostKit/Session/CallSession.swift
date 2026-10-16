@@ -701,6 +701,11 @@ public actor CallSession {
                 startedAt: startedAt,
                 liveModel: config.model.name,
                 provider: config.provider.rawValue))
+            // Kept for the post-call naming pass, which runs after the meeting
+            // context is long gone.
+            if let attendees = meeting?.attendees, !attendees.isEmpty {
+                try? await store.setAttendees(attendees, callID: config.callID)
+            }
         }
     }
 
@@ -842,6 +847,40 @@ public actor CallSession {
         emit(kind: .question, question: question)
     }
 
+    /// A screenshot of what is being shared, saved beside the call and read
+    /// into the copilot's context. Returns the number of characters read, or
+    /// nil when nothing could be captured.
+    public func captureScreen() async -> Int? {
+        guard lifecycleState != .finished else { return nil }
+        let offset = Date().timeIntervalSince(startedAt)
+        let total = max(0, Int(offset))
+        let name = String(format: "%02d-%02d-%02d.jpg", total / 3600, total / 60 % 60, total % 60)
+        let directory = CallHostPaths.callMetadataFile(for: config.callID)
+            .deletingLastPathComponent().appendingPathComponent("captures", isDirectory: true)
+        do {
+            let result = try await ScreenSnapshot.capture(into: directory, name: name)
+            let record: [String: Any] = ["file": result.file.lastPathComponent, "offset": offset,
+                                         "text": result.text,
+                                         "taken_at": ISO8601DateFormatter().string(from: Date())]
+            if var line = try? JSONSerialization.data(withJSONObject: record, options: [.sortedKeys]) {
+                line.append(0x0A)
+                let log = directory.appendingPathComponent("captures.jsonl")
+                if let handle = try? FileHandle(forWritingTo: log) {
+                    _ = try? handle.seekToEnd(); try? handle.write(contentsOf: line); try? handle.close()
+                } else {
+                    FileManager.default.createFile(atPath: log.path, contents: line,
+                                                   attributes: [.posixPermissions: 0o600])
+                }
+            }
+            await advisor.addScreenContext(result.text, offset: offset)
+            sessionLog.notice("screenshot \(name, privacy: .public): \(result.text.count, privacy: .public) characters read")
+            return result.text.count
+        } catch {
+            sessionLog.error("screenshot failed: \(error.localizedDescription, privacy: .public)")
+            return nil
+        }
+    }
+
     @discardableResult public func answerSelectedText(_ text: String, questionID: UUID? = nil, codingEvidence: CodingDialogueEvidence? = nil) async -> Bool {
         let accepted = await advisor.askManual(text, questionID: questionID, codingEvidence: codingEvidence)
         await writeStatus()
@@ -960,9 +999,23 @@ public actor CallSession {
             let overview = closing?.overview.isEmpty == false
                 ? closing!.overview
                 : account.standing
-            let points = account.points.enumerated().map { index, text in
-                SourcedCallItem(id: "point-\(index)", kind: Self.kind(of: text),
-                                text: text, fromSeq: 1, toSeq: endSeq)
+            // The deep pass's own lists when it gave them: it read the whole call
+            // and said which line is a decision and which a commitment. The
+            // running account's points, sorted by keyword, are the fallback.
+            let points: [SourcedCallItem]
+            if let closing, !(closing.decisions.isEmpty && closing.actionItems.isEmpty) {
+                points = closing.decisions.enumerated().map {
+                    SourcedCallItem(id: "decision-\($0.offset)", kind: .decision,
+                                    text: $0.element, fromSeq: 1, toSeq: endSeq)
+                } + closing.actionItems.enumerated().map {
+                    SourcedCallItem(id: "action-\($0.offset)", kind: .actionItem,
+                                    text: $0.element, fromSeq: 1, toSeq: endSeq)
+                }
+            } else {
+                points = account.points.enumerated().map { index, text in
+                    SourcedCallItem(id: "point-\(index)", kind: Self.kind(of: text),
+                                    text: text, fromSeq: 1, toSeq: endSeq)
+                }
             }
             // The deep pass's open questions win when it produced any: it saw the
             // whole call at once, where the ledger's list is whatever survived
@@ -977,7 +1030,8 @@ public actor CallSession {
             let draft = CallRecapDraft(callID: config.callID, overview: overview,
                                        items: points + questions,
                                        provider: await advisor.activeProvider.rawValue,
-                                       model: config.summaryModel)
+                                       model: config.summaryModel,
+                                       title: closing?.title.isEmpty == false ? closing?.title : nil)
             try? await store.save(recapDraft: draft)
         }
 
@@ -1211,32 +1265,54 @@ public actor CallSession {
 
         let store = config.store
         let callID = config.callID
+        let namer = speakerNamer()
         Task.detached(priority: .background) {
-            let model = WhisperModel.largeV3Turbo
-            let models = ModelStore(directory: CallHostPaths.modelsDirectory)
-            guard models.isInstalled(model) else {
-                sessionLog.notice(
-                    "skipping the archive pass for \(callID, privacy: .public): \(model.name, privacy: .public) is not installed")
-                return
-            }
+            await Self.archivePass(directory: directory, callID: callID, store: store)
+            // After the re-transcription, so the voices land on the transcript
+            // History shows. Runs on the live revision when there is no archive.
+            guard let store else { return }
             do {
-                let modelURL = models.localURL(for: model)
-                // Best-effort: without the CoreML encoder this is slower, not
-                // broken, and nothing is waiting.
-                await models.ensureCoreML(model)
-                let result = try await ArchiveTranscriber.retranscribe(
-                    callDirectory: directory,
-                    modelURL: modelURL,
-                    modelName: model.displayName,
-                    language: model.languageHint,
-                    store: store)
-                sessionLog.notice(
-                    "archive pass for \(callID, privacy: .public): \(result.turns, privacy: .public) turns in \(result.duration, format: .fixed(precision: 1), privacy: .public)s")
+                _ = try await SpeakerPass.run(callDirectory: directory, store: store, namer: namer)
             } catch {
                 sessionLog.error(
-                    "archive pass for \(callID, privacy: .public) failed: \(error.localizedDescription, privacy: .public)")
+                    "speaker pass for \(callID, privacy: .public) failed: \(error.localizedDescription, privacy: .public)")
             }
         }
+    }
+
+    private static func archivePass(directory: URL, callID: String, store: CallaStore?) async {
+        let model = WhisperModel.largeV3Turbo
+        let models = ModelStore(directory: CallHostPaths.modelsDirectory)
+        guard models.isInstalled(model) else {
+            sessionLog.notice(
+                "skipping the archive pass for \(callID, privacy: .public): \(model.name, privacy: .public) is not installed")
+            return
+        }
+        do {
+            let modelURL = models.localURL(for: model)
+            // Best-effort: without the CoreML encoder this is slower, not
+            // broken, and nothing is waiting.
+            await models.ensureCoreML(model)
+            let result = try await ArchiveTranscriber.retranscribe(
+                callDirectory: directory,
+                modelURL: modelURL,
+                modelName: model.displayName,
+                language: model.languageHint,
+                store: store)
+            sessionLog.notice(
+                "archive pass for \(callID, privacy: .public): \(result.turns, privacy: .public) turns in \(result.duration, format: .fixed(precision: 1), privacy: .public)s")
+        } catch {
+            sessionLog.error(
+                "archive pass for \(callID, privacy: .public) failed: \(error.localizedDescription, privacy: .public)")
+        }
+    }
+
+    /// The naming pass for voices no voiceprint recognised. Only on the local
+    /// provider: the transcript does not leave this Mac for a guess the user did
+    /// not ask for.
+    private func speakerNamer() -> SpeakerPass.Namer? {
+        guard config.provider == .local else { return nil }
+        return SpeakerNamer.local(runtimeRoot: CallHostPaths.root, exactModel: config.summaryModel)
     }
 
     /// The names this call is about, for the decoder.
@@ -1569,7 +1645,13 @@ public actor CallSession {
         encoder.outputFormatting = [.sortedKeys]
         encoder.dateEncodingStrategy = .iso8601
         guard let data = try? encoder.encode(status) else { return }
-        try? CallHostPaths.writeAtomically(
-            data, to: CallHostPaths.callMetadataFile(for: config.callID))
+        let metadata = CallHostPaths.callMetadataFile(for: config.callID)
+        try? CallHostPaths.writeAtomically(data, to: metadata)
+        // Who was in the meeting and what its invite said, for the call's
+        // readable folder. The store keeps only the event's title and ids.
+        if let meeting = config.profile?.meeting, let invite = try? encoder.encode(meeting) {
+            try? CallHostPaths.writeAtomically(
+                invite, to: metadata.deletingLastPathComponent().appendingPathComponent("meeting.json"))
+        }
     }
 }

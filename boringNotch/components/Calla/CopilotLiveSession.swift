@@ -29,6 +29,11 @@ final class CopilotLiveSession: ObservableObject {
     @Published private(set) var isLive = false
 
     @Published private(set) var layout: Layout = .full
+    /// The panel is resting as the ambient summary. Set by the notch, which
+    /// owns hover; read here so the window keeps the collapsed size.
+    @Published var ambientShowing = false
+    /// The zen pane's height, measured from its text so nothing is cut off.
+    @Published var ambientHeight: CGFloat = 118
 
     /// Whether the coding panel is frozen on the step the reader is working
     /// through. Published rather than kept in the panel's own `@State` because
@@ -214,7 +219,19 @@ final class CopilotLiveSession: ObservableObject {
         // clock live in the header band either way, so the call is still
         // visibly running at the smaller size.
         // The user's own numbers, not the constants. Clamped on read.
+        // The notch plus three short lines: an island, not a panel.
+        // Wide enough for status beside the notch; as tall as its text needs.
+        // Zen keeps compact's width: resting and hovering change only the height.
+        if ambientShowing { return CGSize(width: CallaPanelSize.compact.width, height: ambientHeight) }
         return layout == .full ? CallaPanelSize.full : CallaPanelSize.compact
+    }
+
+    /// Hovering the ambient summary brings back the collapsed panel, whichever
+    /// layout was last used.
+    func collapseForHover() {
+        guard layout != .compact else { return }
+        withAnimation(.smooth(duration: 0.28)) { layout = .compact }
+        NotificationCenter.default.post(name: .copilotLiveDidChange, object: nil)
     }
 
     /// Bumped whenever the panel-size settings change.
@@ -416,15 +433,8 @@ final class CopilotLiveSession: ObservableObject {
     }
 
     /// Brings the notch to the copilot tab and opens it at the live size.
-    ///
-    /// Refuses to steal the notch from a running lesson, the same rule the
-    /// suggestion peek has followed since it shipped.
     private func reveal() {
         let coordinator = BoringViewCoordinator.shared
-        if coordinator.currentView == .tutor,
-           CallaEngineClient.shared.status.activeLesson?.active == true {
-            return
-        }
         coordinator.currentView = .copilot
         NotificationCenter.default.post(name: .copilotLiveDidChange, object: nil)
     }
@@ -476,7 +486,11 @@ final class CopilotLiveSession: ObservableObject {
     func toggleLayout() {
         // Nothing to toggle while a sign-in owns the panel.
         guard isLive || isCoding, !signInActive else { return }
-        layout = layout == .full ? .compact : .full
+        // The same curve the notch resizes on, so the content and the window
+        // move together instead of one snapping while the other glides.
+        withAnimation(.smooth(duration: 0.28)) {
+            layout = layout == .full ? .compact : .full
+        }
         // A layout change is a size change, so the open notch has to be told.
         NotificationCenter.default.post(name: .copilotLiveDidChange, object: nil)
     }

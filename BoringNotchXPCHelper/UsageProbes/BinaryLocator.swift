@@ -63,6 +63,14 @@ public struct BinaryLocator: Sendable {
     /// - Parameter tool: The name of the CLI tool
     /// - Returns: The full path to the tool if found, nil otherwise
     public static func which(_ tool: String) -> String? {
+        if ["codex", "claude"].contains(tool) {
+            let bundled = "/Applications/boringNotch.app/Contents/Resources/Tangit/Providers/\(tool)/bin/\(tool)"
+            if FileManager.default.isExecutableFile(atPath: bundled) { return bundled }
+        }
+        if tool == "agy", let pw = getpwuid(getuid()), let directory = pw.pointee.pw_dir {
+            let managed = String(cString: directory) + "/Library/Application Support/boringNotch/Managed/agy/current/agy"
+            if FileManager.default.isExecutableFile(atPath: managed) { return managed }
+        }
         // First, try using the login shell's `which`
         if let path = whichViaShell(tool) {
             return path

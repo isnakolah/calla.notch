@@ -9,7 +9,7 @@ import Foundation
 enum Schema {
     /// Bump this and append to `migrations` — never edit a migration that has
     /// shipped, because someone's file has already run it.
-    static let current = 8
+    static let current = 10
 
     static func migrate(_ database: SQLiteDatabase) throws {
         let version = try database.scalarInt("PRAGMA user_version") ?? 0
@@ -18,6 +18,14 @@ enum Schema {
         for step in (version + 1) ... current {
             guard let sql = migrations[step] else { continue }
             try database.transaction {
+                // SQLite has no ADD COLUMN IF NOT EXISTS. A file that already
+                // has the column (a rewound or partially upgraded one) only
+                // needs its version moved on.
+                if let (table, column) = addedColumns[step],
+                   try database.query("PRAGMA table_info(\(table))", row: { $0.string(1) }).contains(column) {
+                    try database.execute("PRAGMA user_version = \(step)")
+                    return
+                }
                 try database.execute(sql)
                 // Not a bindable parameter — PRAGMA takes a literal.
                 try database.execute("PRAGMA user_version = \(step)")
@@ -35,10 +43,57 @@ enum Schema {
         }
     }
 
-    private static let migrations: [Int: String] = [1: v1, 2: v2, 3: v3, 4: v4, 5: v5, 6: v6, 7: v7, 8: v8]
+    private static let migrations: [Int: String] = [1: v1, 2: v2, 3: v3, 4: v4, 5: v5, 6: v6, 7: v7, 8: v8, 9: v9, 10: v10]
+    /// Additive migrations from v9 on, keyed by the one column that marks each
+    /// as applied, so a file that already has it is only moved on. v10 adds
+    /// more than a column, but applies in one transaction, so `speaker_id`
+    /// present means all of it is.
+    private static let addedColumns: [Int: (String, String)] = [
+        9: ("call_recap_draft", "title"),
+        10: ("call_turn", "speaker_id"),
+    ]
+
+    /// Who said what on a call with more than one remote voice.
+    ///
+    /// `call_turn.speaker_id` is `me` for the mic leg and `S1`, `S2`, … for the
+    /// voices the post-call diarizer separated out of system audio; NULL until
+    /// that pass has run. `call_speaker` names each of those per call, and
+    /// `person_voiceprint` remembers a confirmed voice so the next call can name
+    /// it without asking. Voiceprints are biometric: they live only here, and
+    /// nothing outside this file reads them.
+    private static let v10 = """
+    ALTER TABLE call_turn ADD COLUMN speaker_id TEXT;
+    ALTER TABLE call ADD COLUMN attendees_json TEXT;
+
+    CREATE TABLE call_speaker (
+      call_id        TEXT NOT NULL REFERENCES call(id) ON DELETE CASCADE,
+      speaker_id     TEXT NOT NULL,
+      label          TEXT,
+      person_id      TEXT,
+      name_source    TEXT NOT NULL DEFAULT 'none',
+      confidence     REAL,
+      speech_seconds REAL NOT NULL DEFAULT 0,
+      embedding      BLOB,
+      PRIMARY KEY (call_id, speaker_id)
+    );
+
+    CREATE TABLE person_voiceprint (
+      person_id      TEXT PRIMARY KEY,
+      display_name   TEXT NOT NULL,
+      embedding      BLOB NOT NULL,
+      speech_seconds REAL NOT NULL DEFAULT 0,
+      updated_at     REAL NOT NULL
+    );
+    """
 
     /// Preserve source-chunk embeddings inside frozen Call packs. Retrieval can
     /// then fuse scoped BM25 and cosine ranks without consulting mutable notes.
+    /// The closing pass names the call. Kept on the draft so a call folder and
+    /// History agree on what the call was about.
+    private static let v9 = """
+    ALTER TABLE call_recap_draft ADD COLUMN title TEXT;
+    """
+
     private static let v8 = """
     ALTER TABLE call_knowledge_chunk ADD COLUMN embedding BLOB;
     """

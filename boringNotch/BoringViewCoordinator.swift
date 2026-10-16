@@ -162,7 +162,7 @@ class BoringViewCoordinator: ObservableObject {
             }
 
         Task { @MainActor in
-            helloAnimationRunning = firstLaunch
+            helloAnimationRunning = firstLaunch && !PrivateDistribution.enabled
 
             if Defaults[.hudReplacement] {
                 let authorized = await XPCHelperClient.shared.isAccessibilityAuthorized()

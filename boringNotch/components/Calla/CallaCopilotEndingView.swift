@@ -3,6 +3,7 @@
 //  boringNotch
 //
 
+import Defaults
 import SwiftUI
 
 /// The seconds between pressing End call and the call actually being finished.
@@ -157,6 +158,9 @@ struct CallaCopilotEndingView: View {
     /// they can walk away.
     private var footnote: String {
         guard completedSteps < Step.allCases.count else {
+            if let folder = copilot.callFolder, Defaults[.callaCallFoldersEnabled] {
+                return "Saved to Documents › Calls › \(folder.replacingOccurrences(of: "/", with: " › "))."
+            }
             return "The transcript and the recap are saved. You can find them under History."
         }
         if stalled {

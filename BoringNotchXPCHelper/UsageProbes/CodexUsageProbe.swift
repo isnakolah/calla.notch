@@ -4,8 +4,8 @@ import Foundation
 struct CodexUsageProbe: UsageProbe {
     private let client: CodexRPCClient
 
-    init(client: CodexRPCClient? = nil) {
-        self.client = client ?? DefaultCodexRPCClient()
+    init(codexHome: String? = nil, client: CodexRPCClient? = nil) {
+        self.client = client ?? DefaultCodexRPCClient(codexHome: codexHome)
     }
 
     func isAvailable() async -> Bool {

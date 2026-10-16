@@ -87,10 +87,14 @@ struct CallaCallPreflightView: View {
     /// place the interview names its meeting.
     private var personaChip: some View {
         CallaContextChip(title: CallaCopilotPersona.title(persona), symbol: "person.crop.circle") {
-            ForEach(CallaCopilotPersona.all(including: Array(customPersonas.keys)), id: \.self) { value in
-                Button(CallaCopilotPersona.title(value)) {
-                    persona = value
-                    engine.setCallPersona(value)
+            ForEach(CallaCopilotPersona.grouped(including: Array(customPersonas.keys)), id: \.title) { group in
+                Section(group.title) {
+                    ForEach(group.ids, id: \.self) { value in
+                        Button(CallaCopilotPersona.title(value)) {
+                            persona = value
+                            engine.setCallPersona(value)
+                        }
+                    }
                 }
             }
         }

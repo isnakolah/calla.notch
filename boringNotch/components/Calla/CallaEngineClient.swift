@@ -1,4 +1,5 @@
 import Foundation
+import AppKit
 import Defaults
 import CallaContracts
 
@@ -17,6 +18,7 @@ import CallaContracts
 @objc protocol BoringCallaEngineObserver: BoringCallaEngineStatusObserver, BoringCallaEngineCallObserver, BoringCallaEngineCodingObserver {}
 
 @objc protocol BoringCallaEngineProtocol {
+    func privateSetup(_ request: Data, with reply: @escaping (Data) -> Void)
     func start(with reply: @escaping (Data) -> Void)
     func stop(with reply: @escaping (Data) -> Void)
     func applyPreferences(_ preferences: Data, with reply: @escaping (Data) -> Void)
@@ -24,18 +26,11 @@ import CallaContracts
     func subscribeStatus(_ observer: BoringCallaEngineStatusObserver, with reply: @escaping (Data) -> Void)
     func subscribeCallEvents(_ observer: BoringCallaEngineCallObserver, with reply: @escaping (Data) -> Void)
     func requestGatewayUpdate(with reply: @escaping (Data) -> Void)
-    func requestScreenRecording(with reply: @escaping (Data) -> Void)
-    func requestAccessibility(with reply: @escaping (Data) -> Void)
-    func startCourse(_ courseID: String, with reply: @escaping (Data) -> Void)
-    func resumeCourse(with reply: @escaping (Data) -> Void)
-    func stopLesson(with reply: @escaping (Data) -> Void)
-    func ask(_ text: String, with reply: @escaping (Data) -> Void)
-    func setTutorProvider(_ provider: String, with reply: @escaping (Data) -> Void)
-    func tutorHistory(_ query: Data, with reply: @escaping (Data) -> Void)
-    func tutorCapture(_ captureID: String, with reply: @escaping (Data) -> Void)
-    func cancelTutorFeedback(_ feedbackID: String, generation: Int, with reply: @escaping (Data) -> Void)
-    func courseControl(_ command: Data, with reply: @escaping (Data) -> Void)
     func copilotControl(_ command: Data, with reply: @escaping (Data) -> Void)
+    /// Opens a call's folder in ~/Documents/Calls, or the root for an empty id.
+    func revealCallFolder(_ callID: String, with reply: @escaping (Data) -> Void)
+    /// Writes a folder for every past call that lacks one.
+    func exportPastCalls(with reply: @escaping (Data) -> Void)
     /// Turns newer than `seq`. Pass -1 for the whole tail.
     func copilotTranscript(since seq: Int, with reply: @escaping (Data) -> Void)
     func copilotCalls(with reply: @escaping (Data) -> Void)
@@ -44,6 +39,7 @@ import CallaContracts
     func copilotCallSuggestions(_ callID: String, with reply: @escaping (Data) -> Void)
     func copilotRecapDraft(_ callID: String, with reply: @escaping (Data) -> Void)
     func copilotRecapControl(_ command: Data, with reply: @escaping (Data) -> Void)
+    func copilotSpeakerControl(_ command: Data, with reply: @escaping (Data) -> Void)
     /// The prompts the copilot would actually send, as `[path: text]`.
     func copilotPrompts(with reply: @escaping (Data) -> Void)
     func requestCopilotPermissions(with reply: @escaping (Data) -> Void)
@@ -80,52 +76,19 @@ import CallaContracts
 }
 
 struct CallaEnginePreferences: Codable, Equatable {
-    let captureEnabled: Bool
-    let allowedBundleIDs: [String]
-    let captureLongEdge: Int
-    let tooltipWidth: Int
-    let hideTooltipOnHover: Bool
-    let cursorSize: Int
-    let tooltipOpacity: Double
-    let showStatusHUD: Bool
-    let learnerID: String
-    let hiddenCourseIDs: [String]
     let quizEnabled: Bool
+    let callFoldersEnabled: Bool
+    let callFoldersAudio: Bool
 
     static var current: CallaEnginePreferences {
-        let learnerID = learnerIdentifier()
-        return CallaEnginePreferences(
-            captureEnabled: Defaults[.callaCaptureEnabled],
-            allowedBundleIDs: Defaults[.callaAllowedBundleIDs],
-            captureLongEdge: Defaults[.callaCaptureLongEdge],
-            tooltipWidth: Defaults[.callaTooltipWidth],
-            hideTooltipOnHover: Defaults[.callaHideTooltipOnHover],
-            cursorSize: Defaults[.callaCursorSize],
-            tooltipOpacity: Defaults[.callaTooltipOpacity],
-            showStatusHUD: Defaults[.callaShowStatusHUD],
-            learnerID: learnerID,
-            hiddenCourseIDs: Defaults[.callaHiddenCourseIDs],
-            quizEnabled: Defaults[.callaQuizEnabled]
-        )
-    }
-
-    private static func learnerIdentifier() -> String {
-        let stored = Defaults[.callaLearnerID]
-        if stored.range(of: "^[A-Za-z0-9-]{8,80}$", options: .regularExpression) != nil { return stored }
-        let identifier = "learner-" + UUID().uuidString.lowercased()
-        Defaults[.callaLearnerID] = identifier
-        return identifier
+        CallaEnginePreferences(quizEnabled: Defaults[.callaQuizEnabled],
+                               callFoldersEnabled: Defaults[.callaCallFoldersEnabled],
+                               callFoldersAudio: Defaults[.callaCallFoldersAudio])
     }
 }
 
 struct CallaEngineStatus: Codable, Equatable {
     var running = false
-    /// Whether the Tutor host answers its socket, as opposed to whether the
-    /// engine believes it started it.
-    var hostReady = false
-    var socketPath = ""
-    var screenRecordingGranted = false
-    var accessibilityGranted = false
     var gatewayReachable = false
     var releaseVersion: String? = nil
     var previousGatewayRelease: String? = nil
@@ -133,57 +96,18 @@ struct CallaEngineStatus: Codable, Equatable {
     var lastGatewayUpdateAt: Date? = nil
     var lastResult = "Engine not started"
     var diagnostics: [String] = []
-    var activeLesson: CallaActiveLesson? = nil
-    var courses: [CallaCourseSnapshot] = []
-    var tutorIntelligence: CallaTutorIntelligenceStatus? = nil
     var copilot = CallaCopilotStatus()
     var quiz = QuizSessionSnapshot()
 }
-
-struct CallaTutorIntelligenceStatus: Codable, Equatable {
-    var selectedProvider = "local"
-    var activeProvider: String? = nil
-    var pendingFeedbackID: String? = nil
-    var activeRunID: String? = nil
-    var activeRevision: String? = nil
-    var activeGeneration: Int? = nil
-    var localAgyAvailable = false
-    var localAgyVersion: String? = nil
-    var localAgyAuthenticated = false
-    var gatewayFeedbackAvailable = false
-    var gatewayAuthoringAvailable = false
-    var engineIngressHealthy = false
-    var captureAvailable = false
-    var lastProvider: String? = nil
-    var lastModel: String? = nil
-    var lastLatencyMilliseconds: Int? = nil
-    var lastFallbackReason: String? = nil
-    var lastDeterministicVerification: String? = nil
-    var historyByteCount = 0
-    var captureCount = 0
-    var storageFailure: String? = nil
-    var protocolVersion = 4
-}
-
-struct CallaTutorHistoryQuery: Codable { let cursor: String?; let query: String?; let pageSize: Int }
-struct CallaTutorFeedback: Codable, Identifiable, Equatable {
-    let id: String; let runID: String; let generation: Int; let question: String?; let context: String
-    let state: String; let answer: String?; let selectedProvider: String?; let actualProvider: String?
-    let model: String?; let latencyMilliseconds: Int?; let fallbackReason: String?; let errorCode: String?
-    let captureID: String?; let createdAt: Date
-    enum CodingKeys: String, CodingKey {
-        case id, question, context, state, answer, model
-        case runID = "runID", generation, selectedProvider = "selectedProvider", actualProvider = "actualProvider"
-        case latencyMilliseconds = "latencyMilliseconds", fallbackReason = "fallbackReason", errorCode = "errorCode"
-        case captureID = "captureID", createdAt = "createdAt"
-    }
-}
-struct CallaTutorHistoryPage: Codable, Equatable { let entries: [CallaTutorFeedback]; let nextCursor: String? }
 
 /// Live-call state, carried on the engine's existing status poll.
 struct CallaCopilotStatus: Codable, Equatable {
     var available = false
     var running = false
+    /// Screenshots taken during the current call.
+    var screenshotCount = 0
+    /// Where the last finished call was filed, relative to ~/Documents/Calls.
+    var callFolder: String? = nil
     var callID: String? = nil
     var generation = 0
     var persona = "generic"
@@ -376,8 +300,87 @@ struct CallaCallTurn: Codable, Equatable, Identifiable {
     let t1: Double
     let text: String
     let confidence: Double?
+    /// `me`, `S1`, `S2`, … once the post-call speaker pass has run.
+    var speaker: String? = nil
+    /// A name, "You" or "Speaker N". Nil before the speaker pass.
+    var speakerName: String? = nil
+
+    enum CodingKeys: String, CodingKey {
+        case id, seq, source, t0, t1, text, confidence, speaker
+        case speakerName = "speaker_name"
+    }
 
     var isRemote: Bool { source == "them" }
+
+    /// Who to credit the turn to: the diarized speaker when there is one, else
+    /// the side of the call it was captured on.
+    var speakerLabel: String { speakerName ?? (isRemote ? "Them" : "You") }
+
+    /// "12:34" from the start of the call, or "1:02:03" past the hour.
+    var clock: String {
+        let seconds = Int(max(0, t0))
+        let h = seconds / 3600, m = (seconds % 3600) / 60, s = seconds % 60
+        return h > 0 ? String(format: "%d:%02d:%02d", h, m, s) : String(format: "%d:%02d", m, s)
+    }
+}
+
+/// A call's speakers and every remembered voice, as the engine reports them.
+struct CallaCallSpeakers: Codable, Equatable {
+    struct Speaker: Codable, Equatable, Identifiable {
+        let id: String
+        let name: String
+        /// `none`, `auto` (guessed, unconfirmed), `voiceprint` or `user`.
+        let nameSource: String
+        let confidence: Double?
+        let speechSeconds: Double
+
+        enum CodingKeys: String, CodingKey {
+            case id, name, confidence
+            case nameSource = "name_source"
+            case speechSeconds = "speech_seconds"
+        }
+
+        var isLocal: Bool { id == "me" }
+        var isGuess: Bool { nameSource == "auto" }
+        var isNamed: Bool { nameSource != "none" }
+    }
+
+    struct Voice: Codable, Equatable, Identifiable {
+        let personID: String
+        let name: String
+        let updatedAt: Date
+
+        var id: String { personID }
+
+        enum CodingKeys: String, CodingKey {
+            case name
+            case personID = "person_id"
+            case updatedAt = "updated_at"
+        }
+    }
+
+    let speakers: [Speaker]
+    let attendees: [String]
+    let voices: [Voice]
+
+    var remote: [Speaker] { speakers.filter { !$0.isLocal } }
+}
+
+struct CallaSpeakerCommand: Codable {
+    var action: String
+    var callID: String?
+    var speakerID: String?
+    var name: String?
+    var into: String?
+    var personID: String?
+    var remember: Bool?
+
+    enum CodingKeys: String, CodingKey {
+        case action, name, into, remember
+        case callID = "call_id"
+        case speakerID = "speaker_id"
+        case personID = "person_id"
+    }
 }
 
 /// One suggestion as it was archived during a call.
@@ -805,101 +808,25 @@ struct CallaCallSummary: Codable, Equatable, Identifiable {
     var wasInterrupted: Bool { endReason == "interrupted" }
 }
 
-struct CallaActiveLesson: Codable, Equatable {
-    let courseID: String
-    let lessonID: String
-    let lessonTitle: String
-    let active: Bool
-
-    enum CodingKeys: String, CodingKey { case courseID = "course_id", lessonID = "lesson_id", lessonTitle = "lesson_title", active }
-}
-
-struct CallaLessonSnapshot: Codable, Equatable, Identifiable {
-    let id: String
-    let title: String
-    let stepCount: Int
-    let completed: Bool
-    let dueForReview: Bool
-
-    enum CodingKeys: String, CodingKey { case id, title, completed; case stepCount = "step_count", dueForReview = "due_for_review" }
-}
-
-struct CallaCourseSnapshot: Codable, Equatable, Identifiable {
-    let id: String
-    let title: String
-    let summary: String
-    let icon: String
-    let targetApp: String?
-    let hidden: Bool
-    let completedCount: Int
-    let dueForReview: Bool
-    let checkpointLessonID: String?
-    let recentThread: [String]
-    let lifecyclePhase: String?
-    let lifecycleNote: String?
-    let runtimeVersion: String?
-    let runtimeBlocked: Bool
-    let revision: String?
-    let targetVersion: String?
-    let authoredLessonCount: Int?
-    let reviewWarnings: [String]
-    let artifactDigest: String?
-    let compilerVersion: String?
-    let packContractVersion: Int?
-    let validationReceipt: String?
-    let preflightReceipt: String?
-    let lessons: [CallaLessonSnapshot]
-
-    enum CodingKeys: String, CodingKey {
-        case id, title, summary, icon, hidden, lessons
-        case targetApp = "target_app", completedCount = "completed_count", dueForReview = "due_for_review"
-        case checkpointLessonID = "checkpoint_lesson_id", recentThread = "recent_thread"
-        case lifecyclePhase = "lifecycle_phase", lifecycleNote = "lifecycle_note"
-        case runtimeVersion = "runtime_version", runtimeBlocked = "runtime_blocked"
-        case revision, targetVersion = "target_version", authoredLessonCount = "authored_lesson_count"
-        case reviewWarnings = "review_warnings", artifactDigest = "artifact_digest", compilerVersion = "compiler_version"
-        case packContractVersion = "pack_contract_version", validationReceipt = "validation_receipt", preflightReceipt = "preflight_receipt"
-    }
-
-    var lessonCount: Int { lessons.count }
-    var nextLesson: CallaLessonSnapshot? { lessons.first { !$0.completed } ?? lessons.first { $0.id == checkpointLessonID } ?? lessons.first }
-    /// Only published revisions cross from owner Course Settings into learner
-    /// surfaces. Missing lifecycle fails closed.
-    var isLearnerVisible: Bool { lifecyclePhase == "published" }
-}
-
-struct CallaCourseCommand: Codable {
-    let action: String
-    let courseID: String?
-    let lessonID: String?
-    let outline: String?
-    let assetBundlePath: String?
-    let targetApp: String?
-    let targetVersion: String?
-
-    init(action: String, courseID: String? = nil, lessonID: String? = nil, outline: String? = nil,
-         assetBundlePath: String? = nil, targetApp: String? = nil, targetVersion: String? = nil) {
-        self.action = action; self.courseID = courseID; self.lessonID = lessonID; self.outline = outline
-        self.assetBundlePath = assetBundlePath; self.targetApp = targetApp; self.targetVersion = targetVersion
-    }
-
-    enum CodingKeys: String, CodingKey {
-        case action
-        case courseID = "course_id", lessonID = "lesson_id", outline
-        case assetBundlePath = "asset_bundle_path", targetApp = "target_app", targetVersion = "target_version"
-    }
-}
-
 extension Notification.Name {
-    /// Posted the moment a lesson goes live, from wherever it was started —
-    /// notch, Settings, or the calendar binding.
-    static let callaLessonDidStart = Notification.Name("callaLessonDidStart")
     /// Posted when the gateway pushes a new answer pointer during a live call.
     static let callaCopilotSuggestion = Notification.Name("callaCopilotSuggestion")
 }
 
 @MainActor
 final class CallaEngineClient: ObservableObject {
+    private var automaticallyOpenedAgyURL: String?
+
+    /// Survives sign-in view recreation and status polling. Manual Open is
+    /// still available, but an OAuth challenge opens automatically only once.
+    func openAgySignInPageOnce(_ value: String) {
+        guard value != automaticallyOpenedAgyURL,
+              status.copilot.agyLoginStage != "failed",
+              let url = URL(string: value), url.scheme == "https",
+              url.host == "accounts.google.com" else { return }
+        automaticallyOpenedAgyURL = value
+        NSWorkspace.shared.open(url)
+    }
     static let shared = CallaEngineClient()
 
     @Published private(set) var status = CallaEngineStatus()
@@ -981,8 +908,8 @@ final class CallaEngineClient: ObservableObject {
         invoke { $0.start(with: $1) }
     }
 
-    /// A lesson can start without the notch being open, so status polling has
-    /// to outlive the Tutor tab — otherwise nothing is watching to raise it.
+    /// Polls engine status for the life of the app, so a call or quiz started
+    /// from a shortcut is noticed without the notch open.
     /// Status is read-only over XPC, so this never launches or mutates runtime.
     func startMonitoring() {
         guard monitorTask == nil else { return }
@@ -994,7 +921,6 @@ final class CallaEngineClient: ObservableObject {
                     self.fetchCodingEvents()
                     self.forwardCodingTranscript()
                 }
-                let teaching = self.status.activeLesson?.active == true
                 // A sign-in is a handful of states that each last a second or two.
                 // At the idle cadence the UI looks dead and a step can come and go
                 // between polls, so it is worth the extra chatter while it lasts.
@@ -1024,7 +950,7 @@ final class CallaEngineClient: ObservableObject {
                 let comingUp = self.callIsComingUp || quizWorking || self.coding.lifecycle.active
                 let interval: Double = comingUp
                     ? 0.25
-                    : (signingIn ? 0.5 : (onACall ? 0.6 : (teaching ? 2 : 4)))
+                    : (signingIn ? 0.5 : (onACall ? 0.6 : 4))
                 try? await Task.sleep(for: .seconds(interval))
             }
         }
@@ -1071,64 +997,24 @@ final class CallaEngineClient: ObservableObject {
         invoke { $0.requestGatewayUpdate(with: $1) }
     }
 
-    func requestScreenRecording() {
-        invoke { $0.requestScreenRecording(with: $1) }
-    }
-
-    func requestAccessibility() {
-        invoke { $0.requestAccessibility(with: $1) }
-    }
-
-    func startCourse(_ courseID: String, completion: ((CallaEngineStatus) -> Void)? = nil) {
-        invoke({ $0.startCourse(courseID, with: $1) }, completion: completion)
-    }
-
-    func startLesson(courseID: String, lessonID: String) {
-        courseControl(.init(action: "start_lesson", courseID: courseID, lessonID: lessonID))
-    }
-
-    func startAgain(courseID: String) { courseControl(.init(action: "start_again", courseID: courseID)) }
-
-    func courseControl(_ command: CallaCourseCommand) {
-        guard let data = try? JSONEncoder().encode(command) else { return }
-        invoke { $0.courseControl(data, with: $1) }
-    }
-
-    func resumeCourse() {
-        invoke { $0.resumeCourse(with: $1) }
-    }
-
-    func stopLesson() {
-        invoke { $0.stopLesson(with: $1) }
-    }
-
-    func ask(_ text: String) {
-        invoke { $0.ask(text, with: $1) }
-    }
-
-    func setTutorProvider(_ provider: String) {
-        guard ["local", "gateway"].contains(provider) else { return }
-        invoke { $0.setTutorProvider(provider, with: $1) }
-    }
-
-    func tutorHistory(query: String? = nil, cursor: String? = nil, completion: @escaping (CallaTutorHistoryPage?) -> Void) {
-        let request = CallaTutorHistoryQuery(cursor: cursor, query: query, pageSize: 50)
-        guard let data = try? JSONEncoder().encode(request) else { completion(nil); return }
-        let connection = connection ?? makeConnection()
-        guard let proxy = connection.remoteObjectProxyWithErrorHandler({ _ in completion(nil) }) as? BoringCallaEngineProtocol else { completion(nil); return }
-        proxy.tutorHistory(data) { response in
-            completion(try? Self.decoder.decode(CallaTutorHistoryPage.self, from: response))
-        }
-    }
-
-    func tutorCapture(_ captureID: String, completion: @escaping (Data?) -> Void) {
-        let connection = connection ?? makeConnection()
-        guard let proxy = connection.remoteObjectProxyWithErrorHandler({ _ in completion(nil) }) as? BoringCallaEngineProtocol else { completion(nil); return }
-        proxy.tutorCapture(captureID) { data in completion(data.isEmpty ? nil : data) }
-    }
-
     func reportLocalFailure(_ message: String) {
         status.lastResult = message
+    }
+
+    func performPrivateSetup(_ data: Data, completion: @escaping ([String: Any]) -> Void) {
+        let connection = connection ?? makeConnection()
+        guard let proxy = connection.remoteObjectProxyWithErrorHandler({ error in
+            Task { @MainActor in completion(["error": "Setup service unavailable: \(error.localizedDescription)"]) }
+        }) as? BoringCallaEngineProtocol else {
+            completion(["error": "Setup service unavailable. Quit and reopen Boring Notch."]); return
+        }
+        proxy.privateSetup(data) { response in
+            guard let object = try? JSONSerialization.jsonObject(with: response) as? [String: Any] else {
+                Task { @MainActor in completion(["error": "Setup service returned an incomplete response. Reopen the latest Boring Notch app."]) }
+                return
+            }
+            Task { @MainActor in completion(object) }
+        }
     }
 
     private func invoke(_ call: @escaping (BoringCallaEngineProtocol, @escaping (Data) -> Void) -> Void,
@@ -1168,10 +1054,9 @@ final class CallaEngineClient: ObservableObject {
         }
     }
 
-    /// Every status path funnels through here so a lesson start is detected
-    /// once, whether it arrived from polling or from a command's own reply.
+    /// Every status path funnels through here, whether it arrived from polling
+    /// or from a command's own reply.
     private func apply(_ result: CallaEngineStatus) {
-        let previous = status.activeLesson
         let previousCopilot = status.copilot
         let previousQuizSession = status.quiz.sessionID
         let outgoingQuiz = status.quiz
@@ -1229,10 +1114,6 @@ final class CallaEngineClient: ObservableObject {
             || copilot.callID != previousCopilot.callID {
             NotificationCenter.default.post(name: .callaCopilotSuggestion, object: nil)
         }
-
-        guard let current = result.activeLesson, current.active else { return }
-        guard previous?.active != true || previous?.lessonID != current.lessonID else { return }
-        NotificationCenter.default.post(name: .callaLessonDidStart, object: nil)
     }
 
     // MARK: - Live call copilot
@@ -1368,6 +1249,21 @@ final class CallaEngineClient: ObservableObject {
 
     func answerSelectedText(_ text: String) {
         send(CallaCopilotCommand(action: "answer", question: text))
+    }
+
+    /// Screenshot of what is being shared, saved with the call and read into
+    /// the copilot's context.
+    func takeScreenshot() {
+        send(CallaCopilotCommand(action: "screenshot"))
+    }
+
+    /// Opens a call's folder in Documents/Calls, or the Calls folder itself.
+    func revealCallFolder(callID: String? = nil) {
+        invoke { $0.revealCallFolder(callID ?? "", with: $1) }
+    }
+
+    func exportPastCalls() {
+        invoke { $0.exportPastCalls(with: $1) }
     }
 
     func setCallPersona(_ persona: String) {
@@ -1937,6 +1833,23 @@ final class CallaEngineClient: ObservableObject {
         proxy.copilotRecapControl(payload) { data in
             let recap = try? Self.decoder.decode(CallaRecapDraft.self, from: data)
             Task { @MainActor in completion(recap) }
+        }
+    }
+
+    /// Lists, names, confirms or merges a call's speakers, or forgets
+    /// remembered voices. `remember` comes from the "Remember voices" setting
+    /// unless the command already says.
+    func controlSpeakers(_ command: CallaSpeakerCommand, completion: @escaping (CallaCallSpeakers?) -> Void) {
+        var command = command
+        if command.remember == nil { command.remember = Defaults[.callaRememberVoices] }
+        guard let payload = try? JSONEncoder().encode(command) else { completion(nil); return }
+        let connection = connection ?? makeConnection()
+        guard let proxy = connection.remoteObjectProxyWithErrorHandler({ _ in
+            Task { @MainActor in completion(nil) }
+        }) as? BoringCallaEngineProtocol else { return }
+        proxy.copilotSpeakerControl(payload) { data in
+            let speakers = try? Self.decoder.decode(CallaCallSpeakers.self, from: data)
+            Task { @MainActor in completion(speakers) }
         }
     }
 

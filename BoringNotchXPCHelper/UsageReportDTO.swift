@@ -29,6 +29,15 @@ struct UsageReportDTO: Codable, Equatable {
     var session: Quota?
     var weekly: Quota?
     var capturedAt: Date
+    var profileID: String? = nil
+    var accountIdentity: String? = nil
+    var gemini: QuotaGroup? = nil
+    var claudeGPT: QuotaGroup? = nil
+
+    struct QuotaGroup: Codable, Equatable {
+        var session: Quota?
+        var weekly: Quota?
+    }
 
     var weeklyExhausted: Bool { weekly.map { $0.percentRemaining <= 0 } ?? false }
 

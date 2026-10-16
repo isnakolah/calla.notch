@@ -3,8 +3,8 @@
 //  boringNotch
 //
 //  Notch tab showing Claude + Codex CLI usage (session + weekly), fed by the
-//  non-sandboxed XPC helper via UsageMonitorManager. Fits the ~488×100pt notch
-//  content area without resizing the notch.
+//  non-sandboxed XPC helper via UsageMonitorManager. Fits whatever width the
+//  notch is sized to (the Normal profile, 512pt and up) without resizing it.
 //
 
 import AppKit
@@ -17,55 +17,93 @@ struct UsageMonitorView: View {
     @ObservedObject private var manager = UsageMonitorManager.shared
     @Default(.usageMonitorRefreshInterval) private var refreshInterval
 
+    @State private var page = 0
     @State private var pollTask: Task<Void, Never>?
 
     var body: some View {
-        HStack(spacing: 0) {
-            ProviderUsageColumn(
-                provider: .claude,
-                state: manager.claude,
-                onRefresh: { manager.refresh(force: true) }
-            )
-            .frame(maxWidth: .infinity)
-
-            Rectangle()
-                .fill(
-                    LinearGradient(
-                        colors: [.clear, Color.primary.opacity(0.18), .clear],
-                        startPoint: .top,
-                        endPoint: .bottom
-                    )
-                )
-                .frame(width: 1)
-                .padding(.vertical, 8)
-
-            ProviderUsageColumn(
-                provider: .codex,
-                state: manager.codex,
-                onRefresh: { manager.refresh(force: true) }
-            )
-            .frame(maxWidth: .infinity)
+        VStack(spacing: 2) {
+            Group {
+                if page == 0 { providerPage } else { agyPage }
+            }
+            .contentShape(Rectangle())
+            .gesture(DragGesture(minimumDistance: 25).onEnded { value in
+                if value.translation.width < -40 { page = 1 }
+                if value.translation.width > 40 { page = 0 }
+            })
+            pageSwitcher
         }
-        .padding(.vertical, 6)
-        .padding(.horizontal, 4)
-        .background(
-            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .fill(Color.white.opacity(0.04))
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .strokeBorder(Color.white.opacity(0.06), lineWidth: 1)
-        )
         .padding(.horizontal, 6)
         .padding(.top, 2)
-        .onAppear {
-            manager.refreshIfStale()
-            startPolling()
+        // Take the width the notch gives, never the width the content asks for.
+        .frame(maxWidth: .infinity)
+        .clipped()
+        .onAppear { manager.loadProfiles(); manager.refreshIfStale(); startPolling() }
+        .onDisappear { pollTask?.cancel(); pollTask = nil }
+    }
+
+    /// Labeled pills instead of a bare "1 / 2" so it's obvious which page is
+    /// which (and that AGY lives on the second one).
+    private var pageSwitcher: some View {
+        HStack(spacing: 4) {
+            pagePill("Claude · Codex", index: 0)
+            pagePill("AGY", index: 1)
         }
-        .onDisappear {
-            pollTask?.cancel()
-            pollTask = nil
+        .padding(2)
+        .background(Capsule().fill(Color.white.opacity(0.06)))
+    }
+
+    private func pagePill(_ title: String, index: Int) -> some View {
+        let selected = page == index
+        return Button { withAnimation(.easeInOut(duration: 0.15)) { page = index } } label: {
+            Text(title)
+                .font(NotchGlassType.caption.weight(selected ? .semibold : .regular))
+                .foregroundStyle(selected ? NotchInk.primary : NotchInk.secondary)
+                .padding(.horizontal, 10)
+                .padding(.vertical, 2)
+                .background(Capsule().fill(selected ? Color.white.opacity(0.16) : .clear))
+                .contentShape(Capsule())
         }
+        .buttonStyle(.plain)
+        .accessibilityLabel("\(title) usage")
+        .accessibilityAddTraits(selected ? .isSelected : [])
+    }
+
+    private var providerPage: some View {
+        HStack(spacing: 0) {
+            ProviderUsageColumn(provider: .claude, state: manager.claude,
+                profileID: manager.selectedProfile(for: "claude") ?? "personal",
+                profiles: manager.profiles(for: "claude"),
+                onSelect: { manager.selectProfile($0, for: "claude") },
+                onRefresh: { manager.refreshProvider("claude") })
+                .frame(maxWidth: .infinity)
+            divider
+            ProviderUsageColumn(provider: .codex, state: manager.codex,
+                profileID: manager.selectedProfile(for: "codex") ?? "work",
+                profiles: manager.profiles(for: "codex"),
+                onSelect: { manager.selectProfile($0, for: "codex") },
+                onRefresh: { manager.refreshProvider("codex") })
+                .frame(maxWidth: .infinity)
+        }
+        .modifier(UsagePageChrome())
+    }
+
+    private var agyPage: some View {
+        HStack(spacing: 0) {
+            AGYGroupColumn(title: "Gemini models", group: manager.agy.report?.gemini,
+                           state: manager.agy, onRefresh: { manager.refreshProvider("agy") })
+                .frame(maxWidth: .infinity)
+            divider
+            AGYGroupColumn(title: "Claude/GPT models", group: manager.agy.report?.claudeGPT,
+                           state: manager.agy, onRefresh: { manager.refreshProvider("agy") })
+                .frame(maxWidth: .infinity)
+        }
+        .modifier(UsagePageChrome())
+    }
+
+    private var divider: some View {
+        Rectangle().fill(LinearGradient(colors: [.clear, Color.primary.opacity(0.18), .clear],
+                                        startPoint: .top, endPoint: .bottom))
+            .frame(width: 1).padding(.vertical, 8)
     }
 
     /// Re-polls only while the tab is visible. Cache lives in the manager; the
@@ -79,6 +117,46 @@ struct UsageMonitorView: View {
                 await MainActor.run { manager.refreshIfStale() }
             }
         }
+    }
+}
+
+private struct UsagePageChrome: ViewModifier {
+    func body(content: Content) -> some View {
+        content.padding(.vertical, 6).padding(.horizontal, 4)
+            .background(RoundedRectangle(cornerRadius: 16).fill(Color.white.opacity(0.04)))
+            .overlay(RoundedRectangle(cornerRadius: 16).strokeBorder(Color.white.opacity(0.06), lineWidth: 1))
+    }
+}
+
+private struct AGYGroupColumn: View {
+    let title: String
+    let group: UsageReportDTO.QuotaGroup?
+    let state: ProviderUsageState
+    let onRefresh: () -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 5) {
+            HStack {
+                Text(title).font(NotchGlassType.title).lineLimit(1).minimumScaleFactor(0.7)
+                Spacer(minLength: 0)
+                NotchGlyphButton(symbol: "arrow.clockwise", help: "Refresh AGY usage", action: onRefresh)
+            }
+            if let report = state.report, report.status == .ok {
+                HStack(spacing: 8) {
+                    // Weekly at zero blocks the 5-hour bucket too, so it is the only number that matters.
+                    if let weekly = group?.weekly, weekly.percentRemaining <= 0 {
+                        UsageQuotaTile(quota: weekly, isWeekly: true)
+                    } else {
+                        UsageQuotaTile(quota: group?.session, isWeekly: false)
+                        UsageQuotaTile(quota: group?.weekly, isWeekly: true)
+                    }
+                }
+            } else {
+                MessageView(icon: "exclamationmark.triangle",
+                            text: state.report?.errorDescription ?? "Checking AGY usage…")
+            }
+            Spacer(minLength: 0)
+        }.padding(.horizontal, 12).padding(.top, 2)
     }
 }
 
@@ -172,6 +250,9 @@ private struct ProviderIconBadge: View {
 private struct ProviderUsageColumn: View {
     let provider: UsageProvider
     let state: ProviderUsageState
+    let profileID: String
+    let profiles: [UsageProfileOption]
+    let onSelect: (String) -> Void
     var onRefresh: (() -> Void)? = nil
 
     private var providerName: String { provider.name }
@@ -186,18 +267,36 @@ private struct ProviderUsageColumn: View {
         .padding(.top, 2)
     }
 
+    /// Two of these sit side by side in whatever width the notch was given,
+    /// and at the default 512pt that is ~220pt each. Every piece here used to
+    /// be `fixedSize`, so the pair needed ~480pt, could not shrink, and the
+    /// page ran past the notch's edges. Now the less useful pieces go first:
+    /// the capture age, then the provider name (the badge still says which).
     private var header: some View {
+        ViewThatFits(in: .horizontal) {
+            headerRow(showsName: true, showsAge: true)
+            headerRow(showsName: true, showsAge: false)
+            headerRow(showsName: false, showsAge: false)
+        }
+    }
+
+    private func headerRow(showsName: Bool, showsAge: Bool) -> some View {
         HStack(spacing: 7) {
             ProviderIconBadge(provider: provider)
+                .help(providerName)
 
-            Text(providerName)
-                .font(NotchGlassType.title)
-                .foregroundStyle(
-                    QuotaDisplayStatus.worstColor(
-                        state.report?.effectiveSession?.percentRemaining,
-                        state.report?.weekly?.percentRemaining
-                    ) ?? .primary
-                )
+            if showsName {
+                Text(providerName)
+                    .font(NotchGlassType.title)
+                    .foregroundStyle(
+                        QuotaDisplayStatus.worstColor(
+                            state.report?.effectiveSession?.percentRemaining,
+                            state.report?.weekly?.percentRemaining
+                        ) ?? .primary
+                    )
+                    .lineLimit(1)
+                    .fixedSize()
+            }
 
             if state.isSyncing {
                 ProgressView()
@@ -206,10 +305,47 @@ private struct ProviderUsageColumn: View {
 
             Spacer(minLength: 0)
 
-            if let report = state.report {
+            Menu {
+                if profiles.isEmpty {
+                    Text("No Tangit profiles found")
+                }
+                ForEach(profiles) { option in
+                    Button { onSelect(option.id) } label: {
+                        if option.id == profileID {
+                            Label("\(option.id)\(option.identity.map { " · " + $0 } ?? "")", systemImage: "checkmark")
+                        } else {
+                            Text("\(option.id)\(option.identity.map { " · " + $0 } ?? "")")
+                        }
+                    }
+                }
+            } label: {
+                HStack(spacing: 3) {
+                    Text(profileID)
+                        .font(NotchGlassType.caption.weight(.medium))
+                        .lineLimit(1)
+                        .truncationMode(.middle)
+                        .frame(maxWidth: 72)
+                    Image(systemName: "chevron.down")
+                        .font(.system(size: 8, weight: .bold))
+                }
+                .foregroundStyle(NotchInk.secondary)
+                .padding(.horizontal, 7)
+                .padding(.vertical, 3)
+                .background(Capsule().fill(Color.white.opacity(0.08)))
+                .contentShape(Capsule())
+            }
+            .menuStyle(.button)
+            .buttonStyle(.plain)
+            .menuIndicator(.hidden)
+            .fixedSize()
+            .accessibilityLabel("\(providerName) profile: \(profileID)")
+
+            if showsAge, let report = state.report {
                 Text(capturedAgo(report.capturedAt))
                     .font(NotchGlassType.caption)
                     .foregroundStyle(NotchInk.tertiary)
+                    .lineLimit(1)
+                    .fixedSize()
             }
 
             if let onRefresh {
@@ -230,7 +366,7 @@ private struct ProviderUsageColumn: View {
                             text: "\(providerName.lowercased()) CLI not found")
             case .notLoggedIn:
                 MessageView(icon: "person.crop.circle.badge.exclamationmark",
-                            text: "Not logged in")
+                            text: "Signed out · run tangit login \(profileID) \(providerName.lowercased())")
             case .error:
                 MessageView(icon: "exclamationmark.triangle",
                             text: report.errorDescription ?? "Unavailable")
@@ -246,12 +382,11 @@ private struct ProviderUsageColumn: View {
         let quotas = availableQuotas(for: report)
 
         if quotas.isEmpty {
-            UsageQuotaTile(label: "", quota: nil, isWeekly: false)
+            UsageQuotaTile(quota: nil, isWeekly: false)
         } else {
             HStack(spacing: 8) {
                 ForEach(quotas) { quota in
                     UsageQuotaTile(
-                        label: quota.isWeekly ? "WEEKLY" : "SESSION",
                         quota: quota.value,
                         isWeekly: quota.isWeekly
                     )
@@ -274,11 +409,11 @@ private struct ProviderUsageColumn: View {
 
     private func capturedAgo(_ date: Date) -> String {
         let seconds = Int(Date().timeIntervalSince(date))
-        if seconds < 60 { return "just now" }
+        if seconds < 60 { return "now" }
         let minutes = seconds / 60
-        if minutes < 60 { return "\(minutes)m ago" }
+        if minutes < 60 { return "\(minutes)m" }
         let hours = minutes / 60
-        return "\(hours)h ago"
+        return "\(hours)h"
     }
 }
 
@@ -291,19 +426,22 @@ private struct AvailableQuota: Identifiable {
 
 // MARK: - Quota Tile
 
+/// Unlabelled: session sits left of weekly, and the reset time (clock vs.
+/// date) tells them apart.
 private struct UsageQuotaTile: View {
-    let label: String
     let quota: UsageReportDTO.Quota?
     let isWeekly: Bool
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 5) {
+        VStack(alignment: .leading, spacing: 3) {
             if let quota {
                 let status = QuotaDisplayStatus.from(percentRemaining: quota.percentRemaining)
 
                 Text("\(Int(quota.percentRemaining.rounded()))%")
                     .font(NotchGlassType.figure)
                     .foregroundStyle(status.color)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.6)
 
                 progressBar(percent: quota.percentRemaining, color: status.color)
 

@@ -54,9 +54,6 @@ extension SettingsRoute {
         case .copilot:
             return .activity(symbol: "waveform.badge.mic", text: "When could you start?",
                              tint: NotchTint.active, caption: "A pointer mid-call")
-        case .tutor:
-            return .activity(symbol: "graduationcap.fill", text: "Shape the lamp base",
-                             tint: NotchTint.active, caption: "A lesson in progress")
         case .ice:
             return .activity(symbol: "snowflake", text: "Hidden extras ready",
                              tint: NotchTint.active, caption: "Menu bar organizer")

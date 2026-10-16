@@ -21,7 +21,6 @@ extension SettingsSection {
         case .shelf: Shelf()
         case .pomodoro: PomodoroSettings()
         case .copilot: CopilotPane()
-        case .tutor: TutorPane()
         case .ice: IcePane()
         case .sweep: SweepSettings(selectedTab: .cleanUp)
         case .shortcuts: ShortcutsPane()
@@ -62,10 +61,6 @@ extension SettingsPage {
                 CopilotKnowledgePane()
             } else { CopilotKnowledgeDetailPane(route: route) }
         case let .copilotCallDetail(id): CopilotCallDetailPane(callID: id)
-        case .tutorCourses: TutorCoursesPane()
-        case .tutorCreate: TutorCreatePane()
-        case .tutorBehavior: TutorBehaviorPane()
-        case .tutorEngine: TutorEnginePane()
         case .iceGeneral: IceGeneralPane()
         case .iceLayout: IceLayoutPane()
         case .iceAppearance: IceAppearancePane()

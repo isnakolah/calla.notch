@@ -76,12 +76,14 @@ struct CodexRateLimitWindow: Sendable, Equatable {
 /// Default implementation of CodexRPCClient that communicates with `codex app-server`.
 final class DefaultCodexRPCClient: CodexRPCClient, @unchecked Sendable {
     private let executable: String
+    private let codexHome: String?
     private let cliExecutor: CLIExecutor
     private var nextID = 1
 
-    init(executable: String = "codex", cliExecutor: CLIExecutor? = nil) {
+    init(executable: String = "codex", codexHome: String? = nil, cliExecutor: CLIExecutor? = nil) {
         self.executable = executable
-        self.cliExecutor = cliExecutor ?? DefaultCLIExecutor()
+        self.codexHome = codexHome
+        self.cliExecutor = cliExecutor ?? DefaultCLIExecutor(environmentOverrides: codexHome.map { ["CODEX_HOME": $0] } ?? [:])
     }
 
     func isAvailable() -> Bool {
@@ -93,22 +95,31 @@ final class DefaultCodexRPCClient: CodexRPCClient, @unchecked Sendable {
     }
 
     func fetchRateLimits() async throws -> CodexRateLimitsResponse {
-        do {
-            return try await fetchViaRPC()
-        } catch {
-            AppLog.probes.warning("Codex RPC failed: \(error.localizedDescription), trying TTY fallback...")
-            return try await fetchViaTTY()
+        // The usage endpoint fails transiently ("error sending request"); a
+        // second RPC attempt usually succeeds, while the TTY fallback cannot
+        // parse current Codex screens, so it is the last resort.
+        for attempt in 1...2 {
+            do {
+                return try await fetchViaRPC(codexHome: codexHome)
+            } catch {
+                AppLog.probes.warning("Codex RPC attempt \(attempt, privacy: .public) failed: \(error.localizedDescription, privacy: .public)")
+                if attempt == 1 { try? await Task.sleep(for: .seconds(2)) }
+            }
         }
+        return try await fetchViaTTY()
     }
 
     // MARK: - RPC Approach
 
-    private func fetchViaRPC() async throws -> CodexRateLimitsResponse {
+    private func fetchViaRPC(codexHome: String?) async throws -> CodexRateLimitsResponse {
+        var environment = ProcessInfo.processInfo.environment
+        if let codexHome { environment["CODEX_HOME"] = codexHome }
         let transport = try ProcessRPCTransport(
             executable: executable,
             // Codex CLI 0.149 removed the old `untrusted` approval policy.
             // This probe performs no agent work, and must not wait for UI approval.
-            arguments: ["-s", "read-only", "-a", "never", "app-server"]
+            arguments: ["-s", "read-only", "-a", "never", "app-server"],
+            environment: environment
         )
         defer { transport.close() }
 

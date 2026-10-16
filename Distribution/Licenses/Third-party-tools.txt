@@ -1,0 +1,15 @@
+Tangit is built from the local source identified in tangit-build.json.
+Its MIT license is included as Tangit-LICENSE.txt.
+
+Codex CLI 0.162.1 is included under Apache-2.0; see Codex-LICENSE.txt
+and Codex-NOTICE.txt. Runtime dependency notices and source references
+are retained inside the Codex package's codex-resources directory.
+Source: https://github.com/openai/codex/tree/rust-v0.162.1
+
+Claude Code 2.1.290 is Anthropic's unmodified signed native executable.
+It requires your own eligible account or API credentials.
+Terms and documentation: https://code.claude.com/docs/en/legal-and-compliance
+Download: https://downloads.claude.ai/claude-code-releases/2.1.290/darwin-arm64/claude
+
+Apple's Command Line Tools are installed separately through Apple's
+system installer, subject to Apple's license. They are not in this image.

@@ -199,23 +199,6 @@ extension Defaults.Keys {
     static let shelfRemoveAfterSend = Key<Bool>("shelfRemoveAfterSend", default: false)
     static let expandedDragDetection = Key<Bool>("expandedDragDetection", default: true)
 
-    // MARK: Calla Tutor
-    // These keys are intentionally Boring-owned. Never read the retired
-    // com.calla.tutor-host preference domain.
-    static let callaTutorEnabled = Key<Bool>("callaTutorEnabled", default: true)
-    static let callaCaptureEnabled = Key<Bool>("callaCaptureEnabled", default: true)
-    static let callaAllowedBundleIDs = Key<[String]>("callaAllowedBundleIDs", default: ["org.blenderfoundation.blender"])
-    static let callaCaptureLongEdge = Key<Int>("callaCaptureLongEdge", default: 1600)
-    static let callaTooltipWidth = Key<Int>("callaTooltipWidth", default: 340)
-    static let callaHideTooltipOnHover = Key<Bool>("callaHideTooltipOnHover", default: true)
-    static let callaCursorSize = Key<Int>("callaCursorSize", default: 30)
-    static let callaTooltipOpacity = Key<Double>("callaTooltipOpacity", default: 0.92)
-    static let callaShowStatusHUD = Key<Bool>("callaShowStatusHUD", default: true)
-    static let callaLearnerID = Key<String>("callaLearnerID", default: "")
-    static let callaHiddenCourseIDs = Key<[String]>("callaHiddenCourseIDs", default: [])
-    static let callaCalendarEnabled = Key<Bool>("callaCalendarEnabled", default: true)
-    static let callaCalendarBindings = Key<Data?>("callaCalendarBindings", default: nil)
-
     // MARK: Calla Call Copilot
     static let callaCopilotEnabled = Key<Bool>("callaCopilotEnabled", default: true)
     /// Screen Quiz remains opt-in until accuracy, privacy, and signed-runtime
@@ -231,6 +214,16 @@ extension Defaults.Keys {
     /// session gets captured. On, it adds a Call segment to the switcher and
     /// changes nothing else.
     static let callaPlainCallEnabled = Key<Bool>("callaPlainCallEnabled", default: false)
+    /// Write each finished call to ~/Documents/Calls/<Type>/<date title>/.
+    /// During a call, rest as a borderless frosted summary that blends into
+    /// the screen; hovering brings the collapsed panel back.
+    static let callaCopilotAmbient = Key<Bool>("callaCopilotAmbient", default: true)
+    static let callaCallFoldersEnabled = Key<Bool>("callaCallFoldersEnabled", default: true)
+    /// Include both sides' audio, compressed, in each call folder.
+    static let callaCallFoldersAudio = Key<Bool>("callaCallFoldersAudio", default: true)
+    /// Keep a voiceprint for each speaker you name or confirm, so later calls
+    /// recognise them. Stored only on this Mac.
+    static let callaRememberVoices = Key<Bool>("callaRememberVoices", default: true)
     static let callaQuizVoterOneModel = Key<String>("callaQuizVoterOneModel", default: "gemini-3.1-pro-high")
     static let callaQuizVoterTwoModel = Key<String>("callaQuizVoterTwoModel", default: "claude-opus-4-6-thinking")
     static let callaQuizVoterThreeModel = Key<String>("callaQuizVoterThreeModel", default: "claude-sonnet-4-6")
@@ -389,6 +382,8 @@ extension Defaults.Keys {
 
     /// Which of the two CLIs to read. Someone who only uses one should not have
     /// the other reported as missing forever.
+    static let usageClaudeProfile = Key<String>("usageClaudeProfile", default: "personal")
+    static let usageCodexProfile = Key<String>("usageCodexProfile", default: "work")
     static let usageShowClaude = Key<Bool>("usageShowClaude", default: true)
     static let usageShowCodex = Key<Bool>("usageShowCodex", default: true)
     /// Below this much remaining, a quota is drawn as critical. The thresholds

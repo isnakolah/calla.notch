@@ -15,7 +15,7 @@ import SwiftUI
 /// toggle for it lives in one pane.
 enum NotchHeaderItem: String, CaseIterable, Identifiable, Codable, Defaults.Serializable {
     /// Views the header can switch to.
-    case home, pomodoro, usage, shelf, tutor, copilot
+    case home, pomodoro, usage, shelf, copilot
     /// Controls and indicators.
     case mirror, settings, battery
     /// An empty slot. Kept as a case so a side's list is always `slotsPerSide`
@@ -29,11 +29,11 @@ enum NotchHeaderItem: String, CaseIterable, Identifiable, Codable, Defaults.Seri
     static let slotsPerSide = 3
 
     static let defaultLeading: [NotchHeaderItem] = [.home, .pomodoro, .usage]
-    static let defaultTrailing: [NotchHeaderItem] = [.shelf, .tutor, .copilot]
+    static let defaultTrailing: [NotchHeaderItem] = [.shelf, .copilot, .none]
 
     /// Everything the layout pane offers, in the order it offers it.
     static let placeable: [NotchHeaderItem] = [
-        .home, .pomodoro, .usage, .shelf, .tutor, .copilot, .mirror, .settings, .battery
+        .home, .pomodoro, .usage, .shelf, .copilot, .mirror, .settings, .battery
     ]
 
     var label: String {
@@ -42,7 +42,6 @@ enum NotchHeaderItem: String, CaseIterable, Identifiable, Codable, Defaults.Seri
         case .pomodoro: return "Pomodoro"
         case .usage: return "Usage"
         case .shelf: return "Shelf"
-        case .tutor: return "Calla"
         case .copilot: return "Call"
         case .mirror: return "Mirror"
         case .settings: return "Settings"
@@ -57,7 +56,6 @@ enum NotchHeaderItem: String, CaseIterable, Identifiable, Codable, Defaults.Seri
         case .pomodoro: return "timer.circle.fill"
         case .usage: return "chart.bar.xaxis"
         case .shelf: return "tray.fill"
-        case .tutor: return "graduationcap.fill"
         case .copilot: return "waveform.badge.mic"
         case .mirror: return "web.camera"
         case .settings: return "gear"
@@ -73,7 +71,6 @@ enum NotchHeaderItem: String, CaseIterable, Identifiable, Codable, Defaults.Seri
         case .pomodoro: return .pomodoro
         case .usage: return .usage
         case .shelf: return .shelf
-        case .tutor: return .tutor
         case .copilot: return .copilot
         default: return nil
         }
@@ -89,7 +86,6 @@ enum NotchHeaderItem: String, CaseIterable, Identifiable, Codable, Defaults.Seri
         case .pomodoro: return .pomodoroTab
         case .usage: return .usageMonitorTab
         case .shelf: return .boringShelf
-        case .tutor: return .callaTutorEnabled
         case .copilot: return .callaCopilotEnabled
         case .mirror: return .showMirror
         default: return nil
@@ -98,7 +94,7 @@ enum NotchHeaderItem: String, CaseIterable, Identifiable, Codable, Defaults.Seri
 
     /// Where the reader turns that feature on.
     ///
-    /// This was six hand-written strings — `"Tutor › Behavior"`, `"Call copilot"`
+    /// This was six hand-written strings — `"Pomodoro"`, `"Call copilot"`
     /// — which is a breadcrumb typed out by hand, and it had already drifted
     /// from what the sidebar actually said. As a route it cannot drift, and the
     /// "Off in …" badge becomes something you can press.
@@ -107,7 +103,6 @@ enum NotchHeaderItem: String, CaseIterable, Identifiable, Codable, Defaults.Seri
         case .pomodoro: return .init(.pomodoro)
         case .usage: return .init(.system, [.usage])
         case .shelf: return .init(.shelf)
-        case .tutor: return .init(.tutor, [.tutorBehavior])
         case .copilot: return .init(.copilot, [.copilotCall])
         case .mirror: return .init(.appearance, [.camera])
         default: return nil
@@ -124,6 +119,21 @@ enum NotchHeaderItem: String, CaseIterable, Identifiable, Codable, Defaults.Seri
     var isEnabled: Bool {
         guard let featureKey else { return true }
         return Defaults[featureKey]
+    }
+}
+
+extension NotchHeaderItem {
+    /// Tutor was removed. A saved layout naming it would fail to decode and
+    /// reset both sides, so its slot becomes empty before anything reads it.
+    static func migrateRemovedItems() {
+        let defaults = UserDefaults.standard
+        for key in ["notchHeaderLeading", "notchHeaderTrailing"] {
+            if let items = defaults.array(forKey: key) as? [String], items.contains("tutor") {
+                defaults.set(items.map { $0 == "tutor" ? "none" : $0 }, forKey: key)
+            } else if let json = defaults.string(forKey: key), json.contains("\"tutor\"") {
+                defaults.set(json.replacingOccurrences(of: "\"tutor\"", with: "\"none\""), forKey: key)
+            }
+        }
     }
 }
 

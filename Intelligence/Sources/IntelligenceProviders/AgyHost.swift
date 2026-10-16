@@ -53,10 +53,19 @@ public actor AgyHost {
     public struct Endpoint: Sendable, Hashable {
         public let address: String
         public let projectID: String
+        /// The token this host was booted with. Since `agy` 1.2 the language
+        /// server rejects any RPC without it (`missing CSRF token`), and it does
+        /// not publish its own anywhere a client outside it can read — so the
+        /// host is handed one with `--csrf_token` instead.
+        public let csrfToken: String
 
         /// Environment additions every `agy agentapi` call needs.
         public var environment: [String: String] {
-            ["ANTIGRAVITY_LS_ADDRESS": address, "ANTIGRAVITY_PROJECT_ID": projectID]
+            [
+                "ANTIGRAVITY_LS_ADDRESS": address,
+                "ANTIGRAVITY_PROJECT_ID": projectID,
+                "ANTIGRAVITY_CSRF_TOKEN": csrfToken,
+            ]
         }
     }
 
@@ -142,6 +151,12 @@ public actor AgyHost {
                     timeout: 5
                 ) {
                     lastOutput = result.standardOutput + result.standardError
+                    // Not warming, and not ready either. Returning here used to
+                    // declare a host that refuses every RPC healthy, and a whole
+                    // call's questions then failed one by one with no answer.
+                    if Self.isCSRFRejection(lastOutput) {
+                        throw IntelligenceFailure.sessionDied("agy host rejected its CSRF token: \(lastOutput.trimmed(240))")
+                    }
                     if !Self.isWarming(lastOutput) { return }
                 }
             }
@@ -157,6 +172,10 @@ public actor AgyHost {
         return log.contains(Self.modelsFetchedMarker)
     }
 
+    static func isCSRFRejection(_ output: String) -> Bool {
+        output.lowercased().contains("csrf token")
+    }
+
     /// Startup noise, not a verdict. All of these clear on their own.
     static func isWarming(_ output: String) -> Bool {
         let lowered = output.lowercased()
@@ -170,6 +189,12 @@ public actor AgyHost {
 
     private func start() async throws {
         stop()
+        guard AgyLocator.hasCredentials() else {
+            throw IntelligenceFailure.unauthenticated("Sign in to AGY from Boring Notch before starting the copilot")
+        }
+        guard await AgyConnectivity.canReachGoogle() else {
+            throw IntelligenceFailure.transport("Cannot reach Google. Check your internet connection; your sign-in is unchanged")
+        }
         let manager = FileManager.default
         // A directory per run. Wiping one shared workspace instead would pull the
         // log out from under a host that is still running.
@@ -191,10 +216,14 @@ public actor AgyHost {
         // server just long enough to be read, so every submit afterwards fails and
         // the provider quietly falls back to one process per request.
         process.executableURL = URL(fileURLWithPath: "/usr/bin/script")
+        // Setting `ANTIGRAVITY_CSRF_TOKEN` in the host's environment is ignored;
+        // only the flag is honoured (measured on 1.2.13).
+        let csrfToken = UUID().uuidString
         process.arguments = [
             "-q", "/dev/null",
             configuration.binary,
             "--log-file", run.appendingPathComponent("ls.log").path,
+            "--csrf_token=\(csrfToken)",
         ]
         process.currentDirectoryURL = run
         
@@ -225,7 +254,8 @@ public actor AgyHost {
             if let port = readPort() {
                 endpoint = Endpoint(
                     address: "127.0.0.1:\(port)",
-                    projectID: configuration.projectID
+                    projectID: configuration.projectID,
+                    csrfToken: csrfToken
                 )
                 return
             }

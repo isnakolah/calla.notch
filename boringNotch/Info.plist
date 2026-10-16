@@ -2,6 +2,13 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+    <key>BoringSetupProtocolVersion</key><integer>1</integer>
+    <key>BoringSetupUIVersion</key><integer>1</integer>
+    <key>CFBundleURLTypes</key>
+    <array><dict>
+        <key>CFBundleURLName</key><string>theboringteam.boringnotch.setup</string>
+        <key>CFBundleURLSchemes</key><array><string>boringnotch-setup</string></array>
+    </dict></array>
 	<key>NSAppTransportSecurity</key>
 	<dict>
 		<key>NSAllowsArbitraryLoads</key>

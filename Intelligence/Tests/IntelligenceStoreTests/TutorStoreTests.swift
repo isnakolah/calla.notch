@@ -12,7 +12,7 @@ final class TutorStoreTests: XCTestCase {
 
         let version = try await store.tutorSchemaVersion()
         let initial = try await store.tutorProviderPreference()
-        XCTAssertEqual(version, 8)
+        XCTAssertEqual(version, 10)
         XCTAssertEqual(initial, .local)
         try await store.setTutorProviderPreference(.gateway)
         let persisted = try await store.tutorProviderPreference()
@@ -26,10 +26,10 @@ final class TutorStoreTests: XCTestCase {
         let path = root.appendingPathComponent("calla.sqlite")
         _ = try CallaStore(path: path)
         let database = try SQLiteDatabase(path: path.path)
-        try database.execute("PRAGMA user_version = 9")
+        try database.execute("PRAGMA user_version = 11")
 
         XCTAssertThrowsError(try CallaStore(path: path)) { error in
-            XCTAssertEqual(error as? Schema.SchemaError, .unsupportedFutureVersion(9))
+            XCTAssertEqual(error as? Schema.SchemaError, .unsupportedFutureVersion(11))
         }
     }
 

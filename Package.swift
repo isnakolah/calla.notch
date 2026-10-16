@@ -12,15 +12,15 @@ let package = Package(
                            .product(name: "IntelligenceCore", package: "Intelligence"),
                            .product(name: "IntelligenceProviders", package: "Intelligence")],
             path: "BoringCallaEngine",
-            exclude: ["BoringCallaEngine.swift", "BoringCallaEngineProtocol.swift", "BoringCallaEngine.entitlements", "Info.plist", "main.swift", "TutorHistoryKey.swift", "TutorEngineIngress.swift", "QuizEngineController.swift", "QuizHistoryKey.swift"],
-            sources: ["CallaCourseCommandValidation.swift", "CallaCoursePresentation.swift", "CallaCopilotCommandValidation.swift", "CallaAgyLoginParsing.swift", "TutorEngineGate.swift", "TutorAgyAttachmentStager.swift", "QuizReadinessCache.swift", "CodingSessionCore.swift", "CodingSessionController.swift", "CodingAgyWorker.swift", "WaveWorkerPool.swift", "CodingSessionVault.swift", "CodeHistoryKey.swift", "QuizHostRunner.swift"]
+            exclude: ["BoringCallaEngine.swift", "BoringCallaEngineProtocol.swift", "BoringCallaEngine.entitlements", "Info.plist", "main.swift", "QuizEngineController.swift", "QuizHistoryKey.swift"],
+            sources: ["CallaCopilotCommandValidation.swift", "CallaAgyLoginParsing.swift", "CallFolderExport.swift", "QuizReadinessCache.swift", "CodingSessionCore.swift", "CodingSessionController.swift", "CodingAgyWorker.swift", "WaveWorkerPool.swift", "CodingSessionVault.swift", "CodeHistoryKey.swift", "QuizHostRunner.swift"]
         ),
         .target(
             name: "CallaNotchPresentation",
             dependencies: [.product(name: "CallaContracts", package: "CallaContracts")],
             path: "boringNotch/components/Calla",
             exclude: [
-                "CallaCalendarBindings.swift", "CallaCopilotLiveView.swift", "CallaCopilotSignInView.swift",
+                "CallaCopilotLiveView.swift", "CallaCopilotSignInView.swift",
                 "CallaCopilotEndingView.swift", "CallaCopilotStartFailure.swift", "CallaCopilotStartingView.swift",
                 "CallaQuizLiveView.swift", "CallaQuizPreflightView.swift",
                 "CallaCodingSetup.swift", "CallaModeChrome.swift", "CallaCodingPatchView.swift",
@@ -28,11 +28,11 @@ let package = Package(
                 "CallaQuizLiveHeader.swift",
                 "CallaCopilotTabView.swift", "CallaEngineClient.swift", "CallaKnowledge.swift",
                 "CallaKnowledgeAttach.swift", "CallaKnowledgeDropView.swift", "CallaKnowledgeFocus.swift",
-                "CallaKnowledgeLibrary.swift", "CallaTabView.swift", "CopilotLiveSession.swift",
+                "CallaKnowledgeLibrary.swift", "CopilotLiveSession.swift",
                 "CopilotNotchBadge.swift", "KnowledgeDocumentReader.swift", "NotchDropChooserView.swift",
                 "NotchDropRouter.swift"
             ],
-            sources: ["CallaNotchPresentation.swift", "CallaCopilotPresentation.swift",
+            sources: ["CallaCopilotPresentation.swift",
                       "CallaQuizPresentation.swift", "CallaCodingPresentation.swift",
                       "WaveInterview.swift"]
         ),

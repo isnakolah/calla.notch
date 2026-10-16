@@ -22,5 +22,7 @@ import Foundation
     func currentScreenBrightness(with reply: @escaping (NSNumber?) -> Void)
     func setScreenBrightness(_ value: Float, with reply: @escaping (Bool) -> Void)
     // CLI usage probing (Claude / Codex) — reply is a JSON-encoded UsageReportDTO
-    func fetchUsage(_ provider: String, securitySessionID: String?, with reply: @escaping (Data?) -> Void)
+    func fetchUsage(_ provider: String, profileID: String?, securitySessionID: String?, with reply: @escaping (Data?) -> Void)
+    // Tangit profiles that have a directory for the provider — reply is JSON [{id, identity}]
+    func listUsageProfiles(_ provider: String, with reply: @escaping (Data?) -> Void)
 }

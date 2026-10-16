@@ -14,7 +14,6 @@ struct CallaCopilotSignInView: View {
     @ObservedObject private var engine = CallaEngineClient.shared
 
     @State private var code = ""
-    @State private var openedURL: String?
     @FocusState private var codeFocused: Bool
 
     private var copilot: CallaCopilotStatus { engine.status.copilot }
@@ -84,10 +83,8 @@ struct CallaCopilotSignInView: View {
         // a GUI session, so `open` can fail there for reasons retrying cannot fix.
         // Keyed on the URL value, so it opens once per sign-in rather than once per
         // status poll.
-        .onChange(of: copilot.agyLoginURL) { _, url in
-            guard let url, url != openedURL, let target = URL(string: url) else { return }
-            openedURL = url
-            NSWorkspace.shared.open(target)
+        .onChange(of: copilot.agyLoginURL, initial: true) { _, url in
+            if let url { engine.openAgySignInPageOnce(url) }
         }
     }
 

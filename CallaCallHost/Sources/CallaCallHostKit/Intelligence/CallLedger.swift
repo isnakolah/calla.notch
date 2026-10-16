@@ -54,8 +54,20 @@ public struct CallLedger: Sendable {
     /// Raised and not yet answered. Replaced rather than appended — the chunk pass
     /// is told to drop what has since been answered.
     public private(set) var openQuestions: [String] = []
+    /// Text read from screenshots the user took during the call, newest last.
+    /// Bounded: a slide deck shown for an hour must not crowd out the call.
+    public private(set) var screens: [String] = []
+    public static let screensKept = 4
 
     public init() {}
+
+    /// What was shared on screen, as read from a screenshot.
+    public mutating func addScreen(_ text: String, at clock: String) {
+        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return }
+        screens.append("[\(clock)] " + String(trimmed.prefix(1_500)))
+        if screens.count > Self.screensKept { screens.removeFirst(screens.count - Self.screensKept) }
+    }
 
     // MARK: - Writing
 
@@ -152,6 +164,9 @@ public struct CallLedger: Sendable {
         if !recalled.isEmpty {
             sections.append("From your notes:\n" + recalled.joined(separator: "\n\n"))
         }
+        if !screens.isEmpty {
+            sections.append("On screen (read from screenshots):\n" + screens.suffix(2).joined(separator: "\n\n"))
+        }
         let account = accountLines
         if !account.isEmpty {
             sections.append("So far:\n" + account.joined(separator: "\n"))
@@ -192,6 +207,9 @@ public struct CallLedger: Sendable {
         }
         if !openQuestions.isEmpty {
             sections.append("Left open:\n" + openQuestions.joined(separator: "\n"))
+        }
+        if !screens.isEmpty {
+            sections.append("Shown on screen:\n" + screens.joined(separator: "\n\n"))
         }
         return sections.joined(separator: "\n\n")
     }

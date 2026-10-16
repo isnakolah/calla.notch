@@ -256,18 +256,38 @@ final class XPCHelperClient: NSObject {
     /// Fetches usage for a provider ("claude" | "codex") from the non-sandboxed
     /// helper. Returns nil only on transport failure — probe-level errors are
     /// encoded inside the returned DTO's `status`/`errorDescription`.
-    nonisolated func fetchUsage(provider: String, securitySessionID: String? = nil) async -> UsageReportDTO? {
+    nonisolated func fetchUsage(provider: String, profileID: String? = nil, securitySessionID: String? = nil) async -> UsageReportDTO? {
         do {
             let service = await MainActor.run {
                 ensureRemoteService()
             }
             let data: Data? = try await service.withContinuation { service, continuation in
-                service.fetchUsage(provider, securitySessionID: securitySessionID) { continuation.resume(returning: $0) }
+                service.fetchUsage(provider, profileID: profileID, securitySessionID: securitySessionID) { continuation.resume(returning: $0) }
             }
             guard let data else { return nil }
             return try UsageReportDTO.decoder.decode(UsageReportDTO.self, from: data)
         } catch {
             return nil
+        }
+    }
+
+    /// Tangit profiles for a provider. The app is sandboxed, so the helper reads
+    /// Tangit's registry. Empty on transport failure.
+    nonisolated func listUsageProfiles(provider: String) async -> [UsageProfileOption] {
+        do {
+            let service = await MainActor.run { ensureRemoteService() }
+            let data: Data? = try await service.withContinuation { service, continuation in
+                service.listUsageProfiles(provider) { continuation.resume(returning: $0) }
+            }
+            guard let data,
+                  let rows = try JSONSerialization.jsonObject(with: data) as? [[String: String]] else { return [] }
+            return rows.compactMap { row in
+                guard let id = row["id"] else { return nil }
+                let identity = row["identity"].flatMap { $0.isEmpty ? nil : $0 }
+                return UsageProfileOption(id: id, identity: identity)
+            }
+        } catch {
+            return []
         }
     }
 }

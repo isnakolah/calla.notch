@@ -57,13 +57,17 @@ struct CopilotPromptsPane: View {
         SettingCard("Personas",
                     detail: "One short block per kind of call, layered on top of the base guidance. Editing one changes every future call that uses it.") {
             VStack(alignment: .leading, spacing: 12) {
-                Picker("", selection: $editingPersona) {
-                    ForEach(CallaCopilotPersona.all(including: Array(customPersonas.keys)), id: \.self) { value in
-                        Text(CallaCopilotPersona.title(value)).tag(value)
+                Picker("Persona", selection: $editingPersona) {
+                    ForEach(CallaCopilotPersona.grouped(including: Array(customPersonas.keys)), id: \.title) { group in
+                        Section(group.title) {
+                            ForEach(group.ids, id: \.self) { value in
+                                Text(CallaCopilotPersona.title(value)).tag(value)
+                            }
+                        }
                     }
                 }
-                .labelsHidden()
-                .pickerStyle(.segmented)
+                .pickerStyle(.menu)
+                .fixedSize()
 
                 VStack(alignment: .leading, spacing: 6) {
                     PromptEditor(text: personaBinding,

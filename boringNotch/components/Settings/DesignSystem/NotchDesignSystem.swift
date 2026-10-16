@@ -50,8 +50,8 @@ enum NotchSurface {
 
 /// What a colour means, so no pane has to remember which green.
 ///
-/// The same five stops the Tutor host already reasons in, which is why a
-/// permission row, a Sweep run and a lesson can share one status vocabulary.
+/// Five stops, which is why a permission row, a Sweep run and a call can share
+/// one status vocabulary.
 enum NotchTint {
     /// Working, granted, connected.
     static var healthy: Color { .green }
@@ -93,8 +93,8 @@ enum NotchType {
     static var rowDetail: Font { .system(size: 11) }
     /// A number worth reading at a glance.
     ///
-    /// Monospaced digits are not a flourish here. Battery, Sweep, Usage,
-    /// Pomodoro and Tutor all render figures that update in place, and
+    /// Monospaced digits are not a flourish here. Battery, Sweep, Usage
+    /// and Pomodoro all render figures that update in place, and
     /// proportional digits make them jitter as the glyph widths change.
     static var stat: Font { .system(size: 17, weight: .semibold, design: .rounded).monospacedDigit() }
     /// Any smaller number that changes in place.

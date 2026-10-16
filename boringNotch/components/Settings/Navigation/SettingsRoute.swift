@@ -54,14 +54,13 @@ extension SettingsRoute {
 extension SettingsRoute {
     /// Deep links, restored state and menu items still arrive as the old
     /// strings. Both spellings are accepted: the external names the rest of the
-    /// app passes ("Tutor", "CopilotHistory") and the twenty-seven raw values of
+    /// app passes ("Copilot", "CopilotHistory") and the twenty-seven raw values of
     /// the flat `SettingsTab` this replaced, because that type's own initialiser
     /// fell through to `SettingsTab(rawValue:)` and callers may have relied on it.
     ///
-    /// Two deliberate asymmetries: "Copilot" lands on the Call page and "Tutor"
-    /// on Courses, rather than on their new landing panes. Those callers are
-    /// pointing at a specific thing and should keep arriving where they always
-    /// have.
+    /// One deliberate asymmetry: "Copilot" lands on the Call page rather than
+    /// its landing pane. Those callers are pointing at a specific thing and
+    /// should keep arriving where they always have.
     init(legacyIdentifier raw: String) {
         switch raw {
         case "General", "general": self = .init(.general)
@@ -84,11 +83,6 @@ extension SettingsRoute {
         case "CopilotTranscription", "copilotTranscription": self = .init(.copilot, [.copilotModels])
         case "CopilotModels", "copilotModels": self = .init(.copilot, [.copilotModels])
         case "CopilotHistory", "copilotHistory": self = .init(.copilot, [.copilotHistory])
-        case "Tutor", "tutorCourses": self = .init(.tutor, [.tutorCourses])
-        case "tutorCreate": self = .init(.tutor, [.tutorCreate])
-        case "tutorBehavior": self = .init(.tutor, [.tutorBehavior])
-        case "tutorAccess": self = .init(.tutor, [.tutorBehavior])
-        case "tutorEngine": self = .init(.tutor, [.tutorEngine])
         case "Ice", "ice": self = .init(.ice)
         case "iceGeneral": self = .init(.ice, [.iceGeneral])
         case "iceLayout": self = .init(.ice, [.iceLayout])

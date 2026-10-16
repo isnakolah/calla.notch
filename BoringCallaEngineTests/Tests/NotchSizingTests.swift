@@ -44,11 +44,11 @@ final class NotchSizingTests: XCTestCase {
 
     func testProfileDefaultsAndBounds() {
         assertSize(NotchSizeProfile.normal.defaultSize, CGSize(width: 512, height: 168))
-        assertSize(NotchSizeProfile.callExpanded.defaultSize, CGSize(width: 600, height: 340))
+        assertSize(NotchSizeProfile.callExpanded.defaultSize, CGSize(width: 720, height: 400))
         // A call has one width; collapsing changes only the height. Both call
         // profiles are backed by the same stored width, so their defaults have
         // to agree or a fresh install reports compact as already customised.
-        assertSize(NotchSizeProfile.callCollapsed.defaultSize, CGSize(width: 600, height: 200))
+        assertSize(NotchSizeProfile.callCollapsed.defaultSize, CGSize(width: 720, height: 270))
         XCTAssertEqual(NotchSizeProfile.callCollapsed.defaultSize.width,
                        NotchSizeProfile.callExpanded.defaultSize.width)
         XCTAssertEqual(NotchSizeProfile.normal.widthBounds, 512...900)

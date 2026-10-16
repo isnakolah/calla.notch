@@ -77,8 +77,10 @@ class SettingsWindowController: NSWindowController {
         window.hidesOnDeactivate = false
         window.isExcludedFromWindowsMenu = false
         
-        // Configure window to be a standard document-style window
-        window.isRestorable = true
+        // Not restorable. macOS brought it back on every relaunch — at login,
+        // after an update — as an empty window nobody had asked for. Settings
+        // opens when the reader asks for it, never on its own.
+        window.isRestorable = false
         window.identifier = NSUserInterfaceItemIdentifier("BoringNotchSettingsWindow")
         
         // Create the SwiftUI content
@@ -120,7 +122,6 @@ class SettingsWindowController: NSWindowController {
 
     func showShelfWindow() { show(tab: "Shelf") }
 
-    func showTutorWindow() { show(tab: "Tutor") }
 
     func showCopilotWindow(tab: String = "Copilot") { show(tab: tab) }
 

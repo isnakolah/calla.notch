@@ -37,12 +37,6 @@ enum SettingsPage: Hashable {
     case copilotKnowledge, copilotBackup, copilotHistory
     case copilotKnowledgeDetail(KnowledgeRoute)
     case copilotCallDetail(id: String)
-    // Tutor
-    //
-    // Access folded into Behavior: what the tutor watches and what it is allowed
-    // to watch is one question, and the answer to the second is what makes the
-    // first work at all.
-    case tutorCourses, tutorCreate, tutorBehavior, tutorEngine
     // Ice
     case iceGeneral, iceLayout, iceAppearance, iceHotkeys, iceAdvanced
     // Sweep
@@ -66,8 +60,6 @@ enum SettingsPage: Hashable {
              .copilotKnowledge, .copilotBackup, .copilotHistory,
              .copilotKnowledgeDetail, .copilotCallDetail:
             return .copilot
-        case .tutorCourses, .tutorCreate, .tutorBehavior, .tutorEngine:
-            return .tutor
         case .iceGeneral, .iceLayout, .iceAppearance, .iceHotkeys, .iceAdvanced:
             return .ice
         case .sweepHistory, .sweepOptions: return .sweep
@@ -100,10 +92,6 @@ enum SettingsPage: Hashable {
         case .copilotHistory: return "History"
         case .copilotKnowledgeDetail: return "Details"
         case .copilotCallDetail: return "Call"
-        case .tutorCourses: return "Courses"
-        case .tutorCreate: return "Create"
-        case .tutorBehavior: return "Behaviour & Access"
-        case .tutorEngine: return "Engine"
         case .iceGeneral: return "General"
         case .iceLayout: return "Menu Bar Layout"
         case .iceAppearance: return "Menu Bar Appearance"
@@ -140,10 +128,6 @@ enum SettingsPage: Hashable {
         case .copilotHistory: return "clock.arrow.circlepath"
         case .copilotKnowledgeDetail: return "doc.text"
         case .copilotCallDetail: return "waveform"
-        case .tutorCourses: return "books.vertical.fill"
-        case .tutorCreate: return "wand.and.stars"
-        case .tutorBehavior: return "slider.horizontal.3"
-        case .tutorEngine: return "bolt.horizontal.circle"
         case .iceGeneral: return "switch.2"
         case .iceLayout: return "menubar.rectangle"
         case .iceAppearance: return "rectangle.inset.filled"
@@ -182,10 +166,6 @@ enum SettingsPage: Hashable {
         case .copilotHistory: return "Past calls, their transcripts and what was suggested."
         case .copilotKnowledgeDetail: return nil
         case .copilotCallDetail: return nil
-        case .tutorCourses: return "Everything installed, and where you left off."
-        case .tutorCreate: return "Building a new course or revising one."
-        case .tutorBehavior: return "What the tutor watches, how it points, and which apps it may see."
-        case .tutorEngine: return "The runtime, the gateway, and what it last did."
         case .iceGeneral: return "Reveal hidden extras and decide when they rehide."
         case .iceLayout: return "Put each discovered menu bar extra in visible, hidden, or always hidden."
         case .iceAppearance: return "A Boring-owned light or dark overlay for the menu bar."
@@ -230,11 +210,6 @@ enum SettingsPage: Hashable {
         case .copilotHistory: return ["archive", "past calls", "export"]
         case .copilotKnowledgeDetail: return []
         case .copilotCallDetail: return []
-        case .tutorCourses: return ["lessons", "library", "resume"]
-        case .tutorCreate: return ["author", "outline", "scene", "build"]
-        case .tutorBehavior: return ["tooltip", "cursor", "capture", "watch",
-                                     "allowed apps", "bundle", "permission", "access"]
-        case .tutorEngine: return ["runtime", "gateway", "diagnostics", "version"]
         case .iceGeneral: return ["menu bar", "reveal", "rehide", "hover", "scroll"]
         case .iceLayout: return ["sections", "visible", "hidden", "drag", "extras"]
         case .iceAppearance: return ["overlay", "light", "dark", "opacity"]
@@ -266,7 +241,6 @@ enum SettingsPage: Hashable {
         .localSend, .kdeConnect,
         .copilotCall, .copilotQuiz, .copilotCoding, .copilotModels, .copilotPrompts,
         .copilotKnowledge, .copilotBackup, .copilotHistory,
-        .tutorCourses, .tutorCreate, .tutorBehavior, .tutorEngine,
         .iceGeneral, .iceLayout, .iceAppearance, .iceHotkeys, .iceAdvanced,
         .sweepHistory, .sweepOptions,
     ].filter { $0.availablePage == $0 }
@@ -320,7 +294,6 @@ extension SettingsPage {
     private static let retired: [String: SettingsPage] = [
         "copilot.intelligence": .copilotModels,
         "copilot.transcription": .copilotModels,
-        "tutor.access": .tutorBehavior,
     ]
 
     /// The part after the section name. A table rather than a `switch` so the
@@ -336,8 +309,6 @@ extension SettingsPage {
         .copilotModels: "models", .copilotPrompts: "prompts",
         .copilotKnowledge: "knowledge", .copilotBackup: "backup",
         .copilotHistory: "history",
-        .tutorCourses: "courses", .tutorCreate: "create", .tutorBehavior: "behavior",
-        .tutorEngine: "engine",
         .iceGeneral: "general", .iceLayout: "layout", .iceAppearance: "appearance",
         .iceHotkeys: "hotkeys", .iceAdvanced: "advanced",
         .sweepHistory: "history", .sweepOptions: "options",

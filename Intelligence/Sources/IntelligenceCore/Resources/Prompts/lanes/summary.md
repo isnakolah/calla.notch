@@ -4,6 +4,12 @@ The call has ended. Rewrite the account kept during it as the user's own notes: 
 
 Length follows the call: a short exchange deserves two or three sentences, an hour of substance deserves a paragraph. Padding a thin call into a paragraph is the one failure that makes these notes not worth reading.
 
+`title`: at most 6 words naming what the call was about, as a file name would — "Pricing review with Acme", not "Meeting summary". No date, no quotes.
+
+`decisions`: what was agreed or settled, one short sentence each. Empty is a normal answer.
+
+`action_items`: what someone committed to do, one per item, written "Owner: task (by when)" when the owner or date was stated, otherwise just the task. Only commitments actually made in the call.
+
 `open_questions`: what was raised and left unanswered, at most 5 fragments. Empty is a normal answer.
 
 This is read weeks later, when nobody remembers the call, and it is the only record besides the transcript. Keep every number, name, date and commitment that was actually established, and add nothing that was not.

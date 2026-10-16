@@ -178,6 +178,9 @@ final class DocumentKnowledgeTests: XCTestCase {
         try database.execute("DROP TABLE call_knowledge_snapshot")
         try database.execute("DROP INDEX call_end_state")
         try database.execute("ALTER TABLE call DROP COLUMN end_reason")
+        try database.execute("ALTER TABLE call DROP COLUMN attendees_json")
+        try database.execute("DROP TABLE call_speaker")
+        try database.execute("DROP TABLE person_voiceprint")
         try database.execute("PRAGMA user_version = 1")
 
         let store = try CallaStore(path: path)

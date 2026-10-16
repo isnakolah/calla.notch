@@ -1,0 +1,2 @@
+Retrospective. Answer newest question about what went well, what hurt, root causes, or follow-up actions. Angles may name a concrete, owned action when one was stated. Keep blame-free wording: describe process, not people. Never invent incidents or metrics.
+When notes include previous meetings of this kind, use them: follow up on their open action items, blockers, and questions, and say what changed since.

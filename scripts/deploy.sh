@@ -139,27 +139,21 @@ verify_signed_bundle "$SRC/$HELPER_RELATIVE_PATH" "$HELPER_BUNDLE_ID"
 verify_signed_bundle "$SRC/$CALLA_ENGINE_RELATIVE_PATH" "$CALLA_ENGINE_BUNDLE_ID"
 verify_signed_bundle "$SRC/$SWEEP_SERVICE_RELATIVE_PATH" "$SWEEP_SERVICE_BUNDLE_ID"
 for required_resource in Calla/scripts Calla/Gateway; do
-  [[ -d "$SRC/Contents/Resources/$required_resource" ]] || { echo "✗ Missing embedded Tutor resource: $required_resource" >&2; exit 1; }
+  [[ -d "$SRC/Contents/Resources/$required_resource" ]] || { echo "✗ Missing embedded Calla resource: $required_resource" >&2; exit 1; }
 done
 for required_file in \
-  Contents/XPCServices/BoringCallaEngine.xpc/Contents/Resources/CallaRuntime/CallaTutorHost.app/Contents/MacOS/CallaTutorHost \
-  Contents/XPCServices/BoringCallaEngine.xpc/Contents/Resources/CallaRuntime/CallaTutorHost.app/Contents/Helpers/CallaOverlayHelper.app/Contents/MacOS/CallaOverlayHelper \
-  Contents/XPCServices/BoringCallaEngine.xpc/Contents/Resources/CallaRuntime/scripts/calla-course.sh \
-  Contents/XPCServices/BoringCallaEngine.xpc/Contents/Resources/CallaRuntime/scripts/calla-feedback.sh \
-  Contents/XPCServices/BoringCallaEngine.xpc/Contents/Resources/CallaRuntime/scripts/calla-gateway-check.sh \
   Contents/Resources/Calla/scripts/gateway-update.sh \
   Contents/Resources/Calla/Gateway/calla-gateway.tar.gz \
   Contents/XPCServices/BoringCallaEngine.xpc/Contents/Resources/CallaRuntime/CallaCallHost.app/Contents/MacOS/CallaCallHost \
-  Contents/XPCServices/BoringCallaEngine.xpc/Contents/Resources/CallaRuntime/CallaCallHost.app/Contents/Info.plist \
-  Contents/XPCServices/BoringCallaEngine.xpc/Contents/Resources/CallaRuntime/CallaTutorHost.app/Contents/Resources/assets/blender/wrench-template-5.2.png; do
-  [[ -x "$SRC/$required_file" || -f "$SRC/$required_file" ]] || { echo "✗ Missing embedded Tutor file: $required_file" >&2; exit 1; }
+  Contents/XPCServices/BoringCallaEngine.xpc/Contents/Resources/CallaRuntime/CallaCallHost.app/Contents/Info.plist; do
+  [[ -x "$SRC/$required_file" || -f "$SRC/$required_file" ]] || { echo "✗ Missing embedded Calla file: $required_file" >&2; exit 1; }
 done
-# The staging layout the loose-binary build produced. If these exist the build
-# merged old and new staging, and the .app bundles above may be stale.
+# Tutor was removed. A stale incremental build must not ship its host.
 for stale_file in \
+  Contents/XPCServices/BoringCallaEngine.xpc/Contents/Resources/CallaRuntime/CallaTutorHost.app \
   Contents/XPCServices/BoringCallaEngine.xpc/Contents/Resources/CallaRuntime/CallaTutorHost \
   Contents/XPCServices/BoringCallaEngine.xpc/Contents/Resources/CallaRuntime/CallaOverlayHelper; do
-  [[ ! -f "$SRC/$stale_file" ]] || { echo "✗ Stale loose Tutor binary alongside its .app: $stale_file" >&2; exit 1; }
+  [[ ! -e "$SRC/$stale_file" ]] || { echo "✗ Removed Tutor component still in build: $stale_file" >&2; exit 1; }
 done
 tar -tzf "$SRC/Contents/Resources/Calla/Gateway/calla-gateway.tar.gz" | grep -qx 'release/manifest.json' \
   || { echo "✗ Embedded Calla Gateway archive lacks release manifest" >&2; exit 1; }

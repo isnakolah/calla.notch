@@ -1,0 +1,45 @@
+Boring Notch — private Apple Silicon package
+
+1. Open “Boring Notch.app” from this disk image.
+2. If macOS blocks it, try opening it once, then go to System Settings →
+   Privacy & Security → Open Anyway. This is the only approval needed:
+   the installed copy and every tool inside it are cleared at install time.
+3. Choose Begin setup. The window shows each step, what it is doing right
+   now, and download progress. After the first step it closes and the
+   installed app in Applications opens its own setup window to finish —
+   so every macOS prompt belongs to that one app.
+
+Setup installs Boring Notch, AGY, Tangit, Codex and Claude, signs you in to
+Google, downloads the speech model, asks for microphone, system audio and
+calendar access, runs a short meeting test, and creates your first Tangit
+profile. The Gateway step is optional.
+
+You need macOS 15 or later, an Apple Silicon Mac, an internet connection,
+your Google login, and at least 8 GB free. No Homebrew, Python, Node, Go or
+Xcode is required. If Git is missing, setup opens Apple's Command Line Tools
+installer and waits for it.
+
+CALLS
+Start a call from the notch and pick the meeting type: Standup, Sprint
+planning, Refinement, Sprint review or Retro (team rituals); Design review
+or Incident review (engineering); General, 1:1, Interview, Sales or Support
+(conversations). Transcription stays on the Mac; selected transcript text
+goes to your AI account.
+
+IF SETUP STOPS
+Reopen Boring Notch and choose Resume setup. Finished steps are kept and not
+repeated — Google sign-in is not reopened once it works.
+
+UPDATES
+Open the next private DMG's Boring Notch.app; it updates in place and keeps
+your accounts, settings, history and models. End any active call and quit
+Tangit first.
+
+LATER
+Boring Notch → Setup, Repair & Updates…, or in a new Terminal window:
+  boring-notch doctor
+  boring-notch repair
+  boring-notch update /path/to/new-package.dmg
+  tangit
+
+This is a private locally signed build, not an Apple-notarized release.

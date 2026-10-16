@@ -27,10 +27,16 @@ struct About: View {
             }
 
             SettingCard("Updates") {
+                if PrivateDistribution.enabled {
+                    Text("Install the next private DMG using its setup launcher. Your accounts, settings, meeting history and downloaded models are preserved. This build uses private packages for updates.")
+                        .font(NotchType.rowDetail).foregroundStyle(.secondary)
+                    Button("Open Setup, Repair & Updates…") { PrivateDistribution.openSetup() }
+                } else {
                 // Sparkle ships this as a bare `Section`, so it needs a Form to
                 // sit in. Scoped to this card rather than the whole pane.
                 Form { UpdaterSettingsView(updater: updaterController.updater) }
                     .formStyle(.columns)
+                }
             }
 
             SettingCard("Source") {

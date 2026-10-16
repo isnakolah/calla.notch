@@ -349,33 +349,25 @@ extension Notification.Name {
     static let callaCodingScroll = Notification.Name("callaCodingScroll")
 }
 
-/// The personas the gateway flow ships, and their display names.
+/// The personas a call can start with, and their display names. The list and
+/// its groups live in `CallaPersonaCatalog`, which the engine also reads.
 enum CallaCopilotPersona {
-    /// Seeded by the gateway. Their guidance text can be edited in settings;
-    /// their ids cannot, because the gateway's own allowlist knows them.
-    static let builtIn = ["generic", "interview", "sales", "support"]
-
+    static let builtIn = CallaPersonaCatalog.builtIn
     static let all = builtIn
+    static let groups = CallaPersonaCatalog.groups
 
     /// The built-ins plus whatever the user added, in a stable order.
     static func all(including custom: [String]) -> [String] {
         builtIn + custom.filter { !builtIn.contains($0) }.sorted()
     }
 
-    static func title(_ value: String) -> String {
-        switch value {
-        case "generic": return "General"
-        case "interview": return "Interview"
-        case "sales": return "Sales"
-        case "support": return "Support"
-        default:
-            // A user-defined id like `board-review` reads as "Board review".
-            return value
-                .replacingOccurrences(of: "-", with: " ")
-                .prefix(1).uppercased()
-                + value.replacingOccurrences(of: "-", with: " ").dropFirst()
-        }
+    /// Groups for a menu, with user-defined personas last under their own title.
+    static func grouped(including custom: [String]) -> [(title: String, ids: [String])] {
+        let extra = custom.filter { !builtIn.contains($0) }.sorted()
+        return extra.isEmpty ? groups : groups + [("Your personas", extra)]
     }
+
+    static func title(_ value: String) -> String { CallaPersonaCatalog.title(value) }
 
     /// Ids the user may create. Kept allowlist-shaped even though the guidance
     /// body is free text: an id can end up naming things, a paragraph cannot.
@@ -499,6 +491,23 @@ struct LiveCodingViewport: View {
         }
     }
     var body: some View {
+        observedViewport
+        .onReceive(NotificationCenter.default.publisher(for: .callaCallAskQuestion)) { _ in openQuestion() }
+        .onReceive(NotificationCenter.default.publisher(for: .callaCallToggleSurface)) { _ in
+            guard !held else { return }; showingKeys = false
+            if surface == .coding { surface = .history } else { returnToCoding() }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .callaCallPreviousAnswer)) { _ in browseAnswer(-1) }
+        .onReceive(NotificationCenter.default.publisher(for: .callaCallNextAnswer)) { _ in browseAnswer(1) }
+        .onReceive(NotificationCenter.default.publisher(for: .callaCodingAction), perform: handleCodingAction)
+        .onReceive(NotificationCenter.default.publisher(for: .callaCodingCopy)) { _ in copyDisplayed() }
+        .onReceive(NotificationCenter.default.publisher(for: .callaCodingPrevious)) { _ in browseMove(-1) }
+        .onReceive(NotificationCenter.default.publisher(for: .callaCodingNext)) { _ in browseMove(1) }
+    }
+
+    /// Keeping the lifecycle observers separate avoids a SwiftUI type-checker
+    /// timeout when this view's notification observers are chained onto them.
+    private var observedViewport: some View {
         viewportWithDialogs
         .onAppear { displayedMove = coding.activeMove; consumeEvents(); restoreHistory(); session.codingHeld = held }
         .onDisappear { session.codingHeld = false }
@@ -514,18 +523,6 @@ struct LiveCodingViewport: View {
         .onChange(of: coding.wave?.surface) { _, fresh in
             if fresh == .coding, !held { returnToCoding() }
         }
-        .onReceive(NotificationCenter.default.publisher(for: .callaCallAskQuestion)) { _ in openQuestion() }
-        .onReceive(NotificationCenter.default.publisher(for: .callaCallToggleSurface)) { _ in
-            guard !held else { return }; showingKeys = false
-            if surface == .coding { surface = .history } else { returnToCoding() }
-        }
-        .onReceive(NotificationCenter.default.publisher(for: .callaCallPreviousAnswer)) { _ in browseAnswer(-1) }
-        .onReceive(NotificationCenter.default.publisher(for: .callaCallNextAnswer)) { _ in browseAnswer(1) }
-        .onReceive(NotificationCenter.default.publisher(for: .callaCodingAction), perform: handleCodingAction)
-        .onReceive(NotificationCenter.default.publisher(for: .callaCodingCopy)) { _ in copyDisplayed() }
-        .onReceive(NotificationCenter.default.publisher(for: .callaCodingPrevious)) { _ in browseMove(-1) }
-        .onReceive(NotificationCenter.default.publisher(for: .callaCodingNext)) { _ in browseMove(1) }
-
     }
 
     private var viewportWithDialogs: some View {
@@ -911,7 +908,7 @@ struct LiveCodingViewport: View {
             for item in answers.reversed() { prose(item.question, bold: true); prose(CodingInterviewPublication.prose(item.main)); item.points.forEach { prose(CodingInterviewPublication.prose($0)) } }
             if answers.isEmpty { prose("No answers yet.") }
         case .transcript:
-            for turn in transcript { prose("\(turn.isRemote ? "Them" : "Me"): \(turn.text)") }
+            for turn in transcript { prose("\(turn.isRemote ? turn.speakerLabel : "Me"): \(turn.text)") }
             let last = transcript.last?.seq ?? -1
             for event in engine.liveCallEvents {
                 if let turn = event.transcript, turn.transcriptSequence > last { prose("\(turn.source): \(turn.text)") }
@@ -1158,7 +1155,7 @@ struct CodingReadingPane: View {
 }
 
 /// The dark plane the reading surfaces sit on.
-private struct ReadingPlane: ViewModifier {
+struct ReadingPlane: ViewModifier {
     func body(content: Content) -> some View {
         content
             .background(CodingCodeInk.plane.opacity(0.94),
@@ -1319,4 +1316,3 @@ struct WaveWindowPicker: View {
         }
     }
 }
-

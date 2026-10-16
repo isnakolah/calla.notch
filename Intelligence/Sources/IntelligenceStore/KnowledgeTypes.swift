@@ -15,6 +15,13 @@ public enum KnowledgeSource: String, Codable, Sendable, CaseIterable {
     case eventField = "event_field"
     /// The account a finished call left behind.
     case callSummary = "call_summary"
+    /// Every finished call's recap and transcript, indexed automatically.
+    ///
+    /// Retrieval-only and unlisted: it grows with every call, so it is never
+    /// packed into a prompt, never named in one, and never shown in the
+    /// knowledge library. A question reaches it through search, a few passages
+    /// at a time, however large it gets.
+    case callHistory = "call_history"
 
     /// Whether this note's whole body belongs in the prompt at call start.
     ///
@@ -24,7 +31,7 @@ public enum KnowledgeSource: String, Codable, Sendable, CaseIterable {
     /// Documents reach the model through retrieval instead — searched per
     /// question, three passages at a time — with only a one-line mention up front
     /// so the copilot knows the file exists and can be asked about it.
-    public var isPacked: Bool { self != .document }
+    public var isPacked: Bool { self != .document && self != .callHistory }
 }
 
 /// What a note is attached to, and therefore when it is retrieved.

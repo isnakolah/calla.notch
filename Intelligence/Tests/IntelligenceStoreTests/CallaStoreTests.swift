@@ -84,7 +84,30 @@ final class SchemaTests: XCTestCase {
         let reopened = try SQLiteDatabase(path: path.path)
         let columns = try reopened.query("PRAGMA table_info(call_knowledge_chunk)") { $0.string(1) }
         XCTAssertTrue(columns.contains("embedding"))
-        XCTAssertEqual(try reopened.scalarInt("PRAGMA user_version"), 8)
+        XCTAssertEqual(try reopened.scalarInt("PRAGMA user_version"), 10)
+    }
+
+    func testV10MigrationAddsSpeakersToAnExistingCall() async throws {
+        let (store, root) = try makeStore()
+        defer { try? FileManager.default.removeItem(at: root) }
+        try await store.beginCall(CallRecord(id: "call-v9", persona: "generic", startedAt: Date()))
+        try await store.record(turn: StoredTurn(seq: 0, source: "them", t0: 0, t1: 1, text: "hello"), callID: "call-v9")
+
+        let path = root.appendingPathComponent("calla.sqlite")
+        let database = try SQLiteDatabase(path: path.path)
+        try database.execute("DROP TABLE call_speaker")
+        try database.execute("DROP TABLE person_voiceprint")
+        try database.execute("ALTER TABLE call_turn DROP COLUMN speaker_id")
+        try database.execute("ALTER TABLE call DROP COLUMN attendees_json")
+        try database.execute("PRAGMA user_version = 9")
+
+        let migrated = try CallaStore(path: path)
+        let turns = try await migrated.turns(forCall: "call-v9")
+        XCTAssertEqual(turns.map(\.text), ["hello"])
+        XCTAssertNil(turns.first?.speakerID)
+        try await migrated.replaceSpeakers([CallSpeaker(speakerID: "S1")], callID: "call-v9")
+        let speakers = try await migrated.speakers(forCall: "call-v9")
+        XCTAssertEqual(speakers.map(\.displayName), ["Speaker 1"])
     }
 }
 

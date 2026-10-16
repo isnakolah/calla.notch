@@ -164,6 +164,10 @@ public enum AgyEnvironment {
         adding extra: [String: String] = [:]
     ) -> [String: String] {
         var environment = ProcessInfo.processInfo.environment
+        environment["AGY_CLI_DISABLE_AUTO_UPDATE"] = "1"
+        // Background hosts and probes must never start an interactive login.
+        environment["AGY_CLI_NONINTERACTIVE_HEADLESS"] = "1"
+        environment["BROWSER"] = "/usr/bin/true"
         environment["HOME"] = userHome
         let path = environment["PATH"] ?? ""
         let needed = ["/opt/homebrew/bin", "/usr/local/bin", "/usr/bin", "/bin", "/usr/sbin", "/sbin"]

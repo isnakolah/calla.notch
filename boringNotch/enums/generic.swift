@@ -31,7 +31,6 @@ public enum NotchViews {
     case knowledgeDrop
     /// A file is over the notch and has not been aimed at a half yet.
     case dropChooser
-    case tutor
     case copilot
     case usage
     case pomodoro

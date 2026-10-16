@@ -12,9 +12,10 @@ public enum WhisperAudioFormat {
 /// Which side of the call a turn came from.
 ///
 /// This is the whole reason the mic and system-audio legs are captured and kept
-/// separate rather than mixed: the label falls out of the plumbing, so there is
-/// no diarizer, no embedding clustering, and no Python runtime anywhere in this
-/// app. "How should I answer that?" is only answerable because `them` is known.
+/// separate rather than mixed: the label falls out of the plumbing, so the live
+/// call needs no diarizer at all. "How should I answer that?" is only answerable
+/// because `them` is known. Telling the people inside `them` apart happens only
+/// after the call, in `SpeakerPass`.
 public enum TurnSource: String, Codable, Sendable, CaseIterable {
     /// The microphone — the person we are helping.
     case me

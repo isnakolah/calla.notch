@@ -34,9 +34,12 @@ struct ContentView: View {
     @Default(.lightingEffect) private var musicLightingEffect
     @Default(.waveGlassLevel) private var waveGlassLevel
     @Default(.callaCopilotGlassLevel) private var copilotGlassLevel
+    @Default(.callaCopilotAmbient) private var ambientEnabled
+    /// The pointer is away, so a live call rests as the ambient summary.
+    @State private var ambientResting = true
+    @State private var ambientTask: Task<Void, Never>?
     @State private var hoverTask: Task<Void, Never>?
     @State private var pomodoroAutoCloseTask: Task<Void, Never>?
-    @State private var lessonAutoCloseTask: Task<Void, Never>?
     @State private var copilotAutoCloseTask: Task<Void, Never>?
     @State private var handledCallEndRelease = 0
     @State private var isHovering: Bool = false
@@ -106,9 +109,51 @@ struct ContentView: View {
             && (copilotSession.isLive || copilotSession.starting || copilotSession.signInActive)
     }
 
+    /// A live call that may rest as the ambient summary right now.
+    private var ambientEligible: Bool {
+        ambientEnabled && isCopilotGlass && !isPreviewingCallProfile
+            && copilotSession.isLive && !copilotSession.isCoding && !copilotSession.signInActive
+            && !copilotSession.ending && !CallaEngineClient.shared.status.quiz.active
+            && !resizeSession.isEditing(vm)
+    }
+
+    /// The notch grown by three lines of summary, in the hardware's black: no
+    /// outline, no shadow. The pointer arriving brings back the collapsed
+    /// panel; leaving returns here.
+    private var isAmbient: Bool { ambientEligible && ambientResting }
+
+    private func updateAmbientHover(_ hovering: Bool) {
+        ambientTask?.cancel()
+        if hovering {
+            guard ambientResting else { return }
+            if ambientEligible { copilotSession.collapseForHover() }
+            withAnimation(.smooth(duration: 0.3)) { ambientResting = false }
+        } else {
+            ambientTask = Task { @MainActor in
+                try? await Task.sleep(for: .seconds(2))
+                guard !Task.isCancelled else { return }
+                withAnimation(.smooth(duration: 0.45)) { ambientResting = true }
+            }
+        }
+    }
+
+    /// Liquid Glass where the system has it, tinted toward the notch's black
+    /// so white text holds over a bright page; the plain black island before.
+    @ViewBuilder
+    private var ambientBackground: some View {
+        if #available(macOS 26.0, *) {
+            Color.clear
+                .glassEffect(.regular.tint(.black.opacity(0.42)), in: currentNotchShape)
+        } else {
+            Color.black
+        }
+    }
+
     @ViewBuilder
     private var notchBackground: some View {
-        if isCopilotGlass && !reduceTransparency {
+        if isAmbient {
+            ambientBackground
+        } else if isCopilotGlass && !reduceTransparency {
             ZStack {
                 // `.regularMaterial`, not `.ultraThinMaterial`: the thinnest material
                 // lets whatever is behind the notch — a bright browser, a white
@@ -261,7 +306,7 @@ struct ContentView: View {
                         if resizing {
                             currentNotchShape
                                 .stroke(.white.opacity(0.17), lineWidth: 1)
-                        } else if isCopilotGlass {
+                        } else if isCopilotGlass && !isAmbient {
                             currentNotchShape
                                 .stroke(.white.opacity(0.08), lineWidth: 0.5)
                         }
@@ -281,7 +326,7 @@ struct ContentView: View {
                             .padding(.horizontal, topCornerRadius)
                     }
                     .shadow(
-                        color: ((vm.notchState == .open || isHovering) && Defaults[.enableShadow])
+                        color: ((vm.notchState == .open || isHovering) && Defaults[.enableShadow] && !isAmbient)
                             ? .black.opacity(0.7) : .clear, radius: Defaults[.cornerRadiusScaling] ? 6 : 4
                     )
                     .padding(
@@ -312,7 +357,12 @@ struct ContentView: View {
                     .contentShape(currentNotchShape)
                     .onHover { hovering in
                         guard !resizing else { return }
+                        updateAmbientHover(hovering)
                         handleHover(hovering)
+                    }
+                    .onChange(of: isAmbient) { _, ambient in
+                        copilotSession.ambientShowing = ambient
+                        applyLivePanelSize()
                     }
                     .onTapGesture {
                         guard !resizing else { return }
@@ -636,9 +686,17 @@ struct ContentView: View {
                 .opacity(headerGestureOpacity)
 
         case .callLive:
-            CallaCopilotLiveHeader()
-                .frame(height: max(24, vm.effectiveClosedNotchHeight))
-                .opacity(headerGestureOpacity)
+            if isAmbient {
+                // Status in the space either side of the cutout.
+                CallaAmbientWings()
+                    .frame(height: max(24, vm.effectiveClosedNotchHeight))
+                    .transition(.opacity)
+            } else {
+                CallaCopilotLiveHeader()
+                    .frame(height: max(24, vm.effectiveClosedNotchHeight))
+                    .opacity(headerGestureOpacity)
+                    .transition(.opacity)
+            }
         }
     }
 
@@ -761,8 +819,6 @@ struct ContentView: View {
                         CallaKnowledgeDropView()
                     case .shelf:
                         ShelfView()
-                    case .tutor:
-                        CallaTabView()
                     case .copilot:
                         if isResizing && !copilotSession.isLive {
                             // The idle tab, which is what the normal profile
@@ -795,8 +851,12 @@ struct ContentView: View {
                                 // Code uses Call capture, but owns its own
                                 // chronological presentation and controls.
                                 CallaCodingPreflightView()
+                            } else if isAmbient {
+                                CallaCopilotAmbientView()
+                                    .transition(.opacity)
                             } else {
                                 CallaCopilotLiveView()
+                                    .transition(.opacity)
                             }
                         } else if copilotSession.quizOutcome != nil {
                             // A finished Quiz, held until acknowledged. Outranks
@@ -857,10 +917,6 @@ struct ContentView: View {
         .onReceive(NotificationCenter.default.publisher(for: .pomodoroPhaseEnded)) { _ in
             guard !isResizing else { return }
             showPomodoroPhaseChange()
-        }
-        .onReceive(NotificationCenter.default.publisher(for: .callaLessonDidStart)) { _ in
-            guard !isResizing else { return }
-            showLessonStart()
         }
         .onReceive(NotificationCenter.default.publisher(for: .callaCopilotSuggestion)) { _ in
             guard !isResizing else { return }
@@ -944,7 +1000,7 @@ struct ContentView: View {
             return
         }
         BoringNotchSkyLightWindow.acceptsKeyFocus = switch coordinator.currentView {
-        case .pomodoro, .knowledgeDrop, .tutor: true
+        case .pomodoro, .knowledgeDrop: true
         // Only the sign-in surface, which is a field for a code. The live call
         // panel is the long-lived case and the one that caused this.
         case .copilot: copilotSession.signInActive
@@ -973,14 +1029,12 @@ struct ContentView: View {
 
     /// A new pointer peeks the notch just long enough to read it.
     ///
-    /// Shorter than a lesson start, because this fires mid-conversation: the
+    /// Shorter than a Pomodoro popup, because this fires mid-conversation: the
     /// user is about to speak, and a panel parked over the call is worse than
     /// no panel. Hovering holds it open for a longer read.
     private func showCopilotSuggestion() {
         guard !copilotSession.endedByReader else { return }
         guard Defaults[.callaCopilotEnabled], Defaults[.callaCopilotAutoReveal] else { return }
-        // Never steal the notch from a live lesson.
-        guard coordinator.currentView != .tutor || CallaEngineClient.shared.status.activeLesson?.active != true else { return }
 
         // A dismissed panel comes back for a fresh pointer — dismissing means
         // "not now", not "not for this call".
@@ -1056,27 +1110,8 @@ struct ContentView: View {
     private func applyLivePanelSize() {
         guard vm.notchState == .open,
               coordinator.currentView == .copilot else { return }
-        withAnimation(.easeOut(duration: 0.12)) {
+        withAnimation(.smooth(duration: 0.28)) {
             vm.open(size: copilotSession.preferredOpenSize)
-        }
-    }
-
-    /// A lesson start pins the notch to Tutor and shows the live lesson, then
-    /// steps aside: the learner needs the app being taught, not a panel parked
-    /// over it. The tab stays selected, so reopening lands back on the lesson.
-    private func showLessonStart() {
-        coordinator.currentView = .tutor
-        withAnimation(.spring(response: 0.42, dampingFraction: 0.8)) {
-            vm.open()
-        }
-
-        lessonAutoCloseTask?.cancel()
-        lessonAutoCloseTask = Task { @MainActor in
-            try? await Task.sleep(for: .seconds(6))
-            guard !Task.isCancelled, !isHovering, vm.notchState == .open else { return }
-            withAnimation(.spring(response: 0.45, dampingFraction: 1.0)) {
-                vm.close()
-            }
         }
     }
 

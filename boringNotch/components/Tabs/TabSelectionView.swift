@@ -28,7 +28,6 @@ struct TabSelectionView: View {
     @Default(.boringShelf) private var boringShelf
     @Default(.pomodoroTab) private var pomodoroTab
     @Default(.usageMonitorTab) private var usageMonitorTab
-    @Default(.callaTutorEnabled) private var callaTutorEnabled
     @Default(.callaCopilotEnabled) private var callaCopilotEnabled
     @Default(.showMirror) private var showMirror
     @Namespace private var animation
@@ -63,7 +62,6 @@ struct TabSelectionView: View {
         // The shelf tab still hides itself while the shelf is empty unless the
         // reader asked for the tabs to stay put.
         case .shelf: return boringShelf && (!tvm.isEmpty || coordinator.alwaysShowTabs)
-        case .tutor: return callaTutorEnabled
         case .copilot: return callaCopilotEnabled
         case .mirror: return showMirror
         }

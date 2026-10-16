@@ -21,7 +21,7 @@ import SwiftUI
 /// and a breadcrumb that says where the path is.
 enum SettingsSection: String, CaseIterable, Identifiable, Hashable, Codable {
     case general, appearance, media, calendar, system, shelf
-    case pomodoro, copilot, tutor, ice, sweep
+    case pomodoro, copilot, ice, sweep
     case shortcuts, privacy, about
 
     var id: String { rawValue }
@@ -36,7 +36,6 @@ enum SettingsSection: String, CaseIterable, Identifiable, Hashable, Codable {
         case .shelf: return "Shelf"
         case .pomodoro: return "Pomodoro"
         case .copilot: return "Call Copilot"
-        case .tutor: return "Tutor"
         case .ice: return "Ice"
         case .sweep: return "Sweep"
         case .shortcuts: return "Shortcuts"
@@ -55,7 +54,6 @@ enum SettingsSection: String, CaseIterable, Identifiable, Hashable, Codable {
         case .shelf: return "books.vertical"
         case .pomodoro: return "timer"
         case .copilot: return "waveform.badge.mic"
-        case .tutor: return "graduationcap"
         case .ice: return "snowflake"
         case .sweep: return "externaldrive.badge.checkmark"
         case .shortcuts: return "keyboard"
@@ -75,7 +73,6 @@ enum SettingsSection: String, CaseIterable, Identifiable, Hashable, Codable {
         case .shelf: return "A place to drop things, and the devices to send them to."
         case .pomodoro: return "Focus intervals, breaks, and what happens when one ends."
         case .copilot: return "Help during a live call: what it hears, what it knows, what it says."
-        case .tutor: return "Courses that watch the screen and point at the next step."
         case .ice: return "Organize menu bar extras: sections, reveal gestures, search, spacing, and appearance."
         case .sweep: return "What is taking up the disk, and what is safe to reclaim."
         case .shortcuts: return "Every key combination this app answers to, in one place."
@@ -104,7 +101,6 @@ enum SettingsSection: String, CaseIterable, Identifiable, Hashable, Codable {
             return [.copilotCall, .copilotQuiz, .copilotCoding,
                     .copilotModels, .copilotPrompts, .copilotKnowledge,
                     .copilotHistory, .copilotBackup].filter { $0.availablePage == $0 }
-        case .tutor: return [.tutorCourses, .tutorCreate, .tutorBehavior, .tutorEngine]
         case .ice: return [.iceGeneral, .iceLayout, .iceAppearance, .iceHotkeys, .iceAdvanced]
         // Clean Up is the landing pane, so it is not listed here. History and
         // Options are reached from the header rather than from a card, since the

@@ -11,6 +11,13 @@ public enum CallEndReason: String, Codable, Sendable, Equatable {
 /// `eventID` and `seriesID` are the link back to the calendar. They are why a
 /// finished call can become knowledge the *next* occurrence of the same meeting
 /// retrieves — without them a summary is filed under nothing and found by no one.
+/// One earlier call and what its closing pass recorded.
+public struct CallRecapHistoryEntry: Sendable, Equatable {
+    public var call: CallRecord
+    public var draft: CallRecapDraft
+    public init(call: CallRecord, draft: CallRecapDraft) { self.call = call; self.draft = draft }
+}
+
 public struct CallRecord: Codable, Sendable, Equatable, Identifiable {
     public var id: String
     public var eventID: String?
@@ -88,6 +95,9 @@ public struct StoredTurn: Codable, Sendable, Equatable {
     public var confidence: Double?
     /// whisper's own estimate that this span is not speech at all.
     public var noSpeech: Double?
+    /// `me`, or the diarized voice (`S1`, `S2`, …) once the post-call speaker
+    /// pass has run. Nil before then, and for a remote turn no voice matched.
+    public var speakerID: String?
 
     public init(
         seq: Int,
@@ -97,10 +107,12 @@ public struct StoredTurn: Codable, Sendable, Equatable {
         text: String,
         revision: Int = StoredTurn.liveRevision,
         confidence: Double? = nil,
-        noSpeech: Double? = nil
+        noSpeech: Double? = nil,
+        speakerID: String? = nil
     ) {
         self.seq = seq
         self.revision = revision
+        self.speakerID = speakerID
         self.source = source
         self.t0 = t0
         self.t1 = t1
@@ -212,16 +224,17 @@ public extension CallaStore {
     func record(turn: StoredTurn, callID: String) throws {
         try run(
             """
-            INSERT INTO call_turn(call_id, seq, revision, source, t0, t1, text, confidence, no_speech)
-            VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO call_turn(call_id, seq, revision, source, t0, t1, text, confidence, no_speech, speaker_id)
+            VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ON CONFLICT(call_id, revision, seq) DO UPDATE SET
               source = excluded.source, t0 = excluded.t0, t1 = excluded.t1,
               text = excluded.text, confidence = excluded.confidence,
-              no_speech = excluded.no_speech
+              no_speech = excluded.no_speech,
+              speaker_id = COALESCE(excluded.speaker_id, call_turn.speaker_id)
             """,
             [.text(callID), .int(turn.seq), .int(turn.revision), .text(turn.source),
              .double(turn.t0), .double(turn.t1), .text(turn.text),
-             .double(turn.confidence), .double(turn.noSpeech)])
+             .double(turn.confidence), .double(turn.noSpeech), .text(turn.speakerID)])
         // Counts the live pass only. `turn_count` is what History shows and what
         // the recap's spans are expressed against, and an archive import must not
         // appear to double the length of a call.
@@ -382,7 +395,7 @@ public extension CallaStore {
         let resolved = try revision ?? bestRevision(forCall: callID)
         return try query(
             """
-            SELECT seq, source, t0, t1, text, confidence, no_speech, revision
+            SELECT seq, source, t0, t1, text, confidence, no_speech, revision, speaker_id
             FROM call_turn WHERE call_id = ? AND revision = ? AND seq > ? ORDER BY seq
             """,
             [.text(callID), .int(resolved), .int(seq)], row: { row in
@@ -390,7 +403,8 @@ public extension CallaStore {
                            t0: row.double(2), t1: row.double(3), text: row.string(4),
                            revision: row.int(7),
                            confidence: row.doubleIfPresent(5),
-                           noSpeech: row.doubleIfPresent(6))
+                           noSpeech: row.doubleIfPresent(6),
+                           speakerID: row.text(8))
             })
     }
 
@@ -435,28 +449,49 @@ public extension CallaStore {
         guard let itemsJSON = String(data: items, encoding: .utf8) else { return }
         try run(
             """
-            INSERT INTO call_recap_draft(call_id, overview, items_json, provider, model, failure, review_state)
-            VALUES(?, ?, ?, ?, ?, ?, ?)
-            ON CONFLICT(call_id) DO UPDATE SET overview = excluded.overview,
+            INSERT INTO call_recap_draft(call_id, overview, items_json, provider, model, failure, review_state, title)
+            VALUES(?, ?, ?, ?, ?, ?, ?, ?)
+            ON CONFLICT(call_id) DO UPDATE SET overview = excluded.overview, title = excluded.title,
               items_json = excluded.items_json, provider = excluded.provider,
               model = excluded.model, failure = excluded.failure,
               review_state = excluded.review_state, reviewed_at = NULL, note_id = NULL
             """,
             [.text(recapDraft.callID), .text(recapDraft.overview), .text(itemsJSON),
              .text(recapDraft.provider), .text(recapDraft.model), .text(recapDraft.failure),
-             .text(recapDraft.reviewState.rawValue)])
+             .text(recapDraft.reviewState.rawValue), .text(recapDraft.title)])
     }
 
     func recapDraft(forCall callID: String) throws -> CallRecapDraft? {
         try query(
-            "SELECT overview, items_json, provider, model, failure, review_state FROM call_recap_draft WHERE call_id = ?",
+            "SELECT overview, items_json, provider, model, failure, review_state, title FROM call_recap_draft WHERE call_id = ?",
             [.text(callID)]) { row in
                 let items = row.text(1).flatMap { try? JSONDecoder().decode([SourcedCallItem].self, from: Data($0.utf8)) } ?? []
                 let review = CallRecapDraft.ReviewState(rawValue: row.string(5)) ?? .pending
                 return CallRecapDraft(callID: callID, overview: row.string(0), items: items,
                                       provider: row.text(2), model: row.text(3), failure: row.text(4),
-                                      reviewState: review)
+                                      reviewState: review, title: row.text(6))
             }.first
+    }
+
+    /// The last finished calls of one kind, newest first, with their recaps.
+    ///
+    /// Any calendar series and any review state: a team's standups are context
+    /// for its next standup whether or not the meeting recurs in the calendar
+    /// and whether or not anyone approved last week's notes.
+    func recentRecaps(persona: String, limit: Int = 3, before: Date? = nil) throws -> [CallRecapHistoryEntry] {
+        let cutoff = (before ?? Date()).timeIntervalSince1970
+        let calls = try query(
+            Self.callColumns + " WHERE persona = ? AND ended_at IS NOT NULL AND started_at < ? ORDER BY started_at DESC LIMIT ?",
+            [.text(persona), .double(cutoff), .int(limit * 3)], row: Self.call)
+        var entries: [CallRecapHistoryEntry] = []
+        for call in calls {
+            guard let draft = try recapDraft(forCall: call.id),
+                  !draft.overview.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+                    || !draft.items.isEmpty else { continue }
+            entries.append(CallRecapHistoryEntry(call: call, draft: draft))
+            if entries.count == limit { break }
+        }
+        return entries
     }
 
     /// Approval is sole path from draft to reusable meeting knowledge. Rejection

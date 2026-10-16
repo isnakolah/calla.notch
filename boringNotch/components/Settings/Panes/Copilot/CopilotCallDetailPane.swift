@@ -3,6 +3,7 @@
 //  boringNotch
 //
 
+import Defaults
 import SwiftUI
 
 /// One archived call, on a page of its own.
@@ -26,6 +27,9 @@ struct CopilotCallDetailPane: View {
     @State private var turns: [CallaCallTurn] = []
     @State private var suggestions: [CallaCopilotArchivedSuggestion] = []
     @State private var recap: CallaRecapDraft?
+    @State private var speakers: CallaCallSpeakers?
+    @State private var renaming: CallaCallSpeakers.Speaker?
+    @State private var renameText = ""
     @State private var view: DetailView = .timeline
     @State private var loading = true
 
@@ -47,6 +51,7 @@ struct CopilotCallDetailPane: View {
         SettingsPane(SettingsPage.copilotCallDetail(id: callID), titleOverride: title) {
             if let call {
                 overviewCard(for: call)
+                speakersCard
                 recapCard
                 detailCard(for: call)
             } else if loading {
@@ -66,6 +71,19 @@ struct CopilotCallDetailPane: View {
             }
         }
         .task { await load() }
+        .alert("Name this speaker", isPresented: Binding(
+            get: { renaming != nil }, set: { if !$0 { renaming = nil } })) {
+            TextField("Name", text: $renameText)
+            Button("Save") {
+                if let speaker = renaming { nameSpeaker(speaker, renameText) }
+                renaming = nil
+            }
+            Button("Cancel", role: .cancel) { renaming = nil }
+        } message: {
+            Text(Defaults[.callaRememberVoices]
+                 ? "Every line from this voice takes the name, and later calls will recognise it."
+                 : "Every line from this voice takes the name.")
+        }
     }
 
     private var title: String {
@@ -83,6 +101,120 @@ struct CopilotCallDetailPane: View {
         engine.fetchCallTranscript(callID: callID) { turns = $0 }
         engine.fetchCallSuggestions(callID) { suggestions = $0 }
         engine.fetchRecapDraft(callID: callID) { recap = $0 }
+        engine.controlSpeakers(CallaSpeakerCommand(action: "list", callID: callID)) { speakers = $0 }
+    }
+
+    // MARK: - Speakers
+
+    /// Who was on the call, once the post-call speaker pass has separated the
+    /// remote voices. Hidden until then: before it runs there is only "Them".
+    @ViewBuilder
+    private var speakersCard: some View {
+        if let speakers, !speakers.remote.isEmpty {
+            SettingCard("Speakers", detail: speakersDetail(speakers)) {
+                VStack(alignment: .leading, spacing: 6) {
+                    ForEach(speakers.remote) { speaker in
+                        speakerRow(speaker, in: speakers)
+                    }
+                }
+            }
+        }
+    }
+
+    private func speakersDetail(_ speakers: CallaCallSpeakers) -> String {
+        let count = speakers.remote.count
+        let guesses = speakers.remote.filter(\.isGuess).count
+        var text = "\(count) other voice\(count == 1 ? "" : "s") on this call."
+        if guesses > 0 {
+            text += " Names marked ? were guessed from the conversation — confirm or change them."
+        }
+        return text
+    }
+
+    private func speakerRow(_ speaker: CallaCallSpeakers.Speaker, in all: CallaCallSpeakers) -> some View {
+        HStack(spacing: NotchSpace.snug) {
+            Circle().fill(Self.tint(for: speaker.id)).frame(width: 8, height: 8)
+            Text(speaker.name + (speaker.isGuess ? " ?" : ""))
+                .font(NotchType.rowTitle)
+            if speaker.nameSource == "voiceprint" {
+                Image(systemName: "waveform.badge.checkmark")
+                    .font(.system(size: 10))
+                    .foregroundStyle(.secondary)
+                    .help("Recognised from an earlier call")
+            }
+            Text(talkTime(speaker.speechSeconds))
+                .font(NotchType.rowDetail)
+                .foregroundStyle(.secondary)
+            Spacer(minLength: 0)
+            if speaker.isGuess {
+                Button("Confirm") { control("confirm", speaker) }
+                    .controlSize(.small)
+            }
+            Menu {
+                let taken = Set(all.remote.filter { $0.id != speaker.id && $0.isNamed }.map(\.name))
+                let options = all.attendees.filter { !taken.contains($0) && $0 != speaker.name }
+                if !options.isEmpty {
+                    Section("Attendees") {
+                        ForEach(options, id: \.self) { name in
+                            Button(name) { nameSpeaker(speaker, name) }
+                        }
+                    }
+                }
+                Button("Rename\u{2026}") {
+                    renameText = speaker.isNamed ? speaker.name : ""
+                    renaming = speaker
+                }
+                let others = all.remote.filter { $0.id != speaker.id }
+                if !others.isEmpty {
+                    Menu("Same person as") {
+                        ForEach(others) { other in
+                            Button(other.name) { control("merge", speaker, into: other.id) }
+                        }
+                    }
+                }
+                if speaker.isNamed {
+                    Divider()
+                    Button("Clear name") { nameSpeaker(speaker, "") }
+                }
+            } label: {
+                Image(systemName: "ellipsis.circle")
+            }
+            .menuStyle(.borderlessButton)
+            .fixedSize()
+        }
+    }
+
+    private func nameSpeaker(_ speaker: CallaCallSpeakers.Speaker, _ name: String) {
+        engine.controlSpeakers(CallaSpeakerCommand(action: "name", callID: callID, speakerID: speaker.id, name: name)) {
+            applySpeakers($0)
+        }
+    }
+
+    private func control(_ action: String, _ speaker: CallaCallSpeakers.Speaker, into: String? = nil) {
+        engine.controlSpeakers(CallaSpeakerCommand(action: action, callID: callID, speakerID: speaker.id, into: into)) {
+            applySpeakers($0)
+        }
+    }
+
+    /// A rename or merge changes what every turn is labelled, so the transcript
+    /// is re-read rather than patched.
+    private func applySpeakers(_ updated: CallaCallSpeakers?) {
+        if let updated { speakers = updated }
+        engine.fetchCallTranscript(callID: callID) { turns = $0 }
+    }
+
+    private func talkTime(_ seconds: Double) -> String {
+        let total = Int(seconds.rounded())
+        return total < 60 ? "\(total)s" : "\(total / 60)m \(total % 60)s"
+    }
+
+    /// One steady colour per voice, so a speaker can be followed down the
+    /// transcript without reading every name.
+    static func tint(for speakerID: String?) -> Color {
+        guard let speakerID, speakerID != "me" else { return .secondary }
+        let palette: [Color] = [.blue, .orange, .green, .purple, .pink, .teal, .yellow, .indigo]
+        let index = Int(speakerID.dropFirst()) ?? 1
+        return palette[(max(index, 1) - 1) % palette.count]
     }
 
     private func overviewCard(for call: CallaCallSummary) -> some View {
@@ -114,6 +246,8 @@ struct CopilotCallDetailPane: View {
                 SettingFact(title: "Audio", value: call.hasAudio ? "kept on disk" : "discarded")
 
                 HStack(spacing: 8) {
+                    Button("Show folder") { CallaEngineClient.shared.revealCallFolder(callID: call.id) }
+                        .controlSize(.small)
                     Button("Export…") { export(call) }
                         .controlSize(.small)
                         .disabled(turns.isEmpty)
@@ -278,38 +412,35 @@ struct CopilotCallDetailPane: View {
 
     /// Them left, you right — the same split the live panel uses, so a transcript
     /// read afterwards looks like the one read during the call.
+    ///
+    /// Each bubble carries who said it and when. Left-versus-right is learnable
+    /// during a call and ambiguous a week later; on a call with several people
+    /// it says nothing at all about which of them spoke.
     private func turnBubble(_ turn: CallaCallTurn) -> some View {
-        HStack(alignment: .top, spacing: 6) {
+        let tint = turn.isRemote ? (turn.speaker == nil ? Color.blue : Self.tint(for: turn.speaker)) : Color.secondary
+        return HStack(alignment: .top, spacing: 6) {
             if !turn.isRemote { Spacer(minLength: 36) }
-            // Named, not just positioned. Left-versus-right is learnable during a
-            // call and ambiguous a week later, and this is the only speaker
-            // attribution that is actually known: the two capture legs are never
-            // mixed, so "me" and "them" are recorded rather than guessed.
-            if turn.isRemote { speakerTag("Them", tint: .blue) }
-            Text(turn.text)
-                .font(.system(size: 11))
-                .textSelection(.enabled)
-                .fixedSize(horizontal: false, vertical: true)
-                .padding(.horizontal, 8)
-                .padding(.vertical, 5)
-                .background(
-                    turn.isRemote ? Color.blue.opacity(0.16) : Color.secondary.opacity(0.12),
-                    in: RoundedRectangle(cornerRadius: 8, style: .continuous))
-            if !turn.isRemote { speakerTag("You", tint: .secondary) }
+            VStack(alignment: turn.isRemote ? .leading : .trailing, spacing: 2) {
+                HStack(spacing: 5) {
+                    Text(turn.speakerLabel)
+                        .font(.system(size: 9, weight: .semibold))
+                        .foregroundStyle(tint)
+                    Text(turn.clock)
+                        .font(.system(size: 9).monospacedDigit())
+                        .foregroundStyle(.tertiary)
+                }
+                Text(turn.text)
+                    .font(.system(size: 11))
+                    .textSelection(.enabled)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 5)
+                    .background(
+                        turn.isRemote ? tint.opacity(0.16) : Color.secondary.opacity(0.12),
+                        in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+            }
             if turn.isRemote { Spacer(minLength: 36) }
         }
-    }
-
-    private func speakerTag(_ text: String, tint: Color) -> some View {
-        Text(text)
-            .font(.system(size: 8.5, weight: .semibold))
-            .foregroundStyle(tint)
-            .padding(.top, 5)
-            .frame(width: 32, alignment: turn_alignment(text))
-    }
-
-    private func turn_alignment(_ text: String) -> Alignment {
-        text == "Them" ? .trailing : .leading
     }
 
     private func adviceBlock(_ suggestion: CallaCopilotArchivedSuggestion, showSeq: Bool) -> some View {
@@ -372,9 +503,7 @@ struct CopilotCallDetailPane: View {
 
         var lines: [String] = []
         for turn in turns {
-            let stamp = Int(max(0, turn.t0))
-            let who = turn.isRemote ? "THEM" : "ME"
-            lines.append(String(format: "[%d:%02d] %@: %@", stamp / 60, stamp % 60, who, turn.text))
+            lines.append("[\(turn.clock)] \(turn.speakerLabel): \(turn.text)")
             for suggestion in suggestions where suggestion.afterSeq == turn.seq {
                 if !suggestion.headline.isEmpty { lines.append("         COPILOT: \(suggestion.headline)") }
                 for angle in suggestion.angles { lines.append("                  • \(angle)") }

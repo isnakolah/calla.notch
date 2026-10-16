@@ -116,6 +116,8 @@ public struct CallLifecycleSnapshot: Codable, Sendable, Equatable {
 
 public enum CallHostCommandKind: String, Codable, Sendable {
     case start, release, stop, snapshot, answer
+    /// Take a screenshot for context while the call runs.
+    case capture
 }
 
 public struct CallHostCommand: Codable, Sendable, Equatable {
@@ -139,6 +141,8 @@ public struct CallHostCommand: Codable, Sendable, Equatable {
 
 public enum CallHostEventKind: String, Codable, Sendable {
     case ready, captureState, answer, recapProgress, finished, fatal
+    /// A screenshot was saved and its text handed to the copilot.
+    case screenshot
 }
 
 public struct CallHostEvent: Codable, Sendable, Equatable {
@@ -525,11 +529,15 @@ public struct CallRecapDraft: Codable, Sendable, Equatable, Identifiable {
     public var model: String?
     public var failure: String?
     public var reviewState: ReviewState
+    /// A few words naming what the call was about, from the closing pass. Names
+    /// the call's folder when it was not a recurring ceremony.
+    public var title: String?
 
     public init(callID: String, overview: String, items: [SourcedCallItem], provider: String? = nil,
-                model: String? = nil, failure: String? = nil, reviewState: ReviewState = .pending) {
+                model: String? = nil, failure: String? = nil, reviewState: ReviewState = .pending,
+                title: String? = nil) {
         self.callID = callID; self.overview = overview; self.items = items; self.provider = provider
-        self.model = model; self.failure = failure; self.reviewState = reviewState
+        self.model = model; self.failure = failure; self.reviewState = reviewState; self.title = title
     }
 }
 
@@ -574,4 +582,53 @@ public enum GatewayStandby: String, Codable, Sendable, CaseIterable {
 
     /// The spelling used on the host's command line.
     public var argument: String { self == .onFailure ? "on-failure" : rawValue }
+}
+
+/// The kinds of call a user can start, shared by the notch, Settings and the
+/// engine — which names each call's folder from it.
+public enum CallaPersonaCatalog {
+    /// Three groups, so a menu reads as kinds of meeting rather than a flat
+    /// list: the recurring team rituals, engineering reviews, and
+    /// conversations with one person or one customer.
+    public static let groups: [(title: String, ids: [String])] = [
+        ("Team rituals", ["standup", "planning", "refinement", "review", "retro"]),
+        ("Engineering", ["design-review", "incident"]),
+        ("Conversations", ["generic", "one-on-one", "interview", "sales", "support"]),
+    ]
+
+    /// Every built-in id, in menu order.
+    public static let builtIn: [String] = groups.flatMap(\.ids)
+
+    /// Recurring team meetings. Their calls are named after the meeting rather
+    /// than by the model, and each one is context for the next of its kind.
+    public static func isCeremony(_ id: String) -> Bool {
+        groups.prefix(2).contains { $0.ids.contains(id) }
+    }
+
+    public static func title(_ id: String) -> String {
+        switch id {
+        case "generic": return "General"
+        case "standup": return "Standup"
+        case "planning": return "Sprint planning"
+        case "refinement": return "Refinement"
+        case "review": return "Sprint review"
+        case "retro": return "Retro"
+        case "design-review": return "Design review"
+        case "incident": return "Incident review"
+        case "one-on-one": return "1:1"
+        case "interview": return "Interview"
+        case "sales": return "Sales"
+        case "support": return "Support"
+        default:
+            // A user-defined id like `board-review` reads as "Board review".
+            let words = id.replacingOccurrences(of: "-", with: " ")
+            return words.prefix(1).uppercased() + words.dropFirst()
+        }
+    }
+
+    /// The folder a call of this kind is filed under. Finder shows a colon as a
+    /// slash, so "1:1" is spelled out.
+    public static func folderName(_ id: String) -> String {
+        id == "one-on-one" ? "One-on-one" : title(id)
+    }
 }

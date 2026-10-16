@@ -16,6 +16,7 @@ import Foundation
 }
 
 @objc protocol BoringCallaEngineProtocol {
+    func privateSetup(_ request: Data, with reply: @escaping (Data) -> Void)
     func start(with reply: @escaping (Data) -> Void)
     func stop(with reply: @escaping (Data) -> Void)
     func applyPreferences(_ preferences: Data, with reply: @escaping (Data) -> Void)
@@ -24,25 +25,14 @@ import Foundation
     func subscribeStatus(_ observer: BoringCallaEngineStatusObserver, with reply: @escaping (Data) -> Void)
     func subscribeCallEvents(_ observer: BoringCallaEngineCallObserver, with reply: @escaping (Data) -> Void)
     func requestGatewayUpdate(with reply: @escaping (Data) -> Void)
-    func requestScreenRecording(with reply: @escaping (Data) -> Void)
-    func requestAccessibility(with reply: @escaping (Data) -> Void)
-    func startCourse(_ courseID: String, with reply: @escaping (Data) -> Void)
-    func resumeCourse(with reply: @escaping (Data) -> Void)
-    func stopLesson(with reply: @escaping (Data) -> Void)
-    func ask(_ text: String, with reply: @escaping (Data) -> Void)
-    /// Bounded Tutor control-plane calls. History is text/metadata only; one
-    /// selected encrypted capture is returned separately on demand.
-    func setTutorProvider(_ provider: String, with reply: @escaping (Data) -> Void)
-    func tutorHistory(_ query: Data, with reply: @escaping (Data) -> Void)
-    func tutorCapture(_ captureID: String, with reply: @escaping (Data) -> Void)
-    func cancelTutorFeedback(_ feedbackID: String, generation: Int, with reply: @escaping (Data) -> Void)
-    /// Owner UI sends a typed, bounded course-control command. The engine
-    /// validates it before it can reach Boring's bundled private script.
-    func courseControl(_ command: Data, with reply: @escaping (Data) -> Void)
     /// Owner UI starts, stops, or re-targets the live call copilot. The engine
     /// validates the command, then drives the unsandboxed capture host that
     /// owns the microphone and screen-recording grants.
     func copilotControl(_ command: Data, with reply: @escaping (Data) -> Void)
+    /// Opens a call's folder in ~/Documents/Calls, or the root for an empty id.
+    func revealCallFolder(_ callID: String, with reply: @escaping (Data) -> Void)
+    /// Writes a folder for every past call that lacks one.
+    func exportPastCalls(with reply: @escaping (Data) -> Void)
     /// Turns of the current call newer than `seq`; -1 asks for the whole tail.
     ///
     /// One of the few methods here that does not reply with `Status`. A
@@ -71,6 +61,9 @@ import Foundation
     func copilotRecapDraft(_ callID: String, with reply: @escaping (Data) -> Void)
     /// Approve, reject, or delete a recap draft. Approval is only path to knowledge.
     func copilotRecapControl(_ command: Data, with reply: @escaping (Data) -> Void)
+    /// List, name, confirm or merge a call's speakers, or forget remembered
+    /// voices. Replies with the call's speakers and every remembered voice.
+    func copilotSpeakerControl(_ command: Data, with reply: @escaping (Data) -> Void)
     /// Runs the capture host's `permissions` subcommand so the microphone and
     /// screen-recording prompts are attributed to the host's own signature.
     ///

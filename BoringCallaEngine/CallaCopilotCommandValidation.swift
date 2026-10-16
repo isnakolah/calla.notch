@@ -21,7 +21,7 @@ public enum CallaCallTerminationPolicy {
 public enum CallaCopilotCommandValidation {
     /// Commands the notch may send. Anything else is refused outright.
     public static let allowedActions: Set<String> = [
-        "start", "stop", "answer", "set_persona", "set_provider", "archive", "fetch_model", "login",
+        "start", "stop", "answer", "screenshot", "set_persona", "set_provider", "archive", "fetch_model", "login",
         // A rehearsal of the sign-in against a throwaway HOME, so the flow can be
         // watched without signing out.
         "test_login",
@@ -59,7 +59,10 @@ public enum CallaCopilotCommandValidation {
     /// Personas the gateway flow knows. Kept in lockstep with `PERSONAS` in
     /// `apps/call-copilot/integrations/openclaw/src/protocol.mjs`; a value the
     /// gateway would reject should never leave this machine.
-    public static let allowedPersonas: Set<String> = ["generic", "interview", "sales", "support"]
+    public static let allowedPersonas: Set<String> = [
+        "generic", "interview", "sales", "support",
+        "standup", "planning", "refinement", "review", "retro", "design-review", "incident", "one-on-one",
+    ]
 
     /// Live transcription models the host may be asked to run.
     ///

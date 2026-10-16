@@ -300,7 +300,9 @@ public struct PromptPack: Sendable {
         case .laneSummary:
             return """
             The call has ended. Write `summary` as the user's own notes: what was \
-            agreed, what was promised by whom. `open_questions` is what was left \
+            agreed, what was promised by whom. `title` names the call in at most \
+            6 words. `decisions` lists what was agreed; `action_items` lists \
+            "Owner: task (by when)" commitments. `open_questions` is what was left \
             open. Add nothing that was not said.
             """
         case .houseRules:
