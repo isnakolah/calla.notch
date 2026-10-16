@@ -50,10 +50,10 @@ struct About: View {
                 HStack(spacing: 8) {
                     Image("Github")
                         .resizable().aspectRatio(contentMode: .fit).frame(width: 16)
-                    Text("TheBoredTeam/boring.notch").font(NotchType.rowTitle)
+                    Text("isnakolah/boring.notch").font(NotchType.rowTitle)
                     Spacer(minLength: 8)
                     Button("Open on GitHub") {
-                        if let url = URL(string: "https://github.com/TheBoredTeam/boring.notch") {
+                        if let url = URL(string: "https://github.com/isnakolah/boring.notch") {
                             NSWorkspace.shared.open(url)
                         }
                     }

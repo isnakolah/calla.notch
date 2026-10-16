@@ -143,7 +143,7 @@ brew install --cask TheBoredTeam/boring-notch/boring-notch
 
 1. **Clone the Repository**:
    ```bash
-   git clone https://github.com/TheBoredTeam/boring.notch.git
+   git clone https://github.com/isnakolah/boring.notch.git
    cd boring.notch
    ```
 
