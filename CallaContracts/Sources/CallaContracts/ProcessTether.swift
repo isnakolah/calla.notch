@@ -25,14 +25,17 @@ public enum ProcessTether {
     /// background job `/dev/null`, which breaks the interactive sign-in.
     public static func tethered(_ executable: String, _ arguments: [String],
                                 to parent: pid_t = getpid()) -> (executable: String, arguments: [String]) {
+        // `k` signals a whole subtree, deepest first, so nothing the command
+        // started is reparented to launchd on the way down.
         let script = """
         p=$1; shift
+        k() { for x in $(/usr/bin/pgrep -P "$1"); do k "$x" "$2"; done; kill -"$2" "$1" 2>/dev/null; }
         "$@" <&0 &
         c=$!
-        trap 'kill -TERM "$c" 2>/dev/null; wait "$c"; exit 143' TERM INT HUP
+        trap 'k "$c" TERM; wait "$c"; exit 143' TERM INT HUP
         while kill -0 "$p" 2>/dev/null && kill -0 "$c" 2>/dev/null; do sleep 1; done
         if kill -0 "$c" 2>/dev/null; then
-          kill -TERM "$c" 2>/dev/null; sleep 1; kill -KILL "$c" 2>/dev/null
+          k "$c" TERM; sleep 1; k "$c" KILL
         fi
         wait "$c"
         """
