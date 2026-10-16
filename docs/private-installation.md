@@ -45,14 +45,60 @@ privacy permissions remain separate from that app-opening approval.
 | Customized Boring Notch, Calla engine, capture hosts, Tutor host, frameworks, setup helpers, and private Gateway payload | Bundled in the app |
 | Tangit `0.1.0-private+b1335a0a24df` | Compiled from the local Tangit working tree and bundled |
 | Codex CLI `0.162.1`, Claude Code `2.1.290`, AGY `1.3.5` | Bundled native tools with required resources and licenses |
-| Small English live speech model, about 488 MB | Downloaded during setup |
-| Optional archive speech models, about 2.8 GB | Downloaded if selected |
+| Small English live speech model, about 488 MB | Reused if already in place (Components, a carried `Boring Notch Components` folder, Mila); otherwise downloaded |
+| Optional archive speech models, about 2.8 GB | Same, if selected |
 | Apple Command Line Tools for Git | Installed if Git is missing; full Xcode is unnecessary |
 | Tailscale | Downloaded if the optional existing Gateway is enabled |
 | Accounts, passwords, API keys, OAuth tokens, SSH private keys, and signing private key | Not transferred; the recipient supplies their own accounts |
 
 The private Gateway payload supports the existing remote server. Setup does
 not provision a new local Gateway or OpenClaw installation.
+
+### One place for tools and models
+
+Everything setup installs outside the app lives in
+`~/Library/Application Support/boringNotch/Components`:
+
+```
+Components/
+  agy/<version>/agy            agy/current -> <version>
+  codex/<version>/bin/codex    codex/current -> <version>
+  claude/<version>/bin/claude  claude/current -> <version>
+  models/whisper-small-en.bin, whisper-large-v3-turbo.bin, …-encoder.mlmodelc
+  downloads/                   partial and cached downloads
+```
+
+`Managed/agy` and `Calla/copilot/models`, where earlier builds kept these, are
+moved into Components on the first run and replaced with links, so the engine
+and the call host keep finding them without changes.
+
+For every tool and model, setup uses the first of these that checks out, and
+only then downloads:
+
+1. already in Components (models verified by SHA-256, cached in a
+   `.<file>.verified` sidecar so a resume does not re-read gigabytes);
+2. a `Boring Notch Components` folder beside the disk image, in Downloads,
+   on the Desktop, or at the top of any mounted drive;
+3. the copy bundled in the package (tools);
+4. the same version elsewhere on the Mac (`~/.local/bin`, Homebrew,
+   `~/.claude/local` for single-binary tools; Mila's models by size and
+   checksum);
+5. a download with byte progress, speed and time left, resumed with HTTP
+   range requests after an interruption.
+
+`boring-notch export-components [folder]` writes this Mac's speech models to
+a `Boring Notch Components` folder (default: Downloads; hard links when on the
+same disk). `boring-notch components [--archive]` installs or checks
+everything without the rest of setup.
+
+### Unsigned build, least hassle
+
+The package is signed with a local identity, not notarized. Files copied from
+a USB or external drive carry no quarantine flag, so macOS asks nothing.
+Files from AirDrop, Messages or a browser are flagged: either approve once in
+Privacy & Security → Open Anyway, or run `xattr -c` on the `.dmg` before
+mounting it (the mounted contents inherit the image's flag). Setup clears the
+flag from the installed app and from everything in Components.
 
 ### Implementation locations
 
@@ -155,7 +201,9 @@ are included in the DMG.
 
 ## On the receiving Mac
 
-1. Copy or download the DMG, open it, and open **Boring Notch.app**.
+1. Copy the DMG, and any `Boring Notch Components` folder, from a USB drive
+   (no macOS approval needed), or download it. Open it, and open
+   **Boring Notch.app**.
    Choose **Begin setup**. Its native window shows the actual installer prompts
    and stays open while you approve permissions.
 2. If macOS blocks the app, attempt to open it once, then choose
@@ -171,16 +219,17 @@ internet, your Google account, and administrator access if needed for
 Applications or Tailscale installation. No repository, compiler, Homebrew,
 Python, Node, or Go is needed on the receiving Mac. If Git is missing, setup
 opens Apple's Command Line Tools installer and waits for its completion.
-The full Xcode app is unnecessary. Allow at least 8 GB free plus any optional
-archive model workspace; Apple's tool download requires internet.
+The full Xcode app is unnecessary. Allow at least 3 GB free when no speech
+model is already in place, plus about 4 GB for the optional archive models;
+Apple's tool download requires internet.
 
 The bundled MediaRemoteAdapter framework requires macOS 15, even though the
 upstream README advertises macOS 14. This private package enforces its actual
 dependency minimum and opens Software Update on older Macs.
 
 Live speech uses Small English (488 MB). Archive transcription is optional
-and adds about 2.8 GB of downloads; setup checks for 8 GB of free workspace
-before enabling it. Transcription stays on the Mac. AGY sends selected
+and adds about 2.8 GB of downloads unless a carried folder has it; setup
+checks for 4 GB of free workspace before downloading it. Transcription stays on the Mac. AGY sends selected
 transcripts and context to remote model services using your account and quota.
 
 Permissions are requested through the installed app and its capture hosts,
@@ -269,8 +318,9 @@ the current host's permission receipt, and engine readiness without changing
 settings. Online account validity and actual audio capture are checked by
 setup's login/model catalog and meeting test. `repair` rechecks the actual
 installation, replaces damaged live model downloads, and offers retries for
-incomplete steps. AGY installs from the bundled binary. Legacy AGY/Tailscale downloads resume when their server supports
-HTTP range requests; failed speech-model downloads can be retried.
+incomplete steps. Tools install from the bundled copies. Every download
+(models, Tailscale, and tools if a bundle were missing) shows progress and
+resumes after an interruption.
 
 The first version uses transferred/downloaded packages for updates. It does
 not use the original project's Sparkle feed: that would replace your custom

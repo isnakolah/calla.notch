@@ -31,8 +31,22 @@ enum SetupInterface {
     }
 
     /// A determinate fraction for the current step; nil returns to a spinner.
-    static func progress(_ fraction: Double?) {
-        event("progress", fraction.map { ["fraction": min(max($0, 0), 1)] } ?? [:])
+    static func progress(_ fraction: Double?, detail: String? = nil) {
+        var values: [String: Any] = fraction.map { ["fraction": min(max($0, 0), 1)] } ?? [:]
+        if let detail { values["detail"] = detail }
+        event("progress", values)
+    }
+
+    /// A copy, download or checksum in flight: the bar, plus sizes, speed
+    /// and time left underneath it. Terminal gets one line redrawn in place.
+    static func transfer(_ status: TransferStatus) {
+        let line = "\(status.verb) \(status.name) — \(status.summary)"
+        if graphical { progress(status.fraction, detail: line) }
+        else {
+            let percent = status.fraction.map { String(format: "%3.0f%% ", $0 * 100) } ?? ""
+            print("\r\u{1b}[K" + percent + line, terminator: status.total > 0 && status.done >= status.total ? "\n" : "")
+            fflush(stdout)
+        }
     }
 
     /// Tangit is a terminal application. Give its own wizard a real Terminal

@@ -156,29 +156,17 @@ func login() throws {
 }
 
 func models(archive: Bool) throws {
+    // Each model is taken from wherever it already is before anything is
+    // downloaded; see ComponentSetup.installModel.
+    try ComponentSetup.installModel(.live)
+    if archive { try ComponentSetup.installModel(.archive) }
+    try ComponentSetup.migrateLegacy()
+    // The call host confirms it can see them where it looks.
+    SetupInterface.activity("Confirming the call host can load the speech models…")
     let host = Layout.app.appendingPathComponent(Layout.callHost)
     let environment = ["CALLA_RUNTIME_ROOT": Layout.support.appendingPathComponent("Calla").path]
-    var expected = ["whisper-small-en": "c6138d6d58ecc8322097e0f987c32f1be8bb0a18532a3f88f734d1bbf9c41e5d"]
-    if archive { expected["whisper-large-v3-turbo"] = "1fc70f774d38eb169993ac391eea357ef47c88757ef72ee5943879b7e8e2bc69" }
-    for (name, checksum) in expected {
-        let file = Layout.support.appendingPathComponent("Calla/copilot/models/\(name).bin")
-        if fm.fileExists(atPath: file.path) {
-            SetupInterface.activity("Verifying the downloaded \(name) model…")
-            if try Checksums.digest(file) != checksum {
-                print("Replacing the damaged \(name) download.")
-                try fm.removeItem(at: file)
-            }
-        }
-    }
-    // The host prints "NN%" lines; the window turns them into a progress bar.
-    SetupInterface.activity("Downloading the English speech model (488 MB)…")
-    try Commands.run(host.path, ["models", "--model", "whisper-small-en"], inherit: true, environment: environment, timeout: 7200)
-    if archive {
-        SetupInterface.progress(nil)
-        SetupInterface.activity("Downloading the after-call transcription model (about 2.8 GB)…")
-        try Commands.run(host.path, ["models", "--archive"], inherit: true, environment: environment, timeout: 14400)
-    }
-    SetupInterface.progress(1)
+    try Commands.run(host.path, ["models", "--model", ModelSpec.live.name], environment: environment, timeout: 600)
+    if archive { try Commands.run(host.path, ["models", "--archive"], environment: environment, timeout: 600) }
     SetupInterface.activity("Speech models are verified and ready.")
 }
 
@@ -223,7 +211,8 @@ func callsFolder() throws {
 func gateway(_ dependency: ReleaseManifest.Dependency) throws {
     let tailscale = URL(fileURLWithPath: "/Applications/Tailscale.app/Contents/MacOS/Tailscale")
     if !fm.isExecutableFile(atPath: tailscale.path) {
-        let pkg = try Downloads.fetch(dependency, name: "tailscale")
+        SetupInterface.activity("Downloading Tailscale…")
+        let pkg = try ComponentSetup.fetch(dependency, name: "tailscale", title: "Tailscale")
         let signature = try Commands.run("/usr/sbin/pkgutil", ["--check-signature", pkg.path], captureStderr: true).output
         guard signature.contains("Developer ID Installer: Tailscale") else {
             throw SetupFailure("Tailscale installer signature is unexpected. Installation stopped.")
@@ -292,12 +281,14 @@ func doctor() throws -> Bool {
     guard fm.fileExists(atPath: Layout.app.path) else { print("App: missing — run setup from the private DMG."); return false }
     let release = try PackageInstaller.validate(Layout.app)
     print("App: \(release.version) (\(release.build)), signature verified")
-    let version = try? Commands.run(Layout.agy.path, ["--version"]).output.trimmingCharacters(in: .whitespacesAndNewlines)
+    print("Components: \(ComponentSetup.display(ComponentLayout.root))")
+    let version = ComponentSetup.version(of: Layout.agy)
     let agyOK = version == release.agy.version
-    print("Managed AGY: \(version ?? "missing")\(agyOK ? "" : " — run repair")")
+    print("AGY: \(version ?? "missing")\(agyOK ? "" : " — run repair")")
     let tangitOK = release.tangit == nil ? true : TangitSetup.report()
-    let model = Layout.support.appendingPathComponent("Calla/copilot/models/whisper-small-en.bin")
-    let speechOK = (try? Checksums.digest(model)) == "c6138d6d58ecc8322097e0f987c32f1be8bb0a18532a3f88f734d1bbf9c41e5d"
+    let model = ComponentLayout.models.appendingPathComponent(ModelSpec.live.file)
+    let speechOK = Transfer.verify(model, sha256: ModelSpec.live.sha256, size: ModelSpec.live.size,
+                                   name: ModelSpec.live.title) { _ in }
     print("Speech model: \(speechOK ? "verified" : "missing or damaged — run repair")")
     let state = try AppBridge.request("permissions-check")
     let signedIn = state["signedIn"] as? Bool == true
@@ -362,11 +353,19 @@ func wizard(source: URL, repair: Bool) throws {
     }
     SetupInterface.activity("Verifying the package signature…")
     let manifest = try PackageInstaller.validate(source)
-    print("Package: \(manifest.version) (\(manifest.build))\nDestination: /Applications/boringNotch.app\nIncluded: Tangit, standalone Codex, Claude and AGY.\nDownloads: 488 MB live speech model, Apple's Command Line Tools for Git if absent; optional archive models need about 2.8 GB plus extraction space.\nAccounts: Google for meetings; ChatGPT or Claude for Tangit; Tailscale only if you select Gateway.\n")
-    if !progress.completed.contains("models") {
+    print("Package: \(manifest.version) (\(manifest.build))\nDestination: /Applications/boringNotch.app\nTools and models: \(ComponentSetup.display(ComponentLayout.root))\nIncluded in the package: Tangit, Codex, Claude and AGY — no download needed.\nAccounts: Google for meetings; ChatGPT or Claude for Tangit; Tailscale only if you select Gateway.\n")
+    // Say up front what is already here, so a second run or a carried folder
+    // visibly saves the work.
+    SetupInterface.activity("Looking for files already on this Mac…")
+    let inventory = ComponentSetup.inventory(manifest)
+    for (name, present) in inventory { print("  \(present ? "✓ in place" : "· to install"): \(name)") }
+    let carried = ComponentSetup.carryFolders
+    for folder in carried { print("  Found \(ComponentLayout.carryName) at \(ComponentSetup.display(folder)); setup will copy from it instead of downloading.") }
+    let liveModelPresent = inventory.first { $0.0 == ModelSpec.live.title }?.1 == true
+    if !liveModelPresent && carried.isEmpty {
         let values = try Layout.home.resourceValues(forKeys: [.volumeAvailableCapacityForImportantUsageKey])
-        guard (values.volumeAvailableCapacityForImportantUsage ?? 0) >= 8_000_000_000 else {
-            throw SetupFailure("Free at least 8 GB before installing to allow the app, speech model and Apple's Git tools. Archive transcription needs additional storage.")
+        guard (values.volumeAvailableCapacityForImportantUsage ?? 0) >= 3_000_000_000 else {
+            throw SetupFailure("Free at least 3 GB before installing, for the tools, the speech model and Apple's Git tools. Archive transcription needs about 3 GB more.")
         }
     }
     // The window's Begin button is the confirmation; Terminal asks here.
@@ -387,10 +386,20 @@ func wizard(source: URL, repair: Bool) throws {
         return
     }
 
-    SetupInterface.step(2, "Prepare AGY and Tangit tools")
-    SetupInterface.activity("Installing the managed AGY tool…")
-    try step("agy") { try Downloads.installAgy(manifest.agy) }
-    if manifest.tangit != nil { try step("tangit-tools") { try TangitSetup.prerequisites() } }
+    SetupInterface.step(2, "Install AGY, Codex and Claude")
+    SetupInterface.activity("Checking Components for tools already installed…")
+    try step("agy") {
+        try ComponentSetup.migrateLegacy()
+        try ComponentSetup.installTool("agy", manifest.agy, package: source)
+    }
+    if manifest.tangit != nil {
+        try step("tangit-tools") {
+            if let codex = manifest.codex { try ComponentSetup.installTool("codex", codex, package: source) }
+            if let claude = manifest.claude { try ComponentSetup.installTool("claude", claude, package: source) }
+            ComponentSetup.clearQuarantine()
+            try TangitSetup.prerequisites()
+        }
+    }
 
     SetupInterface.step(3, "Prepare meeting settings")
     SetupInterface.activity("Turning on calls with the team-ceremony personas…")
@@ -405,8 +414,8 @@ func wizard(source: URL, repair: Bool) throws {
         : ask("Also download the higher-quality after-call transcription model? Adds about 2.8 GB.", defaultYes: settings["archiveEnabled"] as? Bool ?? false)
     if archive {
         let space = try Layout.home.resourceValues(forKeys: [.volumeAvailableCapacityForImportantUsageKey])
-        guard (space.volumeAvailableCapacityForImportantUsage ?? 0) >= 8_000_000_000 else {
-            throw SetupFailure("Archive models need 8 GB free for downloading and extraction. Free some space, or rerun setup and leave archive transcription off.")
+        guard (space.volumeAvailableCapacityForImportantUsage ?? 0) >= 4_000_000_000 || !ComponentSetup.carryFolders.isEmpty else {
+            throw SetupFailure("Archive models need 4 GB free for downloading and unpacking. Free some space, or rerun setup and leave archive transcription off.")
         }
     }
     try step("models") { try models(archive: archive); try configure(["archive": archive]) }
@@ -492,6 +501,24 @@ do {
         let release = try PackageInstaller.validate(URL(fileURLWithPath: args[1]))
         print("Verified private package \(release.version) (\(release.build))")
     case "doctor": exit(try doctor() ? 0 : 1)
+    case "components":
+        // Installs or checks every tool and model in Components without the
+        // rest of setup. Safe to repeat: whatever is in place is kept.
+        var package = enclosingApp() ?? Layout.app
+        if let index = args.firstIndex(of: "--package"), args.indices.contains(index + 1) { package = URL(fileURLWithPath: args[index + 1]) }
+        let release = try PackageInstaller.validate(package)
+        try ComponentSetup.migrateLegacy()
+        try ComponentSetup.installTool("agy", release.agy, package: package)
+        if let codex = release.codex { try ComponentSetup.installTool("codex", codex, package: package) }
+        if let claude = release.claude { try ComponentSetup.installTool("claude", claude, package: package) }
+        try ComponentSetup.installModel(.live)
+        if args.contains("--archive") { try ComponentSetup.installModel(.archive) }
+        ComponentSetup.clearQuarantine()
+        for (name, present) in ComponentSetup.inventory(release) { print("\(present ? "✓" : "·") \(name)") }
+    case "export-components":
+        let folder = args.count > 1 ? URL(fileURLWithPath: (args[1] as NSString).expandingTildeInPath)
+            : Layout.home.appendingPathComponent("Downloads/\(ComponentLayout.carryName)")
+        try ComponentSetup.export(to: folder)
     case "update":
         guard args.count == 2 else { throw SetupFailure("Usage: boring-notch update /path/to/private-package.dmg") }
         try update(URL(fileURLWithPath: args[1]).standardizedFileURL)
@@ -511,7 +538,7 @@ do {
         default: break
         }
     case "--help", "-h", "help":
-        print("boring-notch setup | repair | doctor | tangit [ARGS...] | update <package.dmg>\nsetup and repair guide installation, AGY login, models, permissions, optional Gateway, meeting test and Tangit device sign-in.\ndoctor checks readiness without changing settings.\ntangit opens the bundled profile manager.\nupdate installs a private DMG while preserving your data.")
+        print("boring-notch setup | repair | doctor | tangit [ARGS...] | update <package.dmg> | components [--archive] | export-components [folder]\nsetup and repair guide installation, AGY login, models, permissions, optional Gateway, meeting test and Tangit device sign-in.\ndoctor checks readiness without changing settings.\ntangit opens the bundled profile manager.\nupdate installs a private DMG while preserving your data.\nexport-components writes this Mac's speech models to a folder setup on another Mac copies from instead of downloading.")
     default: throw SetupFailure("Unknown command. Run boring-notch --help.")
     }
 } catch {

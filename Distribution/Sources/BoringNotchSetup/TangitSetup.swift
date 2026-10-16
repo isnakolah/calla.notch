@@ -3,10 +3,17 @@ import Foundation
 
 enum TangitSetup {
     static let marker = "# Managed by Boring Notch private setup"
+    /// The installed tool, or the package's own copy before setup has run.
+    static func tool(_ name: String) -> URL {
+        let installed = ComponentLayout.binary(name)
+        return fm.isExecutableFile(atPath: installed.path) ? installed : Layout.provider(name)
+    }
+
     static var environment: [String: String] {
-        let providers = Layout.app.appendingPathComponent("Contents/Resources/Tangit/Providers").path
-        return ["PATH": providers + "/codex/bin:" + providers + "/codex/codex-path:"
-                + providers + "/claude/bin:" + Layout.home.appendingPathComponent(".local/bin").path
+        let codex = tool("codex").deletingLastPathComponent().deletingLastPathComponent().path
+        let claude = tool("claude").deletingLastPathComponent().path
+        return ["PATH": codex + "/bin:" + codex + "/codex-path:"
+                + claude + ":" + Layout.home.appendingPathComponent(".local/bin").path
                 + ":" + (ProcessInfo.processInfo.environment["PATH"] ?? "")
                 + ":/usr/bin:/bin:/usr/sbin:/sbin", "DISABLE_AUTOUPDATER": "1"]
     }
@@ -16,7 +23,7 @@ enum TangitSetup {
         try fm.createDirectory(at: directory, withIntermediateDirectories: true)
         for name in ["tangit", "codex", "claude", "agy"] {
             let destination = directory.appendingPathComponent(name)
-            let target = name == "tangit" ? Layout.tangit : name == "agy" ? Layout.agy : Layout.provider(name)
+            let target = name == "tangit" ? Layout.tangit : name == "agy" ? Layout.agy : ComponentLayout.binary(name)
             let link = try? fm.destinationOfSymbolicLink(atPath: destination.path)
             if fm.fileExists(atPath: destination.path) || link != nil {
                 let handle = try? FileHandle(forReadingFrom: destination)
@@ -46,9 +53,9 @@ enum TangitSetup {
     static func prerequisites() throws {
         SetupInterface.activity("Linking the tangit, codex, claude and agy commands…")
         try installCommands()
-        SetupInterface.activity("Checking the bundled Codex and Claude tools…")
+        SetupInterface.activity("Checking Codex and Claude…")
         for name in ["codex", "claude"] {
-            let version = try Commands.run(Layout.provider(name).path, ["--version"], environment: environment).output
+            let version = try Commands.run(tool(name).path, ["--version"], environment: environment).output
             print(version.trimmingCharacters(in: .whitespacesAndNewlines))
         }
         if !gitReady() {
@@ -94,7 +101,7 @@ enum TangitSetup {
         print("Tangit: \(version ?? "missing — run repair")")
         var ready = version != nil
         for name in ["codex", "claude"] {
-            let result = try? Commands.run(Layout.provider(name).path, ["--version"], environment: environment)
+            let result = try? Commands.run(tool(name).path, ["--version"], environment: environment)
             print("\(name): \(result?.output.trimmingCharacters(in: .whitespacesAndNewlines) ?? "missing — run repair")")
             ready = ready && result?.status == 0
         }

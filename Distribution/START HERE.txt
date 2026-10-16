@@ -1,44 +1,78 @@
 Boring Notch — private Apple Silicon package
 
-1. Open “Boring Notch.app” from this disk image.
-2. If macOS blocks it, try opening it once, then go to System Settings →
-   Privacy & Security → Open Anyway. This is the only approval needed:
-   the installed copy and every tool inside it are cleared at install time.
-3. Choose Begin setup. The window shows each step, what it is doing right
-   now, and download progress. After the first step it closes and the
-   installed app in Applications opens its own setup window to finish —
-   so every macOS prompt belongs to that one app.
+GETTING IT ONTO THE OTHER MAC (pick the easiest)
 
-Setup installs Boring Notch, AGY, Tangit, Codex and Claude, signs you in to
-Google, downloads the speech model, asks for microphone, system audio and
-calendar access, runs a short meeting test, and creates your first Tangit
-profile. The Gateway step is optional.
+  Best: copy this disk image, plus the "Boring Notch Components" folder if
+  you have one, onto a USB stick or external drive, then copy both from the
+  drive onto the other Mac (into Downloads is fine). Files copied from a drive
+  are not flagged by macOS, so it never asks you to approve anything.
 
-You need macOS 15 or later, an Apple Silicon Mac, an internet connection,
-your Google login, and at least 8 GB free. No Homebrew, Python, Node, Go or
-Xcode is required. If Git is missing, setup opens Apple's Command Line Tools
-installer and waits for it.
+  AirDrop, Messages or a download work too, but macOS then flags the file.
+  Either approve it once (step 2 below), or before opening the disk image run
+  this in Terminal and nothing will ask again:
+
+      xattr -c ~/Downloads/boringNotch-private-*.dmg
+
+INSTALLING
+
+1. Open the disk image, then open "Boring Notch.app" inside it.
+2. Only if macOS says it cannot verify the app: choose Done, open System
+   Settings → Privacy & Security, scroll down, choose Open Anyway next to
+   Boring Notch, and enter your password. This is needed once; setup clears
+   the flag from the installed app and every tool it installs.
+3. Choose Begin setup. The window shows each step, what it is doing, and a
+   progress bar with sizes, speed and time left for every copy or download.
+   After the first step it hands over to the installed app in Applications,
+   which finishes setup, so every macOS prompt belongs to that one app.
+
+WHAT SETUP REUSES
+
+Setup looks for what is already in place before downloading anything, and
+checks every file against its pinned checksum first:
+
+  • tools and models from an earlier install on this Mac;
+  • a "Boring Notch Components" folder next to the disk image, in Downloads,
+    on the Desktop, or at the top of a USB drive (made on another Mac with
+    boring-notch export-components);
+  • Codex, Claude and AGY bundled in this package (no download needed);
+  • the same speech models from other apps that ship them.
+
+Everything it installs lives in one place:
+  ~/Library/Application Support/boringNotch/Components
+    agy, codex, claude, models, downloads
+
+Your settings from the other Mac come with this package and are applied the
+first time Boring Notch opens. Sign-ins, permissions and call history do not
+transfer; setup walks through those.
+
+You need macOS 15 or later, an Apple Silicon Mac, your Google login, and an
+internet connection for sign-in (and for any model not already in place).
+No Homebrew, Python, Node, Go or Xcode is required. If Git is missing, setup
+opens Apple's Command Line Tools installer and waits for it.
 
 CALLS
 Start a call from the notch and pick the meeting type: Standup, Sprint
 planning, Refinement, Sprint review or Retro (team rituals); Design review
 or Incident review (engineering); General, 1:1, Interview, Sales or Support
 (conversations). Transcription stays on the Mac; selected transcript text
-goes to your AI account.
+goes to your AI account. Each call is saved to Documents › Calls.
 
 IF SETUP STOPS
-Reopen Boring Notch and choose Resume setup. Finished steps are kept and not
-repeated — Google sign-in is not reopened once it works.
+Reopen Boring Notch and choose Resume setup. Finished steps are kept, files
+already in place are kept, and an interrupted download continues where it
+stopped. Google sign-in is not reopened once it works.
 
 UPDATES
 Open the next private DMG's Boring Notch.app; it updates in place and keeps
-your accounts, settings, history and models. End any active call and quit
-Tangit first.
+your accounts, settings, history and Components. End any active call and
+quit Tangit first.
 
 LATER
 Boring Notch → Setup, Repair & Updates…, or in a new Terminal window:
-  boring-notch doctor
-  boring-notch repair
+  boring-notch doctor              check everything
+  boring-notch repair              rerun setup's checks
+  boring-notch components          reinstall missing tools or models
+  boring-notch export-components   copy this Mac's models for another Mac
   boring-notch update /path/to/new-package.dmg
   tangit
 

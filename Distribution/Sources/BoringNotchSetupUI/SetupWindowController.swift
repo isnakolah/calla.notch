@@ -82,10 +82,10 @@ struct SetupStep {
 final class InstallerModel: ObservableObject {
     static let steps: [SetupStep] = [
         .init(title: "Install app", summary: "Copy Boring Notch into Applications and verify its signature. macOS may ask for your administrator password.", symbol: "shippingbox"),
-        .init(title: "Coding tools", summary: "Tangit, Codex, Claude and AGY are included. If Git is missing, Apple’s installer adds its Command Line Tools.", symbol: "terminal"),
+        .init(title: "Coding tools", summary: "AGY, Codex and Claude go into one Components folder, copied from this package or reused if already installed. If Git is missing, Apple’s installer adds its Command Line Tools.", symbol: "terminal"),
         .init(title: "Meeting settings", summary: "Turn on listening calls, with personas for standups, planning, retros, reviews and one-on-ones. Existing preferences are kept.", symbol: "slider.horizontal.3"),
         .init(title: "Google account", summary: "Sign in through the Boring Notch sign-in window and approve access in your browser. Your account stays on this Mac.", symbol: "person.crop.circle.badge.checkmark"),
-        .init(title: "Speech models", summary: "Download the English speech model so transcription runs on this Mac. A higher-quality after-call model is optional.", symbol: "waveform"),
+        .init(title: "Speech models", summary: "The English speech model, reused if it is already on this Mac or in a carried Boring Notch Components folder, otherwise downloaded with progress. A higher-quality after-call model is optional.", symbol: "waveform"),
         .init(title: "Permissions", summary: "Allow the microphone, system audio, calendar, and the Documents folder where each call is saved. This window stays open while you switch to System Settings.", symbol: "hand.raised"),
         .init(title: "Private Gateway", summary: "Optionally connect to your existing Gateway over Tailscale. Local meetings work without it.", symbol: "point.3.connected.trianglepath.dotted"),
         .init(title: "Meeting check", summary: "Speak a sentence and play a short spoken clip to confirm both sides are heard, then check the AI connection.", symbol: "checkmark.seal"),
@@ -214,9 +214,12 @@ final class InstallerModel: ObservableObject {
             stepStarted = Date()
         case "activity":
             activity = event["text"] as? String ?? activity
+            // A new sentence starts a new piece of work; the last bar is done.
+            fraction = nil; detail = ""
             appendLog("› " + activity)
         case "progress":
             fraction = event["fraction"] as? Double
+            if let line = event["detail"] as? String { detail = line }
         case "prompt":
             prompt = SetupPrompt(message: event["message"] as? String ?? "Continue setup?",
                                  choice: event["kind"] as? String == "choice",
@@ -380,14 +383,14 @@ struct InstallerView: View {
                     IntroRow(symbol: "shippingbox.fill", tint: .blue, title: "Already included",
                              text: "The app, Tangit, Codex, Claude and AGY. Nothing to download for these.")
                     IntroRow(symbol: "arrow.down.circle.fill", tint: .teal, title: "Downloaded as needed",
-                             text: "The 488 MB speech model, Apple’s Git tools if missing, and Tailscale if you want the Gateway.")
+                             text: "Only what is not already here: setup first checks this Mac and any Boring Notch Components folder for the 488 MB speech model, then downloads what is missing with live progress.")
                     IntroRow(symbol: "hand.raised.fill", tint: .orange, title: "You approve the personal parts",
                              text: "Google sign-in and the macOS microphone, system audio and calendar prompts.")
                 }
                 .padding(20).frame(maxWidth: .infinity, alignment: .leading)
                 .background(.background.opacity(0.7), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
                 .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous).strokeBorder(.separator.opacity(0.6)))
-                Label("Apple Silicon · macOS 15 or later · Internet · 8 GB free", systemImage: "info.circle")
+                Label("Apple Silicon · macOS 15 or later · Internet · 3 GB free", systemImage: "info.circle")
                     .font(.caption).foregroundStyle(.secondary)
             }
         }

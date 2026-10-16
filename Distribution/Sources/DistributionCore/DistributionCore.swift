@@ -13,8 +13,9 @@ public enum Layout {
     public static let support = home.appendingPathComponent("Library/Application Support/boringNotch")
     public static let setup = support.appendingPathComponent("Setup")
     public static let sessions = support.appendingPathComponent("Calla/Setup/sessions")
-    public static let managed = support.appendingPathComponent("Managed/agy")
-    public static let agy = managed.appendingPathComponent("current/agy")
+    /// Installed into Components (see `ComponentLayout`); `Managed/agy` is a
+    /// link to it for builds that still look there.
+    public static let agy = support.appendingPathComponent("Components/agy/current/agy")
     public static let app = URL(fileURLWithPath: "/Applications/boringNotch.app")
     public static let tangit = app.appendingPathComponent("Contents/Helpers/tangit")
     public static func provider(_ name: String, in app: URL = Layout.app) -> URL {
