@@ -7,26 +7,18 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-        B05000050000000000000005 /* DistributionCore in Frameworks */ = {isa = PBXBuildFile; productRef = B05000040000000000000004 /* DistributionCore */; };
-        B05000030000000000000003 /* BoringNotchSetupUI in Frameworks */ = {isa = PBXBuildFile; productRef = B05000020000000000000002 /* BoringNotchSetupUI */; };
-		1CE000000000000000000011 /* IceConfiguration.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1CE000000000000000000001 /* IceConfiguration.swift */; };
-		1CE000000000000000000012 /* IceMenuBarController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1CE000000000000000000002 /* IceMenuBarController.swift */; };
-		1CE000000000000000000013 /* IcePane.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1CE000000000000000000003 /* IcePane.swift */; };
-		A82800000000000000000001 /* NotchSizing.swift in Sources */ = {isa = PBXBuildFile; fileRef = A82800000000000000000002 /* NotchSizing.swift */; };
-		A82800000000000000000101 /* NotchBehaviour.swift in Sources */ = {isa = PBXBuildFile; fileRef = A82800000000000000000102 /* NotchBehaviour.swift */; };
-		A82800000000000000000003 /* NotchResizeSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = A82800000000000000000004 /* NotchResizeSession.swift */; };
-		A82800000000000000000005 /* NotchResizeEditor.swift in Sources */ = {isa = PBXBuildFile; fileRef = A82800000000000000000006 /* NotchResizeEditor.swift */; };
-		A82800000000000000000007 /* NotchSizePane.swift in Sources */ = {isa = PBXBuildFile; fileRef = A82800000000000000000008 /* NotchSizePane.swift */; };
 		00A1B2C30000000000000001 /* ShelfItemMetadataCache.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00A1B2C30000000000000000 /* ShelfItemMetadataCache.swift */; };
 		00A1B2C30000000000000003 /* ShelfDragHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00A1B2C30000000000000002 /* ShelfDragHandler.swift */; };
 		00A1B2C30000000000000005 /* ShelfQueueChip.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00A1B2C30000000000000004 /* ShelfQueueChip.swift */; };
 		00A1B2C30000000000000007 /* ShelfToolbar.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00A1B2C30000000000000006 /* ShelfToolbar.swift */; };
 		00A1B2C30000000000000009 /* ShelfSendBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00A1B2C30000000000000008 /* ShelfSendBar.swift */; };
+		02280020F6CA36C63E4592B8 /* PrivacyPane.swift in Sources */ = {isa = PBXBuildFile; fileRef = B73DC51812AA16023ABC39C0 /* PrivacyPane.swift */; };
+		05FB5A1461715898040771BF /* ShelfPane.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5B69BDE2086F42C610233314 /* ShelfPane.swift */; };
+		0903CC2B76C557DDBCAFDB6F /* CopilotCallDetailPane.swift in Sources */ = {isa = PBXBuildFile; fileRef = 84ACD1DFF0D38F15E6B68B82 /* CopilotCallDetailPane.swift */; };
+		09822EA4622A6E74F778B2EA /* NotchSlider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3BBACD35B85223BF96EBAC8F /* NotchSlider.swift */; };
 		1100290C2E847E2800035A57 /* NSItemProvider+LoadHelpers.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1100290B2E847E2800035A57 /* NSItemProvider+LoadHelpers.swift */; };
 		110029272E84FD4C00035A57 /* TemporaryFileStorageService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 110029262E84FD4C00035A57 /* TemporaryFileStorageService.swift */; };
 		1100292E2E86940F00035A57 /* QuickShareService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1100292D2E86940F00035A57 /* QuickShareService.swift */; };
-		A1B2C3D4E5F6000000000001 /* KDECertificateServiceHelper.m in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F6000000000003 /* KDECertificateServiceHelper.m */; };
-		A1B2C3D4E5F6000000000002 /* OpenSSL in Frameworks */ = {isa = PBXBuildFile; productRef = A1B2C3D4E5F6000000000007 /* OpenSSL */; };
 		1113ABC62E80E27000EC13B2 /* ShelfPersistenceService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1113ABBE2E80E27000EC13B2 /* ShelfPersistenceService.swift */; };
 		1113ABC82E80E27000EC13B2 /* ShelfItem.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1113ABB72E80E27000EC13B2 /* ShelfItem.swift */; };
 		1113ABCA2E80E27000EC13B2 /* ShelfSelectionModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1113ABC02E80E27000EC13B2 /* ShelfSelectionModel.swift */; };
@@ -35,7 +27,6 @@
 		1113ABCE2E80E27000EC13B2 /* ShelfActionService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1113ABBC2E80E27000EC13B2 /* ShelfActionService.swift */; };
 		1113ABD02E80E6BB00EC13B2 /* ThumbnailService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1113ABCF2E80E6BB00EC13B2 /* ThumbnailService.swift */; };
 		111BE95D2ECD71E10079DD4E /* AsyncXPCConnection in Frameworks */ = {isa = PBXBuildFile; productRef = 111BE95C2ECD71E10079DD4E /* AsyncXPCConnection */; };
-		DDDD00010000000000000003 /* SwiftTerm in Frameworks */ = {isa = PBXBuildFile; productRef = DDDD00010000000000000002 /* SwiftTerm */; };
 		111BE9952ECF2DF40079DD4E /* DragDetector.swift in Sources */ = {isa = PBXBuildFile; fileRef = 111BE9942ECF2DEF0079DD4E /* DragDetector.swift */; };
 		111BEA512ECFBF7F0079DD4E /* MacroVisionKit in Frameworks */ = {isa = PBXBuildFile; productRef = 111BEA502ECFBF7F0079DD4E /* MacroVisionKit */; };
 		111BEA5F2ED07A340079DD4E /* MacroVisionKit in Frameworks */ = {isa = PBXBuildFile; productRef = 111BEA5E2ED07A340079DD4E /* MacroVisionKit */; };
@@ -57,7 +48,6 @@
 		1153BDA72D99B22200979FB0 /* YouTubeMusicController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1153BDA62D99B22200979FB0 /* YouTubeMusicController.swift */; };
 		115C12EC2ED3D003009754CA /* OpenNotchHUD.swift in Sources */ = {isa = PBXBuildFile; fileRef = 115C12EB2ED3D003009754CA /* OpenNotchHUD.swift */; };
 		1160F8D82DD98230006FBB94 /* NotchShape.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1160F8D72DD98230006FBB94 /* NotchShape.swift */; };
-		CA1200010000000000B00101 /* NotchCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA1200010000000000B00102 /* NotchCard.swift */; };
 		1163988D2DF5CAB40052E6AF /* EventModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1163988C2DF5CAB40052E6AF /* EventModel.swift */; };
 		1163988F2DF5CC870052E6AF /* CalendarModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1163988E2DF5CC870052E6AF /* CalendarModel.swift */; };
 		116398962DF5D6C00052E6AF /* CalendarServiceProviding.swift in Sources */ = {isa = PBXBuildFile; fileRef = 116398952DF5D6C00052E6AF /* CalendarServiceProviding.swift */; };
@@ -85,126 +75,10 @@
 		11EFCD702E8E92D600D0B974 /* ShelfItemViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 11EFCD6F2E8E92D600D0B974 /* ShelfItemViewModel.swift */; };
 		11F747CE2EC75CEA00F841DB /* DragPreviewView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 11F747CD2EC75CEA00F841DB /* DragPreviewView.swift */; };
 		11F7485B2EC9AABA00F841DB /* BoringNotchXPCHelper.xpc in Embed XPC Services */ = {isa = PBXBuildFile; fileRef = 11F7484F2EC9AABA00F841DB /* BoringNotchXPCHelper.xpc */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
-		CA11ST030000000000000003 /* IntelligenceStore in Frameworks */ = {isa = PBXBuildFile; productRef = CA11ST020000000000000002 /* IntelligenceStore */; };
-		CA11QZ110000000000000011 /* IntelligenceCore in Frameworks */ = {isa = PBXBuildFile; productRef = CA11QZ100000000000000010 /* IntelligenceCore */; };
-		CA11QZ210000000000000021 /* IntelligenceProviders in Frameworks */ = {isa = PBXBuildFile; productRef = CA11QZ200000000000000020 /* IntelligenceProviders */; };
-		CAV200030000000000000003 /* CallaContracts in Frameworks */ = {isa = PBXBuildFile; productRef = CAV200020000000000000002 /* CallaContracts */; };
-		CAV200040000000000000004 /* CallaContracts in Frameworks */ = {isa = PBXBuildFile; productRef = CAV200020000000000000002 /* CallaContracts */; };
-		CA11E0020000000000000002 /* BoringCallaEngine.xpc in Embed XPC Services */ = {isa = PBXBuildFile; fileRef = CA11E0010000000000000001 /* BoringCallaEngine.xpc */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
-		BA7000020000000000000002 /* SweepService.xpc in Embed XPC Services */ = {isa = PBXBuildFile; fileRef = BA7000010000000000000001 /* SweepService.xpc */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		11F748682EC9AC9600F841DB /* BoringNotchXPCHelperProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = 11F748652EC9AC9600F841DB /* BoringNotchXPCHelperProtocol.swift */; };
 		11F748692EC9AC9600F841DB /* XPCHelperClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 11F748662EC9AC9600F841DB /* XPCHelperClient.swift */; };
-		DDDD00010000000000000012 /* UsageReportDTO.swift in Sources */ = {isa = PBXBuildFile; fileRef = DDDD00010000000000000011 /* UsageReportDTO.swift */; };
-		DDDD00010000000000000022 /* UsageMonitorManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = DDDD00010000000000000021 /* UsageMonitorManager.swift */; };
-		DDDD00010000000000000032 /* UsageMonitorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DDDD00010000000000000031 /* UsageMonitorView.swift */; };
-		DDDD00010000000000000062 /* UsageNotchBadge.swift in Sources */ = {isa = PBXBuildFile; fileRef = DDDD00010000000000000061 /* UsageNotchBadge.swift */; };
-		DDDD00010000000000000072 /* MeetingLinkResolver.swift in Sources */ = {isa = PBXBuildFile; fileRef = DDDD00010000000000000071 /* MeetingLinkResolver.swift */; };
-		DDDD00010000000000000082 /* PomodoroModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = DDDD00010000000000000081 /* PomodoroModels.swift */; };
-		DDDD00010000000000000092 /* PomodoroPlanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = DDDD00010000000000000091 /* PomodoroPlanner.swift */; };
-		DDDD000100000000000000A2 /* PomodoroView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DDDD000100000000000000A1 /* PomodoroView.swift */; };
-		DDDD000100000000000000B2 /* PomodoroNotchBadge.swift in Sources */ = {isa = PBXBuildFile; fileRef = DDDD000100000000000000B1 /* PomodoroNotchBadge.swift */; };
-		DDDD000100000000000000C2 /* PomodoroManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = DDDD000100000000000000C1 /* PomodoroManager.swift */; };
-		DDDD000100000000000000D2 /* PomodoroSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = DDDD000100000000000000D1 /* PomodoroSettings.swift */; };
-		CA1100010000000000000001 /* CallaEngineClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA1100010000000000000002 /* CallaEngineClient.swift */; };
-		CA1100010000000000D00711 /* NotchLayoutPane.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA1100010000000000D00712 /* NotchLayoutPane.swift */; };
-		CA1100010000000000D00301 /* NotchPreviewWell.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA1100010000000000D00302 /* NotchPreviewWell.swift */; };
-		CA1100010000000000D00201 /* SettingsComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA1100010000000000D00202 /* SettingsComponents.swift */; };
-		FEA04E2958FDEB3EC579A459 /* CallFormatting.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2515AFF9AAAB6EAFF940C43C /* CallFormatting.swift */; };
-		0903CC2B76C557DDBCAFDB6F /* CopilotCallDetailPane.swift in Sources */ = {isa = PBXBuildFile; fileRef = 84ACD1DFF0D38F15E6B68B82 /* CopilotCallDetailPane.swift */; };
-		A9E6D68BA59729BCF7D33909 /* KnowledgeCalendar.swift in Sources */ = {isa = PBXBuildFile; fileRef = A38E4A65F515E03600E71A66 /* KnowledgeCalendar.swift */; };
-		F5DDFF5DBFCA16E29D1F88FF /* SweepFormatting.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7C3EBB5F0620489431A68B56 /* SweepFormatting.swift */; };
-		9422CBA228687C84FCE11044 /* PermissionMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = E3B6CB907120B6FE0E3F9EC4 /* PermissionMonitor.swift */; };
-		7EE3A719B7123D1F6B6CB626 /* SweepLifetime.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8B2E74C7C118D12600F318A0 /* SweepLifetime.swift */; };
-		802CAA563141E472C48CA624 /* SweepConfirmationSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5CA34636635451307D4AD25 /* SweepConfirmationSheet.swift */; };
-		02280020F6CA36C63E4592B8 /* PrivacyPane.swift in Sources */ = {isa = PBXBuildFile; fileRef = B73DC51812AA16023ABC39C0 /* PrivacyPane.swift */; };
-		55B1BB825F13665F52D3616E /* CopilotModelsPane.swift in Sources */ = {isa = PBXBuildFile; fileRef = CECEC9C72C4A5C58FA02249B /* CopilotModelsPane.swift */; };
-		64819F735A40296AD040F55E /* CopilotBackupPane.swift in Sources */ = {isa = PBXBuildFile; fileRef = 93CF7CB0E93DBC0F8C6B9C07 /* CopilotBackupPane.swift */; };
-		786152D40D7BC0C3115C4020 /* CopilotPane.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1638998EA958CC94FBDBDD0F /* CopilotPane.swift */; };
-		84E4FCAFD2F34DA4D8DC61DB /* SystemPane.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2A31FE5D6C4372E3CCF2D2FF /* SystemPane.swift */; };
-		C6F6C7B2154DA87D0F271D9E /* KDEConnectPane.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1BC371E9629ED7DC2723E53 /* KDEConnectPane.swift */; };
-		5EAA5448CC79AD0E906C11F6 /* LocalSendPane.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3D8B367B52AA016A8722B37E /* LocalSendPane.swift */; };
-		3F0C145BB1EADE9E288D8F38 /* CalendarSourcesPane.swift in Sources */ = {isa = PBXBuildFile; fileRef = FF20CEF4A3D6066DF4F8D311 /* CalendarSourcesPane.swift */; };
-		72D624BD85518AD7358143EF /* CameraPane.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB76792F9FD6BACE8EA30C9B /* CameraPane.swift */; };
-		C7228039471C87C8D20B037B /* AccentPane.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1C0F64BE00142F107450433A /* AccentPane.swift */; };
-		4E4D968D005AF05A1912BFC0 /* GesturesPane.swift in Sources */ = {isa = PBXBuildFile; fileRef = B23BE0558742615E7F143661 /* GesturesPane.swift */; };
-		A5F912B1510FEB37FE87B530 /* DisplaysPane.swift in Sources */ = {isa = PBXBuildFile; fileRef = 17F550AFFB8F55DEA8DCB2C9 /* DisplaysPane.swift */; };
-		FBA7EE904B4D554A62892A57 /* SettingsBreadcrumb.swift in Sources */ = {isa = PBXBuildFile; fileRef = 384C3C1DDD9F87848780B08F /* SettingsBreadcrumb.swift */; };
-		E64258BC2F6894F754560956 /* SettingsRoutePreview.swift in Sources */ = {isa = PBXBuildFile; fileRef = 884E34436B0C6F33816184B4 /* SettingsRoutePreview.swift */; };
-		BE3B69B4729CE32A2CB0F57E /* SettingsDestinations.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1F043A855A0B84AB5876D00C /* SettingsDestinations.swift */; };
-		D71A3F7378463C3051EF5592 /* SettingsSearchIndex.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4B799386A470FB8B9FC230B4 /* SettingsSearchIndex.swift */; };
-		321927CDA0DC48183C279885 /* SettingsSidebar.swift in Sources */ = {isa = PBXBuildFile; fileRef = EC4F86F509F60A5A2B81619D /* SettingsSidebar.swift */; };
-		95C700C265725F5E36D06E22 /* KnowledgeRoute.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01B27E9B7CEE4EF59ACA26CE /* KnowledgeRoute.swift */; };
-		657DF9660D8C273E287BC14A /* SettingsRouter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B65EBAC9D1AE76AF9789EA9 /* SettingsRouter.swift */; };
-		AF19C00180269201BF910937 /* SettingsRoute.swift in Sources */ = {isa = PBXBuildFile; fileRef = FCEBA4203A25E2142B893449 /* SettingsRoute.swift */; };
-		DD62084CF648FCD4498D91BF /* SettingsPage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 78886468E931404DC5A1D78F /* SettingsPage.swift */; };
-		B484438BB89BD60A61D1077F /* SettingsSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = CD09AC32501C35B4F19B5D6C /* SettingsSection.swift */; };
-		49FF3187F29A719E0AC8ECC4 /* SystemPermission.swift in Sources */ = {isa = PBXBuildFile; fileRef = A6996C6B3FE39FC624128B92 /* SystemPermission.swift */; };
-		3E16E4AD44E2A80F2FFA3ECD /* SettingsNavigationComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = 640BD5454A770242CD3369C6 /* SettingsNavigationComponents.swift */; };
-		09822EA4622A6E74F778B2EA /* NotchSlider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3BBACD35B85223BF96EBAC8F /* NotchSlider.swift */; };
-		B6EAE9BD86FD54977A082623 /* SettingsLanding.swift in Sources */ = {isa = PBXBuildFile; fileRef = E0D81BE98CE522486564CD20 /* SettingsLanding.swift */; };
-		BB0F88C4123D19A0AED59FED /* NotchWash.swift in Sources */ = {isa = PBXBuildFile; fileRef = 15964D68EEC7E01160998CD5 /* NotchWash.swift */; };
-		1D904620B824FA448A5C5461 /* NotchMotion.swift in Sources */ = {isa = PBXBuildFile; fileRef = F5351BBF186C1389760606F4 /* NotchMotion.swift */; };
-		942BBB98FA129270158285F3 /* NotchSpacing.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64EA1AB5B5773D55C52FB74D /* NotchSpacing.swift */; };
-		B2E2B13C2921E8B3DC718216 /* PromptEditor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4D2AC40C093FE556358C5BD2 /* PromptEditor.swift */; };
-		89423149FF42C3CC41EE8377 /* Color+Lighter.swift in Sources */ = {isa = PBXBuildFile; fileRef = B22C66AA5CE3C1BAAAFA244E /* Color+Lighter.swift */; };
-		2582E2193F16E9EB0B0FA05B /* AccentCircleButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 46714B3FFED7510C654122AE /* AccentCircleButton.swift */; };
-		39304423B20E078ABB7A0769 /* SweepPane.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CAF7087DC2A02E548C86E11 /* SweepPane.swift */; };
-		418AB7C7575219D19CEEB921 /* AppearancePane.swift in Sources */ = {isa = PBXBuildFile; fileRef = 26DF0CF732E09AF6D0DB1279 /* AppearancePane.swift */; };
-		05FB5A1461715898040771BF /* ShelfPane.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5B69BDE2086F42C610233314 /* ShelfPane.swift */; };
-		B964E5A76B6C10FCED9E5242 /* ShortcutsPane.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4412D914C230215A20D0F20E /* ShortcutsPane.swift */; };
-		6A6B4A89F8337584B5C120B5 /* AboutPane.swift in Sources */ = {isa = PBXBuildFile; fileRef = 464C759946DD5B9E4AAEF2A9 /* AboutPane.swift */; };
-		31D4F6A79E3EABA49B4A590E /* CalendarPane.swift in Sources */ = {isa = PBXBuildFile; fileRef = B816D619992FD42E9A8E1F93 /* CalendarPane.swift */; };
-		F225492F6D7882259A6EE277 /* MediaPane.swift in Sources */ = {isa = PBXBuildFile; fileRef = D38EC931F5C846E9C2EB53F5 /* MediaPane.swift */; };
-		F85BD8D9AACCC291D0BB9DA3 /* HUDPane.swift in Sources */ = {isa = PBXBuildFile; fileRef = AADAD7E7C581C161D77266FC /* HUDPane.swift */; };
-		EE4454309D2A1C326B6CC17D /* BatteryPane.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01475ED566ADB6375C9951F9 /* BatteryPane.swift */; };
-		A784B6082EBBE64BA5D28B33 /* AdvancedPane.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7EBB31AB1AC135C1F075D0F9 /* AdvancedPane.swift */; };
-		B408393023BEC1C95DE3E948 /* GeneralPane.swift in Sources */ = {isa = PBXBuildFile; fileRef = B8F3C5105FA3BB3A2B5A40B6 /* GeneralPane.swift */; };
-		20576116CE7AA9D29D601B50 /* BoringSweepCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = F6B27A25CA0558564E6738F8 /* BoringSweepCoordinator.swift */; };
-		4A0EEABEDDCEEFD81C960383 /* BoringSweepDTO.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3284AD5AC53B5DA4A4D9B4C5 /* BoringSweepDTO.swift */; };
-		90706B2010130E2AFD272494 /* BoringSweepProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3F63D49D9D4DCC08D0D6FF90 /* BoringSweepProtocol.swift */; };
-		CA1100010000000000D00101 /* NotchDesignSystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA1100010000000000D00102 /* NotchDesignSystem.swift */; };
-		CA110001000000000000B101 /* CallaCopilotTabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA110001000000000000B102 /* CallaCopilotTabView.swift */; };
-		CA11QZ300000000000000001 /* CallaQuizPreflightView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA11QZ300000000000000002 /* CallaQuizPreflightView.swift */; };
-		CA11WM300000000000000001 /* CallaWindowTargetMenu.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA11WM300000000000000002 /* CallaWindowTargetMenu.swift */; };
-		CA11MC300000000000000001 /* CopilotCodingPane.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA11MC300000000000000002 /* CopilotCodingPane.swift */; };
-		CA11MC200000000000000001 /* CallaCodingSetup.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA11MC200000000000000002 /* CallaCodingSetup.swift */; };
-		CA11WV100000000000000001 /* WaveInterview.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA11WV100000000000000002 /* WaveInterview.swift */; };
-		CA11WV200000000000000001 /* CallaCallPreflightView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA11WV200000000000000002 /* CallaCallPreflightView.swift */; };
-		CA11MC100000000000000001 /* CallaModeChrome.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA11MC100000000000000002 /* CallaModeChrome.swift */; };
-		CA11QZ400000000000000001 /* CallaQuizLiveView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA11QZ400000000000000002 /* CallaQuizLiveView.swift */; };
-		CA11QZA00000000000000001 /* CallaQuizCodeBlock.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA11QZA00000000000000002 /* CallaQuizCodeBlock.swift */; };
-		CA11QZ900000000000000001 /* QuizProfileStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA11QZ900000000000000002 /* QuizProfileStore.swift */; };
-		CA11QZ800000000000000001 /* CallaQuizEndedView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA11QZ800000000000000002 /* CallaQuizEndedView.swift */; };
-		CA11QZ600000000000000001 /* CallaQuizLiveHeader.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA11QZ600000000000000002 /* CallaQuizLiveHeader.swift */; };
-		CA11QZ500000000000000001 /* CallaQuizPresentation.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA11QZ500000000000000002 /* CallaQuizPresentation.swift */; };
-		A82800000000000000000401 /* CallaCodingPresentation.swift in Sources */ = {isa = PBXBuildFile; fileRef = A82800000000000000000402 /* CallaCodingPresentation.swift */; };
-		A82800000000000000000501 /* CallaCodingPatchView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A82800000000000000000502 /* CallaCodingPatchView.swift */; };
-		CA1100010000000000E00101 /* CopilotCallPane.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA1100010000000000E00102 /* CopilotCallPane.swift */; };
-		CA11QZ700000000000000001 /* CopilotQuizPane.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA11QZ700000000000000002 /* CopilotQuizPane.swift */; };
-		CA11KB010000000000000001 /* CopilotKnowledgePane.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA11KB010000000000000002 /* CopilotKnowledgePane.swift */; };
-		CA11KB020000000000000001 /* CallaKnowledge.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA11KB020000000000000002 /* CallaKnowledge.swift */; };
-		CA11KB030000000000000001 /* CallaKnowledgeFocus.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA11KB030000000000000002 /* CallaKnowledgeFocus.swift */; };
-		CA11KB050000000000000001 /* CopilotNotchBadge.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA11KB050000000000000002 /* CopilotNotchBadge.swift */; };
-		CA11KD010000000000000001 /* KnowledgeDocumentReader.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA11KD010000000000000002 /* KnowledgeDocumentReader.swift */; };
-		CA11KD020000000000000001 /* CallaKnowledgeAttach.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA11KD020000000000000002 /* CallaKnowledgeAttach.swift */; };
-		CA11KD030000000000000001 /* CallaKnowledgeDropView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA11KD030000000000000002 /* CallaKnowledgeDropView.swift */; };
-		CA11ND010000000000000001 /* NotchDropRouter.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA11ND010000000000000002 /* NotchDropRouter.swift */; };
-		CA11ND020000000000000001 /* NotchDropChooserView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA11ND020000000000000002 /* NotchDropChooserView.swift */; };
-		CA11KL010000000000000001 /* CallaKnowledgeLibrary.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA11KL010000000000000002 /* CallaKnowledgeLibrary.swift */; };
-		CA11KL020000000000000001 /* CopilotKnowledgeDetailPane.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA11KL020000000000000002 /* CopilotKnowledgeDetailPane.swift */; };
-		CA1100010000000000E00201 /* CopilotPromptsPane.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA1100010000000000E00202 /* CopilotPromptsPane.swift */; };
-		CA1100010000000000E00401 /* CopilotHistoryPane.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA1100010000000000E00402 /* CopilotHistoryPane.swift */; };
-		CA1100010000000000E00501 /* CopilotLiveSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA1100010000000000E00502 /* CopilotLiveSession.swift */; };
-		CA1100010000000000E00601 /* CallaCopilotLiveView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA1100010000000000E00602 /* CallaCopilotLiveView.swift */; };
-		CA1100010000000000800001 /* CallaCopilotSignInView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA1100010000000000800002 /* CallaCopilotSignInView.swift */; };
-		E06787777CA4F4FD68D9CE86 /* CallaCopilotStartFailure.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0F286030B7D94CCEE706FA3B /* CallaCopilotStartFailure.swift */; };
-		1F7D21024A5E67CF77CEB89F /* CallaCopilotEndingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2194645EB9B8E0A37DC92B4C /* CallaCopilotEndingView.swift */; };
-		CA1100010000000000A00001 /* CallaCopilotStartingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA1100010000000000A00002 /* CallaCopilotStartingView.swift */; };
-		CA1100010000000000E00701 /* MeetingDetector.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA1100010000000000E00702 /* MeetingDetector.swift */; };
-		CA110001000000000000B001 /* CallaCopilotPresentation.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA110001000000000000B002 /* CallaCopilotPresentation.swift */; };
 		11F748732EC9DA9300F841DB /* Lottie in Frameworks */ = {isa = PBXBuildFile; productRef = 11F748722EC9DA9300F841DB /* Lottie */; };
 		11F748822ECB07A400F841DB /* MusicControlButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 11F748812ECB07A400F841DB /* MusicControlButton.swift */; };
-		CA1100010000000000D00701 /* NotchHeaderItem.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA1100010000000000D00702 /* NotchHeaderItem.swift */; };
 		11F748842ECB27DC00F841DB /* MediaSlotsPane.swift in Sources */ = {isa = PBXBuildFile; fileRef = 11F748832ECB27DC00F841DB /* MediaSlotsPane.swift */; };
 		14288DDC2C6E015000B9F80C /* AudioPlayer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 14288DD62C6E015000B9F80C /* AudioPlayer.swift */; };
 		14288DE82C6E01C800B9F80C /* ProgressIndicator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 14288DE72C6E01C800B9F80C /* ProgressIndicator.swift */; };
@@ -238,15 +112,63 @@
 		14E9FEAA2C70BF610062E83F /* DownloadView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 14E9FEA92C70BF610062E83F /* DownloadView.swift */; };
 		14E9FEAE2C7325770062E83F /* Button+Bouncing.swift in Sources */ = {isa = PBXBuildFile; fileRef = 14E9FEAD2C7325770062E83F /* Button+Bouncing.swift */; };
 		14FC6E502C7DED5600C7BEA5 /* DataTypes+Extensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 14FC6E4F2C7DED5600C7BEA5 /* DataTypes+Extensions.swift */; };
+		1CE000000000000000000011 /* IceConfiguration.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1CE000000000000000000001 /* IceConfiguration.swift */; };
+		1CE000000000000000000012 /* IceMenuBarController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1CE000000000000000000002 /* IceMenuBarController.swift */; };
+		1CE000000000000000000013 /* IcePane.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1CE000000000000000000003 /* IcePane.swift */; };
+		1D904620B824FA448A5C5461 /* NotchMotion.swift in Sources */ = {isa = PBXBuildFile; fileRef = F5351BBF186C1389760606F4 /* NotchMotion.swift */; };
+		1F7D21024A5E67CF77CEB89F /* CallaCopilotEndingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2194645EB9B8E0A37DC92B4C /* CallaCopilotEndingView.swift */; };
+		20576116CE7AA9D29D601B50 /* BoringSweepCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = F6B27A25CA0558564E6738F8 /* BoringSweepCoordinator.swift */; };
+		2582E2193F16E9EB0B0FA05B /* AccentCircleButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 46714B3FFED7510C654122AE /* AccentCircleButton.swift */; };
+		31D4F6A79E3EABA49B4A590E /* CalendarPane.swift in Sources */ = {isa = PBXBuildFile; fileRef = B816D619992FD42E9A8E1F93 /* CalendarPane.swift */; };
+		321927CDA0DC48183C279885 /* SettingsSidebar.swift in Sources */ = {isa = PBXBuildFile; fileRef = EC4F86F509F60A5A2B81619D /* SettingsSidebar.swift */; };
+		39304423B20E078ABB7A0769 /* SweepPane.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CAF7087DC2A02E548C86E11 /* SweepPane.swift */; };
+		3E16E4AD44E2A80F2FFA3ECD /* SettingsNavigationComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = 640BD5454A770242CD3369C6 /* SettingsNavigationComponents.swift */; };
+		3F0C145BB1EADE9E288D8F38 /* CalendarSourcesPane.swift in Sources */ = {isa = PBXBuildFile; fileRef = FF20CEF4A3D6066DF4F8D311 /* CalendarSourcesPane.swift */; };
+		418AB7C7575219D19CEEB921 /* AppearancePane.swift in Sources */ = {isa = PBXBuildFile; fileRef = 26DF0CF732E09AF6D0DB1279 /* AppearancePane.swift */; };
+		49FF3187F29A719E0AC8ECC4 /* SystemPermission.swift in Sources */ = {isa = PBXBuildFile; fileRef = A6996C6B3FE39FC624128B92 /* SystemPermission.swift */; };
+		4A0EEABEDDCEEFD81C960383 /* BoringSweepDTO.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3284AD5AC53B5DA4A4D9B4C5 /* BoringSweepDTO.swift */; };
+		4E4D968D005AF05A1912BFC0 /* GesturesPane.swift in Sources */ = {isa = PBXBuildFile; fileRef = B23BE0558742615E7F143661 /* GesturesPane.swift */; };
 		507266DB2C908E2E00A2D00D /* HoverButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 507266DA2C908E2E00A2D00D /* HoverButton.swift */; };
+		55B1BB825F13665F52D3616E /* CopilotModelsPane.swift in Sources */ = {isa = PBXBuildFile; fileRef = CECEC9C72C4A5C58FA02249B /* CopilotModelsPane.swift */; };
 		5917FD112E57891600E87F1C /* MediaKeyInterceptor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5917FD102E57891600E87F1C /* MediaKeyInterceptor.swift */; };
 		5955950D2E900ED800C66711 /* ApplicationRelauncher.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5955950C2E900ED800C66711 /* ApplicationRelauncher.swift */; };
 		59D8C23C2E589FAA00147B33 /* VolumeManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 59D8C23B2E589FAA00147B33 /* VolumeManager.swift */; };
+		5EAA5448CC79AD0E906C11F6 /* LocalSendPane.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3D8B367B52AA016A8722B37E /* LocalSendPane.swift */; };
+		64819F735A40296AD040F55E /* CopilotBackupPane.swift in Sources */ = {isa = PBXBuildFile; fileRef = 93CF7CB0E93DBC0F8C6B9C07 /* CopilotBackupPane.swift */; };
+		657DF9660D8C273E287BC14A /* SettingsRouter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B65EBAC9D1AE76AF9789EA9 /* SettingsRouter.swift */; };
+		6A6B4A89F8337584B5C120B5 /* AboutPane.swift in Sources */ = {isa = PBXBuildFile; fileRef = 464C759946DD5B9E4AAEF2A9 /* AboutPane.swift */; };
+		72D624BD85518AD7358143EF /* CameraPane.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB76792F9FD6BACE8EA30C9B /* CameraPane.swift */; };
+		786152D40D7BC0C3115C4020 /* CopilotPane.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1638998EA958CC94FBDBDD0F /* CopilotPane.swift */; };
+		7EE3A719B7123D1F6B6CB626 /* SweepLifetime.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8B2E74C7C118D12600F318A0 /* SweepLifetime.swift */; };
+		802CAA563141E472C48CA624 /* SweepConfirmationSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5CA34636635451307D4AD25 /* SweepConfirmationSheet.swift */; };
+		84E4FCAFD2F34DA4D8DC61DB /* SystemPane.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2A31FE5D6C4372E3CCF2D2FF /* SystemPane.swift */; };
+		89423149FF42C3CC41EE8377 /* Color+Lighter.swift in Sources */ = {isa = PBXBuildFile; fileRef = B22C66AA5CE3C1BAAAFA244E /* Color+Lighter.swift */; };
+		90706B2010130E2AFD272494 /* BoringSweepProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3F63D49D9D4DCC08D0D6FF90 /* BoringSweepProtocol.swift */; };
+		9422CBA228687C84FCE11044 /* PermissionMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = E3B6CB907120B6FE0E3F9EC4 /* PermissionMonitor.swift */; };
+		942BBB98FA129270158285F3 /* NotchSpacing.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64EA1AB5B5773D55C52FB74D /* NotchSpacing.swift */; };
+		95C700C265725F5E36D06E22 /* KnowledgeRoute.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01B27E9B7CEE4EF59ACA26CE /* KnowledgeRoute.swift */; };
 		9A0887322C7A693000C160EA /* TabButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A0887312C7A693000C160EA /* TabButton.swift */; };
 		9A0887352C7AFF8E00C160EA /* TabSelectionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A0887342C7AFF8E00C160EA /* TabSelectionView.swift */; };
 		9A987A0D2C73CA66005CA465 /* ShelfView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A987A032C73CA66005CA465 /* ShelfView.swift */; };
 		9A987A102C73CA8D005CA465 /* Collections in Frameworks */ = {isa = PBXBuildFile; productRef = 9A987A0F2C73CA8D005CA465 /* Collections */; };
 		9AB0C6BD2C73C9CB00F7CD30 /* NotchHomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9AB0C6BB2C73C9CB00F7CD30 /* NotchHomeView.swift */; };
+		A1B2C3D4E5F6000000000001 /* KDECertificateServiceHelper.m in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F6000000000003 /* KDECertificateServiceHelper.m */; };
+		A1B2C3D4E5F6000000000002 /* OpenSSL in Frameworks */ = {isa = PBXBuildFile; productRef = A1B2C3D4E5F6000000000007 /* OpenSSL */; };
+		A5F912B1510FEB37FE87B530 /* DisplaysPane.swift in Sources */ = {isa = PBXBuildFile; fileRef = 17F550AFFB8F55DEA8DCB2C9 /* DisplaysPane.swift */; };
+		A784B6082EBBE64BA5D28B33 /* AdvancedPane.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7EBB31AB1AC135C1F075D0F9 /* AdvancedPane.swift */; };
+		A82800000000000000000001 /* NotchSizing.swift in Sources */ = {isa = PBXBuildFile; fileRef = A82800000000000000000002 /* NotchSizing.swift */; };
+		A82800000000000000000003 /* NotchResizeSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = A82800000000000000000004 /* NotchResizeSession.swift */; };
+		A82800000000000000000005 /* NotchResizeEditor.swift in Sources */ = {isa = PBXBuildFile; fileRef = A82800000000000000000006 /* NotchResizeEditor.swift */; };
+		A82800000000000000000007 /* NotchSizePane.swift in Sources */ = {isa = PBXBuildFile; fileRef = A82800000000000000000008 /* NotchSizePane.swift */; };
+		A82800000000000000000101 /* NotchBehaviour.swift in Sources */ = {isa = PBXBuildFile; fileRef = A82800000000000000000102 /* NotchBehaviour.swift */; };
+		A82800000000000000000201 /* NotchSessionRouting.swift in Sources */ = {isa = PBXBuildFile; fileRef = A82800000000000000000202 /* NotchSessionRouting.swift */; };
+		A82800000000000000000301 /* NotchSessionShortcuts.swift in Sources */ = {isa = PBXBuildFile; fileRef = A82800000000000000000302 /* NotchSessionShortcuts.swift */; };
+		A82800000000000000000401 /* CallaCodingPresentation.swift in Sources */ = {isa = PBXBuildFile; fileRef = A82800000000000000000402 /* CallaCodingPresentation.swift */; };
+		A82800000000000000000501 /* CallaCodingPatchView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A82800000000000000000502 /* CallaCodingPatchView.swift */; };
+		A9E6D68BA59729BCF7D33909 /* KnowledgeCalendar.swift in Sources */ = {isa = PBXBuildFile; fileRef = A38E4A65F515E03600E71A66 /* KnowledgeCalendar.swift */; };
+		AF19C00180269201BF910937 /* SettingsRoute.swift in Sources */ = {isa = PBXBuildFile; fileRef = FCEBA4203A25E2142B893449 /* SettingsRoute.swift */; };
+		B05000030000000000000003 /* BoringNotchSetupUI in Frameworks */ = {isa = PBXBuildFile; productRef = B05000020000000000000002 /* BoringNotchSetupUI */; };
+		B05000050000000000000005 /* DistributionCore in Frameworks */ = {isa = PBXBuildFile; productRef = B05000040000000000000004 /* DistributionCore */; };
 		B10348D92C74E56000475897 /* ConditionalModifier.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10348D82C74E56000475897 /* ConditionalModifier.swift */; };
 		B10F84A32C6C9596009F3026 /* TestView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10F84A22C6C9596009F3026 /* TestView.swift */; };
 		B141C2412CA5F53F00AC8CC8 /* SparkleView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B141C2402CA5F53E00AC8CC8 /* SparkleView.swift */; };
@@ -257,14 +179,11 @@
 		B172AAC02C95DA0B001623F1 /* InlineHUD.swift in Sources */ = {isa = PBXBuildFile; fileRef = B172AABF2C95DA0B001623F1 /* InlineHUD.swift */; };
 		B18654392C6F4990000B926A /* KeyboardShortcuts in Frameworks */ = {isa = PBXBuildFile; productRef = B18654382C6F4990000B926A /* KeyboardShortcuts */; };
 		B186543C2C6F49AE000B926A /* ShortcutConstants.swift in Sources */ = {isa = PBXBuildFile; fileRef = B186543B2C6F49AE000B926A /* ShortcutConstants.swift */; };
-		A82800000000000000000301 /* NotchSessionShortcuts.swift in Sources */ = {isa = PBXBuildFile; fileRef = A82800000000000000000302 /* NotchSessionShortcuts.swift */; };
-		A82800000000000000000201 /* NotchSessionRouting.swift in Sources */ = {isa = PBXBuildFile; fileRef = A82800000000000000000202 /* NotchSessionRouting.swift */; };
 		B19016222CC15B3D00E3F12E /* Defaults in Frameworks */ = {isa = PBXBuildFile; productRef = B19016212CC15B3D00E3F12E /* Defaults */; };
 		B19016242CC15B5000E3F12E /* Constants.swift in Sources */ = {isa = PBXBuildFile; fileRef = B19016232CC15B4D00E3F12E /* Constants.swift */; };
 		B19424092CD0FF01003E5DC2 /* LottieAnimationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B19424082CD0FEFE003E5DC2 /* LottieAnimationView.swift */; };
 		B1A78C822C8BA08100BD51B0 /* FullscreenMediaDetection.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1A78C812C8BA08100BD51B0 /* FullscreenMediaDetection.swift */; };
 		B1B112912C6A572100093D8F /* EditPanelView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1B112902C6A572100093D8F /* EditPanelView.swift */; };
-		DDDD00010000000000000052 /* UsageMonitorSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = DDDD00010000000000000051 /* UsageMonitorSettings.swift */; };
 		B1B112932C6A577E00093D8F /* MouseTracker.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1B112922C6A577E00093D8F /* MouseTracker.swift */; };
 		B1C448962C9712C4001F0858 /* ActionBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1C448952C9712C4001F0858 /* ActionBar.swift */; };
 		B1C448982C972CC4001F0858 /* ListItemPopover.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1C448972C972CC4001F0858 /* ListItemPopover.swift */; };
@@ -277,8 +196,89 @@
 		B1F0A0022E60000100000001 /* BrightnessManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1F0A0012E60000100000001 /* BrightnessManager.swift */; };
 		B1F747F92EC7E94000F841DB /* LottieView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1F747F82EC7E94000F841DB /* LottieView.swift */; };
 		B1FEB4992C7686630066EBBC /* PanGesture.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1FEB4982C7686630066EBBC /* PanGesture.swift */; };
-		F38DE6482D8243E7008B5C6D /* BatteryActivityManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = F38DE6472D8243E2008B5C6D /* BatteryActivityManager.swift */; };
+		B2E2B13C2921E8B3DC718216 /* PromptEditor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4D2AC40C093FE556358C5BD2 /* PromptEditor.swift */; };
+		B408393023BEC1C95DE3E948 /* GeneralPane.swift in Sources */ = {isa = PBXBuildFile; fileRef = B8F3C5105FA3BB3A2B5A40B6 /* GeneralPane.swift */; };
+		B484438BB89BD60A61D1077F /* SettingsSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = CD09AC32501C35B4F19B5D6C /* SettingsSection.swift */; };
+		B6EAE9BD86FD54977A082623 /* SettingsLanding.swift in Sources */ = {isa = PBXBuildFile; fileRef = E0D81BE98CE522486564CD20 /* SettingsLanding.swift */; };
+		B964E5A76B6C10FCED9E5242 /* ShortcutsPane.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4412D914C230215A20D0F20E /* ShortcutsPane.swift */; };
+		BA7000020000000000000002 /* SweepService.xpc in Embed XPC Services */ = {isa = PBXBuildFile; fileRef = BA7000010000000000000001 /* SweepService.xpc */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		BB0F88C4123D19A0AED59FED /* NotchWash.swift in Sources */ = {isa = PBXBuildFile; fileRef = 15964D68EEC7E01160998CD5 /* NotchWash.swift */; };
+		BE3B69B4729CE32A2CB0F57E /* SettingsDestinations.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1F043A855A0B84AB5876D00C /* SettingsDestinations.swift */; };
+		C6F6C7B2154DA87D0F271D9E /* KDEConnectPane.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1BC371E9629ED7DC2723E53 /* KDEConnectPane.swift */; };
+		C7228039471C87C8D20B037B /* AccentPane.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1C0F64BE00142F107450433A /* AccentPane.swift */; };
+		CA1100010000000000000001 /* CallaEngineClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA1100010000000000000002 /* CallaEngineClient.swift */; };
+		CA110001000000000000B001 /* CallaCopilotPresentation.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA110001000000000000B002 /* CallaCopilotPresentation.swift */; };
+		CA110001000000000000B101 /* CallaCopilotTabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA110001000000000000B102 /* CallaCopilotTabView.swift */; };
+		CA1100010000000000800001 /* CallaCopilotSignInView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA1100010000000000800002 /* CallaCopilotSignInView.swift */; };
+		CA1100010000000000A00001 /* CallaCopilotStartingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA1100010000000000A00002 /* CallaCopilotStartingView.swift */; };
+		CA1100010000000000D00101 /* NotchDesignSystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA1100010000000000D00102 /* NotchDesignSystem.swift */; };
+		CA1100010000000000D00201 /* SettingsComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA1100010000000000D00202 /* SettingsComponents.swift */; };
+		CA1100010000000000D00301 /* NotchPreviewWell.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA1100010000000000D00302 /* NotchPreviewWell.swift */; };
+		CA1100010000000000D00701 /* NotchHeaderItem.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA1100010000000000D00702 /* NotchHeaderItem.swift */; };
+		CA1100010000000000D00711 /* NotchLayoutPane.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA1100010000000000D00712 /* NotchLayoutPane.swift */; };
+		CA1100010000000000E00101 /* CopilotCallPane.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA1100010000000000E00102 /* CopilotCallPane.swift */; };
+		CA1100010000000000E00201 /* CopilotPromptsPane.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA1100010000000000E00202 /* CopilotPromptsPane.swift */; };
+		CA1100010000000000E00401 /* CopilotHistoryPane.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA1100010000000000E00402 /* CopilotHistoryPane.swift */; };
+		CA1100010000000000E00501 /* CopilotLiveSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA1100010000000000E00502 /* CopilotLiveSession.swift */; };
+		CA1100010000000000E00601 /* CallaCopilotLiveView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA1100010000000000E00602 /* CallaCopilotLiveView.swift */; };
+		CA1100010000000000E00701 /* MeetingDetector.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA1100010000000000E00702 /* MeetingDetector.swift */; };
+		CA11E0020000000000000002 /* BoringCallaEngine.xpc in Embed XPC Services */ = {isa = PBXBuildFile; fileRef = CA11E0010000000000000001 /* BoringCallaEngine.xpc */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		CA11KB010000000000000001 /* CopilotKnowledgePane.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA11KB010000000000000002 /* CopilotKnowledgePane.swift */; };
+		CA11KB020000000000000001 /* CallaKnowledge.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA11KB020000000000000002 /* CallaKnowledge.swift */; };
+		CA11KB030000000000000001 /* CallaKnowledgeFocus.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA11KB030000000000000002 /* CallaKnowledgeFocus.swift */; };
+		CA11KB050000000000000001 /* CopilotNotchBadge.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA11KB050000000000000002 /* CopilotNotchBadge.swift */; };
+		CA11KD010000000000000001 /* KnowledgeDocumentReader.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA11KD010000000000000002 /* KnowledgeDocumentReader.swift */; };
+		CA11KD020000000000000001 /* CallaKnowledgeAttach.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA11KD020000000000000002 /* CallaKnowledgeAttach.swift */; };
+		CA11KD030000000000000001 /* CallaKnowledgeDropView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA11KD030000000000000002 /* CallaKnowledgeDropView.swift */; };
+		CA11KL010000000000000001 /* CallaKnowledgeLibrary.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA11KL010000000000000002 /* CallaKnowledgeLibrary.swift */; };
+		CA11KL020000000000000001 /* CopilotKnowledgeDetailPane.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA11KL020000000000000002 /* CopilotKnowledgeDetailPane.swift */; };
+		CA11MC100000000000000001 /* CallaModeChrome.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA11MC100000000000000002 /* CallaModeChrome.swift */; };
+		CA11MC200000000000000001 /* CallaCodingSetup.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA11MC200000000000000002 /* CallaCodingSetup.swift */; };
+		CA11MC300000000000000001 /* CopilotCodingPane.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA11MC300000000000000002 /* CopilotCodingPane.swift */; };
+		CA11ND010000000000000001 /* NotchDropRouter.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA11ND010000000000000002 /* NotchDropRouter.swift */; };
+		CA11ND020000000000000001 /* NotchDropChooserView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA11ND020000000000000002 /* NotchDropChooserView.swift */; };
+		CA11QZ110000000000000011 /* IntelligenceCore in Frameworks */ = {isa = PBXBuildFile; productRef = CA11QZ100000000000000010 /* IntelligenceCore */; };
+		CA11QZ210000000000000021 /* IntelligenceProviders in Frameworks */ = {isa = PBXBuildFile; productRef = CA11QZ200000000000000020 /* IntelligenceProviders */; };
+		CA11QZ300000000000000001 /* CallaQuizPreflightView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA11QZ300000000000000002 /* CallaQuizPreflightView.swift */; };
+		CA11QZ400000000000000001 /* CallaQuizLiveView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA11QZ400000000000000002 /* CallaQuizLiveView.swift */; };
+		CA11QZ500000000000000001 /* CallaQuizPresentation.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA11QZ500000000000000002 /* CallaQuizPresentation.swift */; };
+		CA11QZ600000000000000001 /* CallaQuizLiveHeader.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA11QZ600000000000000002 /* CallaQuizLiveHeader.swift */; };
+		CA11QZ700000000000000001 /* CopilotQuizPane.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA11QZ700000000000000002 /* CopilotQuizPane.swift */; };
+		CA11QZ800000000000000001 /* CallaQuizEndedView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA11QZ800000000000000002 /* CallaQuizEndedView.swift */; };
+		CA11QZ900000000000000001 /* QuizProfileStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA11QZ900000000000000002 /* QuizProfileStore.swift */; };
+		CA11QZA00000000000000001 /* CallaQuizCodeBlock.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA11QZA00000000000000002 /* CallaQuizCodeBlock.swift */; };
+		CA11ST030000000000000003 /* IntelligenceStore in Frameworks */ = {isa = PBXBuildFile; productRef = CA11ST020000000000000002 /* IntelligenceStore */; };
+		CA11WM300000000000000001 /* CallaWindowTargetMenu.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA11WM300000000000000002 /* CallaWindowTargetMenu.swift */; };
+		CA11WV100000000000000001 /* WaveInterview.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA11WV100000000000000002 /* WaveInterview.swift */; };
+		CA11WV200000000000000001 /* CallaCallPreflightView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA11WV200000000000000002 /* CallaCallPreflightView.swift */; };
+		CA1200010000000000B00101 /* NotchCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA1200010000000000B00102 /* NotchCard.swift */; };
+		CAV200030000000000000003 /* CallaContracts in Frameworks */ = {isa = PBXBuildFile; productRef = CAV200020000000000000002 /* CallaContracts */; };
+		CAV200040000000000000004 /* CallaContracts in Frameworks */ = {isa = PBXBuildFile; productRef = CAV200020000000000000002 /* CallaContracts */; };
 		D15700000000000000000001 /* PrivateSetup.swift in Sources */ = {isa = PBXBuildFile; fileRef = D15700000000000000000002 /* PrivateSetup.swift */; };
+		D71A3F7378463C3051EF5592 /* SettingsSearchIndex.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4B799386A470FB8B9FC230B4 /* SettingsSearchIndex.swift */; };
+		DD62084CF648FCD4498D91BF /* SettingsPage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 78886468E931404DC5A1D78F /* SettingsPage.swift */; };
+		DDDD00010000000000000003 /* SwiftTerm in Frameworks */ = {isa = PBXBuildFile; productRef = DDDD00010000000000000002 /* SwiftTerm */; };
+		DDDD00010000000000000012 /* UsageReportDTO.swift in Sources */ = {isa = PBXBuildFile; fileRef = DDDD00010000000000000011 /* UsageReportDTO.swift */; };
+		DDDD00010000000000000022 /* UsageMonitorManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = DDDD00010000000000000021 /* UsageMonitorManager.swift */; };
+		DDDD00010000000000000032 /* UsageMonitorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DDDD00010000000000000031 /* UsageMonitorView.swift */; };
+		DDDD00010000000000000052 /* UsageMonitorSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = DDDD00010000000000000051 /* UsageMonitorSettings.swift */; };
+		DDDD00010000000000000062 /* UsageNotchBadge.swift in Sources */ = {isa = PBXBuildFile; fileRef = DDDD00010000000000000061 /* UsageNotchBadge.swift */; };
+		DDDD00010000000000000072 /* MeetingLinkResolver.swift in Sources */ = {isa = PBXBuildFile; fileRef = DDDD00010000000000000071 /* MeetingLinkResolver.swift */; };
+		DDDD00010000000000000082 /* PomodoroModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = DDDD00010000000000000081 /* PomodoroModels.swift */; };
+		DDDD00010000000000000092 /* PomodoroPlanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = DDDD00010000000000000091 /* PomodoroPlanner.swift */; };
+		DDDD000100000000000000A2 /* PomodoroView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DDDD000100000000000000A1 /* PomodoroView.swift */; };
+		DDDD000100000000000000B2 /* PomodoroNotchBadge.swift in Sources */ = {isa = PBXBuildFile; fileRef = DDDD000100000000000000B1 /* PomodoroNotchBadge.swift */; };
+		DDDD000100000000000000C2 /* PomodoroManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = DDDD000100000000000000C1 /* PomodoroManager.swift */; };
+		DDDD000100000000000000D2 /* PomodoroSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = DDDD000100000000000000D1 /* PomodoroSettings.swift */; };
+		E06787777CA4F4FD68D9CE86 /* CallaCopilotStartFailure.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0F286030B7D94CCEE706FA3B /* CallaCopilotStartFailure.swift */; };
+		E64258BC2F6894F754560956 /* SettingsRoutePreview.swift in Sources */ = {isa = PBXBuildFile; fileRef = 884E34436B0C6F33816184B4 /* SettingsRoutePreview.swift */; };
+		EE4454309D2A1C326B6CC17D /* BatteryPane.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01475ED566ADB6375C9951F9 /* BatteryPane.swift */; };
+		F225492F6D7882259A6EE277 /* MediaPane.swift in Sources */ = {isa = PBXBuildFile; fileRef = D38EC931F5C846E9C2EB53F5 /* MediaPane.swift */; };
+		F38DE6482D8243E7008B5C6D /* BatteryActivityManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = F38DE6472D8243E2008B5C6D /* BatteryActivityManager.swift */; };
+		F5DDFF5DBFCA16E29D1F88FF /* SweepFormatting.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7C3EBB5F0620489431A68B56 /* SweepFormatting.swift */; };
+		F85BD8D9AACCC291D0BB9DA3 /* HUDPane.swift in Sources */ = {isa = PBXBuildFile; fileRef = AADAD7E7C581C161D77266FC /* HUDPane.swift */; };
+		FBA7EE904B4D554A62892A57 /* SettingsBreadcrumb.swift in Sources */ = {isa = PBXBuildFile; fileRef = 384C3C1DDD9F87848780B08F /* SettingsBreadcrumb.swift */; };
+		FEA04E2958FDEB3EC579A459 /* CallFormatting.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2515AFF9AAAB6EAFF940C43C /* CallFormatting.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -289,13 +289,19 @@
 			remoteGlobalIDString = 11F7484E2EC9AABA00F841DB;
 			remoteInfo = BoringNotchXPCHelper;
 		};
-		CA11E0040000000000000004 /* PBXContainerItemProxy */ = {isa = PBXContainerItemProxy; containerPortal = 14CEF40A2C5CAED200855D72 /* Project object */; proxyType = 1; remoteGlobalIDString = CA11E0030000000000000003; remoteInfo = BoringCallaEngine; };
 		BA7000040000000000000004 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 14CEF40A2C5CAED200855D72 /* Project object */;
 			proxyType = 1;
 			remoteGlobalIDString = BA7000030000000000000003;
 			remoteInfo = SweepService;
+		};
+		CA11E0040000000000000004 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 14CEF40A2C5CAED200855D72 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = CA11E0030000000000000003;
+			remoteInfo = BoringCallaEngine;
 		};
 /* End PBXContainerItemProxy section */
 
@@ -327,25 +333,17 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
-		1CE000000000000000000001 /* IceConfiguration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Ice/IceConfiguration.swift"; sourceTree = "<group>"; };
-		1CE000000000000000000002 /* IceMenuBarController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Ice/IceMenuBarController.swift"; sourceTree = "<group>"; };
-		1CE000000000000000000003 /* IcePane.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "components/Settings/Panes/Ice/IcePane.swift"; sourceTree = "<group>"; };
-		A82800000000000000000002 /* NotchSizing.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotchSizing.swift; sourceTree = "<group>"; };
-		A82800000000000000000102 /* NotchBehaviour.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotchBehaviour.swift; sourceTree = "<group>"; };
-		A82800000000000000000004 /* NotchResizeSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotchResizeSession.swift; sourceTree = "<group>"; };
-		A82800000000000000000006 /* NotchResizeEditor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Notch/NotchResizeEditor.swift"; sourceTree = "<group>"; };
-		A82800000000000000000008 /* NotchSizePane.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Settings/Panes/Appearance/NotchSizePane.swift"; sourceTree = "<group>"; };
 		00A1B2C30000000000000000 /* ShelfItemMetadataCache.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShelfItemMetadataCache.swift; sourceTree = "<group>"; };
 		00A1B2C30000000000000002 /* ShelfDragHandler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShelfDragHandler.swift; sourceTree = "<group>"; };
 		00A1B2C30000000000000004 /* ShelfQueueChip.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShelfQueueChip.swift; sourceTree = "<group>"; };
 		00A1B2C30000000000000006 /* ShelfToolbar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShelfToolbar.swift; sourceTree = "<group>"; };
 		00A1B2C30000000000000008 /* ShelfSendBar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShelfSendBar.swift; sourceTree = "<group>"; };
+		01475ED566ADB6375C9951F9 /* BatteryPane.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = components/Settings/Panes/System/BatteryPane.swift; sourceTree = "<group>"; };
+		01B27E9B7CEE4EF59ACA26CE /* KnowledgeRoute.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = components/Settings/Navigation/KnowledgeRoute.swift; sourceTree = "<group>"; };
+		0F286030B7D94CCEE706FA3B /* CallaCopilotStartFailure.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = components/Calla/CallaCopilotStartFailure.swift; sourceTree = "<group>"; };
 		1100290B2E847E2800035A57 /* NSItemProvider+LoadHelpers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "NSItemProvider+LoadHelpers.swift"; sourceTree = "<group>"; };
 		110029262E84FD4C00035A57 /* TemporaryFileStorageService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TemporaryFileStorageService.swift; sourceTree = "<group>"; };
 		1100292D2E86940F00035A57 /* QuickShareService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickShareService.swift; sourceTree = "<group>"; };
-		A1B2C3D4E5F6000000000003 /* KDECertificateServiceHelper.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = KDECertificateServiceHelper.m; sourceTree = "<group>"; };
-		A1B2C3D4E5F6000000000004 /* KDECertificateServiceHelper.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = KDECertificateServiceHelper.h; sourceTree = "<group>"; };
-		A1B2C3D4E5F6000000000005 /* boringNotch-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "boringNotch-Bridging-Header.h"; sourceTree = "<group>"; };
 		1113ABB72E80E27000EC13B2 /* ShelfItem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShelfItem.swift; sourceTree = "<group>"; };
 		1113ABBA2E80E27000EC13B2 /* QuickLookService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickLookService.swift; sourceTree = "<group>"; };
 		1113ABBC2E80E27000EC13B2 /* ShelfActionService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShelfActionService.swift; sourceTree = "<group>"; };
@@ -371,7 +369,6 @@
 		1153BDA62D99B22200979FB0 /* YouTubeMusicController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = YouTubeMusicController.swift; sourceTree = "<group>"; };
 		115C12EB2ED3D003009754CA /* OpenNotchHUD.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OpenNotchHUD.swift; sourceTree = "<group>"; };
 		1160F8D72DD98230006FBB94 /* NotchShape.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotchShape.swift; sourceTree = "<group>"; };
-		CA1200010000000000B00102 /* NotchCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotchCard.swift; sourceTree = "<group>"; };
 		1163988C2DF5CAB40052E6AF /* EventModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EventModel.swift; sourceTree = "<group>"; };
 		1163988E2DF5CC870052E6AF /* CalendarModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalendarModel.swift; sourceTree = "<group>"; };
 		116398952DF5D6C00052E6AF /* CalendarServiceProviding.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalendarServiceProviding.swift; sourceTree = "<group>"; };
@@ -397,121 +394,10 @@
 		11EFCD6F2E8E92D600D0B974 /* ShelfItemViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShelfItemViewModel.swift; sourceTree = "<group>"; };
 		11F747CD2EC75CEA00F841DB /* DragPreviewView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DragPreviewView.swift; sourceTree = "<group>"; };
 		11F7484F2EC9AABA00F841DB /* BoringNotchXPCHelper.xpc */ = {isa = PBXFileReference; explicitFileType = "wrapper.xpc-service"; includeInIndex = 0; path = BoringNotchXPCHelper.xpc; sourceTree = BUILT_PRODUCTS_DIR; };
-		CA11E0010000000000000001 /* BoringCallaEngine.xpc */ = {isa = PBXFileReference; explicitFileType = "wrapper.xpc-service"; includeInIndex = 0; path = BoringCallaEngine.xpc; sourceTree = BUILT_PRODUCTS_DIR; };
-		BA7000010000000000000001 /* SweepService.xpc */ = {isa = PBXFileReference; explicitFileType = "wrapper.xpc-service"; includeInIndex = 0; path = SweepService.xpc; sourceTree = BUILT_PRODUCTS_DIR; };
 		11F748652EC9AC9600F841DB /* BoringNotchXPCHelperProtocol.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BoringNotchXPCHelperProtocol.swift; sourceTree = "<group>"; };
 		11F748662EC9AC9600F841DB /* XPCHelperClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = XPCHelperClient.swift; sourceTree = "<group>"; };
-		DDDD00010000000000000011 /* UsageReportDTO.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UsageReportDTO.swift; sourceTree = "<group>"; };
-		DDDD00010000000000000021 /* UsageMonitorManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UsageMonitorManager.swift; sourceTree = "<group>"; };
-		DDDD00010000000000000031 /* UsageMonitorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UsageMonitorView.swift; sourceTree = "<group>"; };
-		DDDD00010000000000000061 /* UsageNotchBadge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UsageNotchBadge.swift; sourceTree = "<group>"; };
-		DDDD00010000000000000071 /* MeetingLinkResolver.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MeetingLinkResolver.swift; sourceTree = "<group>"; };
-		DDDD00010000000000000081 /* PomodoroModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PomodoroModels.swift; sourceTree = "<group>"; };
-		DDDD00010000000000000091 /* PomodoroPlanner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PomodoroPlanner.swift; sourceTree = "<group>"; };
-		DDDD000100000000000000A1 /* PomodoroView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PomodoroView.swift; sourceTree = "<group>"; };
-		DDDD000100000000000000B1 /* PomodoroNotchBadge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PomodoroNotchBadge.swift; sourceTree = "<group>"; };
-		DDDD000100000000000000C1 /* PomodoroManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PomodoroManager.swift; sourceTree = "<group>"; };
-		DDDD000100000000000000D1 /* PomodoroSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PomodoroSettings.swift; sourceTree = "<group>"; };
-		CA1100010000000000000002 /* CallaEngineClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "components/Calla/CallaEngineClient.swift"; sourceTree = "<group>"; };
-		CA1100010000000000D00712 /* NotchLayoutPane.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "components/Settings/Panes/NotchLayoutPane.swift"; sourceTree = "<group>"; };
-		CA1100010000000000D00302 /* NotchPreviewWell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "components/Settings/DesignSystem/NotchPreviewWell.swift"; sourceTree = "<group>"; };
-		CA1100010000000000D00202 /* SettingsComponents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "components/Settings/DesignSystem/SettingsComponents.swift"; sourceTree = "<group>"; };
-		2515AFF9AAAB6EAFF940C43C /* CallFormatting.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "components/Settings/Panes/Copilot/CallFormatting.swift"; sourceTree = "<group>"; };
-		84ACD1DFF0D38F15E6B68B82 /* CopilotCallDetailPane.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "components/Settings/Panes/Copilot/CopilotCallDetailPane.swift"; sourceTree = "<group>"; };
-		A38E4A65F515E03600E71A66 /* KnowledgeCalendar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "components/Settings/Panes/Copilot/KnowledgeCalendar.swift"; sourceTree = "<group>"; };
-		7C3EBB5F0620489431A68B56 /* SweepFormatting.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "components/Settings/Panes/Sweep/SweepFormatting.swift"; sourceTree = "<group>"; };
-		E3B6CB907120B6FE0E3F9EC4 /* PermissionMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "managers/PermissionMonitor.swift"; sourceTree = "<group>"; };
-		8B2E74C7C118D12600F318A0 /* SweepLifetime.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "components/Settings/Panes/Sweep/SweepLifetime.swift"; sourceTree = "<group>"; };
-		E5CA34636635451307D4AD25 /* SweepConfirmationSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "components/Settings/Panes/Sweep/SweepConfirmationSheet.swift"; sourceTree = "<group>"; };
-		B73DC51812AA16023ABC39C0 /* PrivacyPane.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "components/Settings/Panes/Privacy/PrivacyPane.swift"; sourceTree = "<group>"; };
-		CECEC9C72C4A5C58FA02249B /* CopilotModelsPane.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "components/Settings/Panes/Copilot/CopilotModelsPane.swift"; sourceTree = "<group>"; };
-		93CF7CB0E93DBC0F8C6B9C07 /* CopilotBackupPane.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "components/Settings/Panes/Copilot/CopilotBackupPane.swift"; sourceTree = "<group>"; };
-		1638998EA958CC94FBDBDD0F /* CopilotPane.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "components/Settings/Panes/Copilot/CopilotPane.swift"; sourceTree = "<group>"; };
-		2A31FE5D6C4372E3CCF2D2FF /* SystemPane.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "components/Settings/Panes/System/SystemPane.swift"; sourceTree = "<group>"; };
-		B1BC371E9629ED7DC2723E53 /* KDEConnectPane.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "components/Settings/Panes/Shelf/KDEConnectPane.swift"; sourceTree = "<group>"; };
-		3D8B367B52AA016A8722B37E /* LocalSendPane.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "components/Settings/Panes/Shelf/LocalSendPane.swift"; sourceTree = "<group>"; };
-		FF20CEF4A3D6066DF4F8D311 /* CalendarSourcesPane.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "components/Settings/Panes/Calendar/CalendarSourcesPane.swift"; sourceTree = "<group>"; };
-		AB76792F9FD6BACE8EA30C9B /* CameraPane.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "components/Settings/Panes/Appearance/CameraPane.swift"; sourceTree = "<group>"; };
-		1C0F64BE00142F107450433A /* AccentPane.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "components/Settings/Panes/Appearance/AccentPane.swift"; sourceTree = "<group>"; };
-		B23BE0558742615E7F143661 /* GesturesPane.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "components/Settings/Panes/General/GesturesPane.swift"; sourceTree = "<group>"; };
-		17F550AFFB8F55DEA8DCB2C9 /* DisplaysPane.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "components/Settings/Panes/General/DisplaysPane.swift"; sourceTree = "<group>"; };
-		384C3C1DDD9F87848780B08F /* SettingsBreadcrumb.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "components/Settings/DesignSystem/SettingsBreadcrumb.swift"; sourceTree = "<group>"; };
-		884E34436B0C6F33816184B4 /* SettingsRoutePreview.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "components/Settings/Navigation/SettingsRoutePreview.swift"; sourceTree = "<group>"; };
-		1F043A855A0B84AB5876D00C /* SettingsDestinations.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "components/Settings/Navigation/SettingsDestinations.swift"; sourceTree = "<group>"; };
-		4B799386A470FB8B9FC230B4 /* SettingsSearchIndex.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "components/Settings/Navigation/SettingsSearchIndex.swift"; sourceTree = "<group>"; };
-		EC4F86F509F60A5A2B81619D /* SettingsSidebar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "components/Settings/Navigation/SettingsSidebar.swift"; sourceTree = "<group>"; };
-		01B27E9B7CEE4EF59ACA26CE /* KnowledgeRoute.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "components/Settings/Navigation/KnowledgeRoute.swift"; sourceTree = "<group>"; };
-		3B65EBAC9D1AE76AF9789EA9 /* SettingsRouter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "components/Settings/Navigation/SettingsRouter.swift"; sourceTree = "<group>"; };
-		FCEBA4203A25E2142B893449 /* SettingsRoute.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "components/Settings/Navigation/SettingsRoute.swift"; sourceTree = "<group>"; };
-		78886468E931404DC5A1D78F /* SettingsPage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "components/Settings/Navigation/SettingsPage.swift"; sourceTree = "<group>"; };
-		CD09AC32501C35B4F19B5D6C /* SettingsSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "components/Settings/Navigation/SettingsSection.swift"; sourceTree = "<group>"; };
-		A6996C6B3FE39FC624128B92 /* SystemPermission.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "models/SystemPermission.swift"; sourceTree = "<group>"; };
-		640BD5454A770242CD3369C6 /* SettingsNavigationComponents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "components/Settings/DesignSystem/SettingsNavigationComponents.swift"; sourceTree = "<group>"; };
-		3BBACD35B85223BF96EBAC8F /* NotchSlider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "components/Settings/DesignSystem/NotchSlider.swift"; sourceTree = "<group>"; };
-		E0D81BE98CE522486564CD20 /* SettingsLanding.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "components/Settings/DesignSystem/SettingsLanding.swift"; sourceTree = "<group>"; };
-		15964D68EEC7E01160998CD5 /* NotchWash.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "components/Settings/DesignSystem/NotchWash.swift"; sourceTree = "<group>"; };
-		F5351BBF186C1389760606F4 /* NotchMotion.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "components/Settings/DesignSystem/NotchMotion.swift"; sourceTree = "<group>"; };
-		64EA1AB5B5773D55C52FB74D /* NotchSpacing.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "components/Settings/DesignSystem/NotchSpacing.swift"; sourceTree = "<group>"; };
-		4D2AC40C093FE556358C5BD2 /* PromptEditor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "components/Settings/Panes/Copilot/PromptEditor.swift"; sourceTree = "<group>"; };
-		B22C66AA5CE3C1BAAAFA244E /* Color+Lighter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "extensions/Color+Lighter.swift"; sourceTree = "<group>"; };
-		46714B3FFED7510C654122AE /* AccentCircleButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "components/Settings/DesignSystem/AccentCircleButton.swift"; sourceTree = "<group>"; };
-		4CAF7087DC2A02E548C86E11 /* SweepPane.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "components/Settings/Panes/Sweep/SweepPane.swift"; sourceTree = "<group>"; };
-		26DF0CF732E09AF6D0DB1279 /* AppearancePane.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "components/Settings/Panes/Appearance/AppearancePane.swift"; sourceTree = "<group>"; };
-		5B69BDE2086F42C610233314 /* ShelfPane.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "components/Settings/Panes/Shelf/ShelfPane.swift"; sourceTree = "<group>"; };
-		4412D914C230215A20D0F20E /* ShortcutsPane.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "components/Settings/Panes/App/ShortcutsPane.swift"; sourceTree = "<group>"; };
-		464C759946DD5B9E4AAEF2A9 /* AboutPane.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "components/Settings/Panes/App/AboutPane.swift"; sourceTree = "<group>"; };
-		B816D619992FD42E9A8E1F93 /* CalendarPane.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "components/Settings/Panes/Calendar/CalendarPane.swift"; sourceTree = "<group>"; };
-		D38EC931F5C846E9C2EB53F5 /* MediaPane.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "components/Settings/Panes/Media/MediaPane.swift"; sourceTree = "<group>"; };
-		AADAD7E7C581C161D77266FC /* HUDPane.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "components/Settings/Panes/System/HUDPane.swift"; sourceTree = "<group>"; };
-		01475ED566ADB6375C9951F9 /* BatteryPane.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "components/Settings/Panes/System/BatteryPane.swift"; sourceTree = "<group>"; };
-		7EBB31AB1AC135C1F075D0F9 /* AdvancedPane.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "components/Settings/Panes/General/AdvancedPane.swift"; sourceTree = "<group>"; };
-		B8F3C5105FA3BB3A2B5A40B6 /* GeneralPane.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "components/Settings/Panes/General/GeneralPane.swift"; sourceTree = "<group>"; };
-		F6B27A25CA0558564E6738F8 /* BoringSweepCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "XPCHelperClient/Sweep/BoringSweepCoordinator.swift"; sourceTree = "<group>"; };
-		3284AD5AC53B5DA4A4D9B4C5 /* BoringSweepDTO.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "XPCHelperClient/Sweep/BoringSweepDTO.swift"; sourceTree = "<group>"; };
-		3F63D49D9D4DCC08D0D6FF90 /* BoringSweepProtocol.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "XPCHelperClient/Sweep/BoringSweepProtocol.swift"; sourceTree = "<group>"; };
-		CA1100010000000000D00102 /* NotchDesignSystem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "components/Settings/DesignSystem/NotchDesignSystem.swift"; sourceTree = "<group>"; };
-		CA110001000000000000B102 /* CallaCopilotTabView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "components/Calla/CallaCopilotTabView.swift"; sourceTree = "<group>"; };
-		CA11QZ300000000000000002 /* CallaQuizPreflightView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "components/Calla/CallaQuizPreflightView.swift"; sourceTree = "<group>"; };
-		CA11WM300000000000000002 /* CallaWindowTargetMenu.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "components/Calla/CallaWindowTargetMenu.swift"; sourceTree = "<group>"; };
-		CA11MC300000000000000002 /* CopilotCodingPane.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "components/Settings/Panes/Copilot/CopilotCodingPane.swift"; sourceTree = "<group>"; };
-		CA11MC200000000000000002 /* CallaCodingSetup.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "components/Calla/CallaCodingSetup.swift"; sourceTree = "<group>"; };
-		CA11WV100000000000000002 /* WaveInterview.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "components/Calla/WaveInterview.swift"; sourceTree = "<group>"; };
-		CA11WV200000000000000002 /* CallaCallPreflightView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "components/Calla/CallaCallPreflightView.swift"; sourceTree = "<group>"; };
-		CA11MC100000000000000002 /* CallaModeChrome.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "components/Calla/CallaModeChrome.swift"; sourceTree = "<group>"; };
-		CA11QZ400000000000000002 /* CallaQuizLiveView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "components/Calla/CallaQuizLiveView.swift"; sourceTree = "<group>"; };
-		CA11QZA00000000000000002 /* CallaQuizCodeBlock.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "components/Calla/CallaQuizCodeBlock.swift"; sourceTree = "<group>"; };
-		CA11QZ900000000000000002 /* QuizProfileStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "models/QuizProfileStore.swift"; sourceTree = "<group>"; };
-		CA11QZ800000000000000002 /* CallaQuizEndedView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "components/Calla/CallaQuizEndedView.swift"; sourceTree = "<group>"; };
-		CA11QZ600000000000000002 /* CallaQuizLiveHeader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "components/Calla/CallaQuizLiveHeader.swift"; sourceTree = "<group>"; };
-		CA11QZ500000000000000002 /* CallaQuizPresentation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "components/Calla/CallaQuizPresentation.swift"; sourceTree = "<group>"; };
-		A82800000000000000000402 /* CallaCodingPresentation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "components/Calla/CallaCodingPresentation.swift"; sourceTree = "<group>"; };
-		A82800000000000000000502 /* CallaCodingPatchView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "components/Calla/CallaCodingPatchView.swift"; sourceTree = "<group>"; };
-		CA1100010000000000E00102 /* CopilotCallPane.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "components/Settings/Panes/Copilot/CopilotCallPane.swift"; sourceTree = "<group>"; };
-		CA11QZ700000000000000002 /* CopilotQuizPane.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "components/Settings/Panes/Copilot/CopilotQuizPane.swift"; sourceTree = "<group>"; };
-		CA11KB010000000000000002 /* CopilotKnowledgePane.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "components/Settings/Panes/Copilot/CopilotKnowledgePane.swift"; sourceTree = "<group>"; };
-		CA11KB020000000000000002 /* CallaKnowledge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "components/Calla/CallaKnowledge.swift"; sourceTree = "<group>"; };
-		CA11KB030000000000000002 /* CallaKnowledgeFocus.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "components/Calla/CallaKnowledgeFocus.swift"; sourceTree = "<group>"; };
-		CA11KB050000000000000002 /* CopilotNotchBadge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "components/Calla/CopilotNotchBadge.swift"; sourceTree = "<group>"; };
-		CA11KD010000000000000002 /* KnowledgeDocumentReader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "components/Calla/KnowledgeDocumentReader.swift"; sourceTree = "<group>"; };
-		CA11KD020000000000000002 /* CallaKnowledgeAttach.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "components/Calla/CallaKnowledgeAttach.swift"; sourceTree = "<group>"; };
-		CA11KD030000000000000002 /* CallaKnowledgeDropView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "components/Calla/CallaKnowledgeDropView.swift"; sourceTree = "<group>"; };
-		CA11ND010000000000000002 /* NotchDropRouter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "components/Calla/NotchDropRouter.swift"; sourceTree = "<group>"; };
-		CA11ND020000000000000002 /* NotchDropChooserView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "components/Calla/NotchDropChooserView.swift"; sourceTree = "<group>"; };
-		CA11KL010000000000000002 /* CallaKnowledgeLibrary.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "components/Calla/CallaKnowledgeLibrary.swift"; sourceTree = "<group>"; };
-		CA11KL020000000000000002 /* CopilotKnowledgeDetailPane.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "components/Settings/Panes/Copilot/CopilotKnowledgeDetailPane.swift"; sourceTree = "<group>"; };
-		CA1100010000000000E00202 /* CopilotPromptsPane.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "components/Settings/Panes/Copilot/CopilotPromptsPane.swift"; sourceTree = "<group>"; };
-		CA1100010000000000E00402 /* CopilotHistoryPane.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "components/Settings/Panes/Copilot/CopilotHistoryPane.swift"; sourceTree = "<group>"; };
-		CA1100010000000000E00502 /* CopilotLiveSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "components/Calla/CopilotLiveSession.swift"; sourceTree = "<group>"; };
-		CA1100010000000000E00602 /* CallaCopilotLiveView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "components/Calla/CallaCopilotLiveView.swift"; sourceTree = "<group>"; };
-		CA1100010000000000800002 /* CallaCopilotSignInView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "components/Calla/CallaCopilotSignInView.swift"; sourceTree = "<group>"; };
-		0F286030B7D94CCEE706FA3B /* CallaCopilotStartFailure.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "components/Calla/CallaCopilotStartFailure.swift"; sourceTree = "<group>"; };
-		2194645EB9B8E0A37DC92B4C /* CallaCopilotEndingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "components/Calla/CallaCopilotEndingView.swift"; sourceTree = "<group>"; };
-		CA1100010000000000A00002 /* CallaCopilotStartingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "components/Calla/CallaCopilotStartingView.swift"; sourceTree = "<group>"; };
-		CA1100010000000000E00702 /* MeetingDetector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "managers/MeetingDetector.swift"; sourceTree = "<group>"; };
-		CA110001000000000000B002 /* CallaCopilotPresentation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "components/Calla/CallaCopilotPresentation.swift"; sourceTree = "<group>"; };
 		11F748812ECB07A400F841DB /* MusicControlButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MusicControlButton.swift; sourceTree = "<group>"; };
-		CA1100010000000000D00702 /* NotchHeaderItem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "NotchHeaderItem.swift"; sourceTree = "<group>"; };
-		11F748832ECB27DC00F841DB /* MediaSlotsPane.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Panes/Media/MediaSlotsPane.swift"; sourceTree = "<group>"; };
+		11F748832ECB27DC00F841DB /* MediaSlotsPane.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Panes/Media/MediaSlotsPane.swift; sourceTree = "<group>"; };
 		14288DD62C6E015000B9F80C /* AudioPlayer.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = AudioPlayer.swift; sourceTree = "<group>"; };
 		14288DE72C6E01C800B9F80C /* ProgressIndicator.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ProgressIndicator.swift; sourceTree = "<group>"; };
 		14288E0B2C6F8EC000B9F80C /* AppIcons.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppIcons.swift; sourceTree = "<group>"; };
@@ -547,14 +433,63 @@
 		14E9FEA92C70BF610062E83F /* DownloadView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DownloadView.swift; sourceTree = "<group>"; };
 		14E9FEAD2C7325770062E83F /* Button+Bouncing.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Button+Bouncing.swift"; sourceTree = "<group>"; };
 		14FC6E4F2C7DED5600C7BEA5 /* DataTypes+Extensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "DataTypes+Extensions.swift"; sourceTree = "<group>"; };
+		15964D68EEC7E01160998CD5 /* NotchWash.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = components/Settings/DesignSystem/NotchWash.swift; sourceTree = "<group>"; };
+		1638998EA958CC94FBDBDD0F /* CopilotPane.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = components/Settings/Panes/Copilot/CopilotPane.swift; sourceTree = "<group>"; };
+		17F550AFFB8F55DEA8DCB2C9 /* DisplaysPane.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = components/Settings/Panes/General/DisplaysPane.swift; sourceTree = "<group>"; };
+		1C0F64BE00142F107450433A /* AccentPane.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = components/Settings/Panes/Appearance/AccentPane.swift; sourceTree = "<group>"; };
+		1CE000000000000000000001 /* IceConfiguration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Ice/IceConfiguration.swift; sourceTree = "<group>"; };
+		1CE000000000000000000002 /* IceMenuBarController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Ice/IceMenuBarController.swift; sourceTree = "<group>"; };
+		1CE000000000000000000003 /* IcePane.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = components/Settings/Panes/Ice/IcePane.swift; sourceTree = "<group>"; };
+		1F043A855A0B84AB5876D00C /* SettingsDestinations.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = components/Settings/Navigation/SettingsDestinations.swift; sourceTree = "<group>"; };
+		2194645EB9B8E0A37DC92B4C /* CallaCopilotEndingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = components/Calla/CallaCopilotEndingView.swift; sourceTree = "<group>"; };
+		2515AFF9AAAB6EAFF940C43C /* CallFormatting.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = components/Settings/Panes/Copilot/CallFormatting.swift; sourceTree = "<group>"; };
+		26DF0CF732E09AF6D0DB1279 /* AppearancePane.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = components/Settings/Panes/Appearance/AppearancePane.swift; sourceTree = "<group>"; };
+		2A31FE5D6C4372E3CCF2D2FF /* SystemPane.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = components/Settings/Panes/System/SystemPane.swift; sourceTree = "<group>"; };
+		3284AD5AC53B5DA4A4D9B4C5 /* BoringSweepDTO.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = XPCHelperClient/Sweep/BoringSweepDTO.swift; sourceTree = "<group>"; };
+		384C3C1DDD9F87848780B08F /* SettingsBreadcrumb.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = components/Settings/DesignSystem/SettingsBreadcrumb.swift; sourceTree = "<group>"; };
+		3B65EBAC9D1AE76AF9789EA9 /* SettingsRouter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = components/Settings/Navigation/SettingsRouter.swift; sourceTree = "<group>"; };
+		3BBACD35B85223BF96EBAC8F /* NotchSlider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = components/Settings/DesignSystem/NotchSlider.swift; sourceTree = "<group>"; };
+		3D8B367B52AA016A8722B37E /* LocalSendPane.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = components/Settings/Panes/Shelf/LocalSendPane.swift; sourceTree = "<group>"; };
+		3F63D49D9D4DCC08D0D6FF90 /* BoringSweepProtocol.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = XPCHelperClient/Sweep/BoringSweepProtocol.swift; sourceTree = "<group>"; };
+		4412D914C230215A20D0F20E /* ShortcutsPane.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = components/Settings/Panes/App/ShortcutsPane.swift; sourceTree = "<group>"; };
+		464C759946DD5B9E4AAEF2A9 /* AboutPane.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = components/Settings/Panes/App/AboutPane.swift; sourceTree = "<group>"; };
+		46714B3FFED7510C654122AE /* AccentCircleButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = components/Settings/DesignSystem/AccentCircleButton.swift; sourceTree = "<group>"; };
+		4B799386A470FB8B9FC230B4 /* SettingsSearchIndex.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = components/Settings/Navigation/SettingsSearchIndex.swift; sourceTree = "<group>"; };
+		4CAF7087DC2A02E548C86E11 /* SweepPane.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = components/Settings/Panes/Sweep/SweepPane.swift; sourceTree = "<group>"; };
+		4D2AC40C093FE556358C5BD2 /* PromptEditor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = components/Settings/Panes/Copilot/PromptEditor.swift; sourceTree = "<group>"; };
 		507266DA2C908E2E00A2D00D /* HoverButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HoverButton.swift; sourceTree = "<group>"; };
 		5917FD102E57891600E87F1C /* MediaKeyInterceptor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MediaKeyInterceptor.swift; sourceTree = "<group>"; };
 		5955950C2E900ED800C66711 /* ApplicationRelauncher.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ApplicationRelauncher.swift; sourceTree = "<group>"; };
 		59D8C23B2E589FAA00147B33 /* VolumeManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VolumeManager.swift; sourceTree = "<group>"; };
+		5B69BDE2086F42C610233314 /* ShelfPane.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = components/Settings/Panes/Shelf/ShelfPane.swift; sourceTree = "<group>"; };
+		640BD5454A770242CD3369C6 /* SettingsNavigationComponents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = components/Settings/DesignSystem/SettingsNavigationComponents.swift; sourceTree = "<group>"; };
+		64EA1AB5B5773D55C52FB74D /* NotchSpacing.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = components/Settings/DesignSystem/NotchSpacing.swift; sourceTree = "<group>"; };
+		78886468E931404DC5A1D78F /* SettingsPage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = components/Settings/Navigation/SettingsPage.swift; sourceTree = "<group>"; };
+		7C3EBB5F0620489431A68B56 /* SweepFormatting.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = components/Settings/Panes/Sweep/SweepFormatting.swift; sourceTree = "<group>"; };
+		7EBB31AB1AC135C1F075D0F9 /* AdvancedPane.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = components/Settings/Panes/General/AdvancedPane.swift; sourceTree = "<group>"; };
+		84ACD1DFF0D38F15E6B68B82 /* CopilotCallDetailPane.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = components/Settings/Panes/Copilot/CopilotCallDetailPane.swift; sourceTree = "<group>"; };
+		884E34436B0C6F33816184B4 /* SettingsRoutePreview.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = components/Settings/Navigation/SettingsRoutePreview.swift; sourceTree = "<group>"; };
+		8B2E74C7C118D12600F318A0 /* SweepLifetime.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = components/Settings/Panes/Sweep/SweepLifetime.swift; sourceTree = "<group>"; };
+		93CF7CB0E93DBC0F8C6B9C07 /* CopilotBackupPane.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = components/Settings/Panes/Copilot/CopilotBackupPane.swift; sourceTree = "<group>"; };
 		9A0887312C7A693000C160EA /* TabButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TabButton.swift; sourceTree = "<group>"; };
 		9A0887342C7AFF8E00C160EA /* TabSelectionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TabSelectionView.swift; sourceTree = "<group>"; };
 		9A987A032C73CA66005CA465 /* ShelfView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ShelfView.swift; sourceTree = "<group>"; };
 		9AB0C6BB2C73C9CB00F7CD30 /* NotchHomeView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = NotchHomeView.swift; sourceTree = "<group>"; };
+		A1B2C3D4E5F6000000000003 /* KDECertificateServiceHelper.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = KDECertificateServiceHelper.m; sourceTree = "<group>"; };
+		A1B2C3D4E5F6000000000004 /* KDECertificateServiceHelper.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = KDECertificateServiceHelper.h; sourceTree = "<group>"; };
+		A38E4A65F515E03600E71A66 /* KnowledgeCalendar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = components/Settings/Panes/Copilot/KnowledgeCalendar.swift; sourceTree = "<group>"; };
+		A6996C6B3FE39FC624128B92 /* SystemPermission.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = models/SystemPermission.swift; sourceTree = "<group>"; };
+		A82800000000000000000002 /* NotchSizing.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotchSizing.swift; sourceTree = "<group>"; };
+		A82800000000000000000004 /* NotchResizeSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotchResizeSession.swift; sourceTree = "<group>"; };
+		A82800000000000000000006 /* NotchResizeEditor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Notch/NotchResizeEditor.swift; sourceTree = "<group>"; };
+		A82800000000000000000008 /* NotchSizePane.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Settings/Panes/Appearance/NotchSizePane.swift; sourceTree = "<group>"; };
+		A82800000000000000000102 /* NotchBehaviour.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotchBehaviour.swift; sourceTree = "<group>"; };
+		A82800000000000000000202 /* NotchSessionRouting.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotchSessionRouting.swift; sourceTree = "<group>"; };
+		A82800000000000000000302 /* NotchSessionShortcuts.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotchSessionShortcuts.swift; sourceTree = "<group>"; };
+		A82800000000000000000402 /* CallaCodingPresentation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = components/Calla/CallaCodingPresentation.swift; sourceTree = "<group>"; };
+		A82800000000000000000502 /* CallaCodingPatchView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = components/Calla/CallaCodingPatchView.swift; sourceTree = "<group>"; };
+		AADAD7E7C581C161D77266FC /* HUDPane.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = components/Settings/Panes/System/HUDPane.swift; sourceTree = "<group>"; };
+		AB76792F9FD6BACE8EA30C9B /* CameraPane.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = components/Settings/Panes/Appearance/CameraPane.swift; sourceTree = "<group>"; };
 		B10348D82C74E56000475897 /* ConditionalModifier.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConditionalModifier.swift; sourceTree = "<group>"; };
 		B10F84A22C6C9596009F3026 /* TestView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TestView.swift; sourceTree = "<group>"; };
 		B141C2402CA5F53E00AC8CC8 /* SparkleView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SparkleView.swift; sourceTree = "<group>"; };
@@ -563,14 +498,12 @@
 		B17266E22C65F7FB0031BA0D /* WhatsNewView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WhatsNewView.swift; sourceTree = "<group>"; };
 		B172AABF2C95DA0B001623F1 /* InlineHUD.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InlineHUD.swift; sourceTree = "<group>"; };
 		B186543B2C6F49AE000B926A /* ShortcutConstants.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShortcutConstants.swift; sourceTree = "<group>"; };
-		A82800000000000000000302 /* NotchSessionShortcuts.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotchSessionShortcuts.swift; sourceTree = "<group>"; };
-		A82800000000000000000202 /* NotchSessionRouting.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotchSessionRouting.swift; sourceTree = "<group>"; };
 		B19016232CC15B4D00E3F12E /* Constants.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Constants.swift; sourceTree = "<group>"; };
 		B19424082CD0FEFE003E5DC2 /* LottieAnimationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LottieAnimationView.swift; sourceTree = "<group>"; };
 		B1A78C812C8BA08100BD51B0 /* FullscreenMediaDetection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FullscreenMediaDetection.swift; sourceTree = "<group>"; };
 		B1B112902C6A572100093D8F /* EditPanelView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditPanelView.swift; sourceTree = "<group>"; };
-		DDDD00010000000000000051 /* UsageMonitorSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UsageMonitorSettings.swift; sourceTree = "<group>"; };
 		B1B112922C6A577E00093D8F /* MouseTracker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MouseTracker.swift; sourceTree = "<group>"; };
+		B1BC371E9629ED7DC2723E53 /* KDEConnectPane.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = components/Settings/Panes/Shelf/KDEConnectPane.swift; sourceTree = "<group>"; };
 		B1C448952C9712C4001F0858 /* ActionBar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActionBar.swift; sourceTree = "<group>"; };
 		B1C448972C972CC4001F0858 /* ListItemPopover.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ListItemPopover.swift; sourceTree = "<group>"; };
 		B1C4489A2C97376A001F0858 /* TipStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TipStore.swift; sourceTree = "<group>"; };
@@ -582,42 +515,158 @@
 		B1F0A0012E60000100000001 /* BrightnessManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrightnessManager.swift; sourceTree = "<group>"; };
 		B1F747F82EC7E94000F841DB /* LottieView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LottieView.swift; sourceTree = "<group>"; };
 		B1FEB4982C7686630066EBBC /* PanGesture.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PanGesture.swift; sourceTree = "<group>"; };
-		F38DE6472D8243E2008B5C6D /* BatteryActivityManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BatteryActivityManager.swift; sourceTree = "<group>"; };
+		B22C66AA5CE3C1BAAAFA244E /* Color+Lighter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "extensions/Color+Lighter.swift"; sourceTree = "<group>"; };
+		B23BE0558742615E7F143661 /* GesturesPane.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = components/Settings/Panes/General/GesturesPane.swift; sourceTree = "<group>"; };
+		B73DC51812AA16023ABC39C0 /* PrivacyPane.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = components/Settings/Panes/Privacy/PrivacyPane.swift; sourceTree = "<group>"; };
+		B816D619992FD42E9A8E1F93 /* CalendarPane.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = components/Settings/Panes/Calendar/CalendarPane.swift; sourceTree = "<group>"; };
+		B8F3C5105FA3BB3A2B5A40B6 /* GeneralPane.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = components/Settings/Panes/General/GeneralPane.swift; sourceTree = "<group>"; };
+		BA7000010000000000000001 /* SweepService.xpc */ = {isa = PBXFileReference; explicitFileType = "wrapper.xpc-service"; includeInIndex = 0; path = SweepService.xpc; sourceTree = BUILT_PRODUCTS_DIR; };
+		CA1100010000000000000002 /* CallaEngineClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = components/Calla/CallaEngineClient.swift; sourceTree = "<group>"; };
+		CA110001000000000000B002 /* CallaCopilotPresentation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = components/Calla/CallaCopilotPresentation.swift; sourceTree = "<group>"; };
+		CA110001000000000000B102 /* CallaCopilotTabView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = components/Calla/CallaCopilotTabView.swift; sourceTree = "<group>"; };
+		CA1100010000000000800002 /* CallaCopilotSignInView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = components/Calla/CallaCopilotSignInView.swift; sourceTree = "<group>"; };
+		CA1100010000000000A00002 /* CallaCopilotStartingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = components/Calla/CallaCopilotStartingView.swift; sourceTree = "<group>"; };
+		CA1100010000000000D00102 /* NotchDesignSystem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = components/Settings/DesignSystem/NotchDesignSystem.swift; sourceTree = "<group>"; };
+		CA1100010000000000D00202 /* SettingsComponents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = components/Settings/DesignSystem/SettingsComponents.swift; sourceTree = "<group>"; };
+		CA1100010000000000D00302 /* NotchPreviewWell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = components/Settings/DesignSystem/NotchPreviewWell.swift; sourceTree = "<group>"; };
+		CA1100010000000000D00702 /* NotchHeaderItem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotchHeaderItem.swift; sourceTree = "<group>"; };
+		CA1100010000000000D00712 /* NotchLayoutPane.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = components/Settings/Panes/NotchLayoutPane.swift; sourceTree = "<group>"; };
+		CA1100010000000000E00102 /* CopilotCallPane.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = components/Settings/Panes/Copilot/CopilotCallPane.swift; sourceTree = "<group>"; };
+		CA1100010000000000E00202 /* CopilotPromptsPane.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = components/Settings/Panes/Copilot/CopilotPromptsPane.swift; sourceTree = "<group>"; };
+		CA1100010000000000E00402 /* CopilotHistoryPane.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = components/Settings/Panes/Copilot/CopilotHistoryPane.swift; sourceTree = "<group>"; };
+		CA1100010000000000E00502 /* CopilotLiveSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = components/Calla/CopilotLiveSession.swift; sourceTree = "<group>"; };
+		CA1100010000000000E00602 /* CallaCopilotLiveView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = components/Calla/CallaCopilotLiveView.swift; sourceTree = "<group>"; };
+		CA1100010000000000E00702 /* MeetingDetector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = managers/MeetingDetector.swift; sourceTree = "<group>"; };
+		CA11E0010000000000000001 /* BoringCallaEngine.xpc */ = {isa = PBXFileReference; explicitFileType = "wrapper.xpc-service"; includeInIndex = 0; path = BoringCallaEngine.xpc; sourceTree = BUILT_PRODUCTS_DIR; };
+		CA11KB010000000000000002 /* CopilotKnowledgePane.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = components/Settings/Panes/Copilot/CopilotKnowledgePane.swift; sourceTree = "<group>"; };
+		CA11KB020000000000000002 /* CallaKnowledge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = components/Calla/CallaKnowledge.swift; sourceTree = "<group>"; };
+		CA11KB030000000000000002 /* CallaKnowledgeFocus.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = components/Calla/CallaKnowledgeFocus.swift; sourceTree = "<group>"; };
+		CA11KB050000000000000002 /* CopilotNotchBadge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = components/Calla/CopilotNotchBadge.swift; sourceTree = "<group>"; };
+		CA11KD010000000000000002 /* KnowledgeDocumentReader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = components/Calla/KnowledgeDocumentReader.swift; sourceTree = "<group>"; };
+		CA11KD020000000000000002 /* CallaKnowledgeAttach.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = components/Calla/CallaKnowledgeAttach.swift; sourceTree = "<group>"; };
+		CA11KD030000000000000002 /* CallaKnowledgeDropView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = components/Calla/CallaKnowledgeDropView.swift; sourceTree = "<group>"; };
+		CA11KL010000000000000002 /* CallaKnowledgeLibrary.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = components/Calla/CallaKnowledgeLibrary.swift; sourceTree = "<group>"; };
+		CA11KL020000000000000002 /* CopilotKnowledgeDetailPane.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = components/Settings/Panes/Copilot/CopilotKnowledgeDetailPane.swift; sourceTree = "<group>"; };
+		CA11MC100000000000000002 /* CallaModeChrome.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = components/Calla/CallaModeChrome.swift; sourceTree = "<group>"; };
+		CA11MC200000000000000002 /* CallaCodingSetup.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = components/Calla/CallaCodingSetup.swift; sourceTree = "<group>"; };
+		CA11MC300000000000000002 /* CopilotCodingPane.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = components/Settings/Panes/Copilot/CopilotCodingPane.swift; sourceTree = "<group>"; };
+		CA11ND010000000000000002 /* NotchDropRouter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = components/Calla/NotchDropRouter.swift; sourceTree = "<group>"; };
+		CA11ND020000000000000002 /* NotchDropChooserView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = components/Calla/NotchDropChooserView.swift; sourceTree = "<group>"; };
+		CA11QZ300000000000000002 /* CallaQuizPreflightView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = components/Calla/CallaQuizPreflightView.swift; sourceTree = "<group>"; };
+		CA11QZ400000000000000002 /* CallaQuizLiveView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = components/Calla/CallaQuizLiveView.swift; sourceTree = "<group>"; };
+		CA11QZ500000000000000002 /* CallaQuizPresentation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = components/Calla/CallaQuizPresentation.swift; sourceTree = "<group>"; };
+		CA11QZ600000000000000002 /* CallaQuizLiveHeader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = components/Calla/CallaQuizLiveHeader.swift; sourceTree = "<group>"; };
+		CA11QZ700000000000000002 /* CopilotQuizPane.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = components/Settings/Panes/Copilot/CopilotQuizPane.swift; sourceTree = "<group>"; };
+		CA11QZ800000000000000002 /* CallaQuizEndedView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = components/Calla/CallaQuizEndedView.swift; sourceTree = "<group>"; };
+		CA11QZ900000000000000002 /* QuizProfileStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = models/QuizProfileStore.swift; sourceTree = "<group>"; };
+		CA11QZA00000000000000002 /* CallaQuizCodeBlock.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = components/Calla/CallaQuizCodeBlock.swift; sourceTree = "<group>"; };
+		CA11WM300000000000000002 /* CallaWindowTargetMenu.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = components/Calla/CallaWindowTargetMenu.swift; sourceTree = "<group>"; };
+		CA11WV100000000000000002 /* WaveInterview.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = components/Calla/WaveInterview.swift; sourceTree = "<group>"; };
+		CA11WV200000000000000002 /* CallaCallPreflightView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = components/Calla/CallaCallPreflightView.swift; sourceTree = "<group>"; };
+		CA1200010000000000B00102 /* NotchCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotchCard.swift; sourceTree = "<group>"; };
+		CD09AC32501C35B4F19B5D6C /* SettingsSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = components/Settings/Navigation/SettingsSection.swift; sourceTree = "<group>"; };
+		CECEC9C72C4A5C58FA02249B /* CopilotModelsPane.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = components/Settings/Panes/Copilot/CopilotModelsPane.swift; sourceTree = "<group>"; };
 		D15700000000000000000002 /* PrivateSetup.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrivateSetup.swift; sourceTree = "<group>"; };
+		D38EC931F5C846E9C2EB53F5 /* MediaPane.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = components/Settings/Panes/Media/MediaPane.swift; sourceTree = "<group>"; };
+		DDDD00010000000000000011 /* UsageReportDTO.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UsageReportDTO.swift; sourceTree = "<group>"; };
+		DDDD00010000000000000021 /* UsageMonitorManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UsageMonitorManager.swift; sourceTree = "<group>"; };
+		DDDD00010000000000000031 /* UsageMonitorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UsageMonitorView.swift; sourceTree = "<group>"; };
+		DDDD00010000000000000051 /* UsageMonitorSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UsageMonitorSettings.swift; sourceTree = "<group>"; };
+		DDDD00010000000000000061 /* UsageNotchBadge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UsageNotchBadge.swift; sourceTree = "<group>"; };
+		DDDD00010000000000000071 /* MeetingLinkResolver.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MeetingLinkResolver.swift; sourceTree = "<group>"; };
+		DDDD00010000000000000081 /* PomodoroModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PomodoroModels.swift; sourceTree = "<group>"; };
+		DDDD00010000000000000091 /* PomodoroPlanner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PomodoroPlanner.swift; sourceTree = "<group>"; };
+		DDDD000100000000000000A1 /* PomodoroView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PomodoroView.swift; sourceTree = "<group>"; };
+		DDDD000100000000000000B1 /* PomodoroNotchBadge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PomodoroNotchBadge.swift; sourceTree = "<group>"; };
+		DDDD000100000000000000C1 /* PomodoroManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PomodoroManager.swift; sourceTree = "<group>"; };
+		DDDD000100000000000000D1 /* PomodoroSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PomodoroSettings.swift; sourceTree = "<group>"; };
+		E0D81BE98CE522486564CD20 /* SettingsLanding.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = components/Settings/DesignSystem/SettingsLanding.swift; sourceTree = "<group>"; };
+		E3B6CB907120B6FE0E3F9EC4 /* PermissionMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = managers/PermissionMonitor.swift; sourceTree = "<group>"; };
+		E5CA34636635451307D4AD25 /* SweepConfirmationSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = components/Settings/Panes/Sweep/SweepConfirmationSheet.swift; sourceTree = "<group>"; };
+		EC4F86F509F60A5A2B81619D /* SettingsSidebar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = components/Settings/Navigation/SettingsSidebar.swift; sourceTree = "<group>"; };
+		F38DE6472D8243E2008B5C6D /* BatteryActivityManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BatteryActivityManager.swift; sourceTree = "<group>"; };
+		F5351BBF186C1389760606F4 /* NotchMotion.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = components/Settings/DesignSystem/NotchMotion.swift; sourceTree = "<group>"; };
+		F6B27A25CA0558564E6738F8 /* BoringSweepCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = XPCHelperClient/Sweep/BoringSweepCoordinator.swift; sourceTree = "<group>"; };
+		FCEBA4203A25E2142B893449 /* SettingsRoute.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = components/Settings/Navigation/SettingsRoute.swift; sourceTree = "<group>"; };
+		FF20CEF4A3D6066DF4F8D311 /* CalendarSourcesPane.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = components/Settings/Panes/Calendar/CalendarSourcesPane.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
-		11F7485C2EC9AABA00F841DB /* PBXFileSystemSynchronizedBuildFileExceptionSet */ = {
+		11F7485C2EC9AABA00F841DB /* Exceptions for "BoringNotchXPCHelper" folder in "BoringNotchXPCHelper" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				Info.plist,
 			);
 			target = 11F7484E2EC9AABA00F841DB /* BoringNotchXPCHelper */;
 		};
-		CA11E0070000000000000007 /* PBXFileSystemSynchronizedBuildFileExceptionSet */ = {isa = PBXFileSystemSynchronizedBuildFileExceptionSet; membershipExceptions = (Info.plist, ); target = CA11E0030000000000000003 /* BoringCallaEngine */; };
-		BA7000130000000000000013 /* PBXFileSystemSynchronizedBuildFileExceptionSet */ = {
+		BA7000130000000000000013 /* Exceptions for "SweepService" folder in "SweepService" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
-			membershipExceptions = (Info.plist, SweepService.entitlements, );
+			membershipExceptions = (
+				Info.plist,
+				SweepService.entitlements,
+			);
 			target = BA7000030000000000000003 /* SweepService */;
+		};
+		CA11E0070000000000000007 /* Exceptions for "BoringCallaEngine" folder in "BoringCallaEngine" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = CA11E0030000000000000003 /* BoringCallaEngine */;
 		};
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
-		112FB72F2CCF12CC0015238C /* private */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = private; sourceTree = "<group>"; };
-		11F748502EC9AABA00F841DB /* BoringNotchXPCHelper */ = {isa = PBXFileSystemSynchronizedRootGroup; exceptions = (11F7485C2EC9AABA00F841DB /* PBXFileSystemSynchronizedBuildFileExceptionSet */, ); explicitFileTypes = {}; explicitFolders = (); path = BoringNotchXPCHelper; sourceTree = "<group>"; };
-		CA11E0060000000000000006 /* BoringCallaEngine */ = {isa = PBXFileSystemSynchronizedRootGroup; exceptions = (CA11E0070000000000000007 /* PBXFileSystemSynchronizedBuildFileExceptionSet */, ); explicitFileTypes = {}; explicitFolders = (); path = BoringCallaEngine; sourceTree = "<group>"; };
-		BA7000120000000000000012 /* SweepService */ = {isa = PBXFileSystemSynchronizedRootGroup; exceptions = (BA7000130000000000000013 /* PBXFileSystemSynchronizedBuildFileExceptionSet */, ); explicitFileTypes = {}; explicitFolders = (); path = SweepService; sourceTree = "<group>"; };
+		112FB72F2CCF12CC0015238C /* private */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+			);
+			explicitFileTypes = {
+			};
+			explicitFolders = (
+			);
+			path = private;
+			sourceTree = "<group>";
+		};
+		11F748502EC9AABA00F841DB /* BoringNotchXPCHelper */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				11F7485C2EC9AABA00F841DB /* Exceptions for "BoringNotchXPCHelper" folder in "BoringNotchXPCHelper" target */,
+			);
+			explicitFileTypes = {
+			};
+			explicitFolders = (
+			);
+			path = BoringNotchXPCHelper;
+			sourceTree = "<group>";
+		};
+		BA7000120000000000000012 /* SweepService */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				BA7000130000000000000013 /* Exceptions for "SweepService" folder in "SweepService" target */,
+			);
+			explicitFileTypes = {
+			};
+			explicitFolders = (
+			);
+			path = SweepService;
+			sourceTree = "<group>";
+		};
+		CA11E0060000000000000006 /* BoringCallaEngine */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				CA11E0070000000000000007 /* Exceptions for "BoringCallaEngine" folder in "BoringCallaEngine" target */,
+			);
+			explicitFileTypes = {
+			};
+			explicitFolders = (
+			);
+			path = BoringCallaEngine;
+			sourceTree = "<group>";
+		};
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
-		CA11E0090000000000000009 /* Frameworks */ = {isa = PBXFrameworksBuildPhase; buildActionMask = 2147483647; files = (
-                B05000050000000000000005 /* DistributionCore in Frameworks */,
-				CA11QZ110000000000000011 /* IntelligenceCore in Frameworks */,
-				CA11QZ210000000000000021 /* IntelligenceProviders in Frameworks */,
-				CA11ST030000000000000003 /* IntelligenceStore in Frameworks */,
-				CAV200030000000000000003 /* CallaContracts in Frameworks */,
-			); runOnlyForDeploymentPostprocessing = 0; };
-		BA7000070000000000000007 /* Frameworks */ = { isa = PBXFrameworksBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };
 		11F7484C2EC9AABA00F841DB /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -630,7 +679,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-                B05000030000000000000003 /* BoringNotchSetupUI in Frameworks */,
+				B05000030000000000000003 /* BoringNotchSetupUI in Frameworks */,
 				CAV200040000000000000004 /* CallaContracts in Frameworks */,
 				A1B2C3D4E5F6000000000002 /* OpenSSL in Frameworks */,
 				111BEA5F2ED07A340079DD4E /* MacroVisionKit in Frameworks */,
@@ -646,6 +695,25 @@
 				B19016222CC15B3D00E3F12E /* Defaults in Frameworks */,
 				111BE95D2ECD71E10079DD4E /* AsyncXPCConnection in Frameworks */,
 				B1628B922CC260C0003D8DF3 /* SwiftUIIntrospect in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		BA7000070000000000000007 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		CA11E0090000000000000009 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				B05000050000000000000005 /* DistributionCore in Frameworks */,
+				CA11QZ110000000000000011 /* IntelligenceCore in Frameworks */,
+				CA11QZ210000000000000021 /* IntelligenceProviders in Frameworks */,
+				CA11ST030000000000000003 /* IntelligenceStore in Frameworks */,
+				CAV200030000000000000003 /* CallaContracts in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -740,26 +808,6 @@
 				116398952DF5D6C00052E6AF /* CalendarServiceProviding.swift */,
 			);
 			path = Providers;
-			sourceTree = "<group>";
-		};
-		DDDD00010000000000000041 /* UsageMonitor */ = {
-			isa = PBXGroup;
-			children = (
-				DDDD00010000000000000031 /* UsageMonitorView.swift */,
-				DDDD00010000000000000061 /* UsageNotchBadge.swift */,
-			);
-			path = UsageMonitor;
-			sourceTree = "<group>";
-		};
-		DDDD000100000000000000E1 /* Pomodoro */ = {
-			isa = PBXGroup;
-			children = (
-				DDDD00010000000000000081 /* PomodoroModels.swift */,
-				DDDD00010000000000000091 /* PomodoroPlanner.swift */,
-				DDDD000100000000000000A1 /* PomodoroView.swift */,
-				DDDD000100000000000000B1 /* PomodoroNotchBadge.swift */,
-			);
-			path = Pomodoro;
 			sourceTree = "<group>";
 		};
 		11F748672EC9AC9600F841DB /* XPCHelperClient */ = {
@@ -1198,6 +1246,26 @@
 			path = Tips;
 			sourceTree = "<group>";
 		};
+		DDDD00010000000000000041 /* UsageMonitor */ = {
+			isa = PBXGroup;
+			children = (
+				DDDD00010000000000000031 /* UsageMonitorView.swift */,
+				DDDD00010000000000000061 /* UsageNotchBadge.swift */,
+			);
+			path = UsageMonitor;
+			sourceTree = "<group>";
+		};
+		DDDD000100000000000000E1 /* Pomodoro */ = {
+			isa = PBXGroup;
+			children = (
+				DDDD00010000000000000081 /* PomodoroModels.swift */,
+				DDDD00010000000000000091 /* PomodoroPlanner.swift */,
+				DDDD000100000000000000A1 /* PomodoroView.swift */,
+				DDDD000100000000000000B1 /* PomodoroNotchBadge.swift */,
+			);
+			path = Pomodoro;
+			sourceTree = "<group>";
+		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
@@ -1224,47 +1292,6 @@
 			productReference = 11F7484F2EC9AABA00F841DB /* BoringNotchXPCHelper.xpc */;
 			productType = "com.apple.product-type.xpc-service";
 		};
-		CA11E0030000000000000003 /* BoringCallaEngine */ = {
-			isa = PBXNativeTarget;
-			buildConfigurationList = CA11E00B000000000000000B /* Build configuration list for PBXNativeTarget "BoringCallaEngine" */;
-			buildPhases = (
-				CA11E0080000000000000008 /* Sources */,
-				CA11E0090000000000000009 /* Frameworks */,
-				CA11E00A000000000000000A /* Resources */,
-				CA11R0020000000000000002 /* Build Calla Runtime */,
-			);
-			buildRules = ();
-			dependencies = ();
-			fileSystemSynchronizedGroups = (CA11E0060000000000000006 /* BoringCallaEngine */);
-			name = BoringCallaEngine;
-			packageProductDependencies = (
-                B05000040000000000000004 /* DistributionCore */,
-				CA11QZ100000000000000010 /* IntelligenceCore */,
-				CA11QZ200000000000000020 /* IntelligenceProviders */,
-				CA11ST020000000000000002 /* IntelligenceStore */,
-				CAV200020000000000000002 /* CallaContracts */,
-			);
-			productName = BoringCallaEngine;
-			productReference = CA11E0010000000000000001 /* BoringCallaEngine.xpc */;
-			productType = "com.apple.product-type.xpc-service";
-		};
-		BA7000030000000000000003 /* SweepService */ = {
-			isa = PBXNativeTarget;
-			buildConfigurationList = BA7000110000000000000011 /* Build configuration list for PBXNativeTarget "SweepService" */;
-			buildPhases = (
-				BA7000060000000000000006 /* Sources */,
-				BA7000070000000000000007 /* Frameworks */,
-				BA7000080000000000000008 /* Resources */,
-			);
-			buildRules = ();
-			dependencies = ();
-			fileSystemSynchronizedGroups = (BA7000120000000000000012 /* SweepService */, );
-			name = SweepService;
-			packageProductDependencies = ();
-			productName = SweepService;
-			productReference = BA7000010000000000000001 /* SweepService.xpc */;
-			productType = "com.apple.product-type.xpc-service";
-		};
 		14CEF4112C5CAED300855D72 /* boringNotch */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = 14CEF4212C5CAED400855D72 /* Build configuration list for PBXNativeTarget "boringNotch" */;
@@ -1288,7 +1315,7 @@
 			);
 			name = boringNotch;
 			packageProductDependencies = (
-                B05000020000000000000002 /* BoringNotchSetupUI */,
+				B05000020000000000000002 /* BoringNotchSetupUI */,
 				CAV200020000000000000002 /* CallaContracts */,
 				A1B2C3D4E5F6000000000007 /* OpenSSL */,
 				14D032192C68F32E0096E6A1 /* LaunchAtLogin */,
@@ -1307,6 +1334,54 @@
 			productName = dynamicNotch;
 			productReference = 14CEF4122C5CAED300855D72 /* boringNotch.app */;
 			productType = "com.apple.product-type.application";
+		};
+		BA7000030000000000000003 /* SweepService */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = BA7000110000000000000011 /* Build configuration list for PBXNativeTarget "SweepService" */;
+			buildPhases = (
+				BA7000060000000000000006 /* Sources */,
+				BA7000070000000000000007 /* Frameworks */,
+				BA7000080000000000000008 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				BA7000120000000000000012 /* SweepService */,
+			);
+			name = SweepService;
+			productName = SweepService;
+			productReference = BA7000010000000000000001 /* SweepService.xpc */;
+			productType = "com.apple.product-type.xpc-service";
+		};
+		CA11E0030000000000000003 /* BoringCallaEngine */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = CA11E00B000000000000000B /* Build configuration list for PBXNativeTarget "BoringCallaEngine" */;
+			buildPhases = (
+				CA11E0080000000000000008 /* Sources */,
+				CA11E0090000000000000009 /* Frameworks */,
+				CA11E00A000000000000000A /* Resources */,
+				CA11R0020000000000000002 /* Build Calla Runtime */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				CA11E0060000000000000006 /* BoringCallaEngine */,
+			);
+			name = BoringCallaEngine;
+			packageProductDependencies = (
+				B05000040000000000000004 /* DistributionCore */,
+				CA11QZ100000000000000010 /* IntelligenceCore */,
+				CA11QZ200000000000000020 /* IntelligenceProviders */,
+				CA11ST020000000000000002 /* IntelligenceStore */,
+				CAV200020000000000000002 /* CallaContracts */,
+			);
+			productName = BoringCallaEngine;
+			productReference = CA11E0010000000000000001 /* BoringCallaEngine.xpc */;
+			productType = "com.apple.product-type.xpc-service";
 		};
 /* End PBXNativeTarget section */
 
@@ -1337,10 +1412,10 @@
 			);
 			mainGroup = 14CEF4092C5CAED200855D72;
 			packageReferences = (
-                B05000010000000000000001 /* XCLocalSwiftPackageReference "Distribution" */,
+				B05000010000000000000001 /* XCLocalSwiftPackageReference "Distribution" */,
 				CA11ST010000000000000001 /* XCLocalSwiftPackageReference "Intelligence" */,
 				CAV200010000000000000001 /* XCLocalSwiftPackageReference "CallaContracts" */,
-				A1B2C3D4E5F6000000000006 /* XCRemoteSwiftPackageReference "OpenSSL" */,
+				A1B2C3D4E5F6000000000006 /* XCRemoteSwiftPackageReference "OpenSSL-Package" */,
 				14D032182C68F32E0096E6A1 /* XCRemoteSwiftPackageReference "LaunchAtLogin-Modern" */,
 				14D0321B2C68F3350096E6A1 /* XCRemoteSwiftPackageReference "Sparkle" */,
 				B18654372C6F4990000B926A /* XCRemoteSwiftPackageReference "KeyboardShortcuts" */,
@@ -1367,7 +1442,6 @@
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
-		CA11E00A000000000000000A /* Resources */ = {isa = PBXResourcesBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };
 		11F7484D2EC9AABA00F841DB /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -1375,7 +1449,6 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		BA7000080000000000000008 /* Resources */ = { isa = PBXResourcesBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };
 		14CEF4102C5CAED300855D72 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -1389,37 +1462,65 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		BA7000080000000000000008 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		CA11E00A000000000000000A /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXShellScriptBuildPhase section */
-		CA11R0020000000000000002 /* Build Calla Runtime */ = {
-			isa = PBXShellScriptBuildPhase;
-			alwaysOutOfDate = 1;
-			buildActionMask = 2147483647;
-			files = ();
-			inputPaths = ("$(SRCROOT)/scripts/calla/build-runtime.sh", "$(SRCROOT)/CallaCallHost");
-			name = "Build Calla Runtime";
-			outputPaths = ("$(TARGET_BUILD_DIR)/$(UNLOCALIZED_RESOURCES_FOLDER_PATH)/CallaRuntime/CallaCallHost.app/Contents/MacOS/CallaCallHost");
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/zsh;
-			shellScript = "set -euo pipefail\n\"$SRCROOT/scripts/calla/build-runtime.sh\" \"$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH/CallaRuntime\"\n";
-		};
 		CA11R0010000000000000001 /* Embed Calla Resources */ = {
 			isa = PBXShellScriptBuildPhase;
 			alwaysOutOfDate = 1;
 			buildActionMask = 2147483647;
-			files = ();
-			inputPaths = ("$(SRCROOT)/Tutor", "$(SRCROOT)/scripts/calla/build-gateway-release.sh", "$(SRCROOT)/scripts/calla/gateway-update.sh");
+			files = (
+			);
+			inputPaths = (
+				"$(SRCROOT)/Tutor",
+				"$(SRCROOT)/scripts/calla/build-gateway-release.sh",
+				"$(SRCROOT)/scripts/calla/gateway-update.sh",
+			);
 			name = "Embed Calla Resources";
-			outputPaths = ("$(TARGET_BUILD_DIR)/$(UNLOCALIZED_RESOURCES_FOLDER_PATH)/Calla", "$(TARGET_BUILD_DIR)/$(UNLOCALIZED_RESOURCES_FOLDER_PATH)/Calla/scripts/gateway-update.sh", "$(TARGET_BUILD_DIR)/$(UNLOCALIZED_RESOURCES_FOLDER_PATH)/Calla/Gateway/calla-gateway.tar.gz");
+			outputPaths = (
+				"$(TARGET_BUILD_DIR)/$(UNLOCALIZED_RESOURCES_FOLDER_PATH)/Calla",
+				"$(TARGET_BUILD_DIR)/$(UNLOCALIZED_RESOURCES_FOLDER_PATH)/Calla/scripts/gateway-update.sh",
+				"$(TARGET_BUILD_DIR)/$(UNLOCALIZED_RESOURCES_FOLDER_PATH)/Calla/Gateway/calla-gateway.tar.gz",
+			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/zsh;
 			shellScript = "set -euo pipefail\nDEST=\"$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH/Calla\"\nmkdir -p \"$DEST/scripts\" \"$DEST/Gateway\"\nrm -rf \"$DEST/openclaw\" \"$DEST/packs\" \"$DEST/agent-workspace\"\nrm -f \"$DEST/scripts/calla-node-host.sh\"\nditto \"$SRCROOT/scripts/calla/gateway-update.sh\" \"$DEST/scripts/gateway-update.sh\"\n\"$SRCROOT/scripts/calla/build-gateway-release.sh\" \"$DEST/Gateway/calla-gateway.tar.gz\"\nchmod 700 \"$DEST/scripts/gateway-update.sh\"\n";
 		};
+		CA11R0020000000000000002 /* Build Calla Runtime */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+				"$(SRCROOT)/scripts/calla/build-runtime.sh",
+				"$(SRCROOT)/CallaCallHost",
+			);
+			name = "Build Calla Runtime";
+			outputPaths = (
+				"$(TARGET_BUILD_DIR)/$(UNLOCALIZED_RESOURCES_FOLDER_PATH)/CallaRuntime/CallaCallHost.app/Contents/MacOS/CallaCallHost",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/zsh;
+			shellScript = "set -euo pipefail\n\"$SRCROOT/scripts/calla/build-runtime.sh\" \"$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH/CallaRuntime\"\n";
+		};
 /* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
-		CA11E0080000000000000008 /* Sources */ = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };
 		11F7484B2EC9AABA00F841DB /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -1427,7 +1528,6 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		BA7000060000000000000006 /* Sources */ = { isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };
 		14CEF40E2C5CAED300855D72 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -1675,6 +1775,20 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		BA7000060000000000000006 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		CA11E0080000000000000008 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
@@ -1683,53 +1797,19 @@
 			target = 11F7484E2EC9AABA00F841DB /* BoringNotchXPCHelper */;
 			targetProxy = 11F748592EC9AABA00F841DB /* PBXContainerItemProxy */;
 		};
-		CA11E0050000000000000005 /* PBXTargetDependency */ = {isa = PBXTargetDependency; target = CA11E0030000000000000003 /* BoringCallaEngine */; targetProxy = CA11E0040000000000000004 /* PBXContainerItemProxy */; };
-		BA7000050000000000000005 /* PBXTargetDependency */ = { isa = PBXTargetDependency; target = BA7000030000000000000003 /* SweepService */; targetProxy = BA7000040000000000000004 /* PBXContainerItemProxy */; };
+		BA7000050000000000000005 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = BA7000030000000000000003 /* SweepService */;
+			targetProxy = BA7000040000000000000004 /* PBXContainerItemProxy */;
+		};
+		CA11E0050000000000000005 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = CA11E0030000000000000003 /* BoringCallaEngine */;
+			targetProxy = CA11E0040000000000000004 /* PBXContainerItemProxy */;
+		};
 /* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
-		BA7000090000000000000009 /* Debug */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				CODE_SIGN_ENTITLEMENTS = SweepService/SweepService.entitlements;
-				CODE_SIGN_IDENTITY = "Calla Local Signing";
-				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "Calla Local Signing";
-				CODE_SIGN_STYLE = Manual;
-				CURRENT_PROJECT_VERSION = 271;
-				DEVELOPMENT_TEAM = "";
-				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = SweepService/Info.plist;
-				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 2.7.3;
-				PRODUCT_BUNDLE_IDENTIFIER = theboringteam.boringnotch.SweepService;
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				SKIP_INSTALL = YES;
-				SWIFT_STRICT_CONCURRENCY = targeted;
-				SWIFT_VERSION = 5.0;
-			};
-			name = Debug;
-		};
-		BA7000100000000000000010 /* Release */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				CODE_SIGN_ENTITLEMENTS = SweepService/SweepService.entitlements;
-				CODE_SIGN_IDENTITY = "Calla Local Signing";
-				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "Calla Local Signing";
-				CODE_SIGN_STYLE = Manual;
-				CURRENT_PROJECT_VERSION = 271;
-				DEVELOPMENT_TEAM = "";
-				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = SweepService/Info.plist;
-				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 2.7.3;
-				PRODUCT_BUNDLE_IDENTIFIER = theboringteam.boringnotch.SweepService;
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				SKIP_INSTALL = YES;
-				SWIFT_STRICT_CONCURRENCY = targeted;
-				SWIFT_VERSION = 5.0;
-			};
-			name = Release;
-		};
 		11F7485E2EC9AABA00F841DB /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -1776,48 +1856,6 @@
 				REGISTER_APP_GROUPS = YES;
 				SKIP_INSTALL = YES;
 				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_VERSION = 5.0;
-			};
-			name = Release;
-		};
-		CA11E00C000000000000000C /* Debug */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				CODE_SIGN_ENTITLEMENTS = BoringCallaEngine/BoringCallaEngine.entitlements;
-				CODE_SIGN_IDENTITY = "Calla Local Signing";
-				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "Calla Local Signing";
-				CODE_SIGN_STYLE = Manual;
-				CURRENT_PROJECT_VERSION = 271;
-				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = BoringCallaEngine/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = BoringCallaEngine;
-				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 2.7.3;
-				PRODUCT_BUNDLE_IDENTIFIER = theboringteam.boringnotch.BoringCallaEngine;
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				ENABLE_USER_SCRIPT_SANDBOXING = NO;
-				SKIP_INSTALL = YES;
-				SWIFT_VERSION = 5.0;
-			};
-			name = Debug;
-		};
-		CA11E00D000000000000000D /* Release */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				CODE_SIGN_ENTITLEMENTS = BoringCallaEngine/BoringCallaEngine.entitlements;
-				CODE_SIGN_IDENTITY = "Calla Local Signing";
-				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "Calla Local Signing";
-				CODE_SIGN_STYLE = Manual;
-				CURRENT_PROJECT_VERSION = 271;
-				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = BoringCallaEngine/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = BoringCallaEngine;
-				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 2.7.3;
-				PRODUCT_BUNDLE_IDENTIFIER = theboringteam.boringnotch.BoringCallaEngine;
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				ENABLE_USER_SCRIPT_SANDBOXING = NO;
-				SKIP_INSTALL = YES;
 				SWIFT_VERSION = 5.0;
 			};
 			name = Release;
@@ -1965,7 +2003,7 @@
 				DEVELOPMENT_TEAM = "";
 				ENABLE_HARDENED_RUNTIME = NO;
 				ENABLE_PREVIEWS = YES;
-				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(inherited)",
 					"$(PROJECT_DIR)/mediaremote-adapter",
@@ -1988,11 +2026,10 @@
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
 				MARKETING_VERSION = 2.7.3;
 				PRODUCT_BUNDLE_IDENTIFIER = theboringteam.boringnotch;
-				ENABLE_USER_SCRIPT_SANDBOXING = NO;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
 				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_OBJC_BRIDGING_HEADER = boringNotch/boringNotch-Bridging-Header.h;
+				SWIFT_OBJC_BRIDGING_HEADER = "boringNotch/boringNotch-Bridging-Header.h";
 				SWIFT_STRICT_CONCURRENCY = targeted;
 				SWIFT_VERSION = 5.0;
 				SYSTEM_FRAMEWORK_SEARCH_PATHS = (
@@ -2019,12 +2056,9 @@
 				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_ASSET_PATHS = "\"boringNotch/Preview Content\"";
 				DEVELOPMENT_TEAM = "";
-				// Personal deployment uses the local Calla signing identity. A
-				// notarized Developer ID release can re-enable hardened runtime
-				// when that identity is configured; enabling it with this local
-				// identity rejects Boring's signed embedded OpenSSL framework.
 				ENABLE_HARDENED_RUNTIME = NO;
 				ENABLE_PREVIEWS = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(inherited)",
 					"$(PROJECT_DIR)/mediaremote-adapter",
@@ -2047,11 +2081,10 @@
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
 				MARKETING_VERSION = 2.7.3;
 				PRODUCT_BUNDLE_IDENTIFIER = theboringteam.boringnotch;
-				ENABLE_USER_SCRIPT_SANDBOXING = NO;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
 				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_OBJC_BRIDGING_HEADER = boringNotch/boringNotch-Bridging-Header.h;
+				SWIFT_OBJC_BRIDGING_HEADER = "boringNotch/boringNotch-Bridging-Header.h";
 				SWIFT_STRICT_CONCURRENCY = targeted;
 				SWIFT_VERSION = 5.0;
 				SYSTEM_FRAMEWORK_SEARCH_PATHS = (
@@ -2061,21 +2094,93 @@
 			};
 			name = Release;
 		};
+		BA7000090000000000000009 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = SweepService/SweepService.entitlements;
+				CODE_SIGN_IDENTITY = "Calla Local Signing";
+				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "Calla Local Signing";
+				CODE_SIGN_STYLE = Manual;
+				CURRENT_PROJECT_VERSION = 271;
+				DEVELOPMENT_TEAM = "";
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = SweepService/Info.plist;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MARKETING_VERSION = 2.7.3;
+				PRODUCT_BUNDLE_IDENTIFIER = theboringteam.boringnotch.SweepService;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SWIFT_STRICT_CONCURRENCY = targeted;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		BA7000100000000000000010 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = SweepService/SweepService.entitlements;
+				CODE_SIGN_IDENTITY = "Calla Local Signing";
+				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "Calla Local Signing";
+				CODE_SIGN_STYLE = Manual;
+				CURRENT_PROJECT_VERSION = 271;
+				DEVELOPMENT_TEAM = "";
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = SweepService/Info.plist;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MARKETING_VERSION = 2.7.3;
+				PRODUCT_BUNDLE_IDENTIFIER = theboringteam.boringnotch.SweepService;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SWIFT_STRICT_CONCURRENCY = targeted;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+		CA11E00C000000000000000C /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = BoringCallaEngine/BoringCallaEngine.entitlements;
+				CODE_SIGN_IDENTITY = "Calla Local Signing";
+				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "Calla Local Signing";
+				CODE_SIGN_STYLE = Manual;
+				CURRENT_PROJECT_VERSION = 271;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = BoringCallaEngine/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = BoringCallaEngine;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MARKETING_VERSION = 2.7.3;
+				PRODUCT_BUNDLE_IDENTIFIER = theboringteam.boringnotch.BoringCallaEngine;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		CA11E00D000000000000000D /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = BoringCallaEngine/BoringCallaEngine.entitlements;
+				CODE_SIGN_IDENTITY = "Calla Local Signing";
+				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "Calla Local Signing";
+				CODE_SIGN_STYLE = Manual;
+				CURRENT_PROJECT_VERSION = 271;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = BoringCallaEngine/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = BoringCallaEngine;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MARKETING_VERSION = 2.7.3;
+				PRODUCT_BUNDLE_IDENTIFIER = theboringteam.boringnotch.BoringCallaEngine;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		CA11E00B000000000000000B /* Build configuration list for PBXNativeTarget "BoringCallaEngine" */ = {
-			isa = XCConfigurationList;
-			buildConfigurations = (CA11E00C000000000000000C /* Debug */, CA11E00D000000000000000D /* Release */);
-			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
-		};
-		BA7000110000000000000011 /* Build configuration list for PBXNativeTarget "SweepService" */ = {
-			isa = XCConfigurationList;
-			buildConfigurations = (BA7000090000000000000009 /* Debug */, BA7000100000000000000010 /* Release */, );
-			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
-		};
 		11F7485D2EC9AABA00F841DB /* Build configuration list for PBXNativeTarget "BoringNotchXPCHelper" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
@@ -2103,13 +2208,31 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
+		BA7000110000000000000011 /* Build configuration list for PBXNativeTarget "SweepService" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				BA7000090000000000000009 /* Debug */,
+				BA7000100000000000000010 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		CA11E00B000000000000000B /* Build configuration list for PBXNativeTarget "BoringCallaEngine" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				CA11E00C000000000000000C /* Debug */,
+				CA11E00D000000000000000D /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 /* End XCConfigurationList section */
 
 /* Begin XCLocalSwiftPackageReference section */
-        B05000010000000000000001 /* XCLocalSwiftPackageReference "Distribution" */ = {
-            isa = XCLocalSwiftPackageReference;
-            relativePath = Distribution;
-        };
+		B05000010000000000000001 /* XCLocalSwiftPackageReference "Distribution" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = Distribution;
+		};
 		CA11ST010000000000000001 /* XCLocalSwiftPackageReference "Intelligence" */ = {
 			isa = XCLocalSwiftPackageReference;
 			relativePath = Intelligence;
@@ -2121,28 +2244,12 @@
 /* End XCLocalSwiftPackageReference section */
 
 /* Begin XCRemoteSwiftPackageReference section */
-		A1B2C3D4E5F6000000000006 /* XCRemoteSwiftPackageReference "OpenSSL" */ = {
-			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/krzyzanowskim/OpenSSL-Package.git";
-			requirement = {
-				kind = upToNextMinorVersion;
-				minimumVersion = 3.6.3000;
-			};
-		};
 		111BE95B2ECD71E10079DD4E /* XCRemoteSwiftPackageReference "AsyncXPCConnection" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/ChimeHQ/AsyncXPCConnection";
 			requirement = {
 				kind = upToNextMajorVersion;
 				minimumVersion = 1.3.0;
-			};
-		};
-		DDDD00010000000000000001 /* XCRemoteSwiftPackageReference "SwiftTerm" */ = {
-			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/migueldeicaza/SwiftTerm.git";
-			requirement = {
-				kind = exactVersion;
-				version = 1.12.0;
 			};
 		};
 		111BEA6D2ED166E20079DD4E /* XCRemoteSwiftPackageReference "MacroVisionKit" */ = {
@@ -2201,6 +2308,14 @@
 				minimumVersion = 1.0.4;
 			};
 		};
+		A1B2C3D4E5F6000000000006 /* XCRemoteSwiftPackageReference "OpenSSL-Package" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/krzyzanowskim/OpenSSL-Package.git";
+			requirement = {
+				kind = upToNextMinorVersion;
+				minimumVersion = 3.6.3000;
+			};
+		};
 		B1628B902CC260C0003D8DF3 /* XCRemoteSwiftPackageReference "swiftui-introspect" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/siteline/swiftui-introspect";
@@ -2225,49 +2340,17 @@
 				minimumVersion = 9.0.2;
 			};
 		};
+		DDDD00010000000000000001 /* XCRemoteSwiftPackageReference "SwiftTerm" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/migueldeicaza/SwiftTerm.git";
+			requirement = {
+				kind = exactVersion;
+				version = 1.12.0;
+			};
+		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
-        B05000040000000000000004 /* DistributionCore */ = {
-            isa = XCSwiftPackageProductDependency;
-            package = B05000010000000000000001 /* XCLocalSwiftPackageReference "Distribution" */;
-            productName = DistributionCore;
-        };
-        B05000020000000000000002 /* BoringNotchSetupUI */ = {
-            isa = XCSwiftPackageProductDependency;
-            package = B05000010000000000000001 /* XCLocalSwiftPackageReference "Distribution" */;
-            productName = BoringNotchSetupUI;
-        };
-		CA11QZ100000000000000010 /* IntelligenceCore */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = CA11ST010000000000000001 /* XCLocalSwiftPackageReference "Intelligence" */;
-			productName = IntelligenceCore;
-		};
-		CA11QZ200000000000000020 /* IntelligenceProviders */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = CA11ST010000000000000001 /* XCLocalSwiftPackageReference "Intelligence" */;
-			productName = IntelligenceProviders;
-		};
-		CA11ST020000000000000002 /* IntelligenceStore */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = CA11ST010000000000000001 /* XCLocalSwiftPackageReference "Intelligence" */;
-			productName = IntelligenceStore;
-		};
-		CAV200020000000000000002 /* CallaContracts */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = CAV200010000000000000001 /* XCLocalSwiftPackageReference "CallaContracts" */;
-			productName = CallaContracts;
-		};
-		A1B2C3D4E5F6000000000007 /* OpenSSL */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = A1B2C3D4E5F6000000000006 /* XCRemoteSwiftPackageReference "OpenSSL" */;
-			productName = OpenSSL;
-		};
-		DDDD00010000000000000002 /* SwiftTerm */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = DDDD00010000000000000001 /* XCRemoteSwiftPackageReference "SwiftTerm" */;
-			productName = SwiftTerm;
-		};
 		111BE95C2ECD71E10079DD4E /* AsyncXPCConnection */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = 111BE95B2ECD71E10079DD4E /* XCRemoteSwiftPackageReference "AsyncXPCConnection" */;
@@ -2311,6 +2394,21 @@
 			package = 9A987A0E2C73CA8D005CA465 /* XCRemoteSwiftPackageReference "swift-collections" */;
 			productName = Collections;
 		};
+		A1B2C3D4E5F6000000000007 /* OpenSSL */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = A1B2C3D4E5F6000000000006 /* XCRemoteSwiftPackageReference "OpenSSL-Package" */;
+			productName = OpenSSL;
+		};
+		B05000020000000000000002 /* BoringNotchSetupUI */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = B05000010000000000000001 /* XCLocalSwiftPackageReference "Distribution" */;
+			productName = BoringNotchSetupUI;
+		};
+		B05000040000000000000004 /* DistributionCore */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = B05000010000000000000001 /* XCLocalSwiftPackageReference "Distribution" */;
+			productName = DistributionCore;
+		};
 		B1628B912CC260C0003D8DF3 /* SwiftUIIntrospect */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = B1628B902CC260C0003D8DF3 /* XCRemoteSwiftPackageReference "swiftui-introspect" */;
@@ -2325,6 +2423,31 @@
 			isa = XCSwiftPackageProductDependency;
 			package = B19016202CC15B3D00E3F12E /* XCRemoteSwiftPackageReference "Defaults" */;
 			productName = Defaults;
+		};
+		CA11QZ100000000000000010 /* IntelligenceCore */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = CA11ST010000000000000001 /* XCLocalSwiftPackageReference "Intelligence" */;
+			productName = IntelligenceCore;
+		};
+		CA11QZ200000000000000020 /* IntelligenceProviders */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = CA11ST010000000000000001 /* XCLocalSwiftPackageReference "Intelligence" */;
+			productName = IntelligenceProviders;
+		};
+		CA11ST020000000000000002 /* IntelligenceStore */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = CA11ST010000000000000001 /* XCLocalSwiftPackageReference "Intelligence" */;
+			productName = IntelligenceStore;
+		};
+		CAV200020000000000000002 /* CallaContracts */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = CAV200010000000000000001 /* XCLocalSwiftPackageReference "CallaContracts" */;
+			productName = CallaContracts;
+		};
+		DDDD00010000000000000002 /* SwiftTerm */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = DDDD00010000000000000001 /* XCRemoteSwiftPackageReference "SwiftTerm" */;
+			productName = SwiftTerm;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};
