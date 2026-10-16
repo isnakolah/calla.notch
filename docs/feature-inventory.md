@@ -65,6 +65,26 @@ Permissions · About.
 
 ## Removal decisions (strip-down, 2026-10-16)
 
-Removed: Ice, Sweep, Webcam mirror, Battery indicator, Download indicator,
-Face animation, Live coding (Code), Wave interview, Gateway fallback.
-Settings to be cut back aggressively.
+Removed on `feat/strip-down`:
+
+- **Ice** — menu bar organizer, its Settings section and package target.
+- **Sweep** — the SweepService XPC target, its Settings section, the Full Disk
+  Access permission row, and its checks in `scripts/deploy.sh`.
+- **Webcam mirror** — `WebcamManager`, the mirror header item, the camera
+  onboarding step and the camera entitlement.
+- **Battery indicator** — charging notifications, the battery header item and
+  its Settings page.
+- **Download indicator**, **face animation**, **hello animation**, **tips**,
+  **What's New**, and the never-shipped custom visualizer page.
+- **Live coding and the Wave interview** — app side: the Code mode, its notch
+  surfaces, setup, Settings page, size profiles and shortcuts. The engine,
+  contracts and Intelligence side are still present and are removed next.
+- **Gateway fallback** — pending.
+
+Settings went from thirteen sections to four — General, Notch, Calls, About —
+each a single scroll with rarely-changed options folded under Advanced.
+
+Kept: Music, Calendar, Shelf (LocalSend, KDE Connect), Pomodoro, AI usage,
+volume/brightness HUD, the call copilot with Quiz, Knowledge, screenshots,
+speaker identification, history, re-transcribe, personas, prompt editing,
+onboarding and the Sparkle updater.

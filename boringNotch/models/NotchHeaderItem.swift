@@ -17,7 +17,7 @@ enum NotchHeaderItem: String, CaseIterable, Identifiable, Codable, Defaults.Seri
     /// Views the header can switch to.
     case home, pomodoro, usage, shelf, copilot
     /// Controls and indicators.
-    case mirror, settings, battery
+    case settings
     /// An empty slot. Kept as a case so a side's list is always `slotsPerSide`
     /// long and an item's index is its position, not its rank.
     case none
@@ -33,7 +33,7 @@ enum NotchHeaderItem: String, CaseIterable, Identifiable, Codable, Defaults.Seri
 
     /// Everything the layout pane offers, in the order it offers it.
     static let placeable: [NotchHeaderItem] = [
-        .home, .pomodoro, .usage, .shelf, .copilot, .mirror, .settings, .battery
+        .home, .pomodoro, .usage, .shelf, .copilot, .settings
     ]
 
     var label: String {
@@ -43,9 +43,7 @@ enum NotchHeaderItem: String, CaseIterable, Identifiable, Codable, Defaults.Seri
         case .usage: return "Usage"
         case .shelf: return "Shelf"
         case .copilot: return "Call"
-        case .mirror: return "Mirror"
         case .settings: return "Settings"
-        case .battery: return "Battery"
         case .none: return "Empty slot"
         }
     }
@@ -57,9 +55,7 @@ enum NotchHeaderItem: String, CaseIterable, Identifiable, Codable, Defaults.Seri
         case .usage: return "chart.bar.xaxis"
         case .shelf: return "tray.fill"
         case .copilot: return "waveform.badge.mic"
-        case .mirror: return "web.camera"
         case .settings: return "gear"
-        case .battery: return "battery.100"
         case .none: return ""
         }
     }
@@ -87,7 +83,6 @@ enum NotchHeaderItem: String, CaseIterable, Identifiable, Codable, Defaults.Seri
         case .usage: return .usageMonitorTab
         case .shelf: return .boringShelf
         case .copilot: return .callaCopilotEnabled
-        case .mirror: return .showMirror
         default: return nil
         }
     }
@@ -101,10 +96,9 @@ enum NotchHeaderItem: String, CaseIterable, Identifiable, Codable, Defaults.Seri
     var featureRoute: SettingsRoute? {
         switch self {
         case .pomodoro: return .init(.pomodoro)
-        case .usage: return .init(.system, [.usage])
+        case .usage: return .init(.usage)
         case .shelf: return .init(.shelf)
-        case .copilot: return .init(.copilot, [.copilotCall])
-        case .mirror: return .init(.appearance, [.camera])
+        case .copilot: return .init(.copilotCall)
         default: return nil
         }
     }
@@ -123,15 +117,23 @@ enum NotchHeaderItem: String, CaseIterable, Identifiable, Codable, Defaults.Seri
 }
 
 extension NotchHeaderItem {
-    /// Tutor was removed. A saved layout naming it would fail to decode and
-    /// reset both sides, so its slot becomes empty before anything reads it.
+    /// Items that were removed — Tutor, the camera mirror, the battery. A
+    /// saved layout naming one would fail to decode and reset both sides, so
+    /// its slot becomes empty before anything reads it.
+    static let removedRawValues = ["tutor", "mirror", "battery"]
+
     static func migrateRemovedItems() {
         let defaults = UserDefaults.standard
         for key in ["notchHeaderLeading", "notchHeaderTrailing"] {
-            if let items = defaults.array(forKey: key) as? [String], items.contains("tutor") {
-                defaults.set(items.map { $0 == "tutor" ? "none" : $0 }, forKey: key)
-            } else if let json = defaults.string(forKey: key), json.contains("\"tutor\"") {
-                defaults.set(json.replacingOccurrences(of: "\"tutor\"", with: "\"none\""), forKey: key)
+            if let items = defaults.array(forKey: key) as? [String],
+               items.contains(where: removedRawValues.contains) {
+                defaults.set(items.map { removedRawValues.contains($0) ? "none" : $0 }, forKey: key)
+            } else if var json = defaults.string(forKey: key),
+                      removedRawValues.contains(where: { json.contains("\"\($0)\"") }) {
+                for raw in removedRawValues {
+                    json = json.replacingOccurrences(of: "\"\(raw)\"", with: "\"none\"")
+                }
+                defaults.set(json, forKey: key)
             }
         }
     }

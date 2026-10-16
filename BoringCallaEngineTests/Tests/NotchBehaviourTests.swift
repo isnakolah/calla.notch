@@ -7,31 +7,19 @@ final class ClosedNotchArbiterTests: XCTestCase {
     /// encoded them by paste order and nobody could see them.
     private var everythingOn: ClosedNotchInputs {
         ClosedNotchInputs(
-            expandingViewShowing: true, expandingViewIsBattery: true,
             sneakPeekShowing: true, inlineHUDEnabled: true,
             callLive: true, pomodoroActive: true, usageBadgesEnabled: true,
-            musicPlaying: true, musicPlayerIdle: false, musicLiveActivityEnabled: true,
-            faceEnabled: true)
-    }
-
-    func testAPowerNotificationOutranksEverything() {
-        XCTAssertEqual(ClosedNotchArbiter.activity(for: everythingOn), .batteryStatus)
+            musicPlaying: true, musicPlayerIdle: false, musicLiveActivityEnabled: true)
     }
 
     func testTheHUDOutranksEveryAmbientActivity() {
-        var inputs = everythingOn
-        inputs.expandingViewShowing = false
-        inputs.expandingViewIsBattery = false
-        XCTAssertEqual(ClosedNotchArbiter.activity(for: inputs), .inlineHUD)
+        XCTAssertEqual(ClosedNotchArbiter.activity(for: everythingOn), .inlineHUD)
     }
 
-    func testAMusicOrBatterySneakPeekIsNotTheInlineHUD() {
+    func testAMusicSneakPeekIsNotTheInlineHUD() {
         var inputs = ClosedNotchInputs(sneakPeekShowing: true, inlineHUDEnabled: true,
                                        pomodoroActive: true)
         inputs.sneakPeekIsMusic = true
-        XCTAssertEqual(ClosedNotchArbiter.activity(for: inputs), .pomodoro)
-        inputs.sneakPeekIsMusic = false
-        inputs.sneakPeekIsBattery = true
         XCTAssertEqual(ClosedNotchArbiter.activity(for: inputs), .pomodoro)
     }
 
@@ -55,35 +43,18 @@ final class ClosedNotchArbiterTests: XCTestCase {
         XCTAssertEqual(ClosedNotchArbiter.activity(for: inputs), .music)
     }
 
-    /// A paused player is not idle, so it keeps the slot rather than handing it
-    /// to the face the moment playback stops.
+    /// A paused player is not idle, so it keeps the slot.
     func testAPausedPlayerStillHoldsTheSlot() {
         let inputs = ClosedNotchInputs(musicPlaying: false, musicPlayerIdle: false,
-                                       musicLiveActivityEnabled: true, faceEnabled: true)
+                                       musicLiveActivityEnabled: true)
         XCTAssertEqual(ClosedNotchArbiter.activity(for: inputs), .music)
     }
 
-    func testTheFaceOnlyAppearsWhenTheresNothingElse() {
-        let inputs = ClosedNotchInputs(musicPlaying: false, musicPlayerIdle: true,
-                                       musicLiveActivityEnabled: true, faceEnabled: true)
-        XCTAssertEqual(ClosedNotchArbiter.activity(for: inputs), .face)
-    }
-
-    func testAnExpandingViewSuppressesTheFace() {
-        let inputs = ClosedNotchInputs(expandingViewShowing: true, faceEnabled: true)
-        XCTAssertEqual(ClosedNotchArbiter.activity(for: inputs), .empty)
-    }
-
-    /// `hideOnClosed` is the reader asking for a bare notch. A power
-    /// notification and the HUD are answers to something that just happened and
-    /// survive it; everything ambient does not.
+    /// `hideOnClosed` is the reader asking for a bare notch. The HUD answers a
+    /// key just pressed and survives it; everything ambient does not.
     func testHideOnClosedSilencesTheAmbientActivitiesOnly() {
         var inputs = everythingOn
         inputs.hideOnClosed = true
-        XCTAssertEqual(ClosedNotchArbiter.activity(for: inputs), .batteryStatus)
-
-        inputs.expandingViewShowing = false
-        inputs.expandingViewIsBattery = false
         XCTAssertEqual(ClosedNotchArbiter.activity(for: inputs), .inlineHUD)
 
         inputs.sneakPeekShowing = false

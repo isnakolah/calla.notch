@@ -44,13 +44,10 @@ struct CopilotHistoryPane: View {
             Picker("History", selection: $historyMode) {
                 Text("Call").tag("call")
                 Text("Quiz").tag("quiz")
-                if CallaFeatureAvailability.liveCoding { Text("Code").tag("code") }
             }
-            .pickerStyle(.segmented).frame(width: 300)
+            .pickerStyle(.segmented).frame(width: 200)
             if historyMode == "quiz" {
                 quizCard
-            } else if CallaFeatureAvailability.liveCoding && historyMode == "code" {
-                codeCard
             } else {
                 pendingRetranscribeCard
                 callsCard
@@ -86,26 +83,6 @@ struct CopilotHistoryPane: View {
     }
 
     // MARK: - Re-transcribing
-
-    private var codeCard: some View {
-        SettingCard("Live Coding History",
-                    detail: "Encrypted shadow projects and guidance remain on this Mac until you delete them.") {
-            VStack(alignment: .leading, spacing: 10) {
-                if engine.retainedCodingSessions.isEmpty {
-                    Text("No retained Live Coding interviews")
-                        .font(NotchType.rowDetail).foregroundStyle(.secondary)
-                }
-                ForEach(engine.retainedCodingSessions) { session in
-                    SettingRow(session.folderName,
-                               detail: "\(session.lifecycle.rawValue.capitalized) · \(session.moveCount) moves") {
-                        Button(role: .destructive) {
-                            engine.deleteCodingSession(session.sessionID)
-                        } label: { Image(systemName: "trash") }
-                    }
-                }
-            }
-        }
-    }
 
     /// Calls with audio still on disk that the large model has not been over.
     private var pending: [CallaCallSummary] {
@@ -296,37 +273,14 @@ struct CopilotHistoryPane: View {
                 }
             }
         } else {
-            if !CallaFeatureAvailability.liveCoding {
-                SettingCard("Calls", detail: "Newest first.") { callList(calls) }
-            } else if !interviewCalls.isEmpty {
-                SettingCard(WaveInterview.title,
-                            detail: "\(interviewCalls.count) session\(interviewCalls.count == 1 ? "" : "s") of one meeting. Newest first.") {
-                    callList(interviewCalls)
-                }
-            }
-            if CallaFeatureAvailability.liveCoding && !otherCalls.isEmpty {
-                SettingCard(interviewCalls.isEmpty ? "Calls" : "Other calls",
-                            detail: "Newest first.") {
-                    callList(otherCalls)
-                }
-            }
+            SettingCard("Calls", detail: "Newest first.") { callList(calls) }
         }
     }
-
-    /// Sessions of the interview, and everything else.
-    ///
-    /// Split rather than numbered in one list because the archive predates the
-    /// meeting being pinned: calls recorded then carry no meeting at all, and
-    /// calling them session 4 of an interview they were not part of would be a
-    /// grouping the data does not support.
-    private var interviewCalls: [CallaCallSummary] { calls.filter(\.isWaveInterview) }
-    private var otherCalls: [CallaCallSummary] { calls.filter { !$0.isWaveInterview } }
 
     private func callList(_ rows: [CallaCallSummary]) -> some View {
         VStack(spacing: 0) {
             ForEach(Array(rows.enumerated()), id: \.element.id) { index, call in
-                // Newest first, so the oldest session is number one.
-                callRow(call, session: CallaFeatureAvailability.liveCoding && call.isWaveInterview ? rows.count - index : nil)
+                callRow(call)
                 if index < rows.count - 1 {
                     Divider().padding(.vertical, 2)
                 }
@@ -334,12 +288,11 @@ struct CopilotHistoryPane: View {
         }
     }
 
-    private func callRow(_ call: CallaCallSummary, session: Int?) -> some View {
+    private func callRow(_ call: CallaCallSummary) -> some View {
         HStack(spacing: 10) {
             SettingGlyph(symbol: "waveform", tint: NotchTint.active, size: 26)
             VStack(alignment: .leading, spacing: 2) {
-                Text((session.map { "Session \($0) · " } ?? "")
-                     + (call.startedAt?.formatted(date: .abbreviated, time: .shortened) ?? call.id))
+                Text(call.startedAt?.formatted(date: .abbreviated, time: .shortened) ?? call.id)
                     .font(NotchType.rowTitle)
                 Text(subtitle(for: call))
                     .font(NotchType.rowDetail)
@@ -350,12 +303,6 @@ struct CopilotHistoryPane: View {
             // indistinguishable from a call that was never re-transcribed.
             if call.retranscribed {
                 SettingBadge("Re-transcribed", tint: NotchTint.healthy)
-            }
-            if CallaFeatureAvailability.liveCoding && call.isWaveRehearsal {
-                // Same meeting, different run. Without this the archive is a
-                // list of sessions where the real one is indistinguishable from
-                // the practice, which is the thing you most need to tell apart.
-                SettingBadge("Rehearsal")
             }
             if call.wasInterrupted {
                 SettingBadge("Interrupted", tint: NotchTint.attention)
@@ -404,7 +351,6 @@ struct CopilotHistoryPane: View {
             loading = false
         }
         loadQuiz()
-        if CallaFeatureAvailability.liveCoding { engine.fetchRetainedCodingSessions() }
     }
 
     private func loadQuiz() {

@@ -19,10 +19,6 @@ let appVersion = "\(Bundle.main.infoDictionary?["CFBundleShortVersionString"] as
 let temporaryDirectory = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask).first!
 let spacing: CGFloat = 16
 
-/// `CodingModelProfile` lives in CallaContracts, which must not depend on
-/// Defaults — the conformance belongs here instead.
-extension CodingModelProfile: Defaults.Serializable {}
-
 struct CustomVisualizer: Codable, Hashable, Equatable, Defaults.Serializable {
     let UUID: UUID
     var name: String
@@ -102,12 +98,10 @@ extension Defaults.Keys {
     // MARK: Appearance
     static let showEmojis = Key<Bool>("showEmojis", default: false)
     //static let alwaysShowTabs = Key<Bool>("alwaysShowTabs", default: true)
-    static let showMirror = Key<Bool>("showMirror", default: false)
-    static let mirrorShape = Key<MirrorShapeEnum>("mirrorShape", default: MirrorShapeEnum.rectangle)
     // Header placement now lives in `notchHeaderLeading` / `notchHeaderTrailing`
     // (see NotchHeaderItem.swift). `settingsIconInNotch` and
     // `showBatteryIndicator` were per-item presence flags for the same header
-    // and are retired: the gear and the battery are placeable items.
+    // and are retired: the gear is a placeable item.
     static let lightingEffect = Key<Bool>("lightingEffect", default: true)
     static let enableShadow = Key<Bool>("enableShadow", default: true)
     static let cornerRadiusScaling = Key<Bool>("cornerRadiusScaling", default: true)
@@ -119,7 +113,6 @@ extension Defaults.Keys {
     static let normalNotchHeight = Key<Double>(
         "normalNotchHeight", default: Double(NotchSizeProfile.normal.defaultSize.height))
 
-    static let showNotHumanFace = Key<Bool>("showNotHumanFace", default: false)
     static let tileShowLabels = Key<Bool>("tileShowLabels", default: false)
     static let showCalendar = Key<Bool>("showCalendar", default: false)
     static let hideCompletedReminders = Key<Bool>("hideCompletedReminders", default: true)
@@ -153,16 +146,6 @@ extension Defaults.Keys {
         default: MusicControlButton.defaultLayout.count
     )
     
-    // MARK: Battery
-    static let showPowerStatusNotifications = Key<Bool>("showPowerStatusNotifications", default: true)
-    static let showBatteryPercentage = Key<Bool>("showBatteryPercentage", default: true)
-    static let showPowerStatusIcons = Key<Bool>("showPowerStatusIcons", default: true)
-    
-    // MARK: Downloads
-    static let enableDownloadListener = Key<Bool>("enableDownloadListener", default: true)
-    static let enableSafariDownloads = Key<Bool>("enableSafariDownloads", default: true)
-    static let selectedDownloadIndicatorStyle = Key<DownloadIndicatorStyle>("selectedDownloadIndicatorStyle", default: DownloadIndicatorStyle.progress)
-    static let selectedDownloadIconStyle = Key<DownloadIconStyle>("selectedDownloadIconStyle", default: DownloadIconStyle.onlyAppIcon)
     
     // MARK: HUD
     static let hudReplacement = Key<Bool>("hudReplacement", default: false)
@@ -207,13 +190,6 @@ extension Defaults.Keys {
     /// The preferred live surface. Legacy values are preserved;
     /// `CallaMode.resolved` maps unavailable modes to Call.
     static let callaCopilotMode = Key<String>("callaCopilotMode", default: "call")
-    /// The plain listening call — any meeting, any persona, no project.
-    ///
-    /// Off by default. The notch is armed for the Wave interview, and a second
-    /// Start button that quietly records something else is how the wrong
-    /// session gets captured. On, it adds a Call segment to the switcher and
-    /// changes nothing else.
-    static let callaPlainCallEnabled = Key<Bool>("callaPlainCallEnabled", default: false)
     /// Write each finished call to ~/Documents/Calls/<Type>/<date title>/.
     /// During a call, rest as a borderless frosted summary that blends into
     /// the screen; hovering brings the collapsed panel back.
@@ -254,45 +230,10 @@ extension Defaults.Keys {
     /// gateway validates it against the same allowlist.
     static let callaCopilotPersona = Key<String>("callaCopilotPersona", default: "generic")
 
-    /// Live Coding setups, prepared ahead of the interview and filed against a
-    /// meeting, its series, or nothing at all.
-    ///
-    /// The project folder rides in here as an app-scoped security bookmark
-    /// rather than a path: the notch resolves it and mints the engine's
-    /// capability at Start, so "set it up on Monday, press Start on Thursday"
-    /// survives both a restart of the app and a restart of the XPC service,
-    /// which an engine-held capability does not.
-    static let callaCodingSetups = Key<[CallaCodingSetup]>("callaCodingSetups", default: [])
-    /// Whether the next session is a rehearsal or the interview itself.
-    ///
-    /// Defaults to a rehearsal. Every session before the sitting is one, and
-    /// starting the real thing by accident costs nothing, while recording a
-    /// rehearsal as the interview quietly files practice conclusions where the
-    /// real session will read them.
-    static let callaWaveSession = Key<String>("callaWaveSession", default: "rehearsal")
-    /// One-time adoption of a project prepared before the interview became the
-    /// only meeting. See `CallaCodingSetupStore.adoptExistingSetupIfNeeded`.
-    static let callaWaveSetupAdopted = Key<Bool>("callaWaveSetupAdopted", default: false)
-    /// Which model answers each Live Coding lane.
-    ///
-    /// Live Coding shipped with one hardcoded model for every lane while Quiz
-    /// had per-role model and effort control. The lanes want opposite things —
-    /// the move lane is waited on mid-sentence, the edit lane is not — so this
-    /// is the same granularity, exposed the same way.
-    static let callaCodingProfile = Key<CodingModelProfile>("callaCodingProfile",
-                                                            default: .standard)
-
     // How big the call panel is, in both layouts. Stored as Double because
     // `Defaults` has no CGFloat bridge; clamped on read by `CallaPanelSize`, so
     // a value edited by hand in the plist cannot produce a panel the window is
     // too small to draw.
-    static let codingPanelWidth = Key<Double>("codingPanelWidth", default: 740)
-    static let codingPanelHeight = Key<Double>("codingPanelHeight", default: 480)
-    static let codingCompactWidth = Key<Double>("codingCompactWidth", default: 620)
-    static let codingCompactHeight = Key<Double>("codingCompactHeight", default: 280)
-    static let wavePanelWidth = Key<Double>("wavePanelWidth", default: 740)
-    static let wavePanelHeight = Key<Double>("wavePanelHeight", default: 420)
-    static let waveGlassLevel = Key<Double>("waveGlassLevel", default: 0.5)
     static let callaPanelWidth = Key<Double>(
         "callaPanelWidth", default: Double(NotchSizeProfile.callExpanded.defaultSize.width))
     static let callaPanelHeight = Key<Double>(
@@ -453,9 +394,4 @@ extension Defaults.Keys {
     }
 
     static let didClearLegacyURLCacheV1 = Key<Bool>("didClearLegacyURLCache_v1", default: false)
-
-    /// Sweep's helper-process lifetime. The string key and the raw values are
-    /// unchanged from when this was read straight out of `UserDefaults`, so an
-    /// existing choice survives the move.
-    static let sweepServiceLifetime = Key<SweepProcessLifetime>("sweep.serviceLifetime", default: .tab)
 }

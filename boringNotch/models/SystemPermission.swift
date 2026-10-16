@@ -25,7 +25,6 @@ enum SystemPermission: String, CaseIterable, Identifiable {
     case microphone
     case calendars
     case reminders
-    case fullDiskAccess
 
     var id: String { rawValue }
 
@@ -36,7 +35,6 @@ enum SystemPermission: String, CaseIterable, Identifiable {
         case .microphone: return "Microphone"
         case .calendars: return "Calendars"
         case .reminders: return "Reminders"
-        case .fullDiskAccess: return "Full Disk Access"
         }
     }
 
@@ -47,7 +45,6 @@ enum SystemPermission: String, CaseIterable, Identifiable {
         case .microphone: return "mic"
         case .calendars: return "calendar"
         case .reminders: return "checklist"
-        case .fullDiskAccess: return "externaldrive"
         }
     }
 
@@ -60,7 +57,6 @@ enum SystemPermission: String, CaseIterable, Identifiable {
         case .microphone: anchor = "Privacy_Microphone"
         case .calendars: anchor = "Privacy_Calendars"
         case .reminders: anchor = "Privacy_Reminders"
-        case .fullDiskAccess: anchor = "Privacy_AllFiles"
         }
         // Force-unwrapped because the string is a literal and the set is closed:
         // if one of these six stops parsing, that is a build-time mistake.
@@ -81,8 +77,6 @@ enum SystemPermission: String, CaseIterable, Identifiable {
             return "Showing what is next in the notch, and starting a call on time."
         case .reminders:
             return "Showing reminders alongside events."
-        case .fullDiskAccess:
-            return "Sweep seeing the caches and backups that account for most reclaimable space."
         }
     }
 

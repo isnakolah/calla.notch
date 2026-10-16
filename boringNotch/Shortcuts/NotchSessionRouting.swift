@@ -2,14 +2,12 @@ import Foundation
 
 /// Which live surface owns the notch right now.
 ///
-/// The three are mutually exclusive by construction — a coding interview, a
-/// Quiz and a plain call cannot run at once — which is what makes routing one
-/// key to all three safe.
+/// The two are mutually exclusive by construction — a Quiz and a call cannot
+/// run at once — which is what makes routing one key to both safe.
 public enum NotchSessionSurface: String, CaseIterable, Sendable {
     case none
     case call
     case quiz
-    case coding
 }
 
 /// One verb the reader has during a live session.
@@ -28,17 +26,10 @@ public enum NotchSessionAction: String, CaseIterable, Sendable {
     case next
     case scrollUp
     case scrollDown
-    case advance
     case hold
     case ask
     case copy
-    case run
     case surface
-    case transcript
-    case evidence
-    case explain
-    case target
-    case shortcutHelp
 }
 
 /// What a key press actually does, once the live surface is known.
@@ -56,23 +47,14 @@ public enum NotchSessionEffect: Equatable, Sendable {
     case quizScroll(lines: Int)
     case quizCopyAnswer
     case quizTogglePause
-
-    case codingAction(String)
-    case codingCopy
-    case codingPrevious
-    case codingNext
-    case codingScroll(lines: Int)
-    case codingRun
 }
 
 /// The live session's state, as plain values.
 public struct NotchSessionState: Equatable, Sendable {
-    public var codingActive: Bool
     public var quizActive: Bool
     public var callLive: Bool
 
-    public init(codingActive: Bool = false, quizActive: Bool = false, callLive: Bool = false) {
-        self.codingActive = codingActive
+    public init(quizActive: Bool = false, callLive: Bool = false) {
         self.quizActive = quizActive
         self.callLive = callLive
     }
@@ -82,10 +64,8 @@ public enum NotchSessionRouter {
     /// How far one scroll key moves the reader. One number, both surfaces.
     public static let scrollLines = 8
 
-    /// A coding interview is also a call underneath, so it has to be asked
-    /// about first or every coding key would route to the plain call surface.
+    /// Quiz runs over a call's capture, so it is asked about first.
     public static func surface(for state: NotchSessionState) -> NotchSessionSurface {
-        if state.codingActive { return .coding }
         if state.quizActive { return .quiz }
         if state.callLive { return .call }
         return .none
@@ -96,7 +76,7 @@ public enum NotchSessionRouter {
     ///
     /// `nil` is deliberate and is an improvement on what it replaces: the old
     /// per-surface names fired their notification whatever was on screen, so
-    /// ⌥⌘← during a Quiz still posted a coding-history event into nothing.
+    /// ⌥⌘← during a Quiz still posted a call-history event into nothing.
     public static func effect(for action: NotchSessionAction,
                               on surface: NotchSessionSurface) -> NotchSessionEffect? {
         switch surface {
@@ -125,38 +105,13 @@ public enum NotchSessionRouter {
             // fill the table would be a shortcut nothing asked for.
             default: return nil
             }
-
-        case .coding:
-            switch action {
-            case .previous: return .codingPrevious
-            case .next: return .codingNext
-            case .scrollUp: return .codingScroll(lines: -scrollLines)
-            case .scrollDown: return .codingScroll(lines: scrollLines)
-            case .copy: return .codingCopy
-            case .run: return .codingRun
-            case .hold: return .codingAction("hold")
-            case .advance: return .codingAction("advance")
-            case .transcript: return .codingAction("transcript")
-            case .evidence: return .codingAction("evidence")
-            case .explain: return .codingAction("explain")
-            case .target: return .codingAction("window")
-            case .shortcutHelp: return .codingAction("keys")
-            // The coding viewport listens on the call's own notifications for
-            // these two, so they route to the call effects rather than to
-            // coding ones that do not exist.
-            case .ask: return .callAsk
-            case .surface: return .callToggleSurface
-            }
         }
     }
 
     /// The actions a surface answers, in the order they are worth showing to
     /// the reader. Drives the hint row under every live panel.
     public static func hintedActions(for surface: NotchSessionSurface) -> [NotchSessionAction] {
-        let order: [NotchSessionAction] = [
-            .previous, .next, .copy, .scrollUp, .hold, .advance, .run, .ask,
-            .surface, .transcript, .evidence, .explain, .target, .shortcutHelp
-        ]
+        let order: [NotchSessionAction] = [.previous, .next, .copy, .scrollUp, .hold, .ask, .surface]
         return order.filter { effect(for: $0, on: surface) != nil }
     }
 }

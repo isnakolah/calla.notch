@@ -62,10 +62,6 @@ struct ShortcutsPane: View {
                         detail: "Scrolls what you are reading. In Quiz, once it has asked for more of the question, this scrolls the watched window instead.")
                     row("Scroll down", .sessionScrollDown)
                     Divider().opacity(0.35)
-                    if CallaFeatureAvailability.liveCoding {
-                        row("Continue", .sessionAdvance,
-                            detail: "Live Coding: the next step, or back to the code from a reference surface.")
-                    }
                     row("Hold or resume", .sessionHold,
                         detail: "Pauses or resumes a Quiz.")
                     Divider().opacity(0.35)
@@ -73,22 +69,11 @@ struct ShortcutsPane: View {
                     row("Answer history", .sessionSurface)
                     row("Copy what is on screen", .sessionCopy,
                         detail: "Copies the displayed Quiz answer.")
-                    if CallaFeatureAvailability.liveCoding { row("Run or stop the check", .sessionRun) }
                 }
             }
 
-            SettingCard("Reference",
-                        detail: "The surfaces you step aside to read, and the setup you do once.") {
+            SettingCard("Quiz") {
                 VStack(spacing: NotchSpace.row) {
-                    if CallaFeatureAvailability.liveCoding {
-                        row("Transcript", .sessionTranscript)
-                        row("Why and checks", .sessionEvidence)
-                        row("Ask for more explanation", .sessionExplain)
-                        Divider().opacity(0.35)
-                        row("Select working window", .sessionTarget)
-                        row("Shortcut reference", .sessionShortcutHelp)
-                    }
-                    Divider().opacity(0.35)
                     row("Toggle code wrapping", .quizToggleWrap, detail: "Quiz only.")
                     if let shortcutConflict {
                         Text(shortcutConflict)
@@ -119,9 +104,7 @@ struct ShortcutsPane: View {
                     .pomodoroSkipPhase, .pomodoroStopTimer, .copilotToggleCall,
                     .copilotToggleLayout, .copilotTogglePin, .copilotDismiss,
                     .sessionPrevious, .sessionNext, .sessionScrollUp, .sessionScrollDown,
-                    .sessionAdvance, .sessionHold, .sessionAsk, .sessionCopy,
-                    .sessionRun, .sessionSurface, .sessionTranscript, .sessionEvidence,
-                    .sessionExplain, .sessionTarget, .sessionShortcutHelp, .quizToggleWrap,
+                    .sessionHold, .sessionAsk, .sessionCopy, .sessionSurface, .quizToggleWrap,
                 ]
                 guard names.contains(where: {
                     $0 != name && KeyboardShortcuts.getShortcut(for: $0) == shortcut

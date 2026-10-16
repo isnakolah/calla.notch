@@ -7,311 +7,274 @@ import SwiftUI
 
 /// A destination inside a section.
 ///
-/// Depth is almost always one. `copilotKnowledgeDetail` is the single exception
-/// and the single case carrying a payload, which is why this is not a
-/// `String`-raw enum. `Hashable` is the hard requirement — it is what
-/// `NavigationStack` stores — and the string form needed for deep links is
-/// built explicitly in `identifier` rather than synthesised, because synthesised
-/// `Codable` over associated values produces an opaque encoding that no deep
-/// link could ever be written by hand.
+/// Pages form a shallow tree: most hang off a section's landing pane, a few hang
+/// off another page (Control Slots under Media, a call under History). `parent`
+/// is that tree, written once, and the breadcrumb is derived from it — so a page
+/// can never be listed in one place and claim another in its trail.
+///
+/// `Hashable` is the hard requirement — it is what `NavigationStack` stores —
+/// and the string form for deep links is built explicitly in `identifier`.
 enum SettingsPage: Hashable {
     // General
-    case displays, gestures, advanced
-    // Appearance
-    case notchSize, accent, headerLayout, camera
-    // Media
-    case controlSlots
-    // Calendar
-    case calendarSources
-    // System
-    case battery, huds, usage
-    // Shelf
-    case localSend, kdeConnect
-    // Call copilot
-    //
-    // `copilotModels` is Intelligence and Transcription merged. They were two
-    // pages answering one question — which model does what — and the split put
-    // "which brain answers" and "which ear hears" on opposite sides of a menu
-    // even though choosing one constrains the other.
-    case copilotCall, copilotQuiz, copilotCoding, copilotModels, copilotPrompts
+    case shortcuts, privacy, displays, gestures, advanced
+    // Notch
+    case media, controlSlots, calendar, calendarSources
+    case shelf, localSend, kdeConnect
+    case pomodoro, usage, huds
+    case headerLayout, notchSize, accent
+    // Calls
+    case copilotCall, copilotQuiz, copilotModels, copilotPrompts
     case copilotKnowledge, copilotBackup, copilotHistory
     case copilotKnowledgeDetail(KnowledgeRoute)
     case copilotCallDetail(id: String)
-    // Ice
-    case iceGeneral, iceLayout, iceAppearance, iceHotkeys, iceAdvanced
-    // Sweep
-    //
-    // No `cleanUp` page. The section's landing pane *is* the clean-up list —
-    // Overview and Clean Up were reporting the same scan, and the first stood in
-    // front of the only one anybody opened.
-    case sweepHistory, sweepOptions
 
-    /// The section this belongs to. One place, so a page can never be listed
-    /// under one section and claim another in its breadcrumb.
+    /// The section this belongs to.
     var section: SettingsSection {
         switch self {
-        case .displays, .gestures, .advanced: return .general
-        case .notchSize, .accent, .headerLayout, .camera: return .appearance
-        case .controlSlots: return .media
-        case .calendarSources: return .calendar
-        case .battery, .huds, .usage: return .system
-        case .localSend, .kdeConnect: return .shelf
-        case .copilotCall, .copilotQuiz, .copilotCoding, .copilotModels, .copilotPrompts,
+        case .shortcuts, .privacy, .displays, .gestures, .advanced: return .general
+        case .media, .controlSlots, .calendar, .calendarSources, .shelf, .localSend, .kdeConnect,
+             .pomodoro, .usage, .huds, .headerLayout, .notchSize, .accent:
+            return .notch
+        case .copilotCall, .copilotQuiz, .copilotModels, .copilotPrompts,
              .copilotKnowledge, .copilotBackup, .copilotHistory,
              .copilotKnowledgeDetail, .copilotCallDetail:
-            return .copilot
-        case .iceGeneral, .iceLayout, .iceAppearance, .iceHotkeys, .iceAdvanced:
-            return .ice
-        case .sweepHistory, .sweepOptions: return .sweep
+            return .calls
+        }
+    }
+
+    /// The page this one is reached from, or `nil` when it hangs off the
+    /// section's landing pane.
+    var parent: SettingsPage? {
+        switch self {
+        case .controlSlots: return .media
+        case .calendarSources: return .calendar
+        case .localSend, .kdeConnect: return .shelf
+        case .copilotKnowledgeDetail: return .copilotKnowledge
+        case .copilotCallDetail: return .copilotHistory
+        default: return nil
+        }
+    }
+
+    /// Outermost first, ending with this page.
+    var lineage: [SettingsPage] {
+        (parent?.lineage ?? []) + [self]
+    }
+
+    /// The pages reached from this one, in the order it lists them.
+    var children: [SettingsPage] {
+        switch self {
+        case .media: return [.controlSlots]
+        case .calendar: return [.calendarSources]
+        case .shelf: return [.localSend, .kdeConnect]
+        default: return []
         }
     }
 
     var title: LocalizedStringResource {
         switch self {
+        case .shortcuts: return "Keyboard Shortcuts"
+        case .privacy: return "Privacy & Permissions"
         case .displays: return "Displays"
         case .gestures: return "Gestures"
-        case .advanced: return "Advanced"
-        case .notchSize: return "Notch Size"
-        case .accent: return "Accent Colour"
-        case .headerLayout: return "Header Layout"
-        case .camera: return "Camera & Visualizers"
-        case .controlSlots: return "Control Slots"
+        case .advanced: return "Window"
+        case .media: return "Music"
+        case .controlSlots: return "Playback Controls"
+        case .calendar: return "Calendar"
         case .calendarSources: return "Calendars & Lists"
-        case .battery: return "Battery"
-        case .huds: return "HUDs"
-        case .usage: return "AI Usage"
+        case .shelf: return "Shelf"
         case .localSend: return "LocalSend"
         case .kdeConnect: return "KDE Connect"
+        case .pomodoro: return "Focus Timer"
+        case .usage: return "AI Usage"
+        case .huds: return "Volume & Brightness"
+        case .headerLayout: return "Header Layout"
+        case .notchSize: return "Notch Size"
+        case .accent: return "Accent Colour"
         case .copilotCall: return "Live Call"
         case .copilotQuiz: return "Screen Quiz"
-        case .copilotCoding: return "Live Coding"
         case .copilotModels: return "Models"
-        case .copilotPrompts: return "Prompts"
+        case .copilotPrompts: return "Prompts & Personas"
         case .copilotKnowledge: return "Knowledge"
         case .copilotBackup: return "Backup"
         case .copilotHistory: return "History"
         case .copilotKnowledgeDetail: return "Details"
         case .copilotCallDetail: return "Call"
-        case .iceGeneral: return "General"
-        case .iceLayout: return "Menu Bar Layout"
-        case .iceAppearance: return "Menu Bar Appearance"
-        case .iceHotkeys: return "Hotkeys"
-        case .iceAdvanced: return "Advanced"
-        case .sweepHistory: return "History"
-        case .sweepOptions: return "Options"
         }
     }
 
     var symbol: String {
         switch self {
+        case .shortcuts: return "command"
+        case .privacy: return "hand.raised.fill"
         case .displays: return "display.2"
-        case .gestures: return "hand.draw"
-        case .advanced: return "gearshape.2"
-        case .notchSize: return "arrow.up.left.and.arrow.down.right"
-        case .accent: return "paintpalette"
-        case .headerLayout: return "rectangle.3.group"
-        case .camera: return "camera"
-        case .controlSlots: return "slider.horizontal.below.rectangle"
+        case .gestures: return "hand.draw.fill"
+        case .advanced: return "macwindow"
+        case .media: return "music.note"
+        case .controlSlots: return "playpause.fill"
+        case .calendar: return "calendar"
         case .calendarSources: return "calendar.badge.checkmark"
-        case .battery: return "battery.100.bolt"
-        case .huds: return "dial.medium.fill"
-        case .usage: return "gauge.with.needle"
+        case .shelf: return "tray.fill"
         case .localSend: return "antenna.radiowaves.left.and.right"
         case .kdeConnect: return "iphone.gen3.radiowaves.left.and.right"
+        case .pomodoro: return "timer"
+        case .usage: return "gauge.with.needle.fill"
+        case .huds: return "speaker.wave.2.fill"
+        case .headerLayout: return "rectangle.3.group.fill"
+        case .notchSize: return "arrow.up.left.and.arrow.down.right"
+        case .accent: return "paintpalette.fill"
         case .copilotCall: return "waveform.badge.mic"
         case .copilotQuiz: return "macwindow.badge.plus"
-        case .copilotCoding: return "chevron.left.forwardslash.chevron.right"
         case .copilotModels: return "brain"
         case .copilotPrompts: return "text.quote"
-        case .copilotKnowledge: return "brain.head.profile"
-        case .copilotBackup: return "arrow.up.arrow.down.square"
+        case .copilotKnowledge: return "books.vertical.fill"
+        case .copilotBackup: return "arrow.up.arrow.down"
         case .copilotHistory: return "clock.arrow.circlepath"
         case .copilotKnowledgeDetail: return "doc.text"
         case .copilotCallDetail: return "waveform"
-        case .iceGeneral: return "switch.2"
-        case .iceLayout: return "menubar.rectangle"
-        case .iceAppearance: return "rectangle.inset.filled"
-        case .iceHotkeys: return "command"
-        case .iceAdvanced: return "slider.horizontal.3"
-        case .sweepHistory: return "clock.arrow.circlepath"
-        case .sweepOptions: return "slider.horizontal.3"
         }
     }
 
-    /// The sentence on the drill row that says what is behind it, so the reader
-    /// does not have to open a page to find out whether it is the one they want.
+    /// The tile colour behind the page's glyph.
+    var tint: Color {
+        switch self {
+        case .media: return .pink
+        case .calendar, .calendarSources: return .red
+        case .shelf, .localSend, .kdeConnect: return .blue
+        case .pomodoro: return .orange
+        case .usage: return .purple
+        case .huds: return .indigo
+        case .copilotCall, .copilotCallDetail: return .green
+        case .copilotQuiz: return .teal
+        case .copilotModels: return .purple
+        case .copilotPrompts: return .orange
+        case .copilotKnowledge, .copilotKnowledgeDetail: return .brown
+        case .copilotHistory: return .blue
+        default: return .gray
+        }
+    }
+
+    /// The sentence on the drill row that says what is behind it.
     var detail: LocalizedStringResource? {
         switch self {
-        case .displays: return "Which screen the notch appears on, and what happens when you plug one in."
+        case .shortcuts: return "Every key combination the app answers to."
+        case .privacy: return "What macOS has allowed, and what each permission unlocks."
+        case .displays: return "Which screen the notch appears on."
         case .gestures: return "Swiping the notch open and closed."
-        case .advanced: return "Shadow, corner radius, lock screen, and hiding from screen recordings."
-        case .notchSize: return "Resize regular tabs and both Call layouts directly on the notch."
-        case .accent: return "The colour used for anything active or selected."
-        case .headerLayout: return "What sits either side of the notch, and in which order."
-        case .camera: return "The mirror, its shape, and the music visualizer."
-        case .controlSlots: return "Which playback controls appear, and where."
+        case .advanced: return "Shadow, corners, lock screen and title bar."
+        case .media: return "Now Playing in the notch."
+        case .controlSlots: return "Which playback buttons appear, and where."
+        case .calendar: return "What is next, beside the music."
         case .calendarSources: return "Which calendars and reminder lists are shown."
-        case .battery: return "Charge, power source, and the notifications about them."
-        case .huds: return "Replacing the system volume and brightness overlays."
+        case .shelf: return "Drop files on the notch to keep them close."
+        case .localSend: return "Send shelf items to other devices on the network."
+        case .kdeConnect: return "Pair with a phone through KDE Connect."
+        case .pomodoro: return "Focus blocks and breaks."
         case .usage: return "How much of your Claude and Codex allowance is left."
-        case .localSend: return "Sending shelf items to other devices over the network."
-        case .kdeConnect: return "Pairing with a phone through KDE Connect."
-        case .copilotCall: return "What is captured during a call, and what shows in the notch."
-        case .copilotQuiz: return "The window Quiz watches, who answers, and what it keeps."
-        case .copilotCoding: return "The project and the brief a coding interview starts from."
+        case .huds: return "The notch's own volume and brightness overlays."
+        case .headerLayout: return "What sits either side of the notch."
+        case .notchSize: return "Resize the open notch and both call layouts."
+        case .accent: return "The colour used for anything active or selected."
+        case .copilotCall: return "What is captured and what shows in the notch."
+        case .copilotQuiz: return "Answers what is on one window."
         case .copilotModels: return "Which model hears the call, and which one answers."
-        case .copilotPrompts: return "Who you are, and how each kind of call should be handled."
-        case .copilotKnowledge: return "What the copilot has been given for each meeting."
-        case .copilotBackup: return "Export these settings, bring them back, or start over."
-        case .copilotHistory: return "Past calls, their transcripts and what was suggested."
-        case .copilotKnowledgeDetail: return nil
-        case .copilotCallDetail: return nil
-        case .iceGeneral: return "Reveal hidden extras and decide when they rehide."
-        case .iceLayout: return "Put each discovered menu bar extra in visible, hidden, or always hidden."
-        case .iceAppearance: return "A Boring-owned light or dark overlay for the menu bar."
-        case .iceHotkeys: return "Keyboard ways to reveal extras or search them."
-        case .iceAdvanced: return "Always-hidden extras, spacing, dividers, and recovery controls."
-        case .sweepHistory: return "What has been freed, and what grew back."
-        case .sweepOptions: return "Scan roots, exclusions, and when the helper stops."
+        case .copilotPrompts: return "Who you are, and how each kind of call is handled."
+        case .copilotKnowledge: return "Files and notes the copilot reads per meeting."
+        case .copilotBackup: return "Export, restore, or start over."
+        case .copilotHistory: return "Past calls, transcripts and recaps."
+        case .copilotKnowledgeDetail, .copilotCallDetail: return nil
         }
     }
 
-    /// Words that should find this page in the sidebar search field but do not
-    /// appear in its title. Merging twenty-seven rows into thirteen puts most
-    /// destinations one click deep; this is what keeps them findable.
+    /// Words that should find this page in search but are not in its title.
     var keywords: [String] {
         switch self {
-        case .displays: return ["monitor", "screen", "external", "sidecar"]
+        case .shortcuts: return ["keyboard", "hotkey", "key"]
+        case .privacy: return ["permission", "accessibility", "microphone", "screen recording", "calendar access"]
+        case .displays: return ["monitor", "screen", "external"]
         case .gestures: return ["swipe", "trackpad", "scroll"]
-        case .advanced: return ["shadow", "corner radius", "lock screen", "screen recording", "app icon"]
-        case .notchSize: return ["resize", "width", "height", "panel", "expanded", "compact", "collapsed"]
-        case .accent: return ["colour", "color", "tint", "theme"]
-        case .headerLayout: return ["slots", "items", "left", "right", "arrange"]
-        case .camera: return ["mirror", "selfie", "face", "spectrogram", "visualizer"]
+        case .advanced: return ["shadow", "corner radius", "lock screen", "title bar", "hover area"]
+        case .media: return ["music", "now playing", "spotify", "apple music", "lyrics", "sneak peek"]
         case .controlSlots: return ["playback", "buttons", "shuffle", "repeat", "next"]
+        case .calendar: return ["events", "meetings", "reminders"]
         case .calendarSources: return ["reminders", "events", "ical", "google"]
-        case .battery: return ["charge", "power", "percentage", "plugged in"]
-        case .huds: return ["volume", "brightness", "overlay", "indicator"]
-        case .usage: return ["claude", "codex", "quota", "allowance", "tokens", "limit", "cli"]
+        case .shelf: return ["files", "drop", "drag", "airdrop", "share"]
         case .localSend: return ["airdrop", "transfer", "share", "network"]
         case .kdeConnect: return ["phone", "android", "pair"]
-        case .copilotCall: return ["meeting", "live", "zoom", "meet", "teams"]
-        case .copilotQuiz: return ["quiz", "screen quiz", "voters", "arbiter", "reasoner",
-                                   "screen recording", "accessibility", "capture",
-                                   "resolution", "answer", "exam", "test", "question"]
-        case .copilotCoding: return ["code", "coding", "interview", "project", "folder",
-                                     "shadow", "brief", "rubric", "repo", "git", "wave"]
-        case .copilotModels: return ["model", "gateway", "local", "agy", "gemini", "claude",
-                                     "intelligence", "whisper", "speech", "transcript",
-                                     "transcription", "download"]
+        case .pomodoro: return ["pomodoro", "focus", "timer", "break"]
+        case .usage: return ["claude", "codex", "quota", "allowance", "tokens", "limit"]
+        case .huds: return ["volume", "brightness", "hud", "overlay"]
+        case .headerLayout: return ["tabs", "slots", "left", "right", "arrange"]
+        case .notchSize: return ["resize", "width", "height", "compact", "expanded"]
+        case .accent: return ["colour", "color", "tint", "theme"]
+        case .copilotCall: return ["meeting", "live", "zoom", "meet", "teams", "zen", "compact"]
+        case .copilotQuiz: return ["quiz", "exam", "question", "screen recording"]
+        case .copilotModels: return ["model", "agy", "gemini", "whisper", "speech", "transcription"]
         case .copilotPrompts: return ["persona", "about me", "guidance", "system prompt"]
         case .copilotKnowledge: return ["notes", "documents", "files", "context"]
-        case .copilotBackup: return ["export", "import", "reset", "settings", "json"]
-        case .copilotHistory: return ["archive", "past calls", "export"]
-        case .copilotKnowledgeDetail: return []
-        case .copilotCallDetail: return []
-        case .iceGeneral: return ["menu bar", "reveal", "rehide", "hover", "scroll"]
-        case .iceLayout: return ["sections", "visible", "hidden", "drag", "extras"]
-        case .iceAppearance: return ["overlay", "light", "dark", "opacity"]
-        case .iceHotkeys: return ["shortcut", "keyboard", "search"]
-        case .iceAdvanced: return ["always hidden", "spacing", "divider", "reset"]
-        case .sweepHistory: return ["freed", "regrowth", "space"]
-        case .sweepOptions: return ["exclusions", "scan roots", "interval", "lifetime"]
+        case .copilotBackup: return ["export", "import", "reset", "json"]
+        case .copilotHistory: return ["archive", "past calls", "recap", "transcript", "speakers"]
+        case .copilotKnowledgeDetail, .copilotCallDetail: return []
         }
     }
 
-    /// Every page without a payload: what search indexes, and what the tests
-    /// walk. `copilotKnowledgeDetail` is excluded because its instances are
-    /// user data, not destinations that exist before the data does.
-    var availablePage: SettingsPage {
-        guard !CallaFeatureAvailability.liveCoding else { return self }
-        switch self {
-        case .copilotCoding: return .copilotCall
-        case .copilotKnowledgeDetail(.waveInterview): return .copilotKnowledge
-        default: return self
-        }
-    }
+    /// A hook for pages that depend on features which can be switched off.
+    /// Every page is available today.
+    var availablePage: SettingsPage { self }
 
+    /// Every page without a payload: what search indexes, and what tests walk.
     static let indexable: [SettingsPage] = [
-        .displays, .gestures, .advanced,
-        .notchSize, .accent, .headerLayout, .camera,
-        .controlSlots,
-        .calendarSources,
-        .battery, .huds, .usage,
-        .localSend, .kdeConnect,
-        .copilotCall, .copilotQuiz, .copilotCoding, .copilotModels, .copilotPrompts,
+        .shortcuts, .privacy, .displays, .gestures, .advanced,
+        .media, .controlSlots, .calendar, .calendarSources,
+        .shelf, .localSend, .kdeConnect,
+        .pomodoro, .usage, .huds,
+        .headerLayout, .notchSize, .accent,
+        .copilotCall, .copilotQuiz, .copilotModels, .copilotPrompts,
         .copilotKnowledge, .copilotBackup, .copilotHistory,
-        .iceGeneral, .iceLayout, .iceAppearance, .iceHotkeys, .iceAdvanced,
-        .sweepHistory, .sweepOptions,
-    ].filter { $0.availablePage == $0 }
+    ]
 }
 
 // MARK: - The string form
 
 extension SettingsPage {
-    /// A stable, writable name for this page: `"system.battery"`,
-    /// `"copilot.knowledge.event:F3A1-…"`.
-    ///
-    /// One mechanism doing four jobs — deep links, the legacy identifiers,
-    /// window restoration, and any future URL scheme — instead of four mappings
-    /// that drift apart. Hand-written rather than synthesised so it can be typed
-    /// into a link by a person.
+    /// A stable, writable name for this page: `"notch.media"`,
+    /// `"calls.knowledge.event:F3A1-…"`.
     var identifier: String {
         if case let .copilotKnowledgeDetail(route) = self {
-            return "copilot.knowledge.\(route.identifier)"
+            return "calls.knowledge.\(route.identifier)"
         }
         if case let .copilotCallDetail(id) = self {
-            return "copilot.history.call:\(id)"
+            return "calls.history.call:\(id)"
         }
         return "\(section.rawValue).\(Self.stems[self] ?? "")"
     }
 
     init?(identifier: String) {
-        if !CallaFeatureAvailability.liveCoding && identifier == "copilot.coding" {
-            self = .copilotCall
+        if identifier.hasPrefix("calls.history.call:") {
+            self = .copilotCallDetail(id: String(identifier.dropFirst("calls.history.call:".count)))
             return
         }
-        if identifier.hasPrefix("copilot.history.call:") {
-            self = .copilotCallDetail(id: String(identifier.dropFirst("copilot.history.call:".count)))
-            return
-        }
-        if identifier.hasPrefix("copilot.knowledge."),
-           let route = KnowledgeRoute(identifier: String(identifier.dropFirst("copilot.knowledge.".count))) {
+        if identifier.hasPrefix("calls.knowledge."),
+           let route = KnowledgeRoute(identifier: String(identifier.dropFirst("calls.knowledge.".count))) {
             self = .copilotKnowledgeDetail(route)
-            return
-        }
-        if let retired = Self.retired[identifier] {
-            self = retired
             return
         }
         guard let match = Self.indexable.first(where: { $0.identifier == identifier }) else { return nil }
         self = match
     }
 
-    /// Identifiers of pages that were merged away, pointing at whatever now
-    /// answers their question. A link written before the merge still works, and
-    /// arrives somewhere that contains what it asked for.
-    private static let retired: [String: SettingsPage] = [
-        "copilot.intelligence": .copilotModels,
-        "copilot.transcription": .copilotModels,
-    ]
-
     /// The part after the section name. A table rather than a `switch` so the
     /// forward and reverse directions cannot disagree.
     private static let stems: [SettingsPage: String] = [
-        .displays: "displays", .gestures: "gestures", .advanced: "advanced",
-        .notchSize: "notch-size", .accent: "accent", .headerLayout: "header-layout", .camera: "camera",
-        .controlSlots: "control-slots",
-        .calendarSources: "sources",
-        .battery: "battery", .huds: "huds", .usage: "usage",
-        .localSend: "localsend", .kdeConnect: "kde-connect",
-        .copilotCall: "call", .copilotQuiz: "quiz", .copilotCoding: "coding",
-        .copilotModels: "models", .copilotPrompts: "prompts",
-        .copilotKnowledge: "knowledge", .copilotBackup: "backup",
-        .copilotHistory: "history",
-        .iceGeneral: "general", .iceLayout: "layout", .iceAppearance: "appearance",
-        .iceHotkeys: "hotkeys", .iceAdvanced: "advanced",
-        .sweepHistory: "history", .sweepOptions: "options",
+        .shortcuts: "shortcuts", .privacy: "privacy", .displays: "displays",
+        .gestures: "gestures", .advanced: "window",
+        .media: "media", .controlSlots: "control-slots",
+        .calendar: "calendar", .calendarSources: "calendar-sources",
+        .shelf: "shelf", .localSend: "localsend", .kdeConnect: "kde-connect",
+        .pomodoro: "focus", .usage: "usage", .huds: "huds",
+        .headerLayout: "header-layout", .notchSize: "notch-size", .accent: "accent",
+        .copilotCall: "call", .copilotQuiz: "quiz", .copilotModels: "models",
+        .copilotPrompts: "prompts", .copilotKnowledge: "knowledge",
+        .copilotBackup: "backup", .copilotHistory: "history",
     ]
 }
 
@@ -319,7 +282,6 @@ extension KnowledgeRoute {
     var identifier: String {
         switch self {
         case let .event(id): return "event:\(id)"
-        case .waveInterview: return "wave-interview"
         case .everyCall: return "every-call"
         case .byPersona: return "by-persona"
         case .orphaned: return "orphaned"
@@ -330,7 +292,6 @@ extension KnowledgeRoute {
         switch identifier {
         case "every-call": self = .everyCall
         case "by-persona": self = .byPersona
-        case "wave-interview": self = .waveInterview
         case "orphaned": self = .orphaned
         default:
             guard identifier.hasPrefix("event:") else { return nil }

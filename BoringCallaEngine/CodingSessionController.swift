@@ -1862,8 +1862,9 @@ actor CodingShadowRunner {
             let child = Process(); let output = Pipe()
             let sandbox = URL(fileURLWithPath: "/usr/bin/sandbox-exec")
             if FileManager.default.isExecutableFile(atPath: sandbox.path) {
-                child.executableURL = sandbox
-                child.arguments = ["-p", profile(), "/bin/zsh", "-lc", plan.displayedCommand]
+                let launch = ProcessTether.tethered(sandbox.path, ["-p", profile(), "/bin/zsh", "-lc", plan.displayedCommand])
+                child.executableURL = URL(fileURLWithPath: launch.executable)
+                child.arguments = launch.arguments
             } else {
                 throw CodingSessionCoreFailure.commandDenied("The shadow command sandbox is unavailable")
             }

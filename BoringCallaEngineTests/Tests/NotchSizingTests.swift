@@ -12,16 +12,7 @@ final class NotchSizingTests: XCTestCase {
         XCTAssertEqual(actual?.height, expected?.height, file: file, line: line)
     }
 
-    func testCodeAndWaveUseNormalCallProfilesAndBounds() {
-        for (alias, shared) in [(NotchSizeProfile.wave, NotchSizeProfile.callExpanded),
-                                (.codingExpanded, .callExpanded), (.codingCompact, .callCollapsed)] {
-            XCTAssertEqual(alias.storageProfile, shared)
-            assertSize(alias.defaultSize, shared.defaultSize)
-            XCTAssertEqual(alias.widthBounds, shared.widthBounds)
-            XCTAssertEqual(alias.heightBounds, shared.heightBounds)
-            assertSize(NotchResizeGeometry.clamped(CGSize(width: 2000, height: 2000), for: alias,
-                screenSize: CGSize(width: 500, height: 320)), CGSize(width: 476, height: 244))
-        }
+    func testProfilesAreNormalAndTheTwoCallLayouts() {
         XCTAssertEqual(NotchSizeProfile.allCases, [.normal, .callExpanded, .callCollapsed])
     }
 

@@ -152,32 +152,3 @@ private struct WindowMenuAnchor: NSViewRepresentable {
         @objc private func refreshWindows() { value.refresh() }
     }
 }
-
-/// Code's catalog is editor-only; selection itself remains explicit, including
-/// when a window disappears or a refresh completes after a newer refresh.
-struct CodingWindowTargetMenu: View {
-    var target: QuizWindowTarget?
-    var compact = false
-    var shortcut: String
-    var openRequest: Int
-    var error: String? = nil
-    var select: (QuizWindowTarget?) -> Void
-    @State private var windows: [QuizWindowTarget] = []
-    @State private var refreshGeneration = 0
-
-    var body: some View {
-        CallaWindowTargetMenu(target: target, windows: windows, allowsSavedFilesOnly: true,
-            compact: compact, shortcut: shortcut, openRequest: openRequest, error: error,
-            emptyMessage: "No VS Code windows found. Open your project, then refresh.",
-            help: "Choose the VS Code window Live Coding reads", refresh: refresh, select: select)
-        .task { refresh() }
-    }
-    private func refresh() {
-        refreshGeneration += 1
-        let generation = refreshGeneration
-        CallaEngineClient.shared.listQuizWindows { values in
-            guard generation == refreshGeneration else { return }
-            windows = values.filter { ["com.microsoft.VSCode", "com.microsoft.VSCodeInsiders"].contains($0.bundleID) }
-        }
-    }
-}

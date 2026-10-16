@@ -75,9 +75,7 @@ struct CallaQuizPreflightView: View {
             live: false,
             tint: .effectiveAccent,
             mode: $mode,
-            switcherEnabled: !engine.status.copilot.running && !engine.status.quiz.active
-                && !CopilotLiveSession.shared.isCoding && !preparing,
-            includesPlainCall: Defaults[.callaPlainCallEnabled],
+            switcherEnabled: !engine.status.copilot.running && !engine.status.quiz.active && !preparing,
             headline: headline,
             headlineTint: canStart ? NotchInk.primary : NotchTint.attention,
             detail: detail,

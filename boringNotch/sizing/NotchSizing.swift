@@ -4,28 +4,13 @@ import Foundation
 /// so clamping and drag behavior can be tested without launching AppKit.
 enum NotchSizeProfile: String, CaseIterable, Identifiable, Sendable {
     case normal
-    case wave
-    case codingExpanded
-    case codingCompact
     case callExpanded
     case callCollapsed
 
-    // Former Code/Wave names remain readable but use the shared Call profile.
-    static let allCases: [Self] = [.normal, .callExpanded, .callCollapsed]
-    var storageProfile: Self {
-        switch self {
-        case .wave, .codingExpanded: .callExpanded
-        case .codingCompact: .callCollapsed
-        default: self
-        }
-    }
     var id: String { rawValue }
 
     var title: String {
         switch self {
-        case .wave: "Wave expanded"
-        case .codingExpanded: "Code expanded"
-        case .codingCompact: "Code compact"
         case .normal: "Normal"
         case .callExpanded: "Call expanded"
         case .callCollapsed: "Call compact"
@@ -34,8 +19,6 @@ enum NotchSizeProfile: String, CaseIterable, Identifiable, Sendable {
 
     var defaultSize: CGSize {
         switch self {
-        case .wave, .codingExpanded: Self.callExpanded.defaultSize
-        case .codingCompact: Self.callCollapsed.defaultSize
         case .normal: CGSize(width: 512, height: 168)
         case .callExpanded: CGSize(width: 720, height: 400)
         // Same width as expanded: a call has one width, and collapsing changes
@@ -49,7 +32,6 @@ enum NotchSizeProfile: String, CaseIterable, Identifiable, Sendable {
 
     var widthBounds: ClosedRange<CGFloat> {
         switch self {
-        case .wave, .codingExpanded, .codingCompact: storageProfile.widthBounds
         case .normal: 512...900
         case .callExpanded, .callCollapsed: 460...900
         }
@@ -57,7 +39,6 @@ enum NotchSizeProfile: String, CaseIterable, Identifiable, Sendable {
 
     var heightBounds: ClosedRange<CGFloat> {
         switch self {
-        case .wave, .codingExpanded, .codingCompact: storageProfile.heightBounds
         case .normal: 168...560
         case .callExpanded: 240...560
         case .callCollapsed: 150...420

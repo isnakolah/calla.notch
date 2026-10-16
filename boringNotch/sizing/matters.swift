@@ -121,11 +121,11 @@ var dropChooserNotchSize: CGSize {
 /// like a layout bug rather than a window that was never big enough.
 let maxOpenNotchSize: CGSize = .init(
     width: max(NotchSizeProfile.normal.widthBounds.upperBound,
-               max(CallaPanelBounds.width.upperBound, NotchSizeProfile.wave.widthBounds.upperBound)),
+               CallaPanelBounds.width.upperBound),
     height: max(
         NotchSizeProfile.normal.heightBounds.upperBound,
         max(CallaPanelBounds.compactHeight.upperBound,
-            max(CallaPanelBounds.fullHeight.upperBound, NotchSizeProfile.wave.heightBounds.upperBound))))
+            CallaPanelBounds.fullHeight.upperBound)))
 
 let windowSize: CGSize = .init(
     width: maxOpenNotchSize.width + resizeGripCanvasAllowance,
@@ -226,8 +226,6 @@ enum NotchSizePreferences {
     static func size(_ profile: NotchSizeProfile) -> CGSize {
         let stored: CGSize
         switch profile {
-        case .codingExpanded, .codingCompact, .wave:
-            return size(profile.storageProfile)
         case .normal:
             stored = CGSize(width: Defaults[.normalNotchWidth],
                             height: Defaults[.normalNotchHeight])
@@ -253,8 +251,6 @@ enum NotchSizePreferences {
     static func set(_ size: CGSize, for profile: NotchSizeProfile) {
         let clamped = NotchResizeGeometry.clamped(size, for: profile)
         switch profile {
-        case .codingExpanded, .codingCompact, .wave:
-            set(clamped, for: profile.storageProfile)
         case .normal:
             Defaults[.normalNotchWidth] = Double(clamped.width)
             Defaults[.normalNotchHeight] = Double(clamped.height)

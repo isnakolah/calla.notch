@@ -1,3 +1,4 @@
+import CallaContracts
 import Foundation
 import IntelligenceCore
 
@@ -215,16 +216,19 @@ public actor AgyHost {
         // down a moment later when the TUI fails. The port line outlives the
         // server just long enough to be read, so every submit afterwards fails and
         // the provider quietly falls back to one process per request.
-        process.executableURL = URL(fileURLWithPath: "/usr/bin/script")
         // Setting `ANTIGRAVITY_CSRF_TOKEN` in the host's environment is ignored;
         // only the flag is honoured (measured on 1.2.13).
         let csrfToken = UUID().uuidString
-        process.arguments = [
+        // Tethered to this process: a host that is killed outright takes its
+        // language server with it instead of leaving ~190MB resident.
+        let launch = ProcessTether.tethered("/usr/bin/script", [
             "-q", "/dev/null",
             configuration.binary,
             "--log-file", run.appendingPathComponent("ls.log").path,
             "--csrf_token=\(csrfToken)",
-        ]
+        ])
+        process.executableURL = URL(fileURLWithPath: launch.executable)
+        process.arguments = launch.arguments
         process.currentDirectoryURL = run
         
         var environment = AgyEnvironment.processEnvironment()

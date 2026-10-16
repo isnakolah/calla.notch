@@ -23,7 +23,6 @@ import SwiftUI
 struct CopilotPane: View {
     @ObservedObject private var engine = CallaEngineClient.shared
     @ObservedObject private var library = CallaKnowledgeLibrary.shared
-    @ObservedObject private var codingSetups = CallaCodingSetupStore.shared
     @Environment(\.settingsRouter) private var router
 
     @Default(.callaCopilotEnabled) private var enabled
@@ -37,7 +36,7 @@ struct CopilotPane: View {
     private var copilot: CallaCopilotStatus { engine.status.copilot }
 
     var body: some View {
-        SettingsPane(.copilot) {
+        SettingsPane(.calls) {
             band
             if let router { tiles(router) }
         }
@@ -86,8 +85,7 @@ struct CopilotPane: View {
             parts.append(copilot.systemAudioActive
                          ? "Both sides captured"
                          : "Only your side is being heard")
-            parts.append(copilot.activeProvider == "gateway" ? "answering on the gateway"
-                                                             : "answering through agy · Google remote")
+            parts.append("answering through agy")
             parts.append("\(copilot.turnCount) turns heard")
             return parts.joined(separator: " · ")
         }
@@ -128,12 +126,6 @@ struct CopilotPane: View {
                              title: String(localized: SettingsPage.copilotQuiz.title),
                              value: quizValue,
                              valueIsLive: engine.status.quiz.active) { router.push(.copilotQuiz) }
-                if CallaFeatureAvailability.liveCoding {
-                    SettingsTile(symbol: SettingsPage.copilotCoding.symbol,
-                                 title: String(localized: SettingsPage.copilotCoding.title),
-                                 value: codingValue,
-                                 valueIsLive: engine.coding.lifecycle.active) { router.push(.copilotCoding) }
-                }
             }
             SettingsTileGroup(title: "What it knows") {
                 SettingsTile(symbol: SettingsPage.copilotModels.symbol,
@@ -180,21 +172,8 @@ struct CopilotPane: View {
         return quizEnabled ? "Ready · answers what is on one window" : "Turned off"
     }
 
-    private var codingValue: String {
-        if engine.coding.lifecycle.active { return "Interview running" }
-        let prepared = codingSetups.setups.filter(\.hasFolder)
-        guard let fallback = codingSetups.fallback, fallback.hasFolder else {
-            return prepared.isEmpty
-                ? "No project set up yet"
-                : "\(Self.count(prepared.count, "meeting")) prepared"
-        }
-        let others = prepared.filter { $0.scope != "always" }.count
-        guard others > 0 else { return "\(fallback.folderName) · any session" }
-        return "\(fallback.folderName) · \(Self.count(others, "meeting")) prepared"
-    }
-
     private var modelsValue: String {
-        let brain = provider == "local" ? "Agy · Google remote" : "Gateway"
+        let brain = "Agy"
         let tier = liveTier == "fast" ? "Fast" : "Balanced"
         let ear = speechModel.contains("small") ? "Small" : "Base"
         return "\(brain) · \(tier) · whisper \(ear)"

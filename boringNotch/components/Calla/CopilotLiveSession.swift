@@ -35,13 +35,6 @@ final class CopilotLiveSession: ObservableObject {
     /// The zen pane's height, measured from its text so nothing is cut off.
     @Published var ambientHeight: CGFloat = 118
 
-    /// Whether the coding panel is frozen on the step the reader is working
-    /// through. Published rather than kept in the panel's own `@State` because
-    /// the control that toggles it now lives in the band above the panel, and a
-    /// Hold button that cannot tell you whether it is held is a light switch
-    /// with no bulb.
-    @Published var codingHeld = false
-
     /// Where the reader is in the Quiz session's answers.
     ///
     /// This lives here rather than in the view because the global copy and
@@ -173,14 +166,6 @@ final class CopilotLiveSession: ObservableObject {
         return (isLive || starting || ending || startupFailed || signInActive) && pinned
     }
 
-    var isWave: Bool { CallaFeatureAvailability.liveCoding && CallaEngineClient.shared.coding.interviewProfile == "wave"
-        && (CallaEngineClient.shared.coding.lifecycle.active || isLive || ending) }
-
-    var isCoding: Bool { CallaFeatureAvailability.liveCoding && CallaEngineClient.shared.coding.lifecycle.active }
-    var codingSizeProfile: NotchSizeProfile {
-        layout == .compact ? .callCollapsed : .callExpanded
-    }
-
     /// The size the notch should open to right now.
     var preferredOpenSize: CGSize {
         // A sign-in needs a line of text and a field, so it uses the compact size
@@ -196,7 +181,6 @@ final class CopilotLiveSession: ObservableObject {
             return CallaKnowledgeAttach.shared.presetTarget == nil ? knowledgeNotchSize : openNotchSize
         }
         if endedByReader { return openNotchSize }
-        if isCoding { return NotchSizePreferences.size(codingSizeProfile) }
         if signInActive { return openNotchSize }
         // A starting call uses the full live size it is about to become, so the
         // notch does not resize under the reader the moment capture begins.
@@ -246,12 +230,6 @@ final class CopilotLiveSession: ObservableObject {
     private var cancellables: Set<AnyCancellable> = []
 
     private init() {
-        CallaEngineClient.shared.$coding.map { "\($0.lifecycle.active):\($0.interviewProfile ?? "")" }
-            .removeDuplicates().sink { [weak self] _ in
-                self?.panelSizeRevision &+= 1
-                NotificationCenter.default.post(name: .copilotLiveDidChange, object: nil)
-            }.store(in: &cancellables)
-
         CallaEngineClient.shared.$status
             // Keep decode compatibility with older hosts, but only capture state
             // may open live panel.
@@ -485,7 +463,7 @@ final class CopilotLiveSession: ObservableObject {
 
     func toggleLayout() {
         // Nothing to toggle while a sign-in owns the panel.
-        guard isLive || isCoding, !signInActive else { return }
+        guard isLive, !signInActive else { return }
         // The same curve the notch resizes on, so the content and the window
         // move together instead of one snapping while the other glides.
         withAnimation(.smooth(duration: 0.28)) {
@@ -509,7 +487,7 @@ final class CopilotLiveSession: ObservableObject {
     /// picking "Call · Compact" while a call is running sized the compact
     /// profile against the full layout's content.
     func setLayout(_ layout: Layout) {
-        guard isLive || isCoding, !signInActive, layout != self.layout else { return }
+        guard isLive, !signInActive, layout != self.layout else { return }
         self.layout = layout
         NotificationCenter.default.post(name: .copilotLiveDidChange, object: nil)
     }
@@ -544,7 +522,7 @@ final class CopilotLiveSession: ObservableObject {
         // focused — which is the point while a Quiz is running, but it must not
         // resurrect a *finished* one from whatever the reader is doing hours
         // later. The pin glyph on the ended panel still dismisses that surface.
-        guard isLive || isCoding, !signInActive else { return }
+        guard isLive, !signInActive else { return }
         if pinned {
             pinned = false
             dismissedByReader = true

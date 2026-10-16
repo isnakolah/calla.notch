@@ -48,15 +48,13 @@ import SwiftUI
 struct CallaModeSwitcher: View {
     @Binding var selection: String
     var enabled: Bool = true
-    /// Quiz and the plain call are both behind settings. The switcher shows
-    /// only what is switched on, and hides itself entirely when that leaves one
-    /// segment — a control with a single option is a control that cannot do
-    /// anything.
+    /// Quiz is behind a setting. The switcher shows only what is switched on,
+    /// and hides itself entirely when that leaves one segment — a control with
+    /// a single option is a control that cannot do anything.
     var includesQuiz: Bool = true
-    var includesPlainCall: Bool = false
 
     private var modes: [CallaMode] {
-        CallaMode.available(plainCall: includesPlainCall, quiz: includesQuiz)
+        CallaMode.available(quiz: includesQuiz)
     }
 
     var body: some View {
@@ -66,7 +64,7 @@ struct CallaModeSwitcher: View {
     private var switcher: some View {
         HStack(spacing: 2) {
             ForEach(modes) { mode in
-                let active = CallaMode.resolved(selection, plainCall: includesPlainCall, quiz: includesQuiz) == mode
+                let active = CallaMode.resolved(selection, quiz: includesQuiz) == mode
                 Text(mode.title)
                     .font(.system(size: 11, weight: active ? .semibold : .medium))
                     .foregroundStyle(active ? NotchInk.primary : NotchInk.tertiary)
@@ -359,7 +357,6 @@ struct CallaPreflightCard<Context: View, Controls: View, Utility: View>: View {
     @Binding var mode: String
     var switcherEnabled: Bool = true
     var includesQuiz: Bool = true
-    var includesPlainCall: Bool = false
 
     /// The one thing that would stop this working, or what it is ready to do.
     let headline: String
@@ -431,8 +428,7 @@ struct CallaPreflightCard<Context: View, Controls: View, Utility: View>: View {
             Spacer(minLength: 6)
             CallaModeSwitcher(selection: $mode,
                               enabled: switcherEnabled,
-                              includesQuiz: includesQuiz,
-                              includesPlainCall: includesPlainCall)
+                              includesQuiz: includesQuiz)
             utility
         }
         .frame(height: 20)

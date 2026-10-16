@@ -28,7 +28,6 @@ struct CopilotNotchBadge: View {
 
     private var copilot: CallaCopilotStatus { engine.status.copilot }
     private var quiz: QuizSessionSnapshot { engine.status.quiz }
-    private var coding: CodingSessionSnapshot { engine.coding }
 
     /// A Quiz session reaches this badge through the same `isLive` flag as a
     /// call, but shares none of its facts. Reading `copilot.*` regardless meant a
@@ -36,7 +35,6 @@ struct CopilotNotchBadge: View {
     /// `copilot.startedAt`), an amber tint, and help text about a microphone Quiz
     /// never opens.
     private var isQuiz: Bool { quiz.active }
-    private var isCode: Bool { CallaFeatureAvailability.liveCoding && !isQuiz && coding.lifecycle.active }
 
     private var quizWorking: Bool {
         [.solving, .arbitrating, .retrying].contains(quiz.state)
@@ -75,7 +73,7 @@ struct CopilotNotchBadge: View {
             .foregroundStyle(tint)
             .contentTransition(.symbolEffect)
             .symbolEffect(.variableColor.iterative,
-                          isActive: isQuiz ? quizWorking : (isCode ? runActive : copilot.thinking))
+                          isActive: isQuiz ? quizWorking : copilot.thinking)
             .help(helpText)
     }
 
@@ -106,13 +104,11 @@ struct CopilotNotchBadge: View {
             let count = quiz.answerHistory.count
             return count == 0 ? "—" : "\(count)"
         }
-        if isCode { return coding.activeMove.map { "M\($0.ordinal)" } ?? "—" }
         return CallaCopilotPresentation.elapsed(since: copilot.startedAt, now: now) ?? "0:00"
     }
 
     private var answerWaiting: Bool {
         if isQuiz { return quiz.answer != nil }
-        if isCode { return coding.activeMove != nil }
         return copilot.answering && copilot.hasSuggestion
     }
 
@@ -126,7 +122,6 @@ struct CopilotNotchBadge: View {
             default: return "macwindow"
             }
         }
-        if isCode { return runActive ? "terminal.fill" : "chevron.left.forwardslash.chevron.right" }
         if copilot.working == "summary" { return "text.append" }
         if copilot.thinking { return "sparkles" }
         switch copilot.speaking {
@@ -144,10 +139,6 @@ struct CopilotNotchBadge: View {
             case .answered: return NotchTint.healthy
             default: return .effectiveAccent
             }
-        }
-        if isCode {
-            if coding.failure != nil { return NotchTint.stuck }
-            return runActive ? .effectiveAccent : NotchTint.healthy
         }
         // The panel's own vocabulary, so the closed badge and the open surface
         // teach the same code: accent is the copilot working, white is you, and
@@ -173,9 +164,6 @@ struct CopilotNotchBadge: View {
             default: return "Watching the target window"
             }
         }
-        if isCode {
-            return coding.activeMove?.say ?? coding.activeMove?.why ?? "Listening for the next coding move"
-        }
         if copilot.working == "summary" { return "Catching the summary up" }
         if copilot.thinking { return "Finding an answer" }
         switch copilot.speaking {
@@ -186,9 +174,5 @@ struct CopilotNotchBadge: View {
                 ? "Listening to both sides"
                 : "Only your microphone is being captured"
         }
-    }
-
-    private var runActive: Bool {
-        engine.codingEvents.compactMap(\.run).last?.lifecycle == .running
     }
 }

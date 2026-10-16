@@ -14,7 +14,6 @@ struct CopilotKnowledgePane: View {
     @StateObject private var library = CallaKnowledgeLibrary.shared
     /// Observed so a project attached on a meeting's page shows up in this list
     /// the moment it is saved, rather than on the next navigation.
-    @ObservedObject private var codingSetups = CallaCodingSetupStore.shared
     @ObservedObject private var focus = CallaKnowledgeFocus.shared
 
     @Environment(\.settingsRouter) private var router
@@ -44,7 +43,6 @@ struct CopilotKnowledgePane: View {
     private var root: some View {
         SettingsPane(SettingsPage.copilotKnowledge) {
             overview
-            if CallaFeatureAvailability.liveCoding { interviewCard }
             everywhereCard
             meetingsCard
             if !library.orphanedNotes.isEmpty { orphanCard }
@@ -72,32 +70,6 @@ struct CopilotKnowledgePane: View {
             Text(value).font(.system(size: 22, weight: .semibold).monospacedDigit())
             Text(label).font(NotchType.rowDetail).foregroundStyle(.secondary)
         }
-    }
-
-    // MARK: - The interview
-
-    /// Pinned above the calendar because it is not in the calendar.
-    ///
-    /// The interview's identity is fixed in `WaveInterview` rather than looked
-    /// up in EventKit, so it has no row for the month grid below to draw — and
-    /// it is the one meeting the copilot exists for, which makes hunting for it
-    /// among a month of events exactly the wrong shape.
-    private var interviewCard: some View {
-        SettingCard("The interview", detail: "Every session reads this.") {
-            navigationRow(
-                route: .waveInterview,
-                symbol: "calendar",
-                title: WaveInterview.title,
-                detail: WaveInterview.detail,
-                count: interviewNoteCount)
-        }
-    }
-
-    private var interviewNoteCount: Int {
-        library.notes.filter {
-            $0.scope == "series" && $0.scopeKey == WaveInterview.seriesID
-                || $0.scope == "event" && $0.scopeKey == WaveInterview.eventID
-        }.count
     }
 
     // MARK: - Not tied to a meeting
@@ -205,10 +177,6 @@ struct CopilotKnowledgePane: View {
     private func eventRow(_ event: EventModel) -> some View {
         let attached = library.notes(for: event)
         let calls = library.callCount(for: event)
-        // A prepared Live Coding project is worth a word in the list. It is the
-        // one kind of preparation that turns the notch's Code tab into a single
-        // button, and a setup nobody can see they made is a setup nobody trusts.
-        let coding = CallaFeatureAvailability.liveCoding && codingSetups.hasOwnSetup(for: event)
         return navigationRow(
             route: .event(id: event.id),
             symbol: event.seriesID != nil && event.hasRecurrenceRules ? "repeat" : "calendar",
@@ -216,7 +184,6 @@ struct CopilotKnowledgePane: View {
             detail: [
                 event.start.formatted(date: .omitted, time: .shortened),
                 calls > 0 ? "\(calls) call\(calls == 1 ? "" : "s")" : nil,
-                coding ? "Live Coding ready" : nil,
                 event.videoCallURL != nil ? "has a call link" : nil,
             ].compactMap { $0 }.joined(separator: " · "),
             count: attached.count,

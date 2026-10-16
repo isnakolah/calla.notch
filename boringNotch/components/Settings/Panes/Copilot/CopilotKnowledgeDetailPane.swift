@@ -15,10 +15,7 @@ struct CopilotKnowledgeDetailPane: View {
     @ObservedObject private var attach = CallaKnowledgeAttach.shared
     @Default(.callaCopilotPersona) private var persona
 
-    @StateObject private var codingSetups = CallaCodingSetupStore.shared
     @State private var scope: String = "series"
-    @State private var codingDraft = CallaCodingSetup(scope: "always")
-    @State private var codingDirty = false
     @State private var isTargeted = false
     @State private var draft = ""
     @State private var draftTitle = ""
@@ -35,11 +32,6 @@ struct CopilotKnowledgeDetailPane: View {
         case .event:
             guard let event else { return [] }
             return library.notes(for: event).sorted { $0.updatedAt > $1.updatedAt }
-        case .waveInterview:
-            return library.notes.filter {
-                $0.scope == "series" && $0.scopeKey == WaveInterview.seriesID
-                    || $0.scope == "event" && $0.scopeKey == WaveInterview.eventID
-            }.sorted { $0.updatedAt > $1.updatedAt }
         case .everyCall:
             return library.notes(scope: "always").sorted { $0.updatedAt > $1.updatedAt }
         case .byPersona:
@@ -56,8 +48,6 @@ struct CopilotKnowledgeDetailPane: View {
             guard let event else { return .everyCall }
             let choices = KnowledgeTarget.choices(for: event)
             return choices.first { $0.scope == scope } ?? choices.first ?? .everyCall
-        case .waveInterview:
-            return .waveInterview
         case .byPersona:
             return KnowledgeTarget(
                 kind: .persona(id: persona),
@@ -73,7 +63,7 @@ struct CopilotKnowledgeDetailPane: View {
         // By-persona is addable now that it files under the persona scope it
         // claims. It is the answer to "the copilot should know my CV on every
         // interview but not on a support call".
-        case .event, .waveInterview, .everyCall, .byPersona: true
+        case .event, .everyCall, .byPersona: true
         case .orphaned: false
         }
     }
@@ -89,16 +79,13 @@ struct CopilotKnowledgeDetailPane: View {
                 }
             }
             if canAdd { addCard }
-            if CallaFeatureAvailability.liveCoding && showsCodingSetup { codingCard }
             contentsCard
             if let viewing { viewerCard(viewing) }
         }
         .task {
             if library.events.isEmpty { await library.load() }
             if let event, event.seriesID == nil || !event.hasRecurrenceRules { scope = "event" }
-            loadCodingDraft()
         }
-        .onChange(of: scope) { _, _ in loadCodingDraft() }
         .onReceive(NotificationCenter.default.publisher(for: .callaKnowledgeDidChange)) { _ in
             Task { await library.load() }
         }
@@ -109,7 +96,6 @@ struct CopilotKnowledgeDetailPane: View {
     private var eyebrow: String {
         switch route {
         case .event: "Meeting"
-        case .waveInterview: "Interview"
         case .everyCall, .byPersona: "Call copilot"
         case .orphaned: "Needs attention"
         }
@@ -118,7 +104,6 @@ struct CopilotKnowledgeDetailPane: View {
     private var title: String {
         switch route {
         case .event: event?.title ?? "This meeting"
-        case .waveInterview: WaveInterview.title
         case .everyCall: "Every call"
         case .byPersona: "By kind of call"
         case .orphaned: "Not on your calendar any more"
@@ -135,9 +120,6 @@ struct CopilotKnowledgeDetailPane: View {
             if event.hasRecurrenceRules { parts.append("repeats") }
             if calls > 0 { parts.append("\(calls) call\(calls == 1 ? "" : "s") recorded") }
             return parts.joined(separator: " · ")
-        case .waveInterview:
-            let when = WaveInterview.startsAt.formatted(date: .abbreviated, time: .shortened)
-            return "\(when) · in front of the copilot in every session of it."
         case .everyCall:
             return "Read at the start of every call, whatever the meeting is about."
         case .byPersona:
@@ -239,211 +221,6 @@ struct CopilotKnowledgeDetailPane: View {
             await attach.attach(text: body, title: heading.isEmpty ? target.title : heading, to: target)
             await library.load()
         }
-    }
-
-    // MARK: - Live Coding
-
-    /// Live Coding's whole preflight, moved off the notch.
-    ///
-    /// The notch had been asking for the project folder and the interview brief
-    /// thirty seconds before the call, through an `NSOpenPanel` and a text field
-    /// on a surface with room for neither — so the Start button was drawn
-    /// through the notch's lower curve. Both facts are known when the interview
-    /// is booked, and this is where the rest of a meeting's preparation already
-    /// lives, so they belong here. The notch then resolves what was prepared and
-    /// offers one button.
-    private var showsCodingSetup: Bool {
-        switch route {
-        case .event, .waveInterview, .everyCall: true
-        case .byPersona, .orphaned: false
-        }
-    }
-
-    /// Which scope this page writes a setup to. Event pages follow the same
-    /// picker the notes use, so a briefing document and a project folder
-    /// attached on the same visit land on the same meeting.
-    private var codingScope: (scope: String, key: String?) {
-        switch route {
-        case .waveInterview:
-            return (WaveInterview.setupScope, WaveInterview.setupScopeKey)
-        case .event:
-            guard let event else { return ("always", nil) }
-            if scope == "series", let seriesID = event.seriesID, !seriesID.isEmpty {
-                return ("series", seriesID)
-            }
-            return ("event", event.id)
-        default:
-            return ("always", nil)
-        }
-    }
-
-    private var codingCard: some View {
-        SettingCard(
-            "Live Coding",
-            detail: codingDraft.hasFolder
-                ? "The notch resolves this and offers Start. Nothing is copied until you press it."
-                : "Attach the project and the brief now, and Code becomes one button in the notch.",
-            tint: codingDraft.hasFolder ? NotchTint.healthy : nil
-        ) {
-            VStack(alignment: .leading, spacing: 12) {
-                folderRow
-                WaveWindowPicker(target: $codingDraft.observationTarget)
-                    .onChange(of: codingDraft.observationTarget) { _, _ in codingDirty = true }
-                // No profile toggle. Every session is the Wave interview, and a
-                // toggle that was off started the same session without its
-                // context pack or its two-hour budget.
-                WavePreparationControls(setup: codingDraft, save: { saveCodingDraft() })
-
-                TextField("What the interview is — “Wave, part 2”",
-                          text: $codingDraft.briefTitle)
-                    .textFieldStyle(.roundedBorder)
-                    .onChange(of: codingDraft.briefTitle) { _, _ in codingDirty = true }
-
-                Grid(alignment: .leading, horizontalSpacing: 12, verticalSpacing: 10) {
-                    GridRow {
-                        briefList("What they are grading",
-                                  placeholder: "Simple extensible design\nClean interfaces\nThoughtful edge cases",
-                                  keyPath: \.rubric)
-                        briefList("Task order",
-                                  placeholder: "Cell references\nLiterals\nBinary operators",
-                                  keyPath: \.taskOrdering)
-                    }
-                    GridRow {
-                        briefList("Provided for you",
-                                  placeholder: "Provided parser\nRange interfaces",
-                                  keyPath: \.suppliedInterfaces)
-                        briefList("Not worth the time",
-                                  placeholder: "Date operations\nSecondary functions",
-                                  keyPath: \.depriorities)
-                    }
-                }
-
-                briefList("Constraints", placeholder: "No third-party packages", keyPath: \.constraints)
-
-                Text("One per line. The brief is frozen when the session starts, so a note added mid-interview is not smuggled in behind the interviewer.")
-                    .font(NotchType.rowDetail)
-                    .foregroundStyle(.tertiary)
-                    .fixedSize(horizontal: false, vertical: true)
-
-                HStack(spacing: 8) {
-                    if codingSetups.setup(scope: codingScope.scope, scopeKey: codingScope.key) != nil {
-                        Button("Remove setup", role: .destructive) {
-                            codingSetups.remove(scope: codingScope.scope, scopeKey: codingScope.key)
-                            loadCodingDraft()
-                        }
-                        .controlSize(.small)
-                    }
-                    Spacer(minLength: 0)
-                    if codingDirty {
-                        Text("Not saved")
-                            .font(NotchType.rowDetail)
-                            .foregroundStyle(NotchTint.attention)
-                    }
-                    Button("Save setup") { saveCodingDraft() }
-                        .buttonStyle(.borderedProminent)
-                        .controlSize(.small)
-                        .disabled(!codingDirty)
-                }
-            }
-        }
-    }
-
-    private var folderRow: some View {
-        HStack(spacing: 10) {
-            Image(systemName: codingDraft.hasFolder ? "folder.fill" : "folder.badge.plus")
-                .font(.system(size: 14))
-                .foregroundStyle(codingDraft.hasFolder ? Color.accentColor : .secondary)
-                .frame(width: 22)
-            VStack(alignment: .leading, spacing: 1) {
-                Text(codingDraft.hasFolder ? codingDraft.folderName : "No project folder")
-                    .font(NotchType.rowTitle)
-                    .lineLimit(1)
-                Text(codingDraft.hasFolder
-                     ? codingDraft.folderSummary
-                     : "The folder the interview is written in. Boring works on a shadow copy; your own files are never edited.")
-                    .font(NotchType.rowDetail)
-                    .foregroundStyle(.tertiary)
-                    .lineLimit(2)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-            Spacer(minLength: 8)
-            if codingDraft.hasFolder {
-                Button("Change…") { chooseFolder() }.controlSize(.small)
-                Button {
-                    codingDraft.folderBookmark = nil
-                    codingDraft.folderName = ""
-                    codingDraft.folderPath = ""
-                    codingDirty = true
-                } label: {
-                    Image(systemName: "trash")
-                }
-                .controlSize(.small)
-                .help("Forget this folder")
-            } else {
-                Button("Choose…") { chooseFolder() }.controlSize(.small)
-            }
-        }
-    }
-
-    private func briefList(_ title: String, placeholder: String,
-                           keyPath: WritableKeyPath<CallaCodingSetup, [String]>) -> some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text(title).font(NotchType.rowDetail).foregroundStyle(.secondary)
-            PromptEditor(
-                text: Binding(
-                    get: { codingDraft[keyPath: keyPath].joined(separator: "\n") },
-                    set: { value in
-                        codingDraft[keyPath: keyPath] = value
-                            .split(separator: "\n", omittingEmptySubsequences: true)
-                            .map { $0.trimmingCharacters(in: .whitespaces) }
-                            .filter { !$0.isEmpty }
-                        codingDirty = true
-                    }),
-                placeholder: placeholder,
-                minHeight: 62)
-        }
-    }
-
-    private func chooseFolder() {
-        let panel = NSOpenPanel()
-        panel.canChooseDirectories = true
-        panel.canChooseFiles = false
-        panel.allowsMultipleSelection = false
-        panel.prompt = "Use for Live Coding"
-        // Same default as the Live Coding pane: open where the work is.
-        let expected = WaveInterview.defaultProjectFolder
-        if FileManager.default.fileExists(atPath: expected.path) {
-            panel.directoryURL = expected
-        }
-        guard panel.runModal() == .OK, let url = panel.url else { return }
-        guard let bookmark = codingSetups.bookmark(for: url) else {
-            problem = "That folder could not be kept for later. Try one inside your home folder."
-            return
-        }
-        codingDraft.folderBookmark = bookmark
-        codingDraft.folderName = url.lastPathComponent
-        codingDraft.folderPath = url.path
-        codingDirty = true
-    }
-
-    private func loadCodingDraft() {
-        guard CallaFeatureAvailability.liveCoding else { return }
-        let target = codingScope
-        codingDraft = codingSetups.setup(scope: target.scope, scopeKey: target.key)
-            ?? CallaCodingSetup(scope: target.scope, scopeKey: target.key)
-        // A setup read back from a different scope still carries that scope, and
-        // saving it would then move the row rather than write this page's.
-        codingDraft.scope = target.scope
-        codingDraft.scopeKey = target.key
-        codingDirty = false
-    }
-
-    private func saveCodingDraft() {
-        let target = codingScope
-        codingDraft.scope = target.scope
-        codingDraft.scopeKey = target.key
-        codingSetups.save(codingDraft)
-        codingDirty = false
     }
 
     // MARK: - Contents

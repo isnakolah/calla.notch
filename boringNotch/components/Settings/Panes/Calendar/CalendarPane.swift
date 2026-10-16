@@ -47,7 +47,7 @@ struct CalendarSettings: View {
                 }
             }
 
-            SettingsSubpageList(section: .calendar)
+            SettingsSubpageList(page: .calendar)
         }
     }
 }

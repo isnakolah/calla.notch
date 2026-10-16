@@ -25,8 +25,8 @@ extension KeyboardShortcuts.Name {
     // These are Carbon global hotkeys like every shortcut in this file; SwiftUI's
     // local `.keyboardShortcut` is not used for them.
     //
-    // One name per *action*, not per surface. Call, Quiz and a coding interview
-    // are mutually exclusive, so ⌥⌘← is "the previous thing" in all three and
+    // One name per *action*, not per surface. Call and Quiz are mutually
+    // exclusive, so ⌥⌘← is "the previous thing" in both and
     // `NotchSessionRouter` decides what that means when the key is pressed.
     //
     // The three-name-per-action arrangement this replaces had a real cost
@@ -40,19 +40,10 @@ extension KeyboardShortcuts.Name {
     static let sessionNext = Self("sessionNext", default: .init(.rightArrow, modifiers: [.option, .command]))
     static let sessionScrollUp = Self("sessionScrollUp", default: .init(.upArrow, modifiers: [.option, .command]))
     static let sessionScrollDown = Self("sessionScrollDown", default: .init(.downArrow, modifiers: [.option, .command]))
-    static let sessionAdvance = Self("sessionAdvance", default: .init(.return, modifiers: [.option, .command]))
     static let sessionHold = Self("sessionHold", default: .init(.space, modifiers: [.option, .command]))
     static let sessionAsk = Self("sessionAsk", default: .init(.q, modifiers: [.option, .command]))
     static let sessionCopy = Self("sessionCopy", default: .init(.a, modifiers: [.option, .command]))
-    static let sessionRun = Self("sessionRun", default: .init(.r, modifiers: [.option, .command]))
     static let sessionSurface = Self("sessionSurface", default: .init(.s, modifiers: [.option, .command]))
-
-    // ⇧⌥⌘ is reference and setup: what you press between things, or once.
-    static let sessionTranscript = Self("sessionTranscript", default: .init(.t, modifiers: [.shift, .option, .command]))
-    static let sessionEvidence = Self("sessionEvidence", default: .init(.e, modifiers: [.shift, .option, .command]))
-    static let sessionExplain = Self("sessionExplain", default: .init(.q, modifiers: [.shift, .option, .command]))
-    static let sessionTarget = Self("sessionTarget", default: .init(.w, modifiers: [.shift, .option, .command]))
-    static let sessionShortcutHelp = Self("sessionShortcutHelp", default: .init(.slash, modifiers: [.shift, .option, .command]))
 
     /// Quiz-only: no other surface wraps anything, so this keeps its own name.
     static let quizToggleWrap = Self("quizToggleWrap", default: .init(.l, modifiers: [.shift, .option, .command]))
@@ -108,19 +99,12 @@ enum NotchShortcutMigration {
                             Retired("quizScrollUp", .upArrow, liveLoop)]),
         (.sessionScrollDown, [Retired("codingScrollDown", .downArrow, reference),
                               Retired("quizScrollDown", .downArrow, liveLoop)]),
-        (.sessionAdvance, [Retired("codingAdvance", .return, reference)]),
         (.sessionHold, [Retired("codingHold", .space, reference),
                         Retired("quizTogglePause", .space, liveLoop)]),
         (.sessionAsk, [Retired("callAskQuestion", .q, liveLoop)]),
         (.sessionCopy, [Retired("codingCopy", .k, liveLoop),
                         Retired("quizCopyAnswer", .a, liveLoop)]),
-        (.sessionRun, [Retired("codingRun", .r, liveLoop)]),
-        (.sessionSurface, [Retired("callToggleSurface", .s, liveLoop)]),
-        (.sessionTranscript, [Retired("codingTranscript", .t, reference)]),
-        (.sessionEvidence, [Retired("codingEvidence", .e, reference)]),
-        (.sessionExplain, [Retired("codingExplain", .q, reference)]),
-        (.sessionTarget, [Retired("codingSelectWindow", .w, reference)]),
-        (.sessionShortcutHelp, [Retired("codingShortcutHelp", .slash, reference)])
+        (.sessionSurface, [Retired("callToggleSurface", .s, liveLoop)])
     ]
 
     private static let prefix = "KeyboardShortcuts_"

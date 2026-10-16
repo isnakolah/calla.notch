@@ -45,9 +45,6 @@ class BoringViewModel: NSObject, ObservableObject {
     @Published var notchSize: CGSize = getClosedNotchSize()
     @Published var closedNotchSize: CGSize = getClosedNotchSize()
     
-    let webcamManager = WebcamManager.shared
-    @Published var isCameraExpanded: Bool = false
-    @Published var isRequestingAuthorization: Bool = false
     
     deinit {
         destroy()
@@ -136,53 +133,6 @@ class BoringViewModel: NSObject, ObservableObject {
         return max(0, menuBarHeight - currentHeight)
     }
 
-    func toggleCameraPreview() {
-        if isRequestingAuthorization {
-            return
-        }
-
-        switch webcamManager.authorizationStatus {
-        case .authorized:
-            if webcamManager.isSessionRunning {
-                webcamManager.stopSession()
-                isCameraExpanded = false
-            } else if webcamManager.cameraAvailable {
-                webcamManager.startSession()
-                isCameraExpanded = true
-            }
-
-        case .denied, .restricted:
-            DispatchQueue.main.async {
-                NSApp.setActivationPolicy(.regular)
-                NSApp.activate(ignoringOtherApps: true)
-
-                let alert = NSAlert()
-                alert.messageText = "Camera Access Required"
-                alert.informativeText = "Please allow camera access in System Settings."
-                alert.addButton(withTitle: "Open Settings")
-                alert.addButton(withTitle: "Cancel")
-
-                if alert.runModal() == .alertFirstButtonReturn {
-                    if let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Camera") {
-                        NSWorkspace.shared.open(url)
-                    }
-                }
-
-                NSApp.setActivationPolicy(.accessory)
-                NSApp.deactivate()
-            }
-
-        case .notDetermined:
-            isRequestingAuthorization = true
-            webcamManager.checkAndRequestVideoAuthorization()
-            DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
-                self.isRequestingAuthorization = false
-            }
-
-        default:
-            break
-        }
-    }
     
     func isMouseHovering(position: NSPoint = NSEvent.mouseLocation) -> Bool {
         let screenFrame = getScreenFrame(screenUUID)
@@ -208,9 +158,7 @@ class BoringViewModel: NSObject, ObservableObject {
     /// already-open notch inside an animation.
     func open(size: CGSize) {
         let proposed = NotchResizeSession.shared.previewSize(for: self) ?? size
-        self.notchSize = CopilotLiveSession.shared.isCoding && coordinator.currentView == .copilot
-            ? NotchResizeGeometry.clamped(proposed, for: NotchResizeSession.shared.isEditing(self) ? NotchResizeSession.shared.activeProfile : CopilotLiveSession.shared.codingSizeProfile, screenSize: getScreenFrame(screenUUID)?.size)
-            : proposed
+        self.notchSize = proposed
         self.notchState = .open
 
         // Force music information update when notch is opened
@@ -220,7 +168,7 @@ class BoringViewModel: NSObject, ObservableObject {
     func setPinned(_ pinned: Bool) {
         let session = CopilotLiveSession.shared
         pinState.set(pinned, duringInterview: coordinator.currentView == .copilot
-            && (session.isLive || session.isCoding || session.starting || session.ending))
+            && (session.isLive || session.starting || session.ending))
     }
 
     func releaseInterviewPin() { pinState.releaseInterview() }
@@ -265,14 +213,5 @@ class BoringViewModel: NSObject, ObservableObject {
     func setResizePreview(size: CGSize) {
         notchSize = size
         notchState = .open
-    }
-
-    func closeHello() {
-        Task { @MainActor in
-            withAnimation(animationLibrary.animation) {
-                coordinator.helloAnimationRunning = false
-                close()
-            }
-        }
     }
 }

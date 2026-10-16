@@ -39,7 +39,7 @@ final class PermissionMonitor: ObservableObject {
         switch permission {
         case .accessibility: return status(of: permission) != .granted
         case .microphone, .calendars, .reminders: return status(of: permission) == .undetermined
-        case .screenRecording, .fullDiskAccess: return false
+        case .screenRecording: return false
         }
     }
 
@@ -62,7 +62,7 @@ final class PermissionMonitor: ObservableObject {
                 await CalendarManager.shared.checkReminderAuthorization()
                 await refresh()
             }
-        case .screenRecording, .fullDiskAccess:
+        case .screenRecording:
             permission.openSystemSettings()
         }
     }
@@ -79,7 +79,6 @@ final class PermissionMonitor: ObservableObject {
         next[.microphone] = Self.map(AVCaptureDevice.authorizationStatus(for: .audio))
         next[.calendars] = Self.map(EKEventStore.authorizationStatus(for: .event))
         next[.reminders] = Self.map(EKEventStore.authorizationStatus(for: .reminder))
-        next[.fullDiskAccess] = Self.probeFullDiskAccess()
 
         statuses = next
     }
@@ -99,20 +98,5 @@ final class PermissionMonitor: ObservableObject {
         case .writeOnly: return .denied
         default: return .denied
         }
-    }
-
-    /// There is no API that reports Full Disk Access, so the only honest test is
-    /// to read something that requires it. `Mail`'s container is the
-    /// conventional probe: present on every Mac and unreadable without the
-    /// permission.
-    private static func probeFullDiskAccess() -> PermissionStatus {
-        let probe = FileManager.default.homeDirectoryForCurrentUser
-            .appendingPathComponent("Library/Mail", isDirectory: true)
-        guard FileManager.default.fileExists(atPath: probe.path) else {
-            // No Mail container to read: this Mac cannot answer the question, so
-            // do not claim it was refused.
-            return .undetermined
-        }
-        return (try? FileManager.default.contentsOfDirectory(atPath: probe.path)) != nil ? .granted : .denied
     }
 }

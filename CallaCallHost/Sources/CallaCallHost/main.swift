@@ -32,6 +32,32 @@ func complain(_ message: String) {
 
 let arguments = Array(CommandLine.arguments.dropFirst())
 
+/// What happens when the process that started this host exits.
+///
+/// Every subcommand is somebody's child — the engine's, usually — and none of
+/// them has any business outliving it: macOS reparents orphans to launchd and
+/// they would run on with nobody left to stop them. By default the host just
+/// leaves; `serve` replaces this with a clean end of the call.
+final class ParentExit: @unchecked Sendable {
+    static let shared = ParentExit()
+    private let lock = NSLock()
+    private var action: @Sendable () -> Void = { _exit(143) }
+    private var watch: DispatchSourceProcess?
+
+    func arm() {
+        let parent = getppid()
+        watch = ProcessTether.onExit(of: parent) { [self] in
+            lock.lock(); let run = action; lock.unlock()
+            run()
+        }
+    }
+
+    func onExit(_ action: @escaping @Sendable () -> Void) {
+        lock.lock(); self.action = action; lock.unlock()
+    }
+}
+ParentExit.shared.arm()
+
 // Point every prompt lookup at the user's own pack before any subcommand runs.
 // Editing a file under `<runtime>/copilot/prompts` then changes what the next
 // call sends, with no rebuild and no restart of anything but the host.
@@ -160,15 +186,38 @@ actor Received {
 /// one of the few things safe to do from that context.
 final class Stopped: @unchecked Sendable {
     private let semaphore = DispatchSemaphore(value: 0)
-    private var triggered = false
+    private var triggeredAt: Date?
     private let lock = NSLock()
+
+    /// The longest a clean shutdown may take once asked for. Draining the
+    /// transcription backlog and the deep recap pass are both bounded well
+    /// inside this; past it the host is stuck, and a stuck host holding the
+    /// microphone is worse than a recap that never got written.
+    static let deadline: TimeInterval = 120
 
     func trigger() {
         lock.lock()
-        let first = !triggered
-        triggered = true
+        let first = triggeredAt == nil
+        if first { triggeredAt = Date() }
         lock.unlock()
-        if first { semaphore.signal() }
+        guard first else { return }
+        semaphore.signal()
+        DispatchQueue.global().asyncAfter(deadline: .now() + Self.deadline) {
+            complain("shutdown exceeded \(Int(Self.deadline))s; exiting\n")
+            _exit(1)
+        }
+    }
+
+    /// A stop signal. The first one drains; one sent again after a short grace
+    /// means "now", which is what anyone pressing Ctrl-C twice or running
+    /// `kill` a second time expects. The grace exists because the engine sends
+    /// SIGINT and then SIGTERM back to back for a single stop.
+    func signalled() {
+        lock.lock()
+        let since = triggeredAt.map { Date().timeIntervalSince($0) }
+        lock.unlock()
+        if let since, since > 3 { _exit(130) }
+        trigger()
     }
 
     func wait() async {
@@ -601,11 +650,18 @@ case "serve":
             let source = DispatchSource.makeSignalSource(signal: code, queue: .global())
             // No `Task` here — see `Stopped`. This runs on a dispatch queue,
             // and entering Swift concurrency from it traps.
-            source.setEventHandler { stopped.trigger() }
+            source.setEventHandler { stopped.signalled() }
             source.resume()
             return source
         }
         defer { sources.forEach { $0.cancel() } }
+        // The engine that started this host is its parent. If it goes — the app
+        // was quit, force-quit or killed — the call ends with it, cleanly, rather
+        // than recording on under launchd with nothing left to stop it.
+        ParentExit.shared.onExit {
+            print("parent exited; ending the call")
+            stopped.trigger()
+        }
 
         await stopped.wait()
         control.stop()

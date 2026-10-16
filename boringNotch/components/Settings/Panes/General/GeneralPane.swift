@@ -7,11 +7,8 @@ import Defaults
 import LaunchAtLogin
 import SwiftUI
 
-/// How the app starts, how big the notch is, and what opens it.
-///
-/// Displays and Gestures were cards here. Both are self-contained — one is about
-/// which screen, the other is a beta feature with its own enable switch — and
-/// both were pushing this pane past what one scroll should hold.
+/// How the app starts and what opens the notch. Height, hover delay, displays,
+/// gestures and window details are folded under Advanced.
 struct GeneralSettings: View {
     @ObservedObject var coordinator = BoringViewCoordinator.shared
     @Environment(\.settingsRouter) private var router
@@ -27,52 +24,71 @@ struct GeneralSettings: View {
     @Default(.menubarIcon) private var menubarIcon
     @Default(.enableHaptics) private var enableHaptics
 
+    @Default(.hideFromScreenRecording) private var hideFromScreenRecording
+
     var body: some View {
         SettingsPane(.general) {
-            SettingCard("System") {
-                VStack(spacing: NotchSpace.row) {
-                    SettingRow("Show menu bar icon") {
-                        Toggle("", isOn: $menubarIcon).labelsHidden().toggleStyle(.switch)
-                    }
-                    SettingRow("Launch at login") {
-                        LaunchAtLogin.Toggle("").labelsHidden().toggleStyle(.switch)
-                    }
+            SettingsList("Startup") {
+                SettingsListRow("Launch at login") {
+                    LaunchAtLogin.Toggle("").labelsHidden().toggleStyle(.switch).controlSize(.small)
+                }
+                SettingsListRow("Show menu bar icon") {
+                    Toggle("", isOn: $menubarIcon).labelsHidden().toggleStyle(.switch).controlSize(.small)
                 }
             }
 
-            SettingCard("Size") {
-                VStack(spacing: NotchSpace.row) {
-                    SettingRow("On displays with a notch") {
-                        Picker("", selection: $notchHeightMode) {
-                            Text("Match the real notch").tag(WindowHeightMode.matchRealNotchSize)
-                            Text("Match the menu bar").tag(WindowHeightMode.matchMenuBar)
-                            Text("Custom").tag(WindowHeightMode.custom)
-                        }
-                        .labelsHidden().frame(width: 200)
-                    }
-                    if notchHeightMode == .custom {
-                        heightSlider(value: $notchHeight, range: 15...45)
-                    }
-                    SettingRow("On displays without one") {
-                        Picker("", selection: $nonNotchHeightMode) {
-                            Text("Match the menu bar").tag(WindowHeightMode.matchMenuBar)
-                            Text("Match a real notch").tag(WindowHeightMode.matchRealNotchSize)
-                            Text("Custom").tag(WindowHeightMode.custom)
-                        }
-                        .labelsHidden().frame(width: 200)
-                    }
-                    if nonNotchHeightMode == .custom {
-                        heightSlider(value: $nonNotchHeight, range: 0...40)
-                    }
+            SettingsList("Opening") {
+                SettingsListRow("Open on hover", detail: "Otherwise, click the notch.") {
+                    Toggle("", isOn: $openNotchOnHover).labelsHidden().toggleStyle(.switch).controlSize(.small)
+                }
+                SettingsListRow("Remember the last tab") {
+                    Toggle("", isOn: $coordinator.openLastTabByDefault)
+                        .labelsHidden().toggleStyle(.switch).controlSize(.small)
+                }
+                SettingsListRow("Haptic feedback") {
+                    Toggle("", isOn: $enableHaptics).labelsHidden().toggleStyle(.switch).controlSize(.small)
                 }
             }
 
-            SettingCard("Opening") {
-                VStack(spacing: NotchSpace.row) {
-                    SettingRow("Open on hover") {
-                        Toggle("", isOn: $openNotchOnHover).labelsHidden().toggleStyle(.switch)
+            SettingsList("Privacy") {
+                SettingsListRow("Hide from screen recording",
+                                detail: "Keeps the notch, and a live call, out of captures and shared screens.") {
+                    Toggle("", isOn: $hideFromScreenRecording)
+                        .labelsHidden().toggleStyle(.switch).controlSize(.small)
+                }
+                SettingsFeatureRow(page: .privacy)
+                SettingsFeatureRow(page: .shortcuts)
+            }
+
+            SettingsAdvancedFold("general") {
+                SettingCard("Notch height") {
+                    VStack(spacing: NotchSpace.row) {
+                        SettingRow("On displays with a notch") {
+                            Picker("", selection: $notchHeightMode) {
+                                Text("Match the real notch").tag(WindowHeightMode.matchRealNotchSize)
+                                Text("Match the menu bar").tag(WindowHeightMode.matchMenuBar)
+                                Text("Custom").tag(WindowHeightMode.custom)
+                            }
+                            .labelsHidden().frame(width: 200)
+                        }
+                        if notchHeightMode == .custom {
+                            heightSlider(value: $notchHeight, range: 15...45)
+                        }
+                        SettingRow("On displays without one") {
+                            Picker("", selection: $nonNotchHeightMode) {
+                                Text("Match the menu bar").tag(WindowHeightMode.matchMenuBar)
+                                Text("Match a real notch").tag(WindowHeightMode.matchRealNotchSize)
+                                Text("Custom").tag(WindowHeightMode.custom)
+                            }
+                            .labelsHidden().frame(width: 200)
+                        }
+                        if nonNotchHeightMode == .custom {
+                            heightSlider(value: $nonNotchHeight, range: 0...40)
+                        }
                     }
-                    if openNotchOnHover {
+                }
+                if openNotchOnHover {
+                    SettingCard {
                         NotchSlider(value: $minimumHoverDuration,
                                     range: 0...1,
                                     step: 0.1,
@@ -80,17 +96,13 @@ struct GeneralSettings: View {
                                     format: { $0 < 0.05 ? "Instant" : String(format: "%.1f s", $0) },
                                     ends: ("Instant", "1 s"))
                     }
-                    SettingRow("Haptic feedback") {
-                        Toggle("", isOn: $enableHaptics).labelsHidden().toggleStyle(.switch)
-                    }
-                    SettingRow("Remember last tab") {
-                        Toggle("", isOn: $coordinator.openLastTabByDefault)
-                            .labelsHidden().toggleStyle(.switch)
-                    }
+                }
+                SettingsList {
+                    SettingsFeatureRow(page: .displays)
+                    SettingsFeatureRow(page: .gestures)
+                    SettingsFeatureRow(page: .advanced)
                 }
             }
-
-            SettingsSubpageList(section: .general)
         }
         .toolbar {
             Button("Quit app") { NSApp.terminate(self) }

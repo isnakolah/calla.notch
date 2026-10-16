@@ -11,9 +11,10 @@ struct EmptyStateView: View {
     @State private var isVisible = true
     
     var body: some View {
-        HStack {
-            MinimalFaceFeatures(
-                height: 70, width: 80)
+        HStack(spacing: 10) {
+            Image(systemName: "music.note")
+                .font(.system(size: 22, weight: .medium))
+                .foregroundStyle(.gray)
             Text(message)
                 .font(.system(size:14))
                 .foregroundColor(.gray)

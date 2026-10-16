@@ -5,6 +5,7 @@
 //  Created by Alexander on 2025-03-29.
 //
 
+import CallaContracts
 import AppKit
 import Combine
 import Foundation
@@ -197,8 +198,11 @@ final class NowPlayingController: ObservableObject, MediaControllerProtocol {
             return
         }
         
-        process.executableURL = URL(fileURLWithPath: "/usr/bin/perl")
-        process.arguments = [scriptURL.path, frameworkPath, "stream"]
+        // Tethered: the adapter only writes when media changes, so a killed app
+        // could otherwise leave it running until the next song.
+        let launch = ProcessTether.tethered("/usr/bin/perl", [scriptURL.path, frameworkPath, "stream"])
+        process.executableURL = URL(fileURLWithPath: launch.executable)
+        process.arguments = launch.arguments
         
         let pipeHandler = JSONLinesPipeHandler()
         process.standardOutput = await pipeHandler.getPipe()

@@ -53,19 +53,17 @@ struct SettingsPane<Content: View>: View {
         self.eyebrow = String(localized: section.title)
         self.title = titleOverride ?? String(localized: page.title)
         self.detail = page.detail.map { String(localized: $0) }
-        // The trail is built from where the page actually sits, so a depth-two
-        // page gets all three crumbs rather than losing its middle one.
+        // The trail is built from where the page actually sits, so a page two
+        // deep gets every crumb above it rather than losing its middle one.
         var trail: [SettingsBreadcrumb.Crumb] = [
             .init(title: String(localized: section.title), depth: 0)
         ]
-        if case .copilotKnowledgeDetail = page {
-            trail.append(.init(title: String(localized: SettingsPage.copilotKnowledge.title), depth: 1))
-            trail.append(.init(title: titleOverride ?? String(localized: page.title), depth: 2))
-        } else if case .copilotCallDetail = page {
-            trail.append(.init(title: String(localized: SettingsPage.copilotHistory.title), depth: 1))
-            trail.append(.init(title: titleOverride ?? String(localized: page.title), depth: 2))
-        } else {
-            trail.append(.init(title: titleOverride ?? String(localized: page.title), depth: 1))
+        let lineage = page.lineage
+        for (index, step) in lineage.enumerated() {
+            let isLeaf = index == lineage.count - 1
+            trail.append(.init(title: isLeaf ? (titleOverride ?? String(localized: step.title))
+                                             : String(localized: step.title),
+                               depth: index + 1))
         }
         self.crumbs = trail
         self.content = content()

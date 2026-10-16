@@ -13,10 +13,6 @@ import SwiftUI
 struct Advanced: View {
     @Default(.extendHoverArea) var extendHoverArea
     @Default(.showOnLockScreen) var showOnLockScreen
-    @Default(.hideFromScreenRecording) var hideFromScreenRecording
-
-    let icons: [String] = ["logo2"]
-    @State private var selectedIcon: String = "logo2"
 
     @Default(.enableShadow) private var enableShadow
     @Default(.cornerRadiusScaling) private var cornerRadiusScaling
@@ -48,33 +44,6 @@ struct Advanced: View {
                     SettingRow("Show on the lock screen") {
                         Toggle("", isOn: $showOnLockScreen).labelsHidden().toggleStyle(.switch)
                     }
-                    SettingRow("Hide from screen recording",
-                               detail: "Keeps the notch out of captures and shared screens.") {
-                        Toggle("", isOn: $hideFromScreenRecording).labelsHidden().toggleStyle(.switch)
-                    }
-                }
-            }
-
-            SettingCard(detail: "One icon for now.") {
-                VStack(alignment: .leading, spacing: 10) {
-                    HStack(spacing: 6) {
-                        Text("App icon").font(NotchType.cardTitle)
-                        SettingBadge("Coming soon")
-                        Spacer()
-                    }
-                    HStack(spacing: 14) {
-                        ForEach(icons, id: \.self) { icon in
-                            Image(icon)
-                                .resizable().frame(width: 56, height: 56)
-                                .background(
-                                    RoundedRectangle(cornerRadius: 14, style: .continuous)
-                                        .strokeBorder(icon == selectedIcon ? Color.effectiveAccent : .clear,
-                                                      lineWidth: 2))
-                        }
-                        Spacer(minLength: 0)
-                    }
-                    .disabled(true)
-                    .opacity(0.6)
                 }
             }
         }

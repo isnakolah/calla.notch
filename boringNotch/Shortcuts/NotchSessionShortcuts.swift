@@ -18,17 +18,10 @@ enum NotchSessionShortcuts {
         (.sessionNext, .next),
         (.sessionScrollUp, .scrollUp),
         (.sessionScrollDown, .scrollDown),
-        (.sessionAdvance, .advance),
         (.sessionHold, .hold),
         (.sessionAsk, .ask),
         (.sessionCopy, .copy),
-        (.sessionRun, .run),
-        (.sessionSurface, .surface),
-        (.sessionTranscript, .transcript),
-        (.sessionEvidence, .evidence),
-        (.sessionExplain, .explain),
-        (.sessionTarget, .target),
-        (.sessionShortcutHelp, .shortcutHelp)
+        (.sessionSurface, .surface)
     ]
 
     static func install() {
@@ -45,7 +38,6 @@ enum NotchSessionShortcuts {
     static var surface: NotchSessionSurface {
         let engine = CallaEngineClient.shared
         return NotchSessionRouter.surface(for: NotchSessionState(
-            codingActive: CopilotLiveSession.shared.isCoding,
             quizActive: engine.status.quiz.active,
             callLive: CopilotLiveSession.shared.isLive))
     }
@@ -69,17 +61,10 @@ enum NotchSessionShortcuts {
         case .next: return "Next"
         case .scrollUp: return "Scroll"
         case .scrollDown: return "Scroll down"
-        case .advance: return "Continue"
         case .hold: return "Hold"
         case .ask: return "Ask"
         case .copy: return "Copy"
-        case .run: return "Run"
         case .surface: return "History"
-        case .transcript: return "Transcript"
-        case .evidence: return "Why"
-        case .explain: return "Explain"
-        case .target: return "Window"
-        case .shortcutHelp: return "Keys"
         }
     }
 
@@ -137,25 +122,6 @@ enum NotchSessionShortcuts {
             guard let sessionID = engine.status.quiz.sessionID, engine.status.quiz.active else { return }
             let command: QuizCommandKind = engine.status.quiz.state == .paused ? .resume : .pause
             engine.sendQuiz(.init(sessionID: sessionID, command: command))
-
-        case .codingAction(let action):
-            NotificationCenter.default.post(name: .callaCodingAction, object: action)
-        case .codingCopy:
-            NotificationCenter.default.post(name: .callaCodingCopy, object: nil)
-        case .codingPrevious:
-            NotificationCenter.default.post(name: .callaCodingPrevious, object: nil)
-        case .codingNext:
-            NotificationCenter.default.post(name: .callaCodingNext, object: nil)
-        case .codingScroll(let lines):
-            NotificationCenter.default.post(name: .callaCodingScroll, object: lines)
-
-        case .codingRun:
-            let coding = engine.coding
-            guard let sessionID = coding.sessionID, let callID = coding.callID else { return }
-            let running = engine.codingEvents.compactMap(\.run).last?.lifecycle == .running
-            engine.sendCoding(.init(sessionID: sessionID, callID: callID,
-                                    generation: coding.generation,
-                                    kind: running ? .cancelRun : .runPending))
         }
     }
 }

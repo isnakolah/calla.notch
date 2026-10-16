@@ -34,10 +34,28 @@ private final class ServiceDelegate: NSObject, NSXPCListenerDelegate {
         // connection dies. Without this, whatever the engine started — the call
         // host holding the microphone, a resident `agy` language server holding
         // ~190MB — is reparented to launchd and runs until the machine restarts.
-        connection.invalidationHandler = { engine.shutdownEverything() }
+        connection.invalidationHandler = { [weak self] in
+            engine.shutdownEverything()
+            self?.connectionEnded()
+        }
         connection.interruptionHandler = { engine.shutdownEverything() }
+        lock.lock(); liveConnections += 1; lock.unlock()
         connection.resume()
         return true
+    }
+
+    private let lock = NSLock()
+    private var liveConnections = 0
+
+    /// The app is this service's only client. Once its last connection is gone
+    /// the service has no reason to exist, and staying around under launchd is
+    /// exactly the "one process outlives the app" this is meant to prevent.
+    /// launchd starts it again on the next connection.
+    private func connectionEnded() {
+        lock.lock(); liveConnections -= 1; let remaining = liveConnections; lock.unlock()
+        guard remaining <= 0 else { return }
+        NSLog("[CallaEngine] last client gone; exiting")
+        exit(0)
     }
 }
 

@@ -17,11 +17,9 @@ import SwiftUIIntrospect
 @MainActor
 struct ContentView: View {
     @EnvironmentObject var vm: BoringViewModel
-    @ObservedObject var webcamManager = WebcamManager.shared
 
     @ObservedObject var coordinator = BoringViewCoordinator.shared
     @ObservedObject var musicManager = MusicManager.shared
-    @ObservedObject var batteryModel = BatteryStatusViewModel.shared
     @ObservedObject var brightnessManager = BrightnessManager.shared
     @ObservedObject var volumeManager = VolumeManager.shared
     @ObservedObject var pomodoro = PomodoroManager.shared
@@ -32,7 +30,6 @@ struct ContentView: View {
     /// the panel never redrew.
     @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
     @Default(.lightingEffect) private var musicLightingEffect
-    @Default(.waveGlassLevel) private var waveGlassLevel
     @Default(.callaCopilotGlassLevel) private var copilotGlassLevel
     @Default(.callaCopilotAmbient) private var ambientEnabled
     /// The pointer is away, so a live call rests as the ambient summary.
@@ -53,7 +50,6 @@ struct ContentView: View {
 
     @Default(.useMusicVisualizer) var useMusicVisualizer
 
-    @Default(.showNotHumanFace) var showNotHumanFace
 
     // Shared interactive spring for movement/resizing to avoid conflicting animations
     private let animationSpring = Animation.interactiveSpring(response: 0.38, dampingFraction: 0.8, blendDuration: 0)
@@ -112,7 +108,7 @@ struct ContentView: View {
     /// A live call that may rest as the ambient summary right now.
     private var ambientEligible: Bool {
         ambientEnabled && isCopilotGlass && !isPreviewingCallProfile
-            && copilotSession.isLive && !copilotSession.isCoding && !copilotSession.signInActive
+            && copilotSession.isLive && !copilotSession.signInActive
             && !copilotSession.ending && !CallaEngineClient.shared.status.quiz.active
             && !resizeSession.isEditing(vm)
     }
@@ -164,7 +160,7 @@ struct ContentView: View {
                 // Frost stays dark enough for readable white text even over a
                 // bright share. The slider still controls how much desktop comes
                 // through, but never turns material into an almost-black scrim.
-                Color.black.opacity(0.68 - (0.28 * min(1, max(0, copilotSession.isWave ? waveGlassLevel : copilotGlassLevel))))
+                Color.black.opacity(0.68 - (0.28 * min(1, max(0, copilotGlassLevel))))
             }
         } else {
             ZStack {
@@ -202,11 +198,7 @@ struct ContentView: View {
     private var computedChinWidth: CGFloat {
         var chinWidth: CGFloat = vm.closedNotchSize.width
 
-        if coordinator.expandingView.type == .battery && coordinator.expandingView.show
-            && vm.notchState == .closed && Defaults[.showPowerStatusNotifications]
-        {
-            chinWidth = 640
-        } else if copilotSession.isLive && vm.notchState == .closed && !vm.hideOnClosed {
+        if copilotSession.isLive && vm.notchState == .closed && !vm.hideOnClosed {
             // Room for the activity glyph and the call clock.
             chinWidth += 150
         } else if pomodoro.isActive && vm.notchState == .closed && !vm.hideOnClosed {
@@ -218,11 +210,6 @@ struct ContentView: View {
         } else if (!coordinator.expandingView.show || coordinator.expandingView.type == .music)
             && vm.notchState == .closed && (musicManager.isPlaying || !musicManager.isPlayerIdle)
             && coordinator.musicLiveActivityEnabled && !vm.hideOnClosed
-        {
-            chinWidth += (2 * max(0, vm.effectiveClosedNotchHeight - 12) + 20)
-        } else if !coordinator.expandingView.show && vm.notchState == .closed
-            && (!musicManager.isPlaying && musicManager.isPlayerIdle) && Defaults[.showNotHumanFace]
-            && !vm.hideOnClosed
         {
             chinWidth += (2 * max(0, vm.effectiveClosedNotchHeight - 12) + 20)
         }
@@ -560,20 +547,16 @@ struct ContentView: View {
             isClosed: vm.notchState == .closed,
             hideOnClosed: vm.hideOnClosed,
             expandingViewShowing: coordinator.expandingView.show,
-            expandingViewIsBattery: coordinator.expandingView.type == .battery,
             expandingViewIsMusic: coordinator.expandingView.type == .music,
-            powerNotificationsEnabled: Defaults[.showPowerStatusNotifications],
             sneakPeekShowing: coordinator.sneakPeek.show,
             sneakPeekIsMusic: coordinator.sneakPeek.type == .music,
-            sneakPeekIsBattery: coordinator.sneakPeek.type == .battery,
             inlineHUDEnabled: Defaults[.inlineHUD],
             callLive: copilotSession.isLive,
             pomodoroActive: pomodoro.isActive,
             usageBadgesEnabled: Defaults[.showUsageBesideNotch],
             musicPlaying: musicManager.isPlaying,
             musicPlayerIdle: musicManager.isPlayerIdle,
-            musicLiveActivityEnabled: coordinator.musicLiveActivityEnabled,
-            faceEnabled: showNotHumanFace))
+            musicLiveActivityEnabled: coordinator.musicLiveActivityEnabled))
     }
 
     /// The band either side of the housing, when the notch is open.
@@ -596,34 +579,6 @@ struct ContentView: View {
     @ViewBuilder
     private func closedActivitySlot(_ activity: ClosedNotchActivity) -> some View {
         switch activity {
-        case .batteryStatus:
-            HStack(spacing: 0) {
-                HStack {
-                    Text(batteryModel.statusText)
-                        .font(.subheadline)
-                        .foregroundStyle(.white)
-                }
-
-                Rectangle()
-                    .fill(.black)
-                    .frame(width: vm.closedNotchSize.width + 10)
-
-                HStack {
-                    BoringBatteryView(
-                        batteryWidth: 30,
-                        isCharging: batteryModel.isCharging,
-                        isInLowPowerMode: batteryModel.isInLowPowerMode,
-                        isPluggedIn: batteryModel.isPluggedIn,
-                        levelBattery: batteryModel.levelBattery,
-                        isForNotification: true
-                    )
-                }
-                .frame(width: 76, alignment: .trailing)
-            }
-            .frame(height: vm.effectiveClosedNotchHeight, alignment: .center)
-            .accessibilityElement(children: .combine)
-            .accessibilityLabel(batteryModel.statusText)
-
         case .inlineHUD:
             InlineHUD(type: $coordinator.sneakPeek.type, value: $coordinator.sneakPeek.value,
                       icon: $coordinator.sneakPeek.icon, hoverAnimation: $isHovering,
@@ -657,8 +612,6 @@ struct ContentView: View {
             MusicLiveActivity()
                 .frame(alignment: .center)
 
-        case .face:
-            BoringFaceAnimation()
 
         case .empty:
             Rectangle().fill(.clear)
@@ -709,17 +662,7 @@ struct ContentView: View {
     func NotchLayout() -> some View {
         VStack(alignment: .leading) {
             VStack(alignment: .leading) {
-                if coordinator.helloAnimationRunning {
-                    Spacer()
-                    HelloAnimation(onFinish: {
-                        vm.closeHello()
-                    }).frame(
-                        width: getClosedNotchSize().width,
-                        height: 80
-                    )
-                    .padding(.top, 40)
-                    Spacer()
-                } else {
+                Group {
                     // One slot, one decision. Which activity wins is declared in
                     // `ClosedNotchArbiter.priority` and tested there, rather than
                     // living in the order ten `else if` branches happened to be
@@ -845,12 +788,6 @@ struct ContentView: View {
                         } else if copilotSession.isLive {
                             if CallaEngineClient.shared.status.quiz.active {
                                 CallaQuizLiveView()
-                            } else if CallaFeatureAvailability.liveCoding && (Defaults[.callaCopilotMode] == "code"
-                                        || CallaEngineClient.shared.coding.lifecycle.active
-                                        || CallaEngineClient.shared.coding.lifecycle == .interrupted) {
-                                // Code uses Call capture, but owns its own
-                                // chronological presentation and controls.
-                                CallaCodingPreflightView()
                             } else if isAmbient {
                                 CallaCopilotAmbientView()
                                     .transition(.opacity)
@@ -1088,7 +1025,7 @@ struct ContentView: View {
                 releaseEndedCallNotch()
                 return
             }
-            guard !copilotSession.isLive, !copilotSession.isCoding,
+            guard !copilotSession.isLive,
                   !copilotSession.starting, !copilotSession.ending,
                   !copilotSession.startupFailed, !copilotSession.signInActive else { return }
             // Terminal state must retire a call-owned pin even if the reader
@@ -1113,27 +1050,6 @@ struct ContentView: View {
         withAnimation(.smooth(duration: 0.28)) {
             vm.open(size: copilotSession.preferredOpenSize)
         }
-    }
-
-    @ViewBuilder
-    func BoringFaceAnimation() -> some View {
-        HStack {
-            HStack {
-                Rectangle()
-                    .fill(.clear)
-                    .frame(
-                        width: max(0, vm.effectiveClosedNotchHeight - 12),
-                        height: max(0, vm.effectiveClosedNotchHeight - 12)
-                    )
-                Rectangle()
-                    .fill(.black)
-                    .frame(width: vm.closedNotchSize.width - 20)
-                MinimalFaceFeatures()
-            }
-        }.frame(
-            height: vm.effectiveClosedNotchHeight,
-            alignment: .center
-        )
     }
 
     @ViewBuilder

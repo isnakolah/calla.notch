@@ -20,7 +20,6 @@ extension SettingsRoute {
 
     private static func preview(for page: SettingsPage) -> NotchPreviewContent? {
         switch page {
-        case .battery: return .battery(percent: 68, charging: true)
         case .huds: return .hud(symbol: "speaker.wave.2.fill", fraction: 0.6)
         case .usage:
             return .meter(label: "68% left", fraction: 0.68,
@@ -28,9 +27,18 @@ extension SettingsRoute {
         case .headerLayout:
             return .slots(leading: Defaults[.notchHeaderLeading].compactMap { $0 },
                           trailing: Defaults[.notchHeaderTrailing].compactMap { $0 })
-        case .controlSlots:
+        case .media, .controlSlots:
             return .media(title: "Windowlicker", artist: "Aphex Twin")
-        case .notchSize, .accent, .camera, .displays, .gestures, .advanced:
+        case .calendar, .calendarSources:
+            return .activity(symbol: "calendar", text: "Standup in 10m",
+                             tint: NotchTint.active, caption: "Next event")
+        case .shelf, .localSend, .kdeConnect:
+            return .activity(symbol: "tray.full.fill", text: "3 items on the shelf",
+                             tint: NotchTint.active, caption: "Shelf activity")
+        case .pomodoro:
+            return .activity(symbol: "timer", text: "24:10 focus",
+                             tint: NotchTint.healthy, caption: "Focus timer")
+        case .notchSize, .accent, .displays, .gestures, .advanced:
             return .shape
         default: return nil
         }
@@ -38,29 +46,12 @@ extension SettingsRoute {
 
     private static func preview(for section: SettingsSection) -> NotchPreviewContent {
         switch section {
-        case .media:
+        case .notch:
             return .media(title: "Windowlicker", artist: "Aphex Twin")
-        case .calendar:
-            return .activity(symbol: "calendar", text: "Standup in 10m",
-                             tint: NotchTint.active, caption: "Next event")
-        case .system:
-            return .battery(percent: 68, charging: true)
-        case .shelf:
-            return .activity(symbol: "tray.full.fill", text: "3 items on the shelf",
-                             tint: NotchTint.active, caption: "Shelf activity")
-        case .pomodoro:
-            return .activity(symbol: "timer", text: "24:10 focus",
-                             tint: NotchTint.healthy, caption: "Focus timer")
-        case .copilot:
+        case .calls:
             return .activity(symbol: "waveform.badge.mic", text: "When could you start?",
                              tint: NotchTint.active, caption: "A pointer mid-call")
-        case .ice:
-            return .activity(symbol: "snowflake", text: "Hidden extras ready",
-                             tint: NotchTint.active, caption: "Menu bar organizer")
-        case .sweep:
-            return .meter(label: "12.4 GB", fraction: 0.34,
-                          tint: NotchTint.attention, caption: "Reclaimable space")
-        case .general, .appearance, .shortcuts, .privacy, .about:
+        case .general, .about:
             return .shape
         }
     }

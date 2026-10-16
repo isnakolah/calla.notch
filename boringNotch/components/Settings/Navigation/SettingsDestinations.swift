@@ -14,17 +14,8 @@ extension SettingsSection {
     @ViewBuilder var landingPane: some View {
         switch self {
         case .general: GeneralSettings()
-        case .appearance: Appearance()
-        case .media: Media()
-        case .calendar: CalendarSettings()
-        case .system: SystemPane()
-        case .shelf: Shelf()
-        case .pomodoro: PomodoroSettings()
-        case .copilot: CopilotPane()
-        case .ice: IcePane()
-        case .sweep: SweepSettings(selectedTab: .cleanUp)
-        case .shortcuts: ShortcutsPane()
-        case .privacy: PrivacyPane()
+        case .notch: NotchSettings()
+        case .calls: CopilotPane()
         case .about: AboutPaneHost()
         }
     }
@@ -33,41 +24,33 @@ extension SettingsSection {
 extension SettingsPage {
     @ViewBuilder var view: some View {
         switch self {
+        case .shortcuts: ShortcutsPane()
+        case .privacy: PrivacyPane()
         case .displays: DisplaysPane()
         case .gestures: GesturesPane()
         case .advanced: Advanced()
-        case .notchSize: NotchSizePane()
-        case .accent: AccentPane()
-        case .headerLayout: NotchLayoutPane()
-        case .camera: CameraPane()
+        case .media: Media()
         case .controlSlots: MusicSlotConfigurationView()
+        case .calendar: CalendarSettings()
         case .calendarSources: CalendarSourcesPane()
-        case .battery: Charge()
-        case .huds: HUD()
-        case .usage: UsageMonitorSettings()
+        case .shelf: Shelf()
         case .localSend: LocalSendPane()
         case .kdeConnect: KDEConnectPane()
+        case .pomodoro: PomodoroSettings()
+        case .usage: UsageMonitorSettings()
+        case .huds: HUD()
+        case .headerLayout: NotchLayoutPane()
+        case .notchSize: NotchSizePane()
+        case .accent: AccentPane()
         case .copilotCall: CopilotCallPane()
         case .copilotQuiz: CopilotQuizPane()
-        case .copilotCoding:
-            if CallaFeatureAvailability.liveCoding { CopilotCodingPane() } else { CopilotCallPane() }
         case .copilotModels: CopilotModelsPane()
         case .copilotPrompts: CopilotPromptsPane()
         case .copilotKnowledge: CopilotKnowledgePane()
         case .copilotBackup: CopilotBackupPane()
         case .copilotHistory: CopilotHistoryPane()
-        case let .copilotKnowledgeDetail(route):
-            if !CallaFeatureAvailability.liveCoding && route == .waveInterview {
-                CopilotKnowledgePane()
-            } else { CopilotKnowledgeDetailPane(route: route) }
+        case let .copilotKnowledgeDetail(route): CopilotKnowledgeDetailPane(route: route)
         case let .copilotCallDetail(id): CopilotCallDetailPane(callID: id)
-        case .iceGeneral: IceGeneralPane()
-        case .iceLayout: IceLayoutPane()
-        case .iceAppearance: IceAppearancePane()
-        case .iceHotkeys: IceHotkeysPane()
-        case .iceAdvanced: IceAdvancedPane()
-        case .sweepHistory: SweepSettings(selectedTab: .history)
-        case .sweepOptions: SweepSettings(selectedTab: .options)
         }
     }
 }

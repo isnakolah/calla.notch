@@ -21,19 +21,15 @@ extension SettingsDrillRow where Trailing == EmptyView {
     }
 }
 
-/// Everything a section offers, as rows.
+/// The pages a page leads to, as rows.
 struct SettingsSubpageList: View {
-    let section: SettingsSection
-    @Environment(\.settingsRouter) private var router
+    let page: SettingsPage
 
     var body: some View {
-        if !section.subpages.isEmpty, let router {
-            SettingsDrillGroup {
-                ForEach(Array(section.subpages.enumerated()), id: \.element) { index, page in
-                    if index > 0 {
-                        Divider().opacity(0.35).padding(.leading, 38)
-                    }
-                    SettingsDrillRow(page, router: router)
+        if !page.children.isEmpty {
+            SettingsList {
+                ForEach(page.children, id: \.self) { child in
+                    SettingsFeatureRow(page: child)
                 }
             }
         }
@@ -42,7 +38,7 @@ struct SettingsSubpageList: View {
 
 // MARK: - The sidebar
 
-/// Thirteen destinations, a live notch above them, and a search field.
+/// Four destinations, a live notch above them, and a search field.
 ///
 /// The search field is not polish. Merging twenty-seven flat rows into thirteen
 /// sections puts roughly twenty destinations one click deep, and a flat list at
@@ -148,7 +144,7 @@ private struct SettingsSearchResults: View {
 }
 
 
-/// The thirteen rows.
+/// The four rows.
 ///
 /// Hand-built rather than a `List(selection:)` so the highlight can slide
 /// between rows instead of blinking — the same `matchedGeometryEffect` capsule
@@ -188,16 +184,14 @@ private struct SettingsSectionRow: View {
     var body: some View {
         Button(action: action) {
             HStack(spacing: NotchSpace.snug) {
-                Image(systemName: section.symbol)
-                    .font(.system(size: 12))
-                    .frame(width: 18)
+                SettingsIconTile(symbol: section.symbol, color: section.tile, size: 24)
                 Text(section.title)
-                    .font(NotchType.rowTitle)
+                    .font(.system(size: 13, weight: .medium))
                 Spacer(minLength: 0)
             }
             .foregroundStyle(selected ? AnyShapeStyle(.white) : AnyShapeStyle(.primary))
-            .padding(.horizontal, NotchSpace.snug)
-            .padding(.vertical, 6)
+            .padding(.horizontal, 8)
+            .padding(.vertical, 5)
             .contentShape(Rectangle())
             .background {
                 if selected {

@@ -350,7 +350,7 @@ struct CopilotQuizPane: View {
                 Text("Next session context").font(NotchType.rowTitle)
                 Spacer()
                 Button("Manage knowledge") {
-                    router?.go(.init(.copilot, [.copilotKnowledge]))
+                    router?.go(.init(.copilotKnowledge))
                 }
                 .controlSize(.small)
             }

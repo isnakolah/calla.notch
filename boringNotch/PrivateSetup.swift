@@ -21,8 +21,6 @@ enum PrivateDistribution {
 
     static func prepareFirstLaunch() {
         guard enabled else { return }
-        // The old notch greeting is transient; setup belongs in its own window.
-        BoringViewCoordinator.shared.helloAnimationRunning = false
         BoringViewCoordinator.shared.firstLaunch = false
         // The disk-image copy installed this app and quit; carry on at once.
         if CommandLine.arguments.contains("--continue-setup") {
@@ -59,7 +57,6 @@ enum PrivateDistribution {
     private static func applyMeetingDefaults() {
         guard !UserDefaults.standard.bool(forKey: "didConfigurePrivateMeetingSetup") else { return }
         Defaults[.callaCopilotEnabled] = true
-        Defaults[.callaPlainCallEnabled] = true
         Defaults[.callaCopilotMode] = "call"
         Defaults[.callaCopilotPersona] = "generic"
         Defaults[.callaCopilotLiveModel] = "whisper-small-en"

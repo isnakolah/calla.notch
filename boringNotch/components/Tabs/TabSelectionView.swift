@@ -18,7 +18,6 @@ struct TabSelectionView: View {
     let side: NotchHeaderSide
 
     @ObservedObject var coordinator = BoringViewCoordinator.shared
-    @ObservedObject var batteryModel = BatteryStatusViewModel.shared
     @ObservedObject var callaEngine = CallaEngineClient.shared
     @StateObject var tvm = ShelfStateViewModel.shared
     @EnvironmentObject var vm: BoringViewModel
@@ -29,7 +28,6 @@ struct TabSelectionView: View {
     @Default(.pomodoroTab) private var pomodoroTab
     @Default(.usageMonitorTab) private var usageMonitorTab
     @Default(.callaCopilotEnabled) private var callaCopilotEnabled
-    @Default(.showMirror) private var showMirror
     @Namespace private var animation
 
     init(side: NotchHeaderSide) {
@@ -56,14 +54,13 @@ struct TabSelectionView: View {
     private func isVisible(_ item: NotchHeaderItem) -> Bool {
         switch item {
         case .none: return false
-        case .home, .settings, .battery: return true
+        case .home, .settings: return true
         case .pomodoro: return pomodoroTab
         case .usage: return usageMonitorTab
         // The shelf tab still hides itself while the shelf is empty unless the
         // reader asked for the tabs to stay put.
         case .shelf: return boringShelf && (!tvm.isEmpty || coordinator.alwaysShowTabs)
         case .copilot: return callaCopilotEnabled
-        case .mirror: return showMirror
         }
     }
 
@@ -72,19 +69,6 @@ struct TabSelectionView: View {
         switch item {
         case .none:
             EmptyView()
-        case .battery:
-            BoringBatteryView(
-                batteryWidth: 30,
-                isCharging: batteryModel.isCharging,
-                isInLowPowerMode: batteryModel.isInLowPowerMode,
-                isPluggedIn: batteryModel.isPluggedIn,
-                levelBattery: batteryModel.levelBattery,
-                maxCapacity: batteryModel.maxCapacity,
-                timeToFullCharge: batteryModel.timeToFullCharge,
-                isForNotification: false
-            )
-        case .mirror:
-            circleButton(icon: item.icon, label: item.label) { vm.toggleCameraPreview() }
         case .settings:
             circleButton(icon: item.icon, label: item.label) {
                 DispatchQueue.main.async {

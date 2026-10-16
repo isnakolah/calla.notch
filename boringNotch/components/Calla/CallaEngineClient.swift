@@ -567,29 +567,6 @@ struct CallaMeeting: Codable, Equatable {
     }
 }
 
-extension WaveInterview {
-    /// What every call start sends. No attendees: the calendar is not the
-    /// source here, and inventing names would put unverified text in a prompt.
-    ///
-    /// Lives beside `CallaMeeting` rather than beside the identity so that the
-    /// identity itself stays free of the engine client and can be tested on its
-    /// own.
-    static func meeting(for session: Session) -> CallaMeeting {
-        CallaMeeting(eventID: session.eventID,
-                     seriesID: seriesID,
-                     title: session.chipTitle,
-                     startsAt: startsAt.timeIntervalSince1970,
-                     endsAt: endsAt.timeIntervalSince1970,
-                     location: nil,
-                     attendees: [],
-                     notes: nil)
-    }
-
-    /// Whichever run the notch is currently armed for.
-    static var session: Session { Session.stored(Defaults[.callaWaveSession]) }
-    static var meeting: CallaMeeting { meeting(for: session) }
-}
-
 /// The user's own prompt text, carried to the gateway on `call_start`.
 ///
 /// Every field is free text, which is exactly why it is fenced off into its own
@@ -777,16 +754,6 @@ struct CallaCallSummary: Codable, Equatable, Identifiable {
     var eventID: String?
     var seriesID: String?
 
-    /// Whether this call was a session of the Wave interview.
-    var isWaveInterview: Bool {
-        seriesID == WaveInterview.seriesID
-            || eventID == WaveInterview.eventID
-            || eventID == WaveInterview.rehearsalEventID
-    }
-
-    /// Whether it was a rehearsal rather than the sitting.
-    var isWaveRehearsal: Bool { eventID == WaveInterview.rehearsalEventID }
-
     enum CodingKeys: String, CodingKey {
         case id, persona, retranscribed
         case startedAt = "started_at"
@@ -843,14 +810,6 @@ final class CallaEngineClient: ObservableObject {
 
     @Published var pendingQuizMeeting: CallaMeeting?
     @Published private(set) var liveCallEvents: [CallEvent] = []
-    @Published private(set) var coding = CodingSessionSnapshot()
-    @Published private(set) var codingEvents: [CodingEvent] = []
-    @Published var codingPreflight: CodingFolderPreflight?
-    @Published private(set) var retainedCodingSessions: [CodingRetainedSession] = []
-    @Published private(set) var codingTranscriptTail: [CallaCallTurn] = []
-    private var codingEventSequence = -1
-    private var codingTranscriptSequence = -1
-    private var codingTranscriptFetchInFlight = false
     /// Session-only context exclusions belong to Quiz setup in Settings. The
     /// notch only starts the prepared session and never owns configuration UI.
     @Published var pendingQuizExcludedContextIDs = Set<String>()
@@ -870,10 +829,9 @@ final class CallaEngineClient: ObservableObject {
             self.liveCallEvents.append(event)
             if self.liveCallEvents.count > 2000 { self.liveCallEvents.removeFirst(self.liveCallEvents.count - 2000) }
         },
-        coding: { [weak self] data in
-            guard let event = try? Self.decoder.decode(CodingEvent.self, from: data) else { return }
-            self?.applyCodingEvent(event)
-        })
+        // The engine still publishes coding events until its own side of Live
+        // Coding is removed; the app no longer has anything to show for them.
+        coding: { _ in })
 
     private init() {}
 
@@ -917,10 +875,6 @@ final class CallaEngineClient: ObservableObject {
             while !Task.isCancelled {
                 guard let self else { return }
                 self.refresh()
-                if self.coding.lifecycle.active {
-                    self.fetchCodingEvents()
-                    self.forwardCodingTranscript()
-                }
                 // A sign-in is a handful of states that each last a second or two.
                 // At the idle cadence the UI looks dead and a step can come and go
                 // between polls, so it is worth the extra chatter while it lasts.
@@ -944,10 +898,7 @@ final class CallaEngineClient: ObservableObject {
                 let quizWorking = [QuizSessionState.starting, .preparingWorkers,
                                    .collecting, .solving, .retrying, .arbitrating]
                     .contains(self.status.quiz.state) && self.status.quiz.active
-                // A live coding session is the same case as a call coming up: the transcript
-                // reaches the engine only from this loop, so the poll *is* the latency
-                // for every question the interviewer asks.
-                let comingUp = self.callIsComingUp || quizWorking || self.coding.lifecycle.active
+                let comingUp = self.callIsComingUp || quizWorking
                 let interval: Double = comingUp
                     ? 0.25
                     : (signingIn ? 0.5 : (onACall ? 0.6 : 4))
@@ -1398,227 +1349,6 @@ final class CallaEngineClient: ObservableObject {
         proxy.deleteAllQuizHistory { _ in Task { @MainActor in completion?() } }
     }
 
-    // MARK: - Live Coding
-
-    /// Starts the interview: the coding session, and the call underneath it.
-    ///
-    /// The call is where every spoken question is answered, so it has to know
-    /// which meeting it is in. It did not: the meeting was resolved for the
-    /// *setup* and then dropped here, which left the call retrieving only
-    /// `always` and persona-scoped notes and left its History row with no
-    /// event to group on. `WaveInterview.meeting` is now sent on every start,
-    /// however the session was reached.
-    func startCodingInterview(capabilityID: String, brief: InterviewBrief?,
-                              speechModel: String, observationTarget: QuizWindowTarget? = nil,
-                              onFailure: ((CodingSessionSnapshot?) -> Void)? = nil) {
-        guard CallaFeatureAvailability.liveCoding else { onFailure?(nil); return }
-        if status.copilot.running, let callID = status.copilot.callID,
-           status.copilot.generation > 0 {
-            var configuration = codingConfiguration(callID: callID,
-                                                    generation: status.copilot.generation,
-                                                    capabilityID: capabilityID, brief: brief)
-            configuration.observationTarget = observationTarget
-            startCoding(configuration) { snapshot in
-                if snapshot?.failure != nil { onFailure?(snapshot) }
-            }
-            return
-        }
-        let callID = "call-\(UUID().uuidString.lowercased().prefix(16))"
-        var configuration = codingConfiguration(callID: callID,
-                                                generation: status.copilot.generation + 1,
-                                                capabilityID: capabilityID, brief: brief)
-        configuration.observationTarget = observationTarget
-        startCoding(configuration) { [weak self] snapshot in
-            guard snapshot?.lifecycle == .ready else { onFailure?(snapshot); return }
-            self?.startWaveCall(callID: callID, speechModel: speechModel)
-        }
-    }
-
-    /// Every coding session is the Wave interview, so the profile and the
-    /// planned duration are not read from a setup row any more — a setup whose
-    /// toggle happened to be off would have started the same interview without
-    /// its context pack or its two-hour budget.
-    private func codingConfiguration(callID: String, generation: Int,
-                                     capabilityID: String,
-                                     brief: InterviewBrief?) -> CodingSessionConfiguration {
-        var configuration = CodingSessionConfiguration(
-            sessionID: "code-\(UUID().uuidString.lowercased())", callID: callID,
-            generation: generation,
-            folderCapabilityID: capabilityID, brief: brief,
-            model: Defaults[.callaCodingProfile].move.modelID,
-            profile: Defaults[.callaCodingProfile])
-        configuration.interviewProfile = WaveInterview.profileID
-        configuration.plannedDurationMinutes = WaveInterview.plannedMinutes
-        configuration.rehearsal = WaveInterview.session.isRehearsal
-        return configuration
-    }
-
-    /// The one way a call is started. Persona and meeting are pinned rather
-    /// than passed, so no caller can start the interview as a generic call.
-    func startWaveCall(callID: String? = nil, speechModel: String) {
-        guard CallaFeatureAvailability.liveCoding else { return }
-        startCall(persona: WaveInterview.persona, model: speechModel,
-                  meeting: WaveInterview.meeting, callID: callID)
-    }
-
-    /// Which run the next session is. Changing it mid-session would leave the
-    /// running call filed under one occurrence and the next event under
-    /// another, so it is refused while anything is live.
-    var canChangeWaveSession: Bool {
-        !status.copilot.running && !coding.lifecycle.active && !launchingCall
-    }
-
-    func setWaveSession(_ session: WaveInterview.Session) {
-        guard canChangeWaveSession else { return }
-        Defaults[.callaWaveSession] = session.rawValue
-        objectWillChange.send()
-    }
-
-    func resumeCodingInterview(sessionID: String, speechModel: String) {
-        guard CallaFeatureAvailability.liveCoding else { return }
-        if status.copilot.running, let callID = status.copilot.callID,
-           status.copilot.generation > 0 {
-            sendCoding(.init(sessionID: sessionID, callID: callID,
-                             generation: status.copilot.generation, kind: .resume))
-        } else {
-            let callID = "call-\(UUID().uuidString.lowercased().prefix(16))"
-            sendCoding(.init(sessionID: sessionID, callID: callID,
-                             generation: status.copilot.generation + 1, kind: .resume)) {
-                [weak self] snapshot in
-                guard snapshot?.lifecycle == .capturing || snapshot?.lifecycle == .ready else { return }
-                // A resumed session is still a session of the same meeting.
-                self?.startWaveCall(callID: callID, speechModel: speechModel)
-            }
-        }
-    }
-
-    func fetchRetainedCodingSessions() {
-        codingOptionalReply({ $0.codingSessions(with: $1) }, as: [CodingRetainedSession].self) {
-            [weak self] sessions in self?.retainedCodingSessions = sessions ?? []
-        }
-    }
-
-    func deleteCodingSession(_ sessionID: String) {
-        let command = CodingCommand(sessionID: sessionID, callID: "archive-delete",
-                                    generation: 1, kind: .delete)
-        sendCoding(command) { [weak self] _ in self?.fetchRetainedCodingSessions() }
-    }
-
-    func prepareWave(_ request: WavePreparationRequest, completion: @escaping (WavePreparationResult?) -> Void) {
-        guard let data = try? JSONEncoder().encode(request) else { completion(nil); return }
-        codingOptionalReply({ $0.prepareWave(data, with: $1) }, as: WavePreparationResult.self, completion: completion)
-    }
-
-    func registerCodingFolder(_ url: URL, completion: @escaping (CodingFolderPreflight?) -> Void) {
-        guard let bookmark = try? url.bookmarkData(
-            options: [.withSecurityScope], includingResourceValuesForKeys: nil, relativeTo: nil)
-        else { completion(nil); return }
-        codingOptionalReply({ $0.registerCodingFolder(bookmark, with: $1) },
-                            as: CodingFolderPreflight.self) { [weak self] value in
-            self?.codingPreflight = value; completion(value)
-        }
-    }
-
-    func startCoding(_ configuration: CodingSessionConfiguration,
-                     completion: ((CodingSessionSnapshot?) -> Void)? = nil) {
-        guard CallaFeatureAvailability.liveCoding else { completion?(nil); return }
-        guard let data = try? Self.engineEncoder.encode(configuration) else { completion?(nil); return }
-        codingOptionalReply({ $0.startCoding(data, with: $1) }, as: CodingSessionSnapshot.self) {
-            [weak self] snapshot in
-            if let snapshot {
-                self?.coding = snapshot; self?.codingEventSequence = -1
-                self?.codingTranscriptSequence = -1
-                self?.codingEvents.removeAll(); self?.codingTranscriptTail.removeAll()
-                self?.fetchCodingEvents()
-            }
-            completion?(snapshot)
-        }
-    }
-
-    func sendCoding(_ command: CodingCommand,
-                    completion: ((CodingSessionSnapshot?) -> Void)? = nil) {
-        guard let data = try? Self.engineEncoder.encode(command) else { completion?(nil); return }
-        codingOptionalReply({ $0.codingControl(data, with: $1) }, as: CodingSessionSnapshot.self) {
-            [weak self] snapshot in
-            if let snapshot { self?.coding = snapshot }
-            completion?(snapshot)
-        }
-    }
-
-    func fetchCodingEvents() {
-        guard CallaFeatureAvailability.liveCoding else { return }
-        let connection = connection ?? makeConnection()
-        guard let proxy = connection.remoteObjectProxyWithErrorHandler({ _ in })
-                as? BoringCallaEngineProtocol else { return }
-        proxy.codingEvents(since: codingEventSequence) { [weak self] data in
-            let values = (try? Self.decoder.decode([CodingEvent].self, from: data)) ?? []
-            Task { @MainActor in values.forEach { self?.applyCodingEvent($0) } }
-        }
-    }
-
-    /// Bridges the Call host's typed, speaker-labelled turns into the Code
-    /// coordinator.  The cursor is local and monotonic, so reconnect polling
-    /// can replay the coding event stream without submitting a transcript turn
-    /// twice. Cue classification receives Whisper's persisted confidence rather
-    /// than promoting uncertain speech into execution authority.
-    ///
-    /// Turn timings go with it. A turn is one VAD utterance, not a thought, so
-    /// the engine segments these into statements before anything can cost a
-    /// model request — without `t0`/`t1` there is no silence to measure and
-    /// every fragment looks complete.
-    private func forwardCodingTranscript() {
-        guard CallaFeatureAvailability.liveCoding, !codingTranscriptFetchInFlight,
-              let sessionID = coding.sessionID, let callID = coding.callID else { return }
-        codingTranscriptFetchInFlight = true
-        fetchTranscript(since: codingTranscriptSequence) { [weak self] turns in
-            guard let self else { return }
-            self.codingTranscriptFetchInFlight = false
-            for turn in turns.sorted(by: { $0.seq < $1.seq }) where turn.seq > self.codingTranscriptSequence {
-                self.codingTranscriptSequence = turn.seq
-                self.codingTranscriptTail.append(turn)
-                if self.codingTranscriptTail.count > 12 {
-                    self.codingTranscriptTail.removeFirst(self.codingTranscriptTail.count - 12)
-                }
-                self.sendCoding(.init(
-                    sessionID: sessionID, callID: callID, generation: self.coding.generation,
-                    kind: .requestMove, transcript: turn.text,
-                    speaker: turn.isRemote ? .them : .me, confidence: turn.confidence ?? 0,
-                    t0: turn.t0, t1: turn.t1, transcriptSequence: turn.seq))
-            }
-        }
-    }
-
-    private func applyCodingEvent(_ event: CodingEvent) {
-        guard event.contractVersion == LiveCodingContract.version,
-              event.sequence > codingEventSequence,
-              coding.sessionID == nil || (event.sessionID == coding.sessionID
-                && event.callID == coding.callID && event.generation == coding.generation) else { return }
-        codingEventSequence = event.sequence
-        codingEvents.append(event)
-        if codingEvents.count > LiveCodingContract.maximumEvents {
-            codingEvents.removeFirst(codingEvents.count - LiveCodingContract.maximumEvents)
-        }
-        coding.latestSequence = event.sequence
-        if let lifecycle = event.lifecycle { coding.lifecycle = lifecycle }
-        if let revision = event.sourceRevision { coding.sourceRevision = revision }
-        if let move = event.move, move.status == .current { coding.activeMove = move; coding.pendingRun = move.check }
-        if let failure = event.failure { coding.failure = failure }
-    }
-
-    private func codingOptionalReply<T: Decodable>(
-        _ call: @escaping (BoringCallaEngineProtocol, @escaping (Data) -> Void) -> Void,
-        as type: T.Type, completion: @escaping (T?) -> Void
-    ) {
-        let connection = connection ?? makeConnection()
-        guard let proxy = connection.remoteObjectProxyWithErrorHandler({ _ in
-            Task { @MainActor in completion(nil) }
-        }) as? BoringCallaEngineProtocol else { completion(nil); return }
-        call(proxy) { data in
-            let value = try? Self.decoder.decode(T.self, from: data)
-            Task { @MainActor in completion(value) }
-        }
-    }
-
     private func quizReply<T: Decodable>(
         _ call: @escaping (BoringCallaEngineProtocol, @escaping (Data) -> Void) -> Void,
         as type: T.Type, fallback: T, completion: @escaping (T) -> Void
@@ -1936,10 +1666,6 @@ final class CallaEngineClient: ObservableObject {
                 Task { @MainActor in self.apply(result) }
             }
             proxy.subscribeCallEvents(statusObserver) { _ in }
-            proxy.subscribeCodingEvents(statusObserver) { [weak self] data in
-                guard let self, let snapshot = try? Self.decoder.decode(CodingSessionSnapshot.self, from: data) else { return }
-                Task { @MainActor in self.coding = snapshot; self.fetchCodingEvents() }
-            }
         }
         return connection
     }

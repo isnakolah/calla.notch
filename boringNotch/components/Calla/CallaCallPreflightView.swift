@@ -64,10 +64,8 @@ struct CallaCallPreflightView: View {
                 ? CallaCopilotPresentation.elapsed(since: copilot.startedAt, now: now)
                 : nil,
             mode: $selectedMode,
-            switcherEnabled: !copilot.running && !engine.status.quiz.active
-                && !CopilotLiveSession.shared.isCoding,
+            switcherEnabled: !copilot.running && !engine.status.quiz.active,
             includesQuiz: quizEnabled,
-            includesPlainCall: true,
             headline: headline,
             headlineTint: blocker == .none || copilot.running ? NotchInk.primary : NotchTint.attention,
             detail: detail,

@@ -126,8 +126,8 @@ final class NotchResizeSession: ObservableObject {
         // A running call follows the profile being sized, so what is on screen
         // is the layout the numbers belong to.
         switch profile {
-        case .wave, .codingExpanded, .callExpanded: CopilotLiveSession.shared.setLayout(.full)
-        case .codingCompact, .callCollapsed: CopilotLiveSession.shared.setLayout(.compact)
+        case .callExpanded: CopilotLiveSession.shared.setLayout(.full)
+        case .callCollapsed: CopilotLiveSession.shared.setLayout(.compact)
         case .normal: break
         }
         if isEditing {
@@ -255,7 +255,6 @@ final class NotchResizeSession: ObservableObject {
 
     private var initialProfile: NotchSizeProfile {
         let call = CopilotLiveSession.shared
-        if call.isCoding { return call.codingSizeProfile }
         if call.starting || call.ending || call.startupFailed { return .callCollapsed }
         if call.isLive { return call.layout == .full ? .callExpanded : .callCollapsed }
         return .normal

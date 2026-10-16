@@ -26,7 +26,6 @@ struct CopilotCallPane: View {
 
     @Default(.callaCopilotEnabled) private var copilotEnabled
     @Default(.callaQuizEnabled) private var quizEnabled
-    @Default(.callaPlainCallEnabled) private var plainCallEnabled
     @Default(.callaCopilotLiveModel) private var model
     @Default(.callaCopilotAutoReveal) private var autoReveal
     @Default(.callaCopilotGlassLevel) private var glassLevel
@@ -168,12 +167,6 @@ struct CopilotCallPane: View {
                                 tint: copilot.gatewayConnected ? NotchTint.healthy : NotchTint.attention)
                     SettingFact(title: "Turns heard", value: "\(copilot.turnCount)")
                 }
-                if CallaFeatureAvailability.liveCoding {
-                    SettingRow("Plain listening call",
-                               detail: "Adds a Call segment to the notch: any meeting, any persona, no project. Off, the notch is only the Wave interview.") {
-                        Toggle("", isOn: $plainCallEnabled).labelsHidden().toggleStyle(.switch)
-                    }
-                }
                 HStack {
                     if copilot.running {
                         Button("End call", role: .destructive) { engine.endCall() }
@@ -275,7 +268,7 @@ struct CopilotCallPane: View {
                 badge: quizEnabled ? "On" : "Off",
                 badgeTint: quizEnabled ? NotchTint.active : nil
             ) {
-                router?.go(.init(.copilot, [.copilotQuiz]))
+                router?.go(.init(.copilotQuiz))
             }
         }
     }
@@ -283,15 +276,15 @@ struct CopilotCallPane: View {
     private var panelSizeLink: some View {
         SettingsDrillGroup(
             "Panel size",
-            detail: "Normal, expanded Call, and compact Call sizes now live together under Appearance."
+            detail: "Normal, expanded Call, and compact Call sizes live together under Notch."
         ) {
             SettingsDrillRow(
                 symbol: SettingsPage.notchSize.symbol,
                 title: String(localized: SettingsPage.notchSize.title),
                 detail: "Open the real notch and resize it directly.",
-                badge: "Appearance"
+                badge: "Notch"
             ) {
-                router?.go(.init(.appearance, [.notchSize]))
+                router?.go(.init(.notchSize))
             }
         }
     }

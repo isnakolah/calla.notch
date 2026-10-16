@@ -882,15 +882,7 @@ struct CallaCopilotLiveHeader: View {
     private func leadingRow(badge: Bool, persona: Bool) -> some View {
         HStack(spacing: NotchGlassSpace.tight) {
             LivePulse(active: copilot.running && copilot.systemAudioActive)
-            if session.isCoding {
-                Text(heading)
-                    .font(NotchGlassType.bandLabel)
-                    .foregroundStyle(headingTint)
-                    .lineLimit(1)
-                    .truncationMode(.tail)
-            } else {
-                surfaceSwitch
-            }
+            surfaceSwitch
             if let elapsed = CallaCopilotPresentation.elapsed(since: copilot.startedAt, now: now) {
                 Text(elapsed)
                     .font(NotchGlassType.inlineFigure)
@@ -986,44 +978,34 @@ struct CallaCopilotLiveHeader: View {
                                                 : "Visible in screen shares — turn on Hide in Settings",
                               symbol: hiddenFromCapture ? "eye.slash.fill" : "eye.fill")
 
-            if session.isCoding {
-                NotchGlyphButton(symbol: session.codingHeld ? "play.fill" : "pause.fill",
-                                 tint: session.codingHeld ? Color.effectiveAccent : NotchInk.tertiary) {
-                    NotificationCenter.default.post(name: .callaCodingAction, object: "hold")
-                }
-                .notchTooltip(session.codingHeld ? "Resume following the interview" : "Hold this step on screen",
-                              symbol: session.codingHeld ? "play.fill" : "pause.fill")
-                .accessibilityLabel(session.codingHeld ? "Resume presentation" : "Hold presentation")
-            } else {
-                NotchGlyphButton(symbol: "questionmark.bubble") {
-                    NotificationCenter.default.post(name: .callaCallAskQuestion, object: nil)
-                }
-                .notchTooltip("Ask about what was just said", symbol: "questionmark.bubble",
-                              shortcut: shortcutKeys(.sessionAsk))
-                .accessibilityLabel("Ask about what was just said")
-
-                // What is being shared becomes context: the words on it go to
-                // the copilot, and the picture is filed with the call.
-                NotchGlyphButton(symbol: "camera",
-                                 tint: shotNote == nil ? NotchInk.tertiary : CallaCallInk.summary) {
-                    takeScreenshot()
-                }
-                .scaleEffect(shutter ? 0.78 : 1)
-                .opacity(shutter ? 0.4 : 1)
-                .overlay(alignment: .topTrailing) {
-                    if copilot.screenshotCount > 0 {
-                        CallaSuperscript(count: copilot.screenshotCount)
-                            .offset(x: 4, y: -1)
-                            .transition(.scale.combined(with: .opacity))
-                    }
-                }
-                .animation(.spring(response: 0.3, dampingFraction: 0.7), value: copilot.screenshotCount)
-                .notchTooltip(copilot.screenshotCount > 0
-                              ? "Screenshot the shared screen · \(copilot.screenshotCount) so far"
-                              : "Screenshot the shared screen",
-                              symbol: "camera")
-                .accessibilityLabel("Take a screenshot for context")
+            NotchGlyphButton(symbol: "questionmark.bubble") {
+                NotificationCenter.default.post(name: .callaCallAskQuestion, object: nil)
             }
+            .notchTooltip("Ask about what was just said", symbol: "questionmark.bubble",
+                          shortcut: shortcutKeys(.sessionAsk))
+            .accessibilityLabel("Ask about what was just said")
+
+            // What is being shared becomes context: the words on it go to
+            // the copilot, and the picture is filed with the call.
+            NotchGlyphButton(symbol: "camera",
+                             tint: shotNote == nil ? NotchInk.tertiary : CallaCallInk.summary) {
+                takeScreenshot()
+            }
+            .scaleEffect(shutter ? 0.78 : 1)
+            .opacity(shutter ? 0.4 : 1)
+            .overlay(alignment: .topTrailing) {
+                if copilot.screenshotCount > 0 {
+                    CallaSuperscript(count: copilot.screenshotCount)
+                        .offset(x: 4, y: -1)
+                        .transition(.scale.combined(with: .opacity))
+                }
+            }
+            .animation(.spring(response: 0.3, dampingFraction: 0.7), value: copilot.screenshotCount)
+            .notchTooltip(copilot.screenshotCount > 0
+                          ? "Screenshot the shared screen · \(copilot.screenshotCount) so far"
+                          : "Screenshot the shared screen",
+                          symbol: "camera")
+            .accessibilityLabel("Take a screenshot for context")
 
             // Collapse to the answer alone and back.
             NotchGlyphButton(symbol: session.layout == .full
@@ -1047,15 +1029,10 @@ struct CallaCopilotLiveHeader: View {
             .accessibilityLabel((vm.isPinned || session.pinsNotchOpen) ? "Unpin notch" : "Pin notch open")
 
             NotchGlyphButton(symbol: "stop.fill", tint: NotchTint.stuck) {
-                if session.isCoding {
-                    NotificationCenter.default.post(name: .callaCodingAction, object: "end")
-                } else {
-                    engine.endCall()
-                }
+                engine.endCall()
             }
-            .notchTooltip(session.isCoding ? "End the interview" : "End the call", symbol: "stop.fill",
-                          shortcut: shortcutKeys(.copilotToggleCall))
-            .accessibilityLabel(session.isCoding ? "End the interview" : "End call")
+            .notchTooltip("End the call", symbol: "stop.fill", shortcut: shortcutKeys(.copilotToggleCall))
+            .accessibilityLabel("End call")
         }
     }
 

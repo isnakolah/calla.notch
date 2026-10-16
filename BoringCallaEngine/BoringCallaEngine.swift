@@ -886,23 +886,45 @@ final class BoringCallaEngine: NSObject, BoringCallaEngineProtocol, @unchecked S
     /// tree walk reaches it. They are identifiable because every host is launched
     /// with `--log-file` inside this app's runtime directory — the user's own `agy`
     /// in a terminal has nothing to do with that path and is never matched.
-    private func terminateStrayAgyHosts() {
+    ///
+    /// `orphansOnly` limits the sweep to hosts whose wrapper has already been
+    /// reparented to launchd. Startup uses it: a call host adopted across an
+    /// Engine restart still owns its `agy`, and that one must be left alone.
+    /// Orphans are killed outright if asking does not work, because `agy`
+    /// ignores SIGTERM and nothing else will ever reap them.
+    private func terminateStrayAgyHosts(orphansOnly: Bool = false) {
         let marker = copilotRoot.appendingPathComponent("agy").path
         let process = Process()
         let output = Pipe()
         process.executableURL = URL(fileURLWithPath: "/bin/ps")
-        process.arguments = ["-axo", "pid=,command="]
+        process.arguments = ["-axo", "pid=,ppid=,command="]
         process.standardOutput = output
         process.standardError = FileHandle.nullDevice
         guard (try? process.run()) != nil else { return }
         let data = output.fileHandleForReading.readDataToEndOfFile()
         process.waitUntilExit()
+        var parents: [pid_t: pid_t] = [:]
         for line in String(decoding: data, as: UTF8.self).split(separator: "\n") {
             guard line.contains(marker), line.contains("agy") else { continue }
-            let fields = line.trimmingCharacters(in: .whitespaces).split(separator: " ", maxSplits: 1)
-            guard let first = fields.first, let pid = pid_t(first), pid > 1 else { continue }
-            Darwin.kill(pid, SIGTERM)
+            let fields = line.split(separator: " ", maxSplits: 2, omittingEmptySubsequences: true)
+            guard fields.count >= 2, let pid = pid_t(fields[0]), let parent = pid_t(fields[1]), pid > 1 else { continue }
+            parents[pid] = parent
         }
+        // A host's tree is `script` -> `agy`; its root is the one whose parent
+        // is not itself part of a host.
+        func isOrphaned(_ pid: pid_t) -> Bool {
+            var current = pid
+            while let parent = parents[current] { current = parent }
+            return current == 1
+        }
+        let orphans = parents.keys.filter(isOrphaned)
+        let targets = orphansOnly ? orphans : Array(parents.keys)
+        guard !targets.isEmpty else { return }
+        for pid in targets { Darwin.kill(pid, SIGTERM) }
+        guard !orphans.isEmpty else { return }
+        usleep(300_000)
+        for pid in orphans where Darwin.kill(pid, 0) == 0 { Darwin.kill(pid, SIGKILL) }
+        NSLog("[CallaEngine] reaped %d orphaned agy process(es)", orphans.count)
     }
 
     func stop(with reply: @escaping (Data) -> Void) {
@@ -2787,11 +2809,13 @@ final class BoringCallaEngine: NSObject, BoringCallaEngineProtocol, @unchecked S
         let slaveHandle = FileHandle(fileDescriptor: slave, closeOnDealloc: true)
 
         let process = Process()
-        process.executableURL = URL(fileURLWithPath: "/usr/bin/script")
-        process.arguments = [
+        // Tethered so a killed engine does not leave a sign-in waiting forever.
+        let launch = ProcessTether.tethered("/usr/bin/script", [
             "-q", "/dev/null", binary,
             "--log-file", agyLoginLogURL.path,
-        ]
+        ])
+        process.executableURL = URL(fileURLWithPath: launch.executable)
+        process.arguments = launch.arguments
         var environment = ProcessInfo.processInfo.environment
         environment["AGY_CLI_DISABLE_AUTO_UPDATE"] = "1"
         // Only the app opens the published link, once per login. The CLI must
@@ -3217,6 +3241,8 @@ final class BoringCallaEngine: NSObject, BoringCallaEngineProtocol, @unchecked S
         reclaimOwnedProcess(at: retiredRuntimePIDURL)
         try? fileManager.removeItem(at: root.appendingPathComponent("tutor-host.sock"))
         removeRetiredLocalNodeState()
+        // Left behind by a host that was killed or crashed; nothing else reaps them.
+        terminateStrayAgyHosts(orphansOnly: true)
         if copilotProcess?.isRunning != true {
             copilotProcess = nil
         }

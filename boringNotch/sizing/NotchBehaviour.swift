@@ -13,8 +13,6 @@ import Foundation
 ///
 /// The order of `priority` below *is* the product decision, written once.
 public enum ClosedNotchActivity: String, CaseIterable, Sendable {
-    /// The battery notification that expands either side of the housing.
-    case batteryStatus
     /// Volume, brightness, backlight — the inline HUD style.
     case inlineHUD
     /// A live Copilot call or coding interview.
@@ -25,8 +23,6 @@ public enum ClosedNotchActivity: String, CaseIterable, Sendable {
     case usage
     /// Now playing.
     case music
-    /// The idle face.
-    case face
     /// Nothing to say. Draws a spacer so the shape keeps its height.
     case empty
 }
@@ -41,13 +37,10 @@ public struct ClosedNotchInputs: Equatable, Sendable {
     public var hideOnClosed: Bool
 
     public var expandingViewShowing: Bool
-    public var expandingViewIsBattery: Bool
     public var expandingViewIsMusic: Bool
-    public var powerNotificationsEnabled: Bool
 
     public var sneakPeekShowing: Bool
     public var sneakPeekIsMusic: Bool
-    public var sneakPeekIsBattery: Bool
     public var inlineHUDEnabled: Bool
 
     public var callLive: Bool
@@ -58,36 +51,27 @@ public struct ClosedNotchInputs: Equatable, Sendable {
     public var musicPlayerIdle: Bool
     public var musicLiveActivityEnabled: Bool
 
-    public var faceEnabled: Bool
-
     public init(
         isClosed: Bool = true,
         hideOnClosed: Bool = false,
         expandingViewShowing: Bool = false,
-        expandingViewIsBattery: Bool = false,
         expandingViewIsMusic: Bool = false,
-        powerNotificationsEnabled: Bool = true,
         sneakPeekShowing: Bool = false,
         sneakPeekIsMusic: Bool = false,
-        sneakPeekIsBattery: Bool = false,
         inlineHUDEnabled: Bool = false,
         callLive: Bool = false,
         pomodoroActive: Bool = false,
         usageBadgesEnabled: Bool = false,
         musicPlaying: Bool = false,
         musicPlayerIdle: Bool = true,
-        musicLiveActivityEnabled: Bool = false,
-        faceEnabled: Bool = false
+        musicLiveActivityEnabled: Bool = false
     ) {
         self.isClosed = isClosed
         self.hideOnClosed = hideOnClosed
         self.expandingViewShowing = expandingViewShowing
-        self.expandingViewIsBattery = expandingViewIsBattery
         self.expandingViewIsMusic = expandingViewIsMusic
-        self.powerNotificationsEnabled = powerNotificationsEnabled
         self.sneakPeekShowing = sneakPeekShowing
         self.sneakPeekIsMusic = sneakPeekIsMusic
-        self.sneakPeekIsBattery = sneakPeekIsBattery
         self.inlineHUDEnabled = inlineHUDEnabled
         self.callLive = callLive
         self.pomodoroActive = pomodoroActive
@@ -95,7 +79,6 @@ public struct ClosedNotchInputs: Equatable, Sendable {
         self.musicPlaying = musicPlaying
         self.musicPlayerIdle = musicPlayerIdle
         self.musicLiveActivityEnabled = musicLiveActivityEnabled
-        self.faceEnabled = faceEnabled
     }
 }
 
@@ -107,15 +90,12 @@ public enum ClosedNotchArbiter {
     /// where to paste the tenth.
     ///
     /// Why this order:
-    /// 1. A power event is a notification. It is brief, it was asked for, and
-    ///    missing it is the whole cost of showing it at all.
-    /// 2. The HUD is a direct response to a key the reader just pressed. It
+    /// 1. The HUD is a direct response to a key the reader just pressed. It
     ///    outranks anything ambient because the reader is waiting for it.
-    /// 3. A conversation cannot wait. A Pomodoro can.
-    /// 4. Usage, music and the face are ambient. They lose to everything.
+    /// 2. A conversation cannot wait. A Pomodoro can.
+    /// 3. Usage and music are ambient. They lose to everything.
     public static let priority: [(ClosedNotchActivity, @Sendable (ClosedNotchInputs) -> Bool)] = [
-        (.batteryStatus, { $0.expandingViewShowing && $0.expandingViewIsBattery && $0.powerNotificationsEnabled }),
-        (.inlineHUD, { $0.sneakPeekShowing && $0.inlineHUDEnabled && !$0.sneakPeekIsMusic && !$0.sneakPeekIsBattery }),
+        (.inlineHUD, { $0.sneakPeekShowing && $0.inlineHUDEnabled && !$0.sneakPeekIsMusic }),
         (.call, { $0.callLive && !$0.hideOnClosed }),
         (.pomodoro, { $0.pomodoroActive && !$0.hideOnClosed }),
         (.usage, { $0.usageBadgesEnabled && !$0.hideOnClosed }),
@@ -123,10 +103,6 @@ public enum ClosedNotchArbiter {
             (!$0.expandingViewShowing || $0.expandingViewIsMusic)
                 && ($0.musicPlaying || !$0.musicPlayerIdle)
                 && $0.musicLiveActivityEnabled && !$0.hideOnClosed
-        }),
-        (.face, {
-            !$0.expandingViewShowing && !$0.musicPlaying && $0.musicPlayerIdle
-                && $0.faceEnabled && !$0.hideOnClosed
         })
     ]
 

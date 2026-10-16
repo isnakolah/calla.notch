@@ -87,9 +87,6 @@
 		147163982C5D35B70068B555 /* MusicVisualizer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 147163972C5D35B70068B555 /* MusicVisualizer.swift */; };
 		1471639A2C5D35FF0068B555 /* MusicManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 147163992C5D35FF0068B555 /* MusicManager.swift */; };
 		1471A8592C6281BD0058408D /* BoringNotchWindow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1471A8582C6281BD0058408D /* BoringNotchWindow.swift */; };
-		149E0B972C737D00006418B1 /* WebcamManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 149E0B962C737D00006418B1 /* WebcamManager.swift */; };
-		149E0B9A2C737D40006418B1 /* WebcamView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 149E0B992C737D40006418B1 /* WebcamView.swift */; };
-		14A7E5882C64A89C008C1BE9 /* HelloAnimation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 14A7E5872C64A89C008C1BE9 /* HelloAnimation.swift */; };
 		14A7E5972C65FD31008C1BE9 /* boring.m4a in Resources */ = {isa = PBXBuildFile; fileRef = 14A7E5962C65FD31008C1BE9 /* boring.m4a */; };
 		14C08BB62C8DE42D000F8AA0 /* CalendarManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 14C08BB52C8DE42D000F8AA0 /* CalendarManager.swift */; };
 		14C08BB92C8DE4B1000F8AA0 /* BoringCalendar.swift in Sources */ = {isa = PBXBuildFile; fileRef = 14C08BB82C8DE4B1000F8AA0 /* BoringCalendar.swift */; };
@@ -102,31 +99,21 @@
 		14D0321D2C68F3350096E6A1 /* Sparkle in Frameworks */ = {isa = PBXBuildFile; productRef = 14D0321C2C68F3350096E6A1 /* Sparkle */; };
 		14D570B92C5E98A20011E668 /* drop.swift in Sources */ = {isa = PBXBuildFile; fileRef = 14D570B82C5E98A20011E668 /* drop.swift */; };
 		14D570BC2C5E98EB0011E668 /* generic.swift in Sources */ = {isa = PBXBuildFile; fileRef = 14D570BB2C5E98EB0011E668 /* generic.swift */; };
-		14D570C02C5EA5870011E668 /* AnimatedFace.swift in Sources */ = {isa = PBXBuildFile; fileRef = 14D570BF2C5EA5870011E668 /* AnimatedFace.swift */; };
 		14D570C22C5EAFBF0011E668 /* EmptyState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 14D570C12C5EAFBF0011E668 /* EmptyState.swift */; };
 		14D570C62C5F38210011E668 /* BoringHeader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 14D570C52C5F38210011E668 /* BoringHeader.swift */; };
 		14D570C92C5F38890011E668 /* BoringViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 14D570C82C5F38890011E668 /* BoringViewModel.swift */; };
-		14D570CB2C5F4B2C0011E668 /* BatteryStatusViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 14D570CA2C5F4B2C0011E668 /* BatteryStatusViewModel.swift */; };
-		14D570CD2C5F4BB70011E668 /* BoringBattery.swift in Sources */ = {isa = PBXBuildFile; fileRef = 14D570CC2C5F4BB70011E668 /* BoringBattery.swift */; };
 		14D570D22C5F6C6A0011E668 /* BoringExtrasMenu.swift in Sources */ = {isa = PBXBuildFile; fileRef = 14D570D12C5F6C6A0011E668 /* BoringExtrasMenu.swift */; };
-		14E9FEAA2C70BF610062E83F /* DownloadView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 14E9FEA92C70BF610062E83F /* DownloadView.swift */; };
 		14E9FEAE2C7325770062E83F /* Button+Bouncing.swift in Sources */ = {isa = PBXBuildFile; fileRef = 14E9FEAD2C7325770062E83F /* Button+Bouncing.swift */; };
 		14FC6E502C7DED5600C7BEA5 /* DataTypes+Extensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 14FC6E4F2C7DED5600C7BEA5 /* DataTypes+Extensions.swift */; };
-		1CE000000000000000000011 /* IceConfiguration.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1CE000000000000000000001 /* IceConfiguration.swift */; };
-		1CE000000000000000000012 /* IceMenuBarController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1CE000000000000000000002 /* IceMenuBarController.swift */; };
-		1CE000000000000000000013 /* IcePane.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1CE000000000000000000003 /* IcePane.swift */; };
 		1D904620B824FA448A5C5461 /* NotchMotion.swift in Sources */ = {isa = PBXBuildFile; fileRef = F5351BBF186C1389760606F4 /* NotchMotion.swift */; };
 		1F7D21024A5E67CF77CEB89F /* CallaCopilotEndingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2194645EB9B8E0A37DC92B4C /* CallaCopilotEndingView.swift */; };
-		20576116CE7AA9D29D601B50 /* BoringSweepCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = F6B27A25CA0558564E6738F8 /* BoringSweepCoordinator.swift */; };
 		2582E2193F16E9EB0B0FA05B /* AccentCircleButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 46714B3FFED7510C654122AE /* AccentCircleButton.swift */; };
 		31D4F6A79E3EABA49B4A590E /* CalendarPane.swift in Sources */ = {isa = PBXBuildFile; fileRef = B816D619992FD42E9A8E1F93 /* CalendarPane.swift */; };
 		321927CDA0DC48183C279885 /* SettingsSidebar.swift in Sources */ = {isa = PBXBuildFile; fileRef = EC4F86F509F60A5A2B81619D /* SettingsSidebar.swift */; };
-		39304423B20E078ABB7A0769 /* SweepPane.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CAF7087DC2A02E548C86E11 /* SweepPane.swift */; };
+		3BE3C58A3BA3A746D28146D2 /* NotchPane.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7EB113993B743F9CB66D279D /* NotchPane.swift */; };
 		3E16E4AD44E2A80F2FFA3ECD /* SettingsNavigationComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = 640BD5454A770242CD3369C6 /* SettingsNavigationComponents.swift */; };
 		3F0C145BB1EADE9E288D8F38 /* CalendarSourcesPane.swift in Sources */ = {isa = PBXBuildFile; fileRef = FF20CEF4A3D6066DF4F8D311 /* CalendarSourcesPane.swift */; };
-		418AB7C7575219D19CEEB921 /* AppearancePane.swift in Sources */ = {isa = PBXBuildFile; fileRef = 26DF0CF732E09AF6D0DB1279 /* AppearancePane.swift */; };
 		49FF3187F29A719E0AC8ECC4 /* SystemPermission.swift in Sources */ = {isa = PBXBuildFile; fileRef = A6996C6B3FE39FC624128B92 /* SystemPermission.swift */; };
-		4A0EEABEDDCEEFD81C960383 /* BoringSweepDTO.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3284AD5AC53B5DA4A4D9B4C5 /* BoringSweepDTO.swift */; };
 		4E4D968D005AF05A1912BFC0 /* GesturesPane.swift in Sources */ = {isa = PBXBuildFile; fileRef = B23BE0558742615E7F143661 /* GesturesPane.swift */; };
 		507266DB2C908E2E00A2D00D /* HoverButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 507266DA2C908E2E00A2D00D /* HoverButton.swift */; };
 		55B1BB825F13665F52D3616E /* CopilotModelsPane.swift in Sources */ = {isa = PBXBuildFile; fileRef = CECEC9C72C4A5C58FA02249B /* CopilotModelsPane.swift */; };
@@ -137,13 +124,9 @@
 		64819F735A40296AD040F55E /* CopilotBackupPane.swift in Sources */ = {isa = PBXBuildFile; fileRef = 93CF7CB0E93DBC0F8C6B9C07 /* CopilotBackupPane.swift */; };
 		657DF9660D8C273E287BC14A /* SettingsRouter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B65EBAC9D1AE76AF9789EA9 /* SettingsRouter.swift */; };
 		6A6B4A89F8337584B5C120B5 /* AboutPane.swift in Sources */ = {isa = PBXBuildFile; fileRef = 464C759946DD5B9E4AAEF2A9 /* AboutPane.swift */; };
-		72D624BD85518AD7358143EF /* CameraPane.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB76792F9FD6BACE8EA30C9B /* CameraPane.swift */; };
 		786152D40D7BC0C3115C4020 /* CopilotPane.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1638998EA958CC94FBDBDD0F /* CopilotPane.swift */; };
-		7EE3A719B7123D1F6B6CB626 /* SweepLifetime.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8B2E74C7C118D12600F318A0 /* SweepLifetime.swift */; };
-		802CAA563141E472C48CA624 /* SweepConfirmationSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5CA34636635451307D4AD25 /* SweepConfirmationSheet.swift */; };
-		84E4FCAFD2F34DA4D8DC61DB /* SystemPane.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2A31FE5D6C4372E3CCF2D2FF /* SystemPane.swift */; };
 		89423149FF42C3CC41EE8377 /* Color+Lighter.swift in Sources */ = {isa = PBXBuildFile; fileRef = B22C66AA5CE3C1BAAAFA244E /* Color+Lighter.swift */; };
-		90706B2010130E2AFD272494 /* BoringSweepProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3F63D49D9D4DCC08D0D6FF90 /* BoringSweepProtocol.swift */; };
+		8E69D7CD67D4106B5F67B1E8 /* CallaMode.swift in Sources */ = {isa = PBXBuildFile; fileRef = ECF7AD9B91709618929F2945 /* CallaMode.swift */; };
 		9422CBA228687C84FCE11044 /* PermissionMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = E3B6CB907120B6FE0E3F9EC4 /* PermissionMonitor.swift */; };
 		942BBB98FA129270158285F3 /* NotchSpacing.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64EA1AB5B5773D55C52FB74D /* NotchSpacing.swift */; };
 		95C700C265725F5E36D06E22 /* KnowledgeRoute.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01B27E9B7CEE4EF59ACA26CE /* KnowledgeRoute.swift */; };
@@ -163,19 +146,15 @@
 		A82800000000000000000101 /* NotchBehaviour.swift in Sources */ = {isa = PBXBuildFile; fileRef = A82800000000000000000102 /* NotchBehaviour.swift */; };
 		A82800000000000000000201 /* NotchSessionRouting.swift in Sources */ = {isa = PBXBuildFile; fileRef = A82800000000000000000202 /* NotchSessionRouting.swift */; };
 		A82800000000000000000301 /* NotchSessionShortcuts.swift in Sources */ = {isa = PBXBuildFile; fileRef = A82800000000000000000302 /* NotchSessionShortcuts.swift */; };
-		A82800000000000000000401 /* CallaCodingPresentation.swift in Sources */ = {isa = PBXBuildFile; fileRef = A82800000000000000000402 /* CallaCodingPresentation.swift */; };
-		A82800000000000000000501 /* CallaCodingPatchView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A82800000000000000000502 /* CallaCodingPatchView.swift */; };
 		A9E6D68BA59729BCF7D33909 /* KnowledgeCalendar.swift in Sources */ = {isa = PBXBuildFile; fileRef = A38E4A65F515E03600E71A66 /* KnowledgeCalendar.swift */; };
 		AF19C00180269201BF910937 /* SettingsRoute.swift in Sources */ = {isa = PBXBuildFile; fileRef = FCEBA4203A25E2142B893449 /* SettingsRoute.swift */; };
 		B05000030000000000000003 /* BoringNotchSetupUI in Frameworks */ = {isa = PBXBuildFile; productRef = B05000020000000000000002 /* BoringNotchSetupUI */; };
 		B05000050000000000000005 /* DistributionCore in Frameworks */ = {isa = PBXBuildFile; productRef = B05000040000000000000004 /* DistributionCore */; };
 		B10348D92C74E56000475897 /* ConditionalModifier.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10348D82C74E56000475897 /* ConditionalModifier.swift */; };
-		B10F84A32C6C9596009F3026 /* TestView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10F84A22C6C9596009F3026 /* TestView.swift */; };
 		B141C2412CA5F53F00AC8CC8 /* SparkleView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B141C2402CA5F53E00AC8CC8 /* SparkleView.swift */; };
 		B1628B922CC260C0003D8DF3 /* SwiftUIIntrospect in Frameworks */ = {isa = PBXBuildFile; productRef = B1628B912CC260C0003D8DF3 /* SwiftUIIntrospect */; };
 		B17266DF2C64DFA00031BA0D /* BundleInfos.swift in Sources */ = {isa = PBXBuildFile; fileRef = B17266DE2C64DFA00031BA0D /* BundleInfos.swift */; };
 		B17266E12C6532560031BA0D /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = B17266E02C6532560031BA0D /* Localizable.xcstrings */; };
-		B17266E32C65F7FB0031BA0D /* WhatsNewView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B17266E22C65F7FB0031BA0D /* WhatsNewView.swift */; };
 		B172AAC02C95DA0B001623F1 /* InlineHUD.swift in Sources */ = {isa = PBXBuildFile; fileRef = B172AABF2C95DA0B001623F1 /* InlineHUD.swift */; };
 		B18654392C6F4990000B926A /* KeyboardShortcuts in Frameworks */ = {isa = PBXBuildFile; productRef = B18654382C6F4990000B926A /* KeyboardShortcuts */; };
 		B186543C2C6F49AE000B926A /* ShortcutConstants.swift in Sources */ = {isa = PBXBuildFile; fileRef = B186543B2C6F49AE000B926A /* ShortcutConstants.swift */; };
@@ -187,7 +166,6 @@
 		B1B112932C6A577E00093D8F /* MouseTracker.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1B112922C6A577E00093D8F /* MouseTracker.swift */; };
 		B1C448962C9712C4001F0858 /* ActionBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1C448952C9712C4001F0858 /* ActionBar.swift */; };
 		B1C448982C972CC4001F0858 /* ListItemPopover.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1C448972C972CC4001F0858 /* ListItemPopover.swift */; };
-		B1C4489B2C97376A001F0858 /* TipStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1C4489A2C97376A001F0858 /* TipStore.swift */; };
 		B1C974342C642B6D0000E707 /* MarqueeTextView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1C974332C642B6D0000E707 /* MarqueeTextView.swift */; };
 		B1CE8CFE2C6F659400DD9871 /* KeyboardShortcutsHelper.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1CE8CFD2C6F659400DD9871 /* KeyboardShortcutsHelper.swift */; };
 		B1D365CE2C6A979C0047BDBC /* LiveActivityModifier.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1D365CD2C6A979C0047BDBC /* LiveActivityModifier.swift */; };
@@ -201,7 +179,7 @@
 		B484438BB89BD60A61D1077F /* SettingsSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = CD09AC32501C35B4F19B5D6C /* SettingsSection.swift */; };
 		B6EAE9BD86FD54977A082623 /* SettingsLanding.swift in Sources */ = {isa = PBXBuildFile; fileRef = E0D81BE98CE522486564CD20 /* SettingsLanding.swift */; };
 		B964E5A76B6C10FCED9E5242 /* ShortcutsPane.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4412D914C230215A20D0F20E /* ShortcutsPane.swift */; };
-		BA7000020000000000000002 /* SweepService.xpc in Embed XPC Services */ = {isa = PBXBuildFile; fileRef = BA7000010000000000000001 /* SweepService.xpc */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		BA13A3312A223E1C8578B09E /* SettingsSimple.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3736DAB2C982ED3C3F9BE25 /* SettingsSimple.swift */; };
 		BB0F88C4123D19A0AED59FED /* NotchWash.swift in Sources */ = {isa = PBXBuildFile; fileRef = 15964D68EEC7E01160998CD5 /* NotchWash.swift */; };
 		BE3B69B4729CE32A2CB0F57E /* SettingsDestinations.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1F043A855A0B84AB5876D00C /* SettingsDestinations.swift */; };
 		C6F6C7B2154DA87D0F271D9E /* KDEConnectPane.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1BC371E9629ED7DC2723E53 /* KDEConnectPane.swift */; };
@@ -233,8 +211,6 @@
 		CA11KL010000000000000001 /* CallaKnowledgeLibrary.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA11KL010000000000000002 /* CallaKnowledgeLibrary.swift */; };
 		CA11KL020000000000000001 /* CopilotKnowledgeDetailPane.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA11KL020000000000000002 /* CopilotKnowledgeDetailPane.swift */; };
 		CA11MC100000000000000001 /* CallaModeChrome.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA11MC100000000000000002 /* CallaModeChrome.swift */; };
-		CA11MC200000000000000001 /* CallaCodingSetup.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA11MC200000000000000002 /* CallaCodingSetup.swift */; };
-		CA11MC300000000000000001 /* CopilotCodingPane.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA11MC300000000000000002 /* CopilotCodingPane.swift */; };
 		CA11ND010000000000000001 /* NotchDropRouter.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA11ND010000000000000002 /* NotchDropRouter.swift */; };
 		CA11ND020000000000000001 /* NotchDropChooserView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA11ND020000000000000002 /* NotchDropChooserView.swift */; };
 		CA11QZ110000000000000011 /* IntelligenceCore in Frameworks */ = {isa = PBXBuildFile; productRef = CA11QZ100000000000000010 /* IntelligenceCore */; };
@@ -249,7 +225,6 @@
 		CA11QZA00000000000000001 /* CallaQuizCodeBlock.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA11QZA00000000000000002 /* CallaQuizCodeBlock.swift */; };
 		CA11ST030000000000000003 /* IntelligenceStore in Frameworks */ = {isa = PBXBuildFile; productRef = CA11ST020000000000000002 /* IntelligenceStore */; };
 		CA11WM300000000000000001 /* CallaWindowTargetMenu.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA11WM300000000000000002 /* CallaWindowTargetMenu.swift */; };
-		CA11WV100000000000000001 /* WaveInterview.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA11WV100000000000000002 /* WaveInterview.swift */; };
 		CA11WV200000000000000001 /* CallaCallPreflightView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA11WV200000000000000002 /* CallaCallPreflightView.swift */; };
 		CA1200010000000000B00101 /* NotchCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA1200010000000000B00102 /* NotchCard.swift */; };
 		CAV200030000000000000003 /* CallaContracts in Frameworks */ = {isa = PBXBuildFile; productRef = CAV200020000000000000002 /* CallaContracts */; };
@@ -272,10 +247,7 @@
 		DDDD000100000000000000D2 /* PomodoroSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = DDDD000100000000000000D1 /* PomodoroSettings.swift */; };
 		E06787777CA4F4FD68D9CE86 /* CallaCopilotStartFailure.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0F286030B7D94CCEE706FA3B /* CallaCopilotStartFailure.swift */; };
 		E64258BC2F6894F754560956 /* SettingsRoutePreview.swift in Sources */ = {isa = PBXBuildFile; fileRef = 884E34436B0C6F33816184B4 /* SettingsRoutePreview.swift */; };
-		EE4454309D2A1C326B6CC17D /* BatteryPane.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01475ED566ADB6375C9951F9 /* BatteryPane.swift */; };
 		F225492F6D7882259A6EE277 /* MediaPane.swift in Sources */ = {isa = PBXBuildFile; fileRef = D38EC931F5C846E9C2EB53F5 /* MediaPane.swift */; };
-		F38DE6482D8243E7008B5C6D /* BatteryActivityManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = F38DE6472D8243E2008B5C6D /* BatteryActivityManager.swift */; };
-		F5DDFF5DBFCA16E29D1F88FF /* SweepFormatting.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7C3EBB5F0620489431A68B56 /* SweepFormatting.swift */; };
 		F85BD8D9AACCC291D0BB9DA3 /* HUDPane.swift in Sources */ = {isa = PBXBuildFile; fileRef = AADAD7E7C581C161D77266FC /* HUDPane.swift */; };
 		FBA7EE904B4D554A62892A57 /* SettingsBreadcrumb.swift in Sources */ = {isa = PBXBuildFile; fileRef = 384C3C1DDD9F87848780B08F /* SettingsBreadcrumb.swift */; };
 		FEA04E2958FDEB3EC579A459 /* CallFormatting.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2515AFF9AAAB6EAFF940C43C /* CallFormatting.swift */; };
@@ -288,13 +260,6 @@
 			proxyType = 1;
 			remoteGlobalIDString = 11F7484E2EC9AABA00F841DB;
 			remoteInfo = BoringNotchXPCHelper;
-		};
-		BA7000040000000000000004 /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = 14CEF40A2C5CAED200855D72 /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = BA7000030000000000000003;
-			remoteInfo = SweepService;
 		};
 		CA11E0040000000000000004 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -314,7 +279,6 @@
 			files = (
 				11F7485B2EC9AABA00F841DB /* BoringNotchXPCHelper.xpc in Embed XPC Services */,
 				CA11E0020000000000000002 /* BoringCallaEngine.xpc in Embed XPC Services */,
-				BA7000020000000000000002 /* SweepService.xpc in Embed XPC Services */,
 			);
 			name = "Embed XPC Services";
 			runOnlyForDeploymentPostprocessing = 0;
@@ -338,7 +302,6 @@
 		00A1B2C30000000000000004 /* ShelfQueueChip.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShelfQueueChip.swift; sourceTree = "<group>"; };
 		00A1B2C30000000000000006 /* ShelfToolbar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShelfToolbar.swift; sourceTree = "<group>"; };
 		00A1B2C30000000000000008 /* ShelfSendBar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShelfSendBar.swift; sourceTree = "<group>"; };
-		01475ED566ADB6375C9951F9 /* BatteryPane.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = components/Settings/Panes/System/BatteryPane.swift; sourceTree = "<group>"; };
 		01B27E9B7CEE4EF59ACA26CE /* KnowledgeRoute.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = components/Settings/Navigation/KnowledgeRoute.swift; sourceTree = "<group>"; };
 		0F286030B7D94CCEE706FA3B /* CallaCopilotStartFailure.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = components/Calla/CallaCopilotStartFailure.swift; sourceTree = "<group>"; };
 		1100290B2E847E2800035A57 /* NSItemProvider+LoadHelpers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "NSItemProvider+LoadHelpers.swift"; sourceTree = "<group>"; };
@@ -406,9 +369,6 @@
 		147163972C5D35B70068B555 /* MusicVisualizer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MusicVisualizer.swift; sourceTree = "<group>"; };
 		147163992C5D35FF0068B555 /* MusicManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MusicManager.swift; sourceTree = "<group>"; };
 		1471A8582C6281BD0058408D /* BoringNotchWindow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BoringNotchWindow.swift; sourceTree = "<group>"; };
-		149E0B962C737D00006418B1 /* WebcamManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebcamManager.swift; sourceTree = "<group>"; };
-		149E0B992C737D40006418B1 /* WebcamView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebcamView.swift; sourceTree = "<group>"; };
-		14A7E5872C64A89C008C1BE9 /* HelloAnimation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HelloAnimation.swift; sourceTree = "<group>"; };
 		14A7E5962C65FD31008C1BE9 /* boring.m4a */ = {isa = PBXFileReference; lastKnownFileType = file; path = boring.m4a; sourceTree = "<group>"; };
 		14C08BB52C8DE42D000F8AA0 /* CalendarManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalendarManager.swift; sourceTree = "<group>"; };
 		14C08BB82C8DE4B1000F8AA0 /* BoringCalendar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BoringCalendar.swift; sourceTree = "<group>"; };
@@ -423,39 +383,27 @@
 		14D031EF2C689DC00096E6A1 /* ApplicationServices.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = ApplicationServices.framework; path = System/Library/Frameworks/ApplicationServices.framework; sourceTree = SDKROOT; };
 		14D570B82C5E98A20011E668 /* drop.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = drop.swift; sourceTree = "<group>"; };
 		14D570BB2C5E98EB0011E668 /* generic.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = generic.swift; sourceTree = "<group>"; };
-		14D570BF2C5EA5870011E668 /* AnimatedFace.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnimatedFace.swift; sourceTree = "<group>"; };
 		14D570C12C5EAFBF0011E668 /* EmptyState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmptyState.swift; sourceTree = "<group>"; };
 		14D570C52C5F38210011E668 /* BoringHeader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BoringHeader.swift; sourceTree = "<group>"; };
 		14D570C82C5F38890011E668 /* BoringViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BoringViewModel.swift; sourceTree = "<group>"; };
-		14D570CA2C5F4B2C0011E668 /* BatteryStatusViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BatteryStatusViewModel.swift; sourceTree = "<group>"; };
-		14D570CC2C5F4BB70011E668 /* BoringBattery.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BoringBattery.swift; sourceTree = "<group>"; };
 		14D570D12C5F6C6A0011E668 /* BoringExtrasMenu.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BoringExtrasMenu.swift; sourceTree = "<group>"; };
-		14E9FEA92C70BF610062E83F /* DownloadView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DownloadView.swift; sourceTree = "<group>"; };
 		14E9FEAD2C7325770062E83F /* Button+Bouncing.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Button+Bouncing.swift"; sourceTree = "<group>"; };
 		14FC6E4F2C7DED5600C7BEA5 /* DataTypes+Extensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "DataTypes+Extensions.swift"; sourceTree = "<group>"; };
 		15964D68EEC7E01160998CD5 /* NotchWash.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = components/Settings/DesignSystem/NotchWash.swift; sourceTree = "<group>"; };
 		1638998EA958CC94FBDBDD0F /* CopilotPane.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = components/Settings/Panes/Copilot/CopilotPane.swift; sourceTree = "<group>"; };
 		17F550AFFB8F55DEA8DCB2C9 /* DisplaysPane.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = components/Settings/Panes/General/DisplaysPane.swift; sourceTree = "<group>"; };
 		1C0F64BE00142F107450433A /* AccentPane.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = components/Settings/Panes/Appearance/AccentPane.swift; sourceTree = "<group>"; };
-		1CE000000000000000000001 /* IceConfiguration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Ice/IceConfiguration.swift; sourceTree = "<group>"; };
-		1CE000000000000000000002 /* IceMenuBarController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Ice/IceMenuBarController.swift; sourceTree = "<group>"; };
-		1CE000000000000000000003 /* IcePane.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = components/Settings/Panes/Ice/IcePane.swift; sourceTree = "<group>"; };
 		1F043A855A0B84AB5876D00C /* SettingsDestinations.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = components/Settings/Navigation/SettingsDestinations.swift; sourceTree = "<group>"; };
 		2194645EB9B8E0A37DC92B4C /* CallaCopilotEndingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = components/Calla/CallaCopilotEndingView.swift; sourceTree = "<group>"; };
 		2515AFF9AAAB6EAFF940C43C /* CallFormatting.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = components/Settings/Panes/Copilot/CallFormatting.swift; sourceTree = "<group>"; };
-		26DF0CF732E09AF6D0DB1279 /* AppearancePane.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = components/Settings/Panes/Appearance/AppearancePane.swift; sourceTree = "<group>"; };
-		2A31FE5D6C4372E3CCF2D2FF /* SystemPane.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = components/Settings/Panes/System/SystemPane.swift; sourceTree = "<group>"; };
-		3284AD5AC53B5DA4A4D9B4C5 /* BoringSweepDTO.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = XPCHelperClient/Sweep/BoringSweepDTO.swift; sourceTree = "<group>"; };
 		384C3C1DDD9F87848780B08F /* SettingsBreadcrumb.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = components/Settings/DesignSystem/SettingsBreadcrumb.swift; sourceTree = "<group>"; };
 		3B65EBAC9D1AE76AF9789EA9 /* SettingsRouter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = components/Settings/Navigation/SettingsRouter.swift; sourceTree = "<group>"; };
 		3BBACD35B85223BF96EBAC8F /* NotchSlider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = components/Settings/DesignSystem/NotchSlider.swift; sourceTree = "<group>"; };
 		3D8B367B52AA016A8722B37E /* LocalSendPane.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = components/Settings/Panes/Shelf/LocalSendPane.swift; sourceTree = "<group>"; };
-		3F63D49D9D4DCC08D0D6FF90 /* BoringSweepProtocol.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = XPCHelperClient/Sweep/BoringSweepProtocol.swift; sourceTree = "<group>"; };
 		4412D914C230215A20D0F20E /* ShortcutsPane.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = components/Settings/Panes/App/ShortcutsPane.swift; sourceTree = "<group>"; };
 		464C759946DD5B9E4AAEF2A9 /* AboutPane.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = components/Settings/Panes/App/AboutPane.swift; sourceTree = "<group>"; };
 		46714B3FFED7510C654122AE /* AccentCircleButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = components/Settings/DesignSystem/AccentCircleButton.swift; sourceTree = "<group>"; };
 		4B799386A470FB8B9FC230B4 /* SettingsSearchIndex.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = components/Settings/Navigation/SettingsSearchIndex.swift; sourceTree = "<group>"; };
-		4CAF7087DC2A02E548C86E11 /* SweepPane.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = components/Settings/Panes/Sweep/SweepPane.swift; sourceTree = "<group>"; };
 		4D2AC40C093FE556358C5BD2 /* PromptEditor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = components/Settings/Panes/Copilot/PromptEditor.swift; sourceTree = "<group>"; };
 		507266DA2C908E2E00A2D00D /* HoverButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HoverButton.swift; sourceTree = "<group>"; };
 		5917FD102E57891600E87F1C /* MediaKeyInterceptor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MediaKeyInterceptor.swift; sourceTree = "<group>"; };
@@ -465,11 +413,10 @@
 		640BD5454A770242CD3369C6 /* SettingsNavigationComponents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = components/Settings/DesignSystem/SettingsNavigationComponents.swift; sourceTree = "<group>"; };
 		64EA1AB5B5773D55C52FB74D /* NotchSpacing.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = components/Settings/DesignSystem/NotchSpacing.swift; sourceTree = "<group>"; };
 		78886468E931404DC5A1D78F /* SettingsPage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = components/Settings/Navigation/SettingsPage.swift; sourceTree = "<group>"; };
-		7C3EBB5F0620489431A68B56 /* SweepFormatting.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = components/Settings/Panes/Sweep/SweepFormatting.swift; sourceTree = "<group>"; };
+		7EB113993B743F9CB66D279D /* NotchPane.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = NotchPane.swift; path = boringNotch/components/Settings/Panes/Notch/NotchPane.swift; sourceTree = "<group>"; };
 		7EBB31AB1AC135C1F075D0F9 /* AdvancedPane.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = components/Settings/Panes/General/AdvancedPane.swift; sourceTree = "<group>"; };
 		84ACD1DFF0D38F15E6B68B82 /* CopilotCallDetailPane.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = components/Settings/Panes/Copilot/CopilotCallDetailPane.swift; sourceTree = "<group>"; };
 		884E34436B0C6F33816184B4 /* SettingsRoutePreview.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = components/Settings/Navigation/SettingsRoutePreview.swift; sourceTree = "<group>"; };
-		8B2E74C7C118D12600F318A0 /* SweepLifetime.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = components/Settings/Panes/Sweep/SweepLifetime.swift; sourceTree = "<group>"; };
 		93CF7CB0E93DBC0F8C6B9C07 /* CopilotBackupPane.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = components/Settings/Panes/Copilot/CopilotBackupPane.swift; sourceTree = "<group>"; };
 		9A0887312C7A693000C160EA /* TabButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TabButton.swift; sourceTree = "<group>"; };
 		9A0887342C7AFF8E00C160EA /* TabSelectionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TabSelectionView.swift; sourceTree = "<group>"; };
@@ -477,6 +424,7 @@
 		9AB0C6BB2C73C9CB00F7CD30 /* NotchHomeView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = NotchHomeView.swift; sourceTree = "<group>"; };
 		A1B2C3D4E5F6000000000003 /* KDECertificateServiceHelper.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = KDECertificateServiceHelper.m; sourceTree = "<group>"; };
 		A1B2C3D4E5F6000000000004 /* KDECertificateServiceHelper.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = KDECertificateServiceHelper.h; sourceTree = "<group>"; };
+		A3736DAB2C982ED3C3F9BE25 /* SettingsSimple.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = SettingsSimple.swift; path = components/Settings/DesignSystem/SettingsSimple.swift; sourceTree = "<group>"; };
 		A38E4A65F515E03600E71A66 /* KnowledgeCalendar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = components/Settings/Panes/Copilot/KnowledgeCalendar.swift; sourceTree = "<group>"; };
 		A6996C6B3FE39FC624128B92 /* SystemPermission.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = models/SystemPermission.swift; sourceTree = "<group>"; };
 		A82800000000000000000002 /* NotchSizing.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotchSizing.swift; sourceTree = "<group>"; };
@@ -486,16 +434,11 @@
 		A82800000000000000000102 /* NotchBehaviour.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotchBehaviour.swift; sourceTree = "<group>"; };
 		A82800000000000000000202 /* NotchSessionRouting.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotchSessionRouting.swift; sourceTree = "<group>"; };
 		A82800000000000000000302 /* NotchSessionShortcuts.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotchSessionShortcuts.swift; sourceTree = "<group>"; };
-		A82800000000000000000402 /* CallaCodingPresentation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = components/Calla/CallaCodingPresentation.swift; sourceTree = "<group>"; };
-		A82800000000000000000502 /* CallaCodingPatchView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = components/Calla/CallaCodingPatchView.swift; sourceTree = "<group>"; };
 		AADAD7E7C581C161D77266FC /* HUDPane.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = components/Settings/Panes/System/HUDPane.swift; sourceTree = "<group>"; };
-		AB76792F9FD6BACE8EA30C9B /* CameraPane.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = components/Settings/Panes/Appearance/CameraPane.swift; sourceTree = "<group>"; };
 		B10348D82C74E56000475897 /* ConditionalModifier.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConditionalModifier.swift; sourceTree = "<group>"; };
-		B10F84A22C6C9596009F3026 /* TestView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TestView.swift; sourceTree = "<group>"; };
 		B141C2402CA5F53E00AC8CC8 /* SparkleView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SparkleView.swift; sourceTree = "<group>"; };
 		B17266DE2C64DFA00031BA0D /* BundleInfos.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BundleInfos.swift; sourceTree = "<group>"; };
 		B17266E02C6532560031BA0D /* Localizable.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = Localizable.xcstrings; sourceTree = "<group>"; };
-		B17266E22C65F7FB0031BA0D /* WhatsNewView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WhatsNewView.swift; sourceTree = "<group>"; };
 		B172AABF2C95DA0B001623F1 /* InlineHUD.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InlineHUD.swift; sourceTree = "<group>"; };
 		B186543B2C6F49AE000B926A /* ShortcutConstants.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShortcutConstants.swift; sourceTree = "<group>"; };
 		B19016232CC15B4D00E3F12E /* Constants.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Constants.swift; sourceTree = "<group>"; };
@@ -506,7 +449,6 @@
 		B1BC371E9629ED7DC2723E53 /* KDEConnectPane.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = components/Settings/Panes/Shelf/KDEConnectPane.swift; sourceTree = "<group>"; };
 		B1C448952C9712C4001F0858 /* ActionBar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActionBar.swift; sourceTree = "<group>"; };
 		B1C448972C972CC4001F0858 /* ListItemPopover.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ListItemPopover.swift; sourceTree = "<group>"; };
-		B1C4489A2C97376A001F0858 /* TipStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TipStore.swift; sourceTree = "<group>"; };
 		B1C974332C642B6D0000E707 /* MarqueeTextView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MarqueeTextView.swift; sourceTree = "<group>"; };
 		B1CE8CFD2C6F659400DD9871 /* KeyboardShortcutsHelper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyboardShortcutsHelper.swift; sourceTree = "<group>"; };
 		B1D365CD2C6A979C0047BDBC /* LiveActivityModifier.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveActivityModifier.swift; sourceTree = "<group>"; };
@@ -520,7 +462,6 @@
 		B73DC51812AA16023ABC39C0 /* PrivacyPane.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = components/Settings/Panes/Privacy/PrivacyPane.swift; sourceTree = "<group>"; };
 		B816D619992FD42E9A8E1F93 /* CalendarPane.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = components/Settings/Panes/Calendar/CalendarPane.swift; sourceTree = "<group>"; };
 		B8F3C5105FA3BB3A2B5A40B6 /* GeneralPane.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = components/Settings/Panes/General/GeneralPane.swift; sourceTree = "<group>"; };
-		BA7000010000000000000001 /* SweepService.xpc */ = {isa = PBXFileReference; explicitFileType = "wrapper.xpc-service"; includeInIndex = 0; path = SweepService.xpc; sourceTree = BUILT_PRODUCTS_DIR; };
 		CA1100010000000000000002 /* CallaEngineClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = components/Calla/CallaEngineClient.swift; sourceTree = "<group>"; };
 		CA110001000000000000B002 /* CallaCopilotPresentation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = components/Calla/CallaCopilotPresentation.swift; sourceTree = "<group>"; };
 		CA110001000000000000B102 /* CallaCopilotTabView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = components/Calla/CallaCopilotTabView.swift; sourceTree = "<group>"; };
@@ -548,8 +489,6 @@
 		CA11KL010000000000000002 /* CallaKnowledgeLibrary.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = components/Calla/CallaKnowledgeLibrary.swift; sourceTree = "<group>"; };
 		CA11KL020000000000000002 /* CopilotKnowledgeDetailPane.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = components/Settings/Panes/Copilot/CopilotKnowledgeDetailPane.swift; sourceTree = "<group>"; };
 		CA11MC100000000000000002 /* CallaModeChrome.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = components/Calla/CallaModeChrome.swift; sourceTree = "<group>"; };
-		CA11MC200000000000000002 /* CallaCodingSetup.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = components/Calla/CallaCodingSetup.swift; sourceTree = "<group>"; };
-		CA11MC300000000000000002 /* CopilotCodingPane.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = components/Settings/Panes/Copilot/CopilotCodingPane.swift; sourceTree = "<group>"; };
 		CA11ND010000000000000002 /* NotchDropRouter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = components/Calla/NotchDropRouter.swift; sourceTree = "<group>"; };
 		CA11ND020000000000000002 /* NotchDropChooserView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = components/Calla/NotchDropChooserView.swift; sourceTree = "<group>"; };
 		CA11QZ300000000000000002 /* CallaQuizPreflightView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = components/Calla/CallaQuizPreflightView.swift; sourceTree = "<group>"; };
@@ -561,7 +500,6 @@
 		CA11QZ900000000000000002 /* QuizProfileStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = models/QuizProfileStore.swift; sourceTree = "<group>"; };
 		CA11QZA00000000000000002 /* CallaQuizCodeBlock.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = components/Calla/CallaQuizCodeBlock.swift; sourceTree = "<group>"; };
 		CA11WM300000000000000002 /* CallaWindowTargetMenu.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = components/Calla/CallaWindowTargetMenu.swift; sourceTree = "<group>"; };
-		CA11WV100000000000000002 /* WaveInterview.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = components/Calla/WaveInterview.swift; sourceTree = "<group>"; };
 		CA11WV200000000000000002 /* CallaCallPreflightView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = components/Calla/CallaCallPreflightView.swift; sourceTree = "<group>"; };
 		CA1200010000000000B00102 /* NotchCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotchCard.swift; sourceTree = "<group>"; };
 		CD09AC32501C35B4F19B5D6C /* SettingsSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = components/Settings/Navigation/SettingsSection.swift; sourceTree = "<group>"; };
@@ -582,11 +520,9 @@
 		DDDD000100000000000000D1 /* PomodoroSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PomodoroSettings.swift; sourceTree = "<group>"; };
 		E0D81BE98CE522486564CD20 /* SettingsLanding.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = components/Settings/DesignSystem/SettingsLanding.swift; sourceTree = "<group>"; };
 		E3B6CB907120B6FE0E3F9EC4 /* PermissionMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = managers/PermissionMonitor.swift; sourceTree = "<group>"; };
-		E5CA34636635451307D4AD25 /* SweepConfirmationSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = components/Settings/Panes/Sweep/SweepConfirmationSheet.swift; sourceTree = "<group>"; };
 		EC4F86F509F60A5A2B81619D /* SettingsSidebar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = components/Settings/Navigation/SettingsSidebar.swift; sourceTree = "<group>"; };
-		F38DE6472D8243E2008B5C6D /* BatteryActivityManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BatteryActivityManager.swift; sourceTree = "<group>"; };
+		ECF7AD9B91709618929F2945 /* CallaMode.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = CallaMode.swift; path = components/Calla/CallaMode.swift; sourceTree = "<group>"; };
 		F5351BBF186C1389760606F4 /* NotchMotion.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = components/Settings/DesignSystem/NotchMotion.swift; sourceTree = "<group>"; };
-		F6B27A25CA0558564E6738F8 /* BoringSweepCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = XPCHelperClient/Sweep/BoringSweepCoordinator.swift; sourceTree = "<group>"; };
 		FCEBA4203A25E2142B893449 /* SettingsRoute.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = components/Settings/Navigation/SettingsRoute.swift; sourceTree = "<group>"; };
 		FF20CEF4A3D6066DF4F8D311 /* CalendarSourcesPane.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = components/Settings/Panes/Calendar/CalendarSourcesPane.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -598,14 +534,6 @@
 				Info.plist,
 			);
 			target = 11F7484E2EC9AABA00F841DB /* BoringNotchXPCHelper */;
-		};
-		BA7000130000000000000013 /* Exceptions for "SweepService" folder in "SweepService" target */ = {
-			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
-			membershipExceptions = (
-				Info.plist,
-				SweepService.entitlements,
-			);
-			target = BA7000030000000000000003 /* SweepService */;
 		};
 		CA11E0070000000000000007 /* Exceptions for "BoringCallaEngine" folder in "BoringCallaEngine" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
@@ -638,18 +566,6 @@
 			explicitFolders = (
 			);
 			path = BoringNotchXPCHelper;
-			sourceTree = "<group>";
-		};
-		BA7000120000000000000012 /* SweepService */ = {
-			isa = PBXFileSystemSynchronizedRootGroup;
-			exceptions = (
-				BA7000130000000000000013 /* Exceptions for "SweepService" folder in "SweepService" target */,
-			);
-			explicitFileTypes = {
-			};
-			explicitFolders = (
-			);
-			path = SweepService;
 			sourceTree = "<group>";
 		};
 		CA11E0060000000000000006 /* BoringCallaEngine */ = {
@@ -695,13 +611,6 @@
 				B19016222CC15B3D00E3F12E /* Defaults in Frameworks */,
 				111BE95D2ECD71E10079DD4E /* AsyncXPCConnection in Frameworks */,
 				B1628B922CC260C0003D8DF3 /* SwiftUIIntrospect in Frameworks */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		BA7000070000000000000007 /* Frameworks */ = {
-			isa = PBXFrameworksBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -861,22 +770,17 @@
 				A82800000000000000000006 /* NotchResizeEditor.swift */,
 				A82800000000000000000008 /* NotchSizePane.swift */,
 				B141C23B2CA5F50900AC8CC8 /* Onboarding */,
-				B1C448992C97375A001F0858 /* Tips */,
 				14C08BB72C8DE49E000F8AA0 /* Calendar */,
 				DDDD00010000000000000041 /* UsageMonitor */,
 				DDDD000100000000000000E1 /* Pomodoro */,
 				9A987A042C73CA66005CA465 /* Shelf */,
-				149E0B982C737D26006418B1 /* Webcam */,
 				B18654312C6F45AE000B926A /* Live activities */,
 				B18654302C6F4590000B926A /* Settings */,
 				B186542F2C6F455E000B926A /* Notch */,
 				9A0887332C7AFF7E00C160EA /* Tabs */,
 				B186542E2C6F453B000B926A /* Music */,
-				14D570BF2C5EA5870011E668 /* AnimatedFace.swift */,
 				14288DE72C6E01C800B9F80C /* ProgressIndicator.swift */,
 				14D570C12C5EAFBF0011E668 /* EmptyState.swift */,
-				B17266E22C65F7FB0031BA0D /* WhatsNewView.swift */,
-				B10F84A22C6C9596009F3026 /* TestView.swift */,
 				507266DA2C908E2E00A2D00D /* HoverButton.swift */,
 				B1F747F82EC7E94000F841DB /* LottieView.swift */,
 			);
@@ -887,10 +791,8 @@
 			isa = PBXGroup;
 			children = (
 				11D58EA12E760AE100FA8377 /* ImageService.swift */,
-				F38DE6472D8243E2008B5C6D /* BatteryActivityManager.swift */,
 				112FB7342CCF16F70015238C /* NotchSpaceManager.swift */,
 				147163992C5D35FF0068B555 /* MusicManager.swift */,
-				149E0B962C737D00006418B1 /* WebcamManager.swift */,
 				14C08BB52C8DE42D000F8AA0 /* CalendarManager.swift */,
 				B1F0A0012E60000100000001 /* BrightnessManager.swift */,
 				59D8C23B2E589FAA00147B33 /* VolumeManager.swift */,
@@ -898,14 +800,6 @@
 				DDDD000100000000000000C1 /* PomodoroManager.swift */,
 			);
 			path = managers;
-			sourceTree = "<group>";
-		};
-		149E0B982C737D26006418B1 /* Webcam */ = {
-			isa = PBXGroup;
-			children = (
-				149E0B992C737D40006418B1 /* WebcamView.swift */,
-			);
-			path = Webcam;
 			sourceTree = "<group>";
 		};
 		14C08BB72C8DE49E000F8AA0 /* Calendar */ = {
@@ -923,9 +817,9 @@
 				14CEF4142C5CAED300855D72 /* boringNotch */,
 				11F748502EC9AABA00F841DB /* BoringNotchXPCHelper */,
 				CA11E0060000000000000006 /* BoringCallaEngine */,
-				BA7000120000000000000012 /* SweepService */,
 				14CEF4132C5CAED300855D72 /* Products */,
 				14D031EC2C689DB70096E6A1 /* Frameworks */,
+				7EB113993B743F9CB66D279D /* NotchPane.swift */,
 			);
 			sourceTree = "<group>";
 		};
@@ -935,7 +829,6 @@
 				14CEF4122C5CAED300855D72 /* boringNotch.app */,
 				11F7484F2EC9AABA00F841DB /* BoringNotchXPCHelper.xpc */,
 				CA11E0010000000000000001 /* BoringCallaEngine.xpc */,
-				BA7000010000000000000001 /* SweepService.xpc */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -943,9 +836,6 @@
 		14CEF4142C5CAED300855D72 /* boringNotch */ = {
 			isa = PBXGroup;
 			children = (
-				1CE000000000000000000001 /* IceConfiguration.swift */,
-				1CE000000000000000000002 /* IceMenuBarController.swift */,
-				1CE000000000000000000003 /* IcePane.swift */,
 				11F748672EC9AC9600F841DB /* XPCHelperClient */,
 				116398942DF5D6B40052E6AF /* Providers */,
 				14288DE22C6E016F00B9F80C /* observers */,
@@ -977,19 +867,14 @@
 				2515AFF9AAAB6EAFF940C43C /* CallFormatting.swift */,
 				84ACD1DFF0D38F15E6B68B82 /* CopilotCallDetailPane.swift */,
 				A38E4A65F515E03600E71A66 /* KnowledgeCalendar.swift */,
-				7C3EBB5F0620489431A68B56 /* SweepFormatting.swift */,
 				E3B6CB907120B6FE0E3F9EC4 /* PermissionMonitor.swift */,
-				8B2E74C7C118D12600F318A0 /* SweepLifetime.swift */,
-				E5CA34636635451307D4AD25 /* SweepConfirmationSheet.swift */,
 				B73DC51812AA16023ABC39C0 /* PrivacyPane.swift */,
 				CECEC9C72C4A5C58FA02249B /* CopilotModelsPane.swift */,
 				93CF7CB0E93DBC0F8C6B9C07 /* CopilotBackupPane.swift */,
 				1638998EA958CC94FBDBDD0F /* CopilotPane.swift */,
-				2A31FE5D6C4372E3CCF2D2FF /* SystemPane.swift */,
 				B1BC371E9629ED7DC2723E53 /* KDEConnectPane.swift */,
 				3D8B367B52AA016A8722B37E /* LocalSendPane.swift */,
 				FF20CEF4A3D6066DF4F8D311 /* CalendarSourcesPane.swift */,
-				AB76792F9FD6BACE8EA30C9B /* CameraPane.swift */,
 				1C0F64BE00142F107450433A /* AccentPane.swift */,
 				B23BE0558742615E7F143661 /* GesturesPane.swift */,
 				17F550AFFB8F55DEA8DCB2C9 /* DisplaysPane.swift */,
@@ -1013,27 +898,18 @@
 				4D2AC40C093FE556358C5BD2 /* PromptEditor.swift */,
 				B22C66AA5CE3C1BAAAFA244E /* Color+Lighter.swift */,
 				46714B3FFED7510C654122AE /* AccentCircleButton.swift */,
-				4CAF7087DC2A02E548C86E11 /* SweepPane.swift */,
-				26DF0CF732E09AF6D0DB1279 /* AppearancePane.swift */,
 				5B69BDE2086F42C610233314 /* ShelfPane.swift */,
 				4412D914C230215A20D0F20E /* ShortcutsPane.swift */,
 				464C759946DD5B9E4AAEF2A9 /* AboutPane.swift */,
 				B816D619992FD42E9A8E1F93 /* CalendarPane.swift */,
 				D38EC931F5C846E9C2EB53F5 /* MediaPane.swift */,
 				AADAD7E7C581C161D77266FC /* HUDPane.swift */,
-				01475ED566ADB6375C9951F9 /* BatteryPane.swift */,
 				7EBB31AB1AC135C1F075D0F9 /* AdvancedPane.swift */,
 				B8F3C5105FA3BB3A2B5A40B6 /* GeneralPane.swift */,
-				F6B27A25CA0558564E6738F8 /* BoringSweepCoordinator.swift */,
-				3284AD5AC53B5DA4A4D9B4C5 /* BoringSweepDTO.swift */,
-				3F63D49D9D4DCC08D0D6FF90 /* BoringSweepProtocol.swift */,
 				CA1100010000000000D00102 /* NotchDesignSystem.swift */,
 				CA110001000000000000B102 /* CallaCopilotTabView.swift */,
 				CA11QZ300000000000000002 /* CallaQuizPreflightView.swift */,
 				CA11WM300000000000000002 /* CallaWindowTargetMenu.swift */,
-				CA11MC300000000000000002 /* CopilotCodingPane.swift */,
-				CA11MC200000000000000002 /* CallaCodingSetup.swift */,
-				CA11WV100000000000000002 /* WaveInterview.swift */,
 				CA11WV200000000000000002 /* CallaCallPreflightView.swift */,
 				CA11MC100000000000000002 /* CallaModeChrome.swift */,
 				CA11QZ400000000000000002 /* CallaQuizLiveView.swift */,
@@ -1042,8 +918,6 @@
 				CA11QZ800000000000000002 /* CallaQuizEndedView.swift */,
 				CA11QZ600000000000000002 /* CallaQuizLiveHeader.swift */,
 				CA11QZ500000000000000002 /* CallaQuizPresentation.swift */,
-				A82800000000000000000402 /* CallaCodingPresentation.swift */,
-				A82800000000000000000502 /* CallaCodingPatchView.swift */,
 				CA1100010000000000E00102 /* CopilotCallPane.swift */,
 				CA11QZ700000000000000002 /* CopilotQuizPane.swift */,
 				CA11KB010000000000000002 /* CopilotKnowledgePane.swift */,
@@ -1067,6 +941,8 @@
 				CA1100010000000000A00002 /* CallaCopilotStartingView.swift */,
 				CA1100010000000000E00702 /* MeetingDetector.swift */,
 				CA110001000000000000B002 /* CallaCopilotPresentation.swift */,
+				A3736DAB2C982ED3C3F9BE25 /* SettingsSimple.swift */,
+				ECF7AD9B91709618929F2945 /* CallaMode.swift */,
 			);
 			path = boringNotch;
 			sourceTree = "<group>";
@@ -1093,7 +969,6 @@
 			isa = PBXGroup;
 			children = (
 				14D570B82C5E98A20011E668 /* drop.swift */,
-				14A7E5872C64A89C008C1BE9 /* HelloAnimation.swift */,
 			);
 			path = animations;
 			sourceTree = "<group>";
@@ -1116,7 +991,6 @@
 				1163988C2DF5CAB40052E6AF /* EventModel.swift */,
 				B19016232CC15B4D00E3F12E /* Constants.swift */,
 				14D570C82C5F38890011E668 /* BoringViewModel.swift */,
-				14D570CA2C5F4B2C0011E668 /* BatteryStatusViewModel.swift */,
 				1153BD902D986DB300979FB0 /* PlaybackState.swift */,
 			);
 			path = models;
@@ -1218,11 +1092,9 @@
 			isa = PBXGroup;
 			children = (
 				115C12EB2ED3D003009754CA /* OpenNotchHUD.swift */,
-				14D570CC2C5F4BB70011E668 /* BoringBattery.swift */,
 				B1C974332C642B6D0000E707 /* MarqueeTextView.swift */,
 				B1D365CD2C6A979C0047BDBC /* LiveActivityModifier.swift */,
 				B1D365CF2C6A9A6C0047BDBC /* SystemEventIndicatorModifier.swift */,
-				14E9FEA92C70BF610062E83F /* DownloadView.swift */,
 				B172AABF2C95DA0B001623F1 /* InlineHUD.swift */,
 			);
 			path = "Live activities";
@@ -1236,14 +1108,6 @@
 				A82800000000000000000202 /* NotchSessionRouting.swift */,
 			);
 			path = Shortcuts;
-			sourceTree = "<group>";
-		};
-		B1C448992C97375A001F0858 /* Tips */ = {
-			isa = PBXGroup;
-			children = (
-				B1C4489A2C97376A001F0858 /* TipStore.swift */,
-			);
-			path = Tips;
 			sourceTree = "<group>";
 		};
 		DDDD00010000000000000041 /* UsageMonitor */ = {
@@ -1308,7 +1172,6 @@
 			dependencies = (
 				11F7485A2EC9AABA00F841DB /* PBXTargetDependency */,
 				CA11E0050000000000000005 /* PBXTargetDependency */,
-				BA7000050000000000000005 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				112FB72F2CCF12CC0015238C /* private */,
@@ -1334,26 +1197,6 @@
 			productName = dynamicNotch;
 			productReference = 14CEF4122C5CAED300855D72 /* boringNotch.app */;
 			productType = "com.apple.product-type.application";
-		};
-		BA7000030000000000000003 /* SweepService */ = {
-			isa = PBXNativeTarget;
-			buildConfigurationList = BA7000110000000000000011 /* Build configuration list for PBXNativeTarget "SweepService" */;
-			buildPhases = (
-				BA7000060000000000000006 /* Sources */,
-				BA7000070000000000000007 /* Frameworks */,
-				BA7000080000000000000008 /* Resources */,
-			);
-			buildRules = (
-			);
-			dependencies = (
-			);
-			fileSystemSynchronizedGroups = (
-				BA7000120000000000000012 /* SweepService */,
-			);
-			name = SweepService;
-			productName = SweepService;
-			productReference = BA7000010000000000000001 /* SweepService.xpc */;
-			productType = "com.apple.product-type.xpc-service";
 		};
 		CA11E0030000000000000003 /* BoringCallaEngine */ = {
 			isa = PBXNativeTarget;
@@ -1436,7 +1279,6 @@
 				14CEF4112C5CAED300855D72 /* boringNotch */,
 				11F7484E2EC9AABA00F841DB /* BoringNotchXPCHelper */,
 				CA11E0030000000000000003 /* BoringCallaEngine */,
-				BA7000030000000000000003 /* SweepService */,
 			);
 		};
 /* End PBXProject section */
@@ -1459,13 +1301,6 @@
 				112B0EB92E30DD0F00562D6C /* mediaremote-adapter.pl in Resources */,
 				B17266E12C6532560031BA0D /* Localizable.xcstrings in Resources */,
 				14A7E5972C65FD31008C1BE9 /* boring.m4a in Resources */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		BA7000080000000000000008 /* Resources */ = {
-			isa = PBXResourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1532,9 +1367,6 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				1CE000000000000000000011 /* IceConfiguration.swift in Sources */,
-				1CE000000000000000000012 /* IceMenuBarController.swift in Sources */,
-				1CE000000000000000000013 /* IcePane.swift in Sources */,
 				A82800000000000000000001 /* NotchSizing.swift in Sources */,
 				A82800000000000000000101 /* NotchBehaviour.swift in Sources */,
 				A82800000000000000000003 /* NotchResizeSession.swift in Sources */,
@@ -1558,13 +1390,11 @@
 				B1D365CE2C6A979C0047BDBC /* LiveActivityModifier.swift in Sources */,
 				1113ABD02E80E6BB00EC13B2 /* ThumbnailService.swift in Sources */,
 				11CFC65B2E097E9D00748C80 /* WelcomeView.swift in Sources */,
-				14D570C02C5EA5870011E668 /* AnimatedFace.swift in Sources */,
 				B1D6FD432C6603730015F173 /* SoftwareUpdater.swift in Sources */,
 				111BE9952ECF2DF40079DD4E /* DragDetector.swift in Sources */,
 				B1D365D02C6A9A6C0047BDBC /* SystemEventIndicatorModifier.swift in Sources */,
 				1194E87C2EA19E09009C82D6 /* ImageProcessingService.swift in Sources */,
 				1194E8872EA6DDA7009C82D6 /* BoringNotchSkyLightWindow.swift in Sources */,
-				14D570CB2C5F4B2C0011E668 /* BatteryStatusViewModel.swift in Sources */,
 				9A0887322C7A693000C160EA /* TabButton.swift in Sources */,
 				1153BD9C2D98853B00979FB0 /* NowPlayingController.swift in Sources */,
 				1194E9402EACC652009C82D6 /* Color+AccentColor.swift in Sources */,
@@ -1592,21 +1422,17 @@
 				CA1200010000000000B00101 /* NotchCard.swift in Sources */,
 				5917FD112E57891600E87F1C /* MediaKeyInterceptor.swift in Sources */,
 				14C08BC12C8E03AD000F8AA0 /* NSImage+Extensions.swift in Sources */,
-				149E0B9A2C737D40006418B1 /* WebcamView.swift in Sources */,
 				1471639A2C5D35FF0068B555 /* MusicManager.swift in Sources */,
 				B1B112932C6A577E00093D8F /* MouseTracker.swift in Sources */,
 				B1C448962C9712C4001F0858 /* ActionBar.swift in Sources */,
 				118EBE312E9717DB00D54B5A /* URL+SecurityScoped.swift in Sources */,
 				1132E5162E777C140068732D /* YouTubeMusicAuthentication.swift in Sources */,
-				14A7E5882C64A89C008C1BE9 /* HelloAnimation.swift in Sources */,
 				111BEA612ED09B1B0079DD4E /* NSScreen+UUID.swift in Sources */,
 				1153BD8F2D986B1F00979FB0 /* MediaControllerProtocol.swift in Sources */,
 				9AB0C6BD2C73C9CB00F7CD30 /* NotchHomeView.swift in Sources */,
 				B172AAC02C95DA0B001623F1 /* InlineHUD.swift in Sources */,
-				14E9FEAA2C70BF610062E83F /* DownloadView.swift in Sources */,
 				B1B112912C6A572100093D8F /* EditPanelView.swift in Sources */,
 				DDDD00010000000000000052 /* UsageMonitorSettings.swift in Sources */,
-				B1C4489B2C97376A001F0858 /* TipStore.swift in Sources */,
 				1153BD912D986DB300979FB0 /* PlaybackState.swift in Sources */,
 				B1A78C822C8BA08100BD51B0 /* FullscreenMediaDetection.swift in Sources */,
 				14E9FEAE2C7325770062E83F /* Button+Bouncing.swift in Sources */,
@@ -1615,10 +1441,7 @@
 				118EBE272E92DE8400D54B5A /* NSMenu+AssociatedObject.swift in Sources */,
 				B1CE8CFE2C6F659400DD9871 /* KeyboardShortcutsHelper.swift in Sources */,
 				14D570C62C5F38210011E668 /* BoringHeader.swift in Sources */,
-				B17266E32C65F7FB0031BA0D /* WhatsNewView.swift in Sources */,
 				14C08BB62C8DE42D000F8AA0 /* CalendarManager.swift in Sources */,
-				14D570CD2C5F4BB70011E668 /* BoringBattery.swift in Sources */,
-				B10F84A32C6C9596009F3026 /* TestView.swift in Sources */,
 				1443E7F32C609DCE0027C1FC /* matters.swift in Sources */,
 				11C5E3162DFE88510065821E /* SettingsView.swift in Sources */,
 				1153BD932D986E4300979FB0 /* AppleMusicController.swift in Sources */,
@@ -1637,7 +1460,6 @@
 				B17266DF2C64DFA00031BA0D /* BundleInfos.swift in Sources */,
 				118EBE3B2E9720C500D54B5A /* ShelfStateViewModel.swift in Sources */,
 				11F747CE2EC75CEA00F841DB /* DragPreviewView.swift in Sources */,
-				F38DE6482D8243E7008B5C6D /* BatteryActivityManager.swift in Sources */,
 				B10348D92C74E56000475897 /* ConditionalModifier.swift in Sources */,
 				118D1FD12E98FF5F00A2FF63 /* SharingStateManager.swift in Sources */,
 				14D570C22C5EAFBF0011E668 /* EmptyState.swift in Sources */,
@@ -1668,7 +1490,6 @@
 				11F748822ECB07A400F841DB /* MusicControlButton.swift in Sources */,
 				CA1100010000000000D00701 /* NotchHeaderItem.swift in Sources */,
 				14288DDC2C6E015000B9F80C /* AudioPlayer.swift in Sources */,
-				149E0B972C737D00006418B1 /* WebcamManager.swift in Sources */,
 				14288E0C2C6F8EC000B9F80C /* AppIcons.swift in Sources */,
 				B1C448982C972CC4001F0858 /* ListItemPopover.swift in Sources */,
 				B19016242CC15B5000E3F12E /* Constants.swift in Sources */,
@@ -1682,19 +1503,14 @@
 				FEA04E2958FDEB3EC579A459 /* CallFormatting.swift in Sources */,
 				0903CC2B76C557DDBCAFDB6F /* CopilotCallDetailPane.swift in Sources */,
 				A9E6D68BA59729BCF7D33909 /* KnowledgeCalendar.swift in Sources */,
-				F5DDFF5DBFCA16E29D1F88FF /* SweepFormatting.swift in Sources */,
 				9422CBA228687C84FCE11044 /* PermissionMonitor.swift in Sources */,
-				7EE3A719B7123D1F6B6CB626 /* SweepLifetime.swift in Sources */,
-				802CAA563141E472C48CA624 /* SweepConfirmationSheet.swift in Sources */,
 				02280020F6CA36C63E4592B8 /* PrivacyPane.swift in Sources */,
 				55B1BB825F13665F52D3616E /* CopilotModelsPane.swift in Sources */,
 				64819F735A40296AD040F55E /* CopilotBackupPane.swift in Sources */,
 				786152D40D7BC0C3115C4020 /* CopilotPane.swift in Sources */,
-				84E4FCAFD2F34DA4D8DC61DB /* SystemPane.swift in Sources */,
 				C6F6C7B2154DA87D0F271D9E /* KDEConnectPane.swift in Sources */,
 				5EAA5448CC79AD0E906C11F6 /* LocalSendPane.swift in Sources */,
 				3F0C145BB1EADE9E288D8F38 /* CalendarSourcesPane.swift in Sources */,
-				72D624BD85518AD7358143EF /* CameraPane.swift in Sources */,
 				C7228039471C87C8D20B037B /* AccentPane.swift in Sources */,
 				4E4D968D005AF05A1912BFC0 /* GesturesPane.swift in Sources */,
 				A5F912B1510FEB37FE87B530 /* DisplaysPane.swift in Sources */,
@@ -1718,27 +1534,18 @@
 				B2E2B13C2921E8B3DC718216 /* PromptEditor.swift in Sources */,
 				89423149FF42C3CC41EE8377 /* Color+Lighter.swift in Sources */,
 				2582E2193F16E9EB0B0FA05B /* AccentCircleButton.swift in Sources */,
-				39304423B20E078ABB7A0769 /* SweepPane.swift in Sources */,
-				418AB7C7575219D19CEEB921 /* AppearancePane.swift in Sources */,
 				05FB5A1461715898040771BF /* ShelfPane.swift in Sources */,
 				B964E5A76B6C10FCED9E5242 /* ShortcutsPane.swift in Sources */,
 				6A6B4A89F8337584B5C120B5 /* AboutPane.swift in Sources */,
 				31D4F6A79E3EABA49B4A590E /* CalendarPane.swift in Sources */,
 				F225492F6D7882259A6EE277 /* MediaPane.swift in Sources */,
 				F85BD8D9AACCC291D0BB9DA3 /* HUDPane.swift in Sources */,
-				EE4454309D2A1C326B6CC17D /* BatteryPane.swift in Sources */,
 				A784B6082EBBE64BA5D28B33 /* AdvancedPane.swift in Sources */,
 				B408393023BEC1C95DE3E948 /* GeneralPane.swift in Sources */,
-				20576116CE7AA9D29D601B50 /* BoringSweepCoordinator.swift in Sources */,
-				4A0EEABEDDCEEFD81C960383 /* BoringSweepDTO.swift in Sources */,
-				90706B2010130E2AFD272494 /* BoringSweepProtocol.swift in Sources */,
 				CA1100010000000000D00101 /* NotchDesignSystem.swift in Sources */,
 				CA110001000000000000B101 /* CallaCopilotTabView.swift in Sources */,
 				CA11QZ300000000000000001 /* CallaQuizPreflightView.swift in Sources */,
 				CA11WM300000000000000001 /* CallaWindowTargetMenu.swift in Sources */,
-				CA11MC300000000000000001 /* CopilotCodingPane.swift in Sources */,
-				CA11MC200000000000000001 /* CallaCodingSetup.swift in Sources */,
-				CA11WV100000000000000001 /* WaveInterview.swift in Sources */,
 				CA11WV200000000000000001 /* CallaCallPreflightView.swift in Sources */,
 				CA11MC100000000000000001 /* CallaModeChrome.swift in Sources */,
 				CA11QZ400000000000000001 /* CallaQuizLiveView.swift in Sources */,
@@ -1747,8 +1554,6 @@
 				CA11QZ800000000000000001 /* CallaQuizEndedView.swift in Sources */,
 				CA11QZ600000000000000001 /* CallaQuizLiveHeader.swift in Sources */,
 				CA11QZ500000000000000001 /* CallaQuizPresentation.swift in Sources */,
-				A82800000000000000000401 /* CallaCodingPresentation.swift in Sources */,
-				A82800000000000000000501 /* CallaCodingPatchView.swift in Sources */,
 				CA1100010000000000E00101 /* CopilotCallPane.swift in Sources */,
 				CA11QZ700000000000000001 /* CopilotQuizPane.swift in Sources */,
 				CA11KB010000000000000001 /* CopilotKnowledgePane.swift in Sources */,
@@ -1772,13 +1577,9 @@
 				CA1100010000000000A00001 /* CallaCopilotStartingView.swift in Sources */,
 				CA1100010000000000E00701 /* MeetingDetector.swift in Sources */,
 				CA110001000000000000B001 /* CallaCopilotPresentation.swift in Sources */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		BA7000060000000000000006 /* Sources */ = {
-			isa = PBXSourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
+				BA13A3312A223E1C8578B09E /* SettingsSimple.swift in Sources */,
+				3BE3C58A3BA3A746D28146D2 /* NotchPane.swift in Sources */,
+				8E69D7CD67D4106B5F67B1E8 /* CallaMode.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1796,11 +1597,6 @@
 			isa = PBXTargetDependency;
 			target = 11F7484E2EC9AABA00F841DB /* BoringNotchXPCHelper */;
 			targetProxy = 11F748592EC9AABA00F841DB /* PBXContainerItemProxy */;
-		};
-		BA7000050000000000000005 /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			target = BA7000030000000000000003 /* SweepService */;
-			targetProxy = BA7000040000000000000004 /* PBXContainerItemProxy */;
 		};
 		CA11E0050000000000000005 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
@@ -2016,7 +1812,6 @@
 				INFOPLIST_KEY_LSUIElement = YES;
 				INFOPLIST_KEY_NSAppleEventsUsageDescription = "This app uses AppleEvents to control music";
 				INFOPLIST_KEY_NSCalendarsUsageDescription = "This app uses the calendar to display your calendar events";
-				INFOPLIST_KEY_NSCameraUsageDescription = "This app uses the camera to display a live camera view";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				INFOPLIST_KEY_NSRemindersUsageDescription = "This app uses Reminders to display your scheduled reminder in the calendar";
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -2071,7 +1866,6 @@
 				INFOPLIST_KEY_LSUIElement = YES;
 				INFOPLIST_KEY_NSAppleEventsUsageDescription = "This app uses AppleEvents to control music";
 				INFOPLIST_KEY_NSCalendarsUsageDescription = "This app uses the calendar to display your calendar events";
-				INFOPLIST_KEY_NSCameraUsageDescription = "This app uses the camera to display a live camera view";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				INFOPLIST_KEY_NSRemindersUsageDescription = "This app uses Reminders to display your scheduled reminder in the calendar";
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -2091,48 +1885,6 @@
 					"$(inherited)",
 					"$(SDKROOT)/System/Library/PrivateFrameworks",
 				);
-			};
-			name = Release;
-		};
-		BA7000090000000000000009 /* Debug */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				CODE_SIGN_ENTITLEMENTS = SweepService/SweepService.entitlements;
-				CODE_SIGN_IDENTITY = "Calla Local Signing";
-				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "Calla Local Signing";
-				CODE_SIGN_STYLE = Manual;
-				CURRENT_PROJECT_VERSION = 271;
-				DEVELOPMENT_TEAM = "";
-				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = SweepService/Info.plist;
-				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 2.7.3;
-				PRODUCT_BUNDLE_IDENTIFIER = theboringteam.boringnotch.SweepService;
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				SKIP_INSTALL = YES;
-				SWIFT_STRICT_CONCURRENCY = targeted;
-				SWIFT_VERSION = 5.0;
-			};
-			name = Debug;
-		};
-		BA7000100000000000000010 /* Release */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				CODE_SIGN_ENTITLEMENTS = SweepService/SweepService.entitlements;
-				CODE_SIGN_IDENTITY = "Calla Local Signing";
-				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "Calla Local Signing";
-				CODE_SIGN_STYLE = Manual;
-				CURRENT_PROJECT_VERSION = 271;
-				DEVELOPMENT_TEAM = "";
-				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = SweepService/Info.plist;
-				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 2.7.3;
-				PRODUCT_BUNDLE_IDENTIFIER = theboringteam.boringnotch.SweepService;
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				SKIP_INSTALL = YES;
-				SWIFT_STRICT_CONCURRENCY = targeted;
-				SWIFT_VERSION = 5.0;
 			};
 			name = Release;
 		};
@@ -2204,15 +1956,6 @@
 			buildConfigurations = (
 				14CEF4222C5CAED400855D72 /* Debug */,
 				14CEF4232C5CAED400855D72 /* Release */,
-			);
-			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
-		};
-		BA7000110000000000000011 /* Build configuration list for PBXNativeTarget "SweepService" */ = {
-			isa = XCConfigurationList;
-			buildConfigurations = (
-				BA7000090000000000000009 /* Debug */,
-				BA7000100000000000000010 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

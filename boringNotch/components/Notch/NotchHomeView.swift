@@ -166,7 +166,6 @@ struct AlbumArtView: View {
 struct MusicControlsView: View {
     @ObservedObject var musicManager = MusicManager.shared
         @EnvironmentObject var vm: BoringViewModel
-        @ObservedObject var webcamManager = WebcamManager.shared
     @State private var sliderValue: Double = 0
     @State private var dragging: Bool = false
     @State private var lastDragged: Date = .distantPast
@@ -254,12 +253,6 @@ struct MusicControlsView: View {
         )
         let padded = slotConfig.padded(to: sanitizedLimit, filler: .none)
         let result = Array(padded.prefix(sanitizedLimit))
-        // If calendar and camera are both visible alongside music, hide the edge slots
-        let shouldHideEdges = Defaults[.showCalendar] && Defaults[.showMirror] && webcamManager.cameraAvailable && vm.isCameraExpanded
-        if shouldHideEdges && result.count >= 5 {
-            return Array(result.dropFirst().dropLast())
-        }
-
         return result
     }
 
@@ -460,8 +453,6 @@ struct VolumeControlView: View {
 
 struct NotchHomeView: View {
     @EnvironmentObject var vm: BoringViewModel
-    @ObservedObject var webcamManager = WebcamManager.shared
-    @ObservedObject var batteryModel = BatteryStatusViewModel.shared
     @ObservedObject var coordinator = BoringViewCoordinator.shared
     let albumArtNamespace: Namespace.ID
 
@@ -475,19 +466,15 @@ struct NotchHomeView: View {
         .transition(.opacity)
     }
 
-    private var shouldShowCamera: Bool {
-        Defaults[.showMirror] && webcamManager.cameraAvailable && vm.isCameraExpanded
-    }
-
     private var mainContent: some View {
         GeometryReader { geo in
-            let spacing: CGFloat = (shouldShowCamera && Defaults[.showCalendar]) ? 10 : 15
-            // When the calendar is shown (and no camera), give media ~35% and the
+            let spacing: CGFloat = 15
+            // When the calendar is shown, give media ~35% and the
             // calendar ~65% of the available width — the calendar is the centerpiece,
             // and the extra width lands on the agenda (the date plate is fixed-width).
-            let splitCalendar = Defaults[.showCalendar] && !shouldShowCamera
+            let splitCalendar = Defaults[.showCalendar]
             let mediaWidth = splitCalendar ? (geo.size.width - spacing) * 0.35 : nil
-            let calendarWidth = splitCalendar ? (geo.size.width - spacing) * 0.65 : (shouldShowCamera ? 170 : 215)
+            let calendarWidth = (geo.size.width - spacing) * 0.65
 
             HStack(alignment: .top, spacing: spacing) {
                 MusicPlayerView(albumArtNamespace: albumArtNamespace)
@@ -502,14 +489,6 @@ struct NotchHomeView: View {
                         }
                         .environmentObject(vm)
                         .transition(.opacity)
-                }
-
-                if shouldShowCamera {
-                    CameraPreviewView(webcamManager: webcamManager)
-                        .scaledToFit()
-                        .opacity(vm.notchState == .closed ? 0 : 1)
-                        .blur(radius: vm.notchState == .closed ? 20 : 0)
-                        .animation(.interactiveSpring(response: 0.32, dampingFraction: 0.76, blendDuration: 0), value: shouldShowCamera)
                 }
             }
         }

@@ -23,7 +23,7 @@ let package = Package(
                 "CallaCopilotLiveView.swift", "CallaCopilotSignInView.swift",
                 "CallaCopilotEndingView.swift", "CallaCopilotStartFailure.swift", "CallaCopilotStartingView.swift",
                 "CallaQuizLiveView.swift", "CallaQuizPreflightView.swift",
-                "CallaCodingSetup.swift", "CallaModeChrome.swift", "CallaCodingPatchView.swift",
+                "CallaModeChrome.swift",
                 "CallaWindowTargetMenu.swift", "CallaQuizCodeBlock.swift", "CallaQuizEndedView.swift",
                 "CallaQuizLiveHeader.swift",
                 "CallaCopilotTabView.swift", "CallaEngineClient.swift", "CallaKnowledge.swift",
@@ -33,8 +33,7 @@ let package = Package(
                 "NotchDropRouter.swift"
             ],
             sources: ["CallaCopilotPresentation.swift",
-                      "CallaQuizPresentation.swift", "CallaCodingPresentation.swift",
-                      "WaveInterview.swift"]
+                      "CallaQuizPresentation.swift", "CallaMode.swift"]
         ),
         .target(
             name: "NotchSizing",
@@ -51,21 +50,10 @@ let package = Package(
             exclude: ["ShortcutConstants.swift", "NotchSessionShortcuts.swift"],
             sources: ["NotchSessionRouting.swift"]
         ),
-        .target(
-            name: "IceConfiguration",
-            path: "boringNotch/Ice",
-            exclude: ["IceMenuBarController.swift", "NOTICE.md"],
-            sources: ["IceConfiguration.swift"]
-        ),
         .testTarget(
             name: "CallaEngineValidationTests",
             dependencies: ["CallaEngineValidation", "CallaNotchPresentation", "NotchSizing", "NotchShortcuts"],
             path: "BoringCallaEngineTests/Tests"
-        ),
-        .testTarget(
-            name: "IceConfigurationTests",
-            dependencies: ["IceConfiguration"],
-            path: "BoringCallaEngineTests/IceTests"
         )
     ]
 )

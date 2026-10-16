@@ -11,7 +11,7 @@ import SwiftUI
 
 /// The Settings window.
 ///
-/// Thirteen sections in the sidebar and a `NavigationStack` in the detail
+/// Four sections in the sidebar and a `NavigationStack` in the detail
 /// column. What this replaced was twenty-seven destinations in one flat list and
 /// a twenty-seven-case switch here — which is why this file had grown to hold
 /// eleven panes and an XPC subsystem alongside the shell.
@@ -65,9 +65,6 @@ struct SettingsView: View {
             // A section change replaces the stack rather than animating a pop
             // through pages the reader never chose.
             .id(router.route.section)
-            // Applied here, above the stack, so it sees section changes and
-            // never sees a page push. See `sweepLifetime(_:)`.
-            .sweepLifetime(router)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
         .navigationSplitViewStyle(.balanced)

@@ -20,11 +20,24 @@ class ServiceDelegate: NSObject, NSXPCListenerDelegate {
         let exportedObject = BoringNotchXPCHelper()
         newConnection.exportedObject = exportedObject
         
+        // The app is the only client: when its last connection goes, so does this
+        // service (and any probe it is running), instead of lingering under launchd.
+        newConnection.invalidationHandler = { [weak self] in self?.connectionEnded() }
+        lock.lock(); liveConnections += 1; lock.unlock()
+
         // Resuming the connection allows the system to deliver more incoming messages.
         newConnection.resume()
         
         // Returning true from this method tells the system that you have accepted this connection. If you want to reject the connection for some reason, call invalidate() on the connection and return false.
         return true
+    }
+
+    private let lock = NSLock()
+    private var liveConnections = 0
+
+    private func connectionEnded() {
+        lock.lock(); liveConnections -= 1; let remaining = liveConnections; lock.unlock()
+        if remaining <= 0 { exit(0) }
     }
 }
 

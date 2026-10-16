@@ -43,7 +43,7 @@ enum SettingsSearchIndex {
             if let detail = page.detail { words.append(String(localized: detail)) }
             out.append(Entry(
                 match: Match(identifier: page.identifier, title: title, symbol: page.symbol,
-                             context: context, route: .init(page.section, [page])),
+                             context: context, route: .init(page)),
                 haystack: words.map { $0.lowercased() }))
         }
         return out

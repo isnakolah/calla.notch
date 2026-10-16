@@ -43,9 +43,6 @@ struct DynamicNotchApp: App {
             // The disk-image copy only installs; the installed app runs these.
             guard !PrivateDistribution.isInstallerCopy else { return }
             _ = UsageMonitorManager.shared
-            // Ice is Boring-owned and does not trigger an Accessibility prompt.
-            // Its runtime reports a blocked state until Settings asks explicitly.
-            IceMenuBarController.shared.start()
             guard Defaults[.callaCopilotEnabled] else { return }
             CallaEngineClient.shared.start()
             CallaEngineClient.shared.applyCurrentPreferences()
@@ -158,7 +155,6 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         cleanupDragDetectors()
         cleanupWindows()
         XPCHelperClient.shared.stopMonitoringAccessibilityAuthorization()
-        IceMenuBarController.shared.stop()
         // Quitting the notch takes its helpers with it: the capture host holding the
         // microphone and any resident `agy` language server.
         // Otherwise they are reparented to launchd and survive until a restart.
@@ -401,6 +397,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         Self.shared = self
+        TerminationSignals.install()
         PrivateDistribution.prepareFirstLaunch()
         // A second notch from the disk image beside the installed one is the
         // most confusing thing a new Mac can show. The installer copy is a
@@ -576,7 +573,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                 let engine = CallaEngineClient.shared
                 guard Defaults[.callaCopilotEnabled] else { return }
                 switch CallaMode.resolved(Defaults[.callaCopilotMode],
-                    plainCall: Defaults[.callaPlainCallEnabled], quiz: Defaults[.callaQuizEnabled]).rawValue {
+                    quiz: Defaults[.callaQuizEnabled]).rawValue {
                 case "quiz" where Defaults[.callaQuizEnabled]:
                     if let sessionID = engine.status.quiz.sessionID,
                        engine.status.quiz.active {
@@ -584,17 +581,6 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                     } else {
                         BoringViewCoordinator.shared.currentView = .copilot
                         NotificationCenter.default.post(name: .callaQuizWantsNotch, object: nil)
-                    }
-                case "code":
-                    let coding = engine.coding
-                    if (coding.lifecycle.active || coding.lifecycle == .interrupted),
-                       let sessionID = coding.sessionID, let callID = coding.callID {
-                        engine.sendCoding(.init(sessionID: sessionID, callID: callID,
-                                                generation: coding.generation, kind: .end))
-                        engine.endCall()
-                    } else {
-                        BoringViewCoordinator.shared.currentView = .copilot
-                        self?.notchViewModel(at: NSEvent.mouseLocation).open()
                     }
                 default:
                     guard engine.status.copilot.available else { return }
@@ -887,5 +873,41 @@ extension CGRect: @retroactive Hashable {
 
     public static func == (lhs: CGRect, rhs: CGRect) -> Bool {
         return lhs.origin == rhs.origin && lhs.size == rhs.size
+    }
+}
+
+/// Makes `kill`, `killall` and Ctrl-C quit the app.
+///
+/// `MediaRemoteAdapter.framework` installs SIGINT and SIGTERM handlers from a
+/// load-time constructor. They exist for the `perl` adapter process, which
+/// loads the same framework, but they run in this process too, and all they do
+/// here is cancel a stream the app never starts. Every polite kill was being
+/// swallowed, so the only way to stop the notch was SIGKILL, which skips the
+/// shutdown that takes the call host and `agy` down with it.
+///
+/// So the signals are taken back: the first one quits normally, through
+/// `applicationWillTerminate`; a second, or a quit that hangs, exits outright.
+enum TerminationSignals {
+    // Only touched on the main queue.
+    nonisolated(unsafe) private static var sources: [DispatchSourceSignal] = []
+    nonisolated(unsafe) private static var requested = false
+
+    @MainActor
+    static func install() {
+        guard sources.isEmpty else { return }
+        sources = [SIGTERM, SIGINT, SIGHUP].map { code in
+            signal(code, SIG_IGN)
+            let source = DispatchSource.makeSignalSource(signal: code, queue: .main)
+            source.setEventHandler {
+                if requested { exit(0) }
+                requested = true
+                // `applicationWillTerminate` waits up to 2.5s for the engine;
+                // anything past that is a hang, not a shutdown.
+                DispatchQueue.global().asyncAfter(deadline: .now() + 6) { exit(0) }
+                MainActor.assumeIsolated { NSApplication.shared.terminate(nil) }
+            }
+            source.resume()
+            return source
+        }
     }
 }

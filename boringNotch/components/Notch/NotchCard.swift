@@ -450,7 +450,7 @@ struct NotchSessionHints: View {
         }
 
         // The two directions of one action, together.
-        pair(relabel[.previous] ?? (surface == .coding ? "Step" : "Answer"), [.previous, .next])
+        pair(relabel[.previous] ?? "Answer", [.previous, .next])
         pair("Scroll", [.scrollUp, .scrollDown])
 
         for action in NotchSessionRouter.hintedActions(for: surface) where !used.contains(action) {

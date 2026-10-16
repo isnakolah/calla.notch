@@ -185,9 +185,12 @@ actor CodingAgyWorker {
         try FileManager.default.createDirectory(at: temporary, withIntermediateDirectories: true)
         environment["TMPDIR"] = temporary.path
         child.environment = environment
-        child.arguments = ["-p", sandboxProfile(workspace: workspace, isolatedHome: isolatedHome, readOnly: readOnly), binary]
-            + (child.arguments ?? [])
-        child.executableURL = URL(fileURLWithPath: sandbox)
+        // Tethered: if the engine is killed, the worker goes with it.
+        let launch = ProcessTether.tethered(sandbox,
+            ["-p", sandboxProfile(workspace: workspace, isolatedHome: isolatedHome, readOnly: readOnly), binary]
+                + (child.arguments ?? []))
+        child.arguments = launch.arguments
+        child.executableURL = URL(fileURLWithPath: launch.executable)
         child.standardInput = stdin; child.standardOutput = stdout
         child.standardError = FileHandle.nullDevice
         try child.run()

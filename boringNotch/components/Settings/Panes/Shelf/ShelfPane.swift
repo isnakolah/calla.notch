@@ -61,7 +61,7 @@ struct Shelf: View {
 
 
 
-            SettingsSubpageList(section: .shelf)
+            SettingsSubpageList(page: .shelf)
         }
         .onChange(of: expandedDragDetection) {
             NotificationCenter.default.post(

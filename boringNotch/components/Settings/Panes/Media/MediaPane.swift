@@ -108,7 +108,7 @@ struct Media: View {
                 }
             }
 
-            SettingsSubpageList(section: .media)
+            SettingsSubpageList(page: .media)
         }
         .onChange(of: mediaController) { _, _ in
             NotificationCenter.default.post(name: Notification.Name.mediaControllerChanged, object: nil)
