@@ -200,10 +200,10 @@ struct ContentView: View {
 
         if copilotSession.isLive && vm.notchState == .closed && !vm.hideOnClosed {
             // Both wings: the state dot and clock, and the activity glyph.
-            chinWidth += NotchWing.chinGrowth
+            chinWidth += NotchWing.chinGrowth(NotchWing.call)
         } else if pomodoro.isActive && vm.notchState == .closed && !vm.hideOnClosed {
             // Both wings: the ring and clock, and the block dots.
-            chinWidth += NotchWing.chinGrowth
+            chinWidth += NotchWing.chinGrowth(NotchWing.focus)
         } else if Defaults[.showUsageBesideNotch] && vm.notchState == .closed && !vm.hideOnClosed {
             // Room for a "CLAUDE 23/38" badge on each side of the notch.
             chinWidth += 150
@@ -211,7 +211,7 @@ struct ContentView: View {
             && vm.notchState == .closed && (musicManager.isPlaying || !musicManager.isPlayerIdle)
             && coordinator.musicLiveActivityEnabled && !vm.hideOnClosed
         {
-            chinWidth += isInlineSongChange ? 2 * NotchWing.inlineSongWidth + 8 : NotchWing.chinGrowth
+            chinWidth += NotchWing.chinGrowth(isInlineSongChange ? NotchWing.inlineSong : NotchWing.music)
         }
 
         return chinWidth
@@ -714,7 +714,7 @@ struct ContentView: View {
                                   }
                                   .lineLimit(1)
                                   .truncationMode(.tail)
-                                  .frame(width: vm.closedNotchSize.width + 2 * NotchWing.width - 36)
+                                  .frame(width: vm.closedNotchSize.width + 2 * NotchWing.focus - 20)
                                   .frame(height: max(0, 80 - vm.effectiveClosedNotchHeight - 10))
                                   .padding(.bottom, 10)
                               }
@@ -1074,18 +1074,11 @@ struct ContentView: View {
 
     @ViewBuilder
     func MusicLiveActivity() -> some View {
-        let wing = isInlineSongChange ? NotchWing.inlineSongWidth : NotchWing.width
+        let wing = isInlineSongChange ? NotchWing.inlineSong : NotchWing.music
         let artistTint = Defaults[.coloredSpectrogram]
             ? Color(nsColor: musicManager.avgColor) : NotchInk.secondary
         HStack(spacing: 0) {
             HStack(spacing: 7) {
-                Image(nsImage: musicManager.albumArt)
-                    .resizable()
-                    .aspectRatio(contentMode: .fill)
-                    .frame(width: 22, height: 22)
-                    .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
-                    .matchedGeometryEffect(id: "albumArt", in: albumArtNamespace)
-                    .accessibilityLabel("Album artwork")
                 if isInlineSongChange {
                     MarqueeText(
                         .constant(musicManager.songTitle),
@@ -1097,22 +1090,21 @@ struct ContentView: View {
                     )
                     .transition(.opacity)
                 }
+                Image(nsImage: musicManager.albumArt)
+                    .resizable()
+                    .aspectRatio(contentMode: .fill)
+                    .frame(width: 22, height: 22)
+                    .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
+                    .matchedGeometryEffect(id: "albumArt", in: albumArtNamespace)
+                    .accessibilityLabel("Album artwork")
             }
-            .frame(width: wing, alignment: .leading)
+            .frame(width: wing, alignment: .trailing)
 
             Rectangle()
                 .fill(.black)
                 .frame(width: vm.closedNotchSize.width - 20)
 
             HStack(spacing: 7) {
-                if isInlineSongChange {
-                    Text(musicManager.artistName)
-                        .font(.system(size: 12))
-                        .lineLimit(1)
-                        .truncationMode(.tail)
-                        .foregroundStyle(artistTint)
-                        .transition(.opacity)
-                }
                 Group {
                     if useMusicVisualizer {
                         Rectangle()
@@ -1132,8 +1124,16 @@ struct ContentView: View {
                 }
                 .frame(width: 18 + gestureProgress / 2, height: 14)
                 .accessibilityLabel(musicManager.isPlaying ? "Playing" : "Paused")
+                if isInlineSongChange {
+                    Text(musicManager.artistName)
+                        .font(.system(size: 12))
+                        .lineLimit(1)
+                        .truncationMode(.tail)
+                        .foregroundStyle(artistTint)
+                        .transition(.opacity)
+                }
             }
-            .frame(width: wing, alignment: .trailing)
+            .frame(width: wing, alignment: .leading)
         }
         // SwiftUI `onDrop` is unreliable in our non-activating transparent
         // panel while closed. Native AppKit drag registration owns that state.

@@ -41,7 +41,7 @@ struct PomodoroNotchBadge: View {
                     .animation(.smooth(duration: 0.25), value: pomodoro.remaining)
                     .fixedSize()
             }
-            .frame(width: NotchWing.width, alignment: .leading)
+            .frame(width: NotchWing.focus, alignment: .trailing)
 
             Rectangle()
                 .fill(.black)
@@ -49,7 +49,7 @@ struct PomodoroNotchBadge: View {
 
             // Right: how it is going — one segment per block in the cycle.
             blocks
-                .frame(width: NotchWing.width, alignment: .trailing)
+                .frame(width: NotchWing.focus, alignment: .leading)
         }
         .fixedSize()
         .frame(height: height, alignment: .center)

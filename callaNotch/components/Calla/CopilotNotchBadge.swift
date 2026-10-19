@@ -43,14 +43,14 @@ struct CopilotNotchBadge: View {
         // Both wings are the same width so the gap stays centred on the housing.
         HStack(spacing: 0) {
             readout
-                .frame(width: NotchWing.width, alignment: .leading)
+                .frame(width: NotchWing.call, alignment: .trailing)
 
             Rectangle()
                 .fill(.black)
                 .frame(width: notchWidth)
 
             activity
-                .frame(width: NotchWing.width, alignment: .trailing)
+                .frame(width: NotchWing.call, alignment: .leading)
         }
         .fixedSize()
         .frame(height: height, alignment: .center)
@@ -67,6 +67,12 @@ struct CopilotNotchBadge: View {
     /// ones the open panel uses, so the two surfaces teach the same code.
     private var activity: some View {
         HStack(spacing: 6) {
+            Image(systemName: symbol)
+                .font(.system(size: 14, weight: .semibold))
+                .foregroundStyle(tint)
+                .contentTransition(.symbolEffect)
+                .symbolEffect(.variableColor.iterative,
+                              isActive: isQuiz ? quizWorking : copilot.thinking)
             if answerWaiting {
                 // The one thing worth interrupting for: an answer exists and the
                 // panel is closed.
@@ -75,12 +81,6 @@ struct CopilotNotchBadge: View {
                     .frame(width: 6, height: 6)
                     .transition(.scale.combined(with: .opacity))
             }
-            Image(systemName: symbol)
-                .font(.system(size: 14, weight: .semibold))
-                .foregroundStyle(tint)
-                .contentTransition(.symbolEffect)
-                .symbolEffect(.variableColor.iterative,
-                              isActive: isQuiz ? quizWorking : copilot.thinking)
         }
         .animation(.smooth(duration: 0.2), value: answerWaiting)
         .help(helpText)
@@ -98,7 +98,6 @@ struct CopilotNotchBadge: View {
                 .foregroundStyle(Color.white.opacity(0.90))
                 .fixedSize()
         }
-        .padding(.leading, 3)
     }
 
     /// Mint while it is running as it should; orange when it is only hearing

@@ -134,15 +134,26 @@ enum NotchGlassSpace {
 
 /// The closed notch's wings, either side of the camera housing.
 ///
-/// One fact a side: icons and glyphs, never words. 116pt of content plus the
-/// slab's own 14pt inset makes each wing about 120pt, so a closed notch with an
-/// activity is the housing plus 240pt and nothing wider — except an inline song
-/// change, which widens to 584pt overall.
+/// One fact a side: icons and glyphs, never words, set hard against the
+/// housing so the notch reads as one shape that grew, not a strip with things
+/// parked at its far ends. Each wing is only as wide as what it carries, and
+/// both sides of one activity share a width so the gap stays centred.
 enum NotchWing {
-    static let width: CGFloat = 116
-    static let inlineSongWidth: CGFloat = 196
-    /// Hit-area growth for a closed notch with wings on both sides.
-    static let chinGrowth: CGFloat = 240
+    /// Album art one side, the spectrum the other.
+    static let music: CGFloat = 26
+    /// The ring and clock one side, the block dots the other.
+    static let focus: CGFloat = 70
+    /// The state dot and clock one side, the activity glyph the other.
+    static let call: CGFloat = 62
+    /// The glyph one side, the 64pt meter the other.
+    static let hud: CGFloat = 66
+    /// An inline song change: the title and artist ride beside the art and bars.
+    static let inlineSong: CGFloat = 150
+    /// What the slab adds outside a wing: its own corner inset.
+    static let inset: CGFloat = 14
+
+    /// Hit-area growth for a closed notch with wings of this width.
+    static func chinGrowth(_ wing: CGFloat) -> CGFloat { 2 * (wing + inset) }
 }
 
 /// The tracking on `NotchGlassType.caps`, applied wherever caps are drawn.

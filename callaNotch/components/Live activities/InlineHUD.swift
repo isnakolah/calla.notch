@@ -20,6 +20,13 @@ struct InlineHUD: View {
     var body: some View {
         HStack(spacing: 0) {
             HStack(spacing: 6) {
+                if Defaults[.showInlineHUDLabel] {
+                    Text(Type2Name(type))
+                        .font(.system(size: 12, weight: .medium))
+                        .lineLimit(1)
+                        .allowsTightening(true)
+                        .contentTransition(.numericText())
+                }
                 Group {
                     switch (type) {
                         case .volume:
@@ -48,17 +55,10 @@ struct InlineHUD: View {
                 }
                 .font(.system(size: 13, weight: .semibold))
                 .foregroundStyle(tint)
-                .frame(width: 20, height: 15, alignment: .leading)
+                .frame(width: 20, height: 15, alignment: .trailing)
 
-                if Defaults[.showInlineHUDLabel] {
-                    Text(Type2Name(type))
-                        .font(.system(size: 12, weight: .medium))
-                        .lineLimit(1)
-                        .allowsTightening(true)
-                        .contentTransition(.numericText())
-                }
             }
-            .frame(width: NotchWing.width + gestureProgress / 2, alignment: .leading)
+            .frame(width: NotchWing.hud + gestureProgress / 2, alignment: .trailing)
 
             Rectangle()
                 .fill(.black)
@@ -68,12 +68,6 @@ struct InlineHUD: View {
                 if type == .mic {
                     micLevel
                 } else {
-                    if Defaults[.showClosedNotchHUDPercentage] {
-                        Text("\(Int(value * 100))%")
-                            .font(.system(size: 10, weight: .medium).monospacedDigit())
-                            .foregroundStyle(NotchInk.tertiary)
-                            .lineLimit(1)
-                    }
                     DraggableProgressBar(value: $value, onChange: { v in
                         if type == .volume {
                             VolumeManager.shared.setAbsolute(Float32(v))
@@ -82,9 +76,15 @@ struct InlineHUD: View {
                         }
                     }, tint: tint)
                     .frame(width: 64)
+                    if Defaults[.showClosedNotchHUDPercentage] {
+                        Text("\(Int(value * 100))%")
+                            .font(.system(size: 10, weight: .medium).monospacedDigit())
+                            .foregroundStyle(NotchInk.tertiary)
+                            .lineLimit(1)
+                    }
                 }
             }
-            .frame(width: NotchWing.width + gestureProgress / 2, alignment: .trailing)
+            .frame(width: NotchWing.hud + gestureProgress / 2, alignment: .leading)
         }
         .frame(height: vm.closedNotchSize.height + (hoverAnimation ? 8 : 0), alignment: .center)
         .accessibilityElement(children: .combine)
