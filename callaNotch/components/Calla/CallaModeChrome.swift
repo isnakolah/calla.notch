@@ -221,19 +221,19 @@ struct CallaCheckGrid: View {
                                               ? Color.white.opacity(0.10)
                                               : check.state.tint.opacity(check.state == .blocking ? 0.20 : 0.18)))
                 Text(check.label)
-                    .font(.system(size: 12, weight: .semibold))
+                    .font(.system(size: 11.5, weight: .semibold))
                     .foregroundStyle(hovered == check.id ? NotchInk.primary : NotchInk.primary.opacity(0.94))
                     .lineLimit(1)
-                    .minimumScaleFactor(0.7)
+                    .minimumScaleFactor(0.75)
             }
             Text(check.value)
                 .font(.system(size: 11))
                 .foregroundStyle(check.state == .blocking ? NotchAccent.attention : NotchInk.secondary)
                 .lineLimit(1)
+                .minimumScaleFactor(0.85)
                 .truncationMode(.tail)
                 .padding(.leading, 21)
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
         .contentShape(Rectangle())
         .onHover { inside in
             withAnimation(.easeOut(duration: 0.12)) {
@@ -550,8 +550,8 @@ struct CallaPreflightCard<Context: View, Controls: View, Utility: View>: View {
                             .font(NotchGlassType.detail)
                             .foregroundStyle(hovered.map { $0.state == .blocking ? $0.state.tint : NotchInk.secondary }
                                              ?? NotchInk.secondary)
-                            .lineLimit(2)
-                            .lineSpacing(1)
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.9)
                             .truncationMode(.tail)
                             .animation(.easeOut(duration: 0.12), value: hoveredCheck)
                     }
@@ -570,9 +570,7 @@ struct CallaPreflightCard<Context: View, Controls: View, Utility: View>: View {
 
                 CallaCheckGrid(checks: checks, hovered: $hoveredCheck)
                     .padding(.leading, 14)
-                    // 204pt in the artboard's 512pt notch; narrower here so a
-                    // notch sized smaller in Settings keeps room for the controls.
-                    .frame(width: 184)
+                    .frame(width: 220, alignment: .leading)
                     .frame(maxHeight: .infinity)
                     .overlay(alignment: .leading) {
                         Rectangle().fill(NotchInk.hairline).frame(width: 1)
@@ -580,11 +578,10 @@ struct CallaPreflightCard<Context: View, Controls: View, Utility: View>: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-        // One margin on the three sides the notch draws: ContentView already
-        // insets the copilot glass by 4 at the sides and 12 at the foot, so
-        // these make it 18 all round — enough to clear the lower corners'
-        // curve. The top sits under the tab row, which brings its own air.
-        .padding(EdgeInsets(top: 2, leading: Self.edge - 4, bottom: Self.edge - 12, trailing: Self.edge - 4))
+        // No side margin of its own: at rest the tab already sits inside the
+        // notch's corner inset plus 12, which is more than the curve needs,
+        // and a second margin here was what left the grid's labels truncated.
+        .padding(EdgeInsets(top: 2, leading: 0, bottom: Self.edge - 12, trailing: 0))
     }
 
     private static var edge: CGFloat { 18 }

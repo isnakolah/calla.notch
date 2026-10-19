@@ -46,58 +46,88 @@ struct CallaQuizLiveHeader: View {
     }
 
     var body: some View {
-        HStack(spacing: 0) {
-            // Both halves are narrower than they look, so every label is
-            // `fixedSize` rather than allowed to wrap mid-word.
-            HStack(spacing: 9) {
-                Circle()
-                    .fill(tint)
-                    .frame(width: 8, height: 8)
-                    .background(Circle().fill(tint.opacity(quiz.active ? 0.22 : 0)).padding(-4))
-                Text(CallaQuizPresentation.stateLine(for: quiz))
-                    .font(.system(size: 12, weight: .semibold))
-                    .foregroundStyle(tint)
+        // Each half is exactly its share of the band either side of the camera
+        // housing, as in the call's band, and gives way inside itself: the
+        // pills go first on the left, the capture state first on the right.
+        GeometryReader { proxy in
+            let half = max(0, (proxy.size.width - vm.closedNotchSize.width) / 2)
+            HStack(spacing: 0) {
+                ViewThatFits(in: .horizontal) {
+                    leading(confidence: true, improved: true)
+                    leading(confidence: true, improved: false)
+                    leading(confidence: false, improved: false)
+                }
+                .frame(width: half, height: proxy.size.height, alignment: .leading)
+                .clipped()
+                // The camera housing. Nothing may be drawn here.
+                Color.clear.frame(width: vm.closedNotchSize.width)
+                ViewThatFits(in: .horizontal) {
+                    trailing(showsCapture: true)
+                    trailing(showsCapture: false)
+                }
+                .frame(width: half, height: proxy.size.height, alignment: .trailing)
+            }
+        }
+        .padding(.leading, 22)
+        .padding(.trailing, 16)
+        .onReceive(clockTick) { now = $0 }
+        .task { refreshTargets() }
+    }
+
+    private func leading(confidence: Bool, improved: Bool) -> some View {
+        HStack(spacing: 9) {
+            Circle()
+                .fill(tint)
+                .frame(width: 8, height: 8)
+                .background(Circle().fill(tint.opacity(quiz.active ? 0.22 : 0)).padding(-4))
+            Text(CallaQuizPresentation.stateLine(for: quiz))
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundStyle(tint)
+                .lineLimit(1)
+                .fixedSize()
+            if let elapsed {
+                Text(elapsed)
+                    .font(.system(size: 12, design: .monospaced).monospacedDigit())
+                    .foregroundStyle(Color.white.opacity(0.80))
                     .lineLimit(1)
                     .fixedSize()
-                if let elapsed {
-                    Text(elapsed)
-                        .font(.system(size: 12, design: .monospaced).monospacedDigit())
-                        .foregroundStyle(Color.white.opacity(0.80))
-                        .lineLimit(1)
-                        .fixedSize()
-                        .help("Time on this question")
-                        .accessibilityLabel("This question has taken \(elapsed)")
-                }
-                // How sure, beside how long. Both are facts about the run rather
-                // than parts of the answer, so they belong together up here.
-                if let shown = position.answer, shown.verified {
-                    pill("\(shown.confidence)%", tint: confidenceTint(shown.confidence), rounded: true)
-                        .help("How much the council agreed")
-                        .accessibilityLabel("Confidence \(shown.confidence) percent")
-                    if shown.isRefinement {
-                        pill("Improved", tint: NotchAccent.home, rounded: false)
-                            .help("A stronger model improved this answer")
-                            .accessibilityLabel("Improved by a stronger model")
-                    }
+                    .help("Time on this question")
+                    .accessibilityLabel("This question has taken \(elapsed)")
+            }
+            // How sure, beside how long. Both are facts about the run rather
+            // than parts of the answer, so they belong together up here.
+            if confidence, let shown = position.answer, shown.verified {
+                pill("\(shown.confidence)%", tint: confidenceTint(shown.confidence), rounded: true)
+                    .help("How much the council agreed")
+                    .accessibilityLabel("Confidence \(shown.confidence) percent")
+                if improved, shown.isRefinement {
+                    pill("Improved", tint: NotchAccent.home, rounded: false)
+                        .help("A stronger model improved this answer")
+                        .accessibilityLabel("Improved by a stronger model")
                 }
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .fixedSize()
+    }
 
-            HStack(spacing: 2) {
-                retargetMenu
+    private func trailing(showsCapture: Bool) -> some View {
+        let pinned = vm.isPinned || session.pinsNotchOpen
+        return HStack(spacing: 2) {
+            retargetMenu
 
-                if quiz.state == .paused {
-                    CallaWingButton(symbol: "play.fill", tint: Color.white.opacity(0.80)) { send(.resume) }
-                        .help(shortcutHelp("Resume Quiz", .sessionHold))
-                        .accessibilityLabel("Resume Quiz")
-                } else {
-                    CallaWingButton(symbol: "pause.fill", tint: Color.white.opacity(0.80)) { send(.pause) }
-                        .help(shortcutHelp("Pause Quiz", .sessionHold))
-                        .accessibilityLabel("Pause Quiz")
-                }
+            if quiz.state == .paused {
+                CallaWingButton(symbol: "play.fill", tint: Color.white.opacity(0.80)) { send(.resume) }
+                    .help(shortcutHelp("Resume Quiz", .sessionHold))
+                    .accessibilityLabel("Resume Quiz")
+            } else {
+                CallaWingButton(symbol: "pause.fill", tint: Color.white.opacity(0.80)) { send(.pause) }
+                    .help(shortcutHelp("Pause Quiz", .sessionHold))
+                    .accessibilityLabel("Pause Quiz")
+            }
 
-                // Reports the setting rather than asserting a guarantee — the
-                // same rule the call header follows.
+            // Reports the setting rather than asserting a guarantee — the
+            // same rule the call header follows.
+            if showsCapture {
                 CallaWingIndicator(symbol: hiddenFromCapture ? "eye.slash" : "eye",
                                    tint: hiddenFromCapture ? Color.white.opacity(0.70) : NotchAccent.attention)
                     .help(hiddenFromCapture
@@ -105,32 +135,27 @@ struct CallaQuizLiveHeader: View {
                           : "Visible in screen recordings and shares — turn on Hide from screen recording in Settings")
                     .accessibilityLabel(hiddenFromCapture ? "Hidden from screen recording"
                                                           : "Visible in screen recording")
-
-                let pinned = vm.isPinned || session.pinsNotchOpen
-                CallaWingButton(symbol: pinned ? "pin.fill" : "pin",
-                                tint: pinned ? NotchAccent.quiz : Color.white.opacity(0.70)) {
-                    AppDelegate.shared?.toggleUniversalNotchPin(for: vm)
-                }
-                .help(pinned ? "Unpin notch" : "Pin notch open")
-                .accessibilityLabel(pinned ? "Unpin notch" : "Pin notch open")
-
-                CallaWingButton(symbol: session.layout == .full
-                                ? "arrow.down.right.and.arrow.up.left" : "arrow.up.left.and.arrow.down.right") {
-                    session.toggleLayout()
-                }
-                .help(session.layout == .full ? "Compact panel" : "Expanded panel")
-                .accessibilityLabel(session.layout == .full ? "Compact panel" : "Expanded panel")
-
-                CallaEndPill(title: "Stop") { send(.stop) }
-                    .help("Stop Quiz")
-                    .accessibilityLabel("Stop Quiz")
             }
-            .frame(maxWidth: .infinity, alignment: .trailing)
+
+            CallaWingButton(symbol: pinned ? "pin.fill" : "pin",
+                            tint: pinned ? NotchAccent.quiz : Color.white.opacity(0.70)) {
+                AppDelegate.shared?.toggleUniversalNotchPin(for: vm)
+            }
+            .help(pinned ? "Unpin notch" : "Pin notch open")
+            .accessibilityLabel(pinned ? "Unpin notch" : "Pin notch open")
+
+            CallaWingButton(symbol: session.layout == .full
+                            ? "arrow.down.right.and.arrow.up.left" : "arrow.up.left.and.arrow.down.right") {
+                session.toggleLayout()
+            }
+            .help(session.layout == .full ? "Compact panel" : "Expanded panel")
+            .accessibilityLabel(session.layout == .full ? "Compact panel" : "Expanded panel")
+
+            CallaEndPill(title: "Stop") { send(.stop) }
+                .help("Stop Quiz")
+                .accessibilityLabel("Stop Quiz")
         }
-        .padding(.leading, 22)
-        .padding(.trailing, 16)
-        .onReceive(clockTick) { now = $0 }
-        .task { refreshTargets() }
+        .fixedSize()
     }
 
     private func pill(_ text: String, tint: Color, rounded: Bool) -> some View {
@@ -196,7 +221,7 @@ struct CallaQuizLiveHeader: View {
                 .lineLimit(1)
                 .truncationMode(.tail)
                 .padding(.horizontal, 8)
-                .frame(maxWidth: 96)
+                .frame(maxWidth: 84)
                 .frame(height: 22)
                 .background(Capsule().fill(Color.white.opacity(0.08)))
                 .frame(height: 28)
