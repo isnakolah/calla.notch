@@ -1080,14 +1080,25 @@ struct ContentView: View {
         HStack(spacing: 0) {
             HStack(spacing: 7) {
                 if isInlineSongChange {
-                    MarqueeText(
-                        .constant(musicManager.songTitle),
-                        font: .system(size: 12, weight: .semibold),
-                        nsFont: .callout,
-                        textColor: NotchInk.primary,
-                        minDuration: 0.4,
-                        frameWidth: wing - 32
-                    )
+                    // A title that fits sits against the artwork; only one too
+                    // long for the wing scrolls in a fixed frame.
+                    ViewThatFits(in: .horizontal) {
+                        Text(musicManager.songTitle)
+                            .font(.system(size: 12, weight: .semibold))
+                            .foregroundStyle(NotchInk.primary)
+                            .lineLimit(1)
+                            .fixedSize()
+                        MarqueeText(
+                            .constant(musicManager.songTitle),
+                            font: .system(size: 12, weight: .semibold),
+                            nsFont: .callout,
+                            textColor: NotchInk.primary,
+                            minDuration: 0.4,
+                            frameWidth: wing - 32
+                        )
+                        .frame(width: wing - 32)
+                    }
+                    .frame(maxWidth: wing - 29, alignment: .trailing)
                     .transition(.opacity)
                 }
                 Image(nsImage: musicManager.albumArt)

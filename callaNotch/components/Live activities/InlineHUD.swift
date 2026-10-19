@@ -58,6 +58,9 @@ struct InlineHUD: View {
                 .frame(width: 20, height: 15, alignment: .trailing)
 
             }
+            // The slab between the wings is narrower than the housing, so the
+            // glyph keeps a few points clear of the camera's edge.
+            .padding(.trailing, 8)
             .frame(width: NotchWing.hud + gestureProgress / 2, alignment: .trailing)
 
             Rectangle()
@@ -84,6 +87,7 @@ struct InlineHUD: View {
                     }
                 }
             }
+            .padding(.leading, 8)
             .frame(width: NotchWing.hud + gestureProgress / 2, alignment: .leading)
         }
         .frame(height: vm.closedNotchSize.height + (hoverAnimation ? 8 : 0), alignment: .center)
