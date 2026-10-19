@@ -151,6 +151,9 @@ enum NotchWing {
     static let inlineSong: CGFloat = 150
     /// What the slab adds outside a wing: its own corner inset.
     static let inset: CGFloat = 14
+    /// Extra room outside a wing whose text runs to its far edge, so the
+    /// slab's curved lower corner does not clip the last letters.
+    static let textClearance: CGFloat = 10
 
     /// Hit-area growth for a closed notch with wings of this width.
     static func chinGrowth(_ wing: CGFloat) -> CGFloat { 2 * (wing + inset) }

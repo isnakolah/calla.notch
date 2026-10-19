@@ -211,7 +211,9 @@ struct ContentView: View {
             && vm.notchState == .closed && (musicManager.isPlaying || !musicManager.isPlayerIdle)
             && coordinator.musicLiveActivityEnabled && !vm.hideOnClosed
         {
-            chinWidth += NotchWing.chinGrowth(isInlineSongChange ? NotchWing.inlineSong : NotchWing.music)
+            chinWidth += isInlineSongChange
+                ? NotchWing.chinGrowth(NotchWing.inlineSong) + 2 * NotchWing.textClearance
+                : NotchWing.chinGrowth(NotchWing.music)
         }
 
         return chinWidth
@@ -1110,6 +1112,9 @@ struct ContentView: View {
                     .accessibilityLabel("Album artwork")
             }
             .frame(width: wing, alignment: .trailing)
+            // Text that fills the wing reaches the slab's curved lower corner,
+            // which shaved the outermost letters; keep it clear of the curve.
+            .padding(.leading, isInlineSongChange ? NotchWing.textClearance : 0)
 
             Rectangle()
                 .fill(.black)
@@ -1145,6 +1150,7 @@ struct ContentView: View {
                 }
             }
             .frame(width: wing, alignment: .leading)
+            .padding(.trailing, isInlineSongChange ? NotchWing.textClearance : 0)
         }
         // SwiftUI `onDrop` is unreliable in our non-activating transparent
         // panel while closed. Native AppKit drag registration owns that state.
