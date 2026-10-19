@@ -8,7 +8,7 @@ const MAX_TEXT = 800;
 function fail(code, message) { return {ok: false, code, message}; }
 function cleanText(value, maximum = MAX_TEXT) {
   if (typeof value !== "string") return null;
-  // Never transform unsafe controls into a different request. Boring validates
+  // Never transform unsafe controls into a different request. Calla validates
   // before routing; Gateway validates again because this socket is a boundary.
   if (/[\u0000-\u001f\u007f\u061c\u200e\u200f\u202a-\u202e\u2066-\u2069]/u.test(value)) return null;
   const text = value.replace(/\s+/gu, " ").trim();

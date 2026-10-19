@@ -4,7 +4,7 @@ import Foundation
 
 /// Everything setup installs outside the app lives in one folder:
 ///
-///     ~/Library/Application Support/boringNotch/Components/
+///     ~/Library/Application Support/calla.notch/Components/
 ///       agy/<version>/agy            agy/current -> <version>
 ///       codex/<version>/bin/codex    codex/current -> <version>
 ///       claude/<version>/bin/claude  claude/current -> <version>
@@ -29,7 +29,7 @@ public enum ComponentLayout {
     public static let legacyModels = Layout.support.appendingPathComponent("Calla/copilot/models")
     /// A folder carried from another Mac (USB drive, Downloads, beside the
     /// disk image). Setup checks it before downloading anything.
-    public static let carryName = "Boring Notch Components"
+    public static let carryName = "calla.notch Components"
 }
 
 /// A speech model the call host needs, with the same pins the host uses.

@@ -8,7 +8,7 @@ import Foundation
 /// locations are checked directly before falling back to a login shell.
 public enum AgyLocator {
     public static var managedPath: String {
-        AgyEnvironment.userHome + "/Library/Application Support/boringNotch/Managed/agy/current/agy"
+        AgyEnvironment.userHome + "/Library/Application Support/calla.notch/Managed/agy/current/agy"
     }
     public static let knownPaths = [
         "~/.local/bin/agy",

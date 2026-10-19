@@ -1,14 +1,14 @@
 # Sweep integration
 
-Sweep now ships inside `boringNotch.app` as `SweepService.xpc`. The Boring
+Sweep now ships inside `calla.notch.app` as `SweepService.xpc`. The Calla
 process remains sandboxed; only the embedded service is unsandboxed, because
 surveying user application containers requires Full Disk Access.
 
 ## Lifecycle
 
-`Settings → Sweep` creates the XPC connection. No Boring startup path creates
+`Settings → Sweep` creates the XPC connection. No Calla startup path creates
 or contacts Sweep service. User may choose whether service stops when leaving
-Sweep, when Settings closes, or when Boring quits. Retained service is idle;
+Sweep, when Settings closes, or when Calla quits. Retained service is idle;
 survey work begins only when Sweep tab opens, preferences change, or Rescan is
 pressed.
 
@@ -35,13 +35,13 @@ rows, and explicit service-lifetime descriptions.
 
 First Sweep tab open stops running standalone `com.isnakolah.Sweep`, copies
 `survey.json`, `history.json`, and `regrowth.json` into
-`~/Library/Application Support/boringNotch/Sweep`, imports `sweep.*`
+`~/Library/Application Support/calla.notch/Sweep`, imports `sweep.*`
 preferences, and writes `migration-v1.json`. Source app, source data, and
 source preferences remain untouched as rollback copies.
 
 ## Verify
 
-`xcodebuild -project boringNotch.xcodeproj -scheme boringNotch -configuration Debug build`
+`xcodebuild -project callaNotch.xcodeproj -scheme callaNotch -configuration Debug build`
 builds and embeds service. `scripts/deploy.sh` verifies app, existing helper,
 and Sweep service signatures before installing. Full Disk Access is granted to
 the embedded service identity, not old standalone app identity.

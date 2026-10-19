@@ -2,7 +2,7 @@ import Foundation
 import IntelligenceStore
 import os.log
 
-private let archiveLog = Logger(subsystem: "theboringteam.boringnotch.callhost", category: "retranscribe")
+private let archiveLog = Logger(subsystem: "org.calla.notch.callhost", category: "retranscribe")
 
 /// Re-runs a finished call through the large model.
 ///

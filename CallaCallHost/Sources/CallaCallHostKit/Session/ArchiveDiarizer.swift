@@ -4,7 +4,7 @@ import FluidAudio
 import Foundation
 import os.log
 
-private let diarizeLog = Logger(subsystem: "theboringteam.boringnotch.callhost", category: "diarize")
+private let diarizeLog = Logger(subsystem: "org.calla.notch.callhost", category: "diarize")
 
 /// Splits a finished call's system audio into individual voices.
 ///

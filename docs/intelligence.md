@@ -6,7 +6,7 @@ Copilot is its first consumer.
 
 ## Tutor feedback
 
-`IntelligenceTask.tutorFeedback` differs from Call Copilot advice. Boring Engine
+`IntelligenceTask.tutorFeedback` differs from Call Copilot advice. Calla Engine
 owns run identity, deterministic verification, progression, persistence and capture.
 A provider receives bounded authored context, verifier facts, optional learner question
 and Engine-owned target-window attachment. It returns strict JSON: `message`,
@@ -293,6 +293,6 @@ pgrep -f "agy --log-file" | wc -l
 
 ## Not yet migrated
 
-`tutor.ask` (`BoringCallaEngineProtocol.swift`) still talks to the Gateway directly.
+`tutor.ask` (`CallaEngineProtocol.swift`) still talks to the Gateway directly.
 It is the obvious next consumer: declare the task, route it, keep the Gateway as its
 provider.

@@ -2,7 +2,7 @@ import Foundation
 import IntelligenceStore
 import os.log
 
-private let speakerLog = Logger(subsystem: "theboringteam.boringnotch.callhost", category: "speakers")
+private let speakerLog = Logger(subsystem: "org.calla.notch.callhost", category: "speakers")
 
 /// Works out who said what once a call is over.
 ///

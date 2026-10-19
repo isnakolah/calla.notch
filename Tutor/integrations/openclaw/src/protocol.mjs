@@ -7,7 +7,7 @@ import {fileURLToPath} from "node:url";
 import {validateDetectorDescriptor, validateTargetDescriptor} from "./descriptors.mjs";
 
 /// v4 carries Engine-owned run identity. v2/v3 remain standalone rollback
-/// compatibility only; Boring engine mode rejects their model-visible actions.
+/// compatibility only; Calla engine mode rejects their model-visible actions.
 export const PROTOCOL_VERSION = 4;
 export const SUPPORTED_PROTOCOL_VERSIONS = Object.freeze([2, 3, 4]);
 export const NODE_COMMAND = "tutor.host";

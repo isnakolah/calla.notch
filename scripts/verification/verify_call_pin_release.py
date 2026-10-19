@@ -5,7 +5,7 @@ import subprocess
 import tempfile
 
 root = Path(__file__).resolve().parents[2]
-source = (root / 'boringNotch/components/Calla/CopilotLiveSession.swift').read_text()
+source = (root / 'callaNotch/components/Calla/CopilotLiveSession.swift').read_text()
 
 def block(marker):
     start = source.index(marker)

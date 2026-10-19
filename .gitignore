@@ -53,3 +53,10 @@ build/
 *.xcarchive
 *.dSYM
 
+
+# Shared Calla build scheme
+!callaNotch.xcodeproj/xcshareddata/xcschemes/callaNotch.xcscheme
+
+# Backend secrets and local vault
+Backend/deploy/.env
+Backend/data/

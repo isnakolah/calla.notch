@@ -1,7 +1,7 @@
 import Foundation
 import os.log
 
-private let transcriberLog = Logger(subsystem: "theboringteam.boringnotch.callhost", category: "transcriber")
+private let transcriberLog = Logger(subsystem: "org.calla.notch.callhost", category: "transcriber")
 
 /// Turns two live audio legs into an ordered, source-tagged transcript.
 ///

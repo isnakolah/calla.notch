@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Build immutable Gateway artifact bundled with one Boring build. This script
+# Build immutable Gateway artifact bundled with one Calla build. This script
 # never contacts Gateway; gateway-update.sh is sole private-SSH transport.
 set -euo pipefail
 
@@ -11,7 +11,7 @@ if [[ -n "${PYTHON:-}" ]]; then
 elif [[ -x "$TUTOR/.venv/bin/python" ]]; then
   PYTHON_BIN="$TUTOR/.venv/bin/python"
 elif command -v uv >/dev/null 2>&1; then
-  # `uv run` creates Boring-local Tutor dependencies from pyproject.toml;
+  # `uv run` creates Calla-local Tutor dependencies from pyproject.toml;
   # no retired Calla checkout or virtualenv is consulted.
   PYTHON_BIN=""
 else
@@ -25,7 +25,7 @@ mkdir -p "$(dirname "$DESTINATION")"
 SOURCE_DIGEST="$(find "$TUTOR" -type f \
   ! -path '*/.build/*' ! -path '*/.venv/*' ! -path '*/node_modules/*' ! -path '*/__pycache__/*' ! -path '*/build/*' -print0 \
   | sort -z | xargs -0 shasum -a 256 | shasum -a 256 | awk '{print $1}')"
-VERSION="boring-${SOURCE_DIGEST:0:20}"
+VERSION="calla-${SOURCE_DIGEST:0:20}"
 TEMPORARY="$(mktemp -d "${TMPDIR:-/tmp}/calla-gateway-build.XXXXXX")"
 trap 'rm -rf "$TEMPORARY"' EXIT
 

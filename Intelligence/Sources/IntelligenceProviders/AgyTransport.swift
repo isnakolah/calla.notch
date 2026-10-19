@@ -59,7 +59,7 @@ enum AgyProcessRunner {
     ) async throws -> Result {
         if arguments.contains("-p") || arguments.contains("--print") || arguments.first == "models" {
             guard AgyLocator.hasCredentials() else {
-                throw IntelligenceFailure.unauthenticated("Sign in to AGY from Boring Notch")
+                throw IntelligenceFailure.unauthenticated("Sign in to AGY from calla.notch")
             }
             guard await AgyConnectivity.canReachGoogle() else {
                 throw IntelligenceFailure.transport("Cannot reach Google. Check your internet connection; your sign-in is unchanged")

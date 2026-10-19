@@ -3,7 +3,7 @@ import Foundation
 import CallaContracts
 import os.log
 
-private let archiveLog = Logger(subsystem: "theboringteam.boringnotch.callhost", category: "archive")
+private let archiveLog = Logger(subsystem: "org.calla.notch.callhost", category: "archive")
 
 /// On-disk record of one call.
 ///

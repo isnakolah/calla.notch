@@ -15,7 +15,7 @@ public enum TerminalLauncher {
             trap 'result=130; exit 130' HUP INT TERM
             \(command)
             result=$?
-            print '\\nReturn to the Boring Notch setup window. You can close this Terminal window.'
+            print '\\nReturn to the calla.notch setup window. You can close this Terminal window.'
             exit "$result"
             """
         } else { script += command }
@@ -31,7 +31,7 @@ public enum TerminalLauncher {
         for old in (try? FileManager.default.contentsOfDirectory(at: directory, includingPropertiesForKeys: nil)) ?? [] {
             try? FileManager.default.removeItem(at: old)
         }
-        let file = directory.appendingPathComponent("boring-notch-\(UUID().uuidString.prefix(8)).command")
+        let file = directory.appendingPathComponent("calla-notch-\(UUID().uuidString.prefix(8)).command")
         try ("#!/bin/zsh\n" + script + "\n").write(to: file, atomically: true, encoding: .utf8)
         try FileManager.default.setAttributes([.posixPermissions: 0o700], ofItemAtPath: file.path)
         let result = try Commands.run("/usr/bin/open", ["-a", "Terminal", file.path], timeout: 30, check: false)
@@ -46,7 +46,7 @@ public enum TerminalLauncher {
         let source = "tell application \"Terminal\"\nactivate\ndo script \"\(literal)\"\nend tell"
         let result = try Commands.run("/usr/bin/osascript", ["-e", source], timeout: 60, check: false)
         guard result.status == 0 else {
-            throw SetupFailure("macOS could not open Terminal. Allow Boring Notch to control Terminal when prompted, then retry. You can change this in System Settings → Privacy & Security → Automation.")
+            throw SetupFailure("macOS could not open Terminal. Allow calla.notch to control Terminal when prompted, then retry. You can change this in System Settings → Privacy & Security → Automation.")
         }
     }
 }

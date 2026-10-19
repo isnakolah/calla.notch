@@ -14,8 +14,8 @@ back, start from that branch.
 | Shelf | `components/Shelf` | Drop files into the notch; AirDrop, LocalSend, KDE Connect, Quick Share |
 | Webcam mirror | `components/Webcam`, Settings › Appearance › Camera | Camera preview in the notch |
 | Pomodoro | `components/Pomodoro` | Focus timer tab, planner, closed-notch badge |
-| Usage monitor | `components/UsageMonitor`, `BoringNotchXPCHelper/UsageProbes` | Claude / Codex / AGY allowance, Tangit profiles, closed-notch badges |
-| Battery indicator | `components/Live activities/BoringBattery.swift`, Settings › System › Battery | Charging and low-battery notifications |
+| Usage monitor | `components/UsageMonitor`, `CallaNotchXPCHelper/UsageProbes` | Claude / Codex / AGY allowance, Tangit profiles, closed-notch badges |
+| Battery indicator | `components/Live activities/CallaBattery.swift`, Settings › System › Battery | Charging and low-battery notifications |
 | Volume / brightness HUD | `InlineHUD`, `OpenNotchHUD`, `SystemEventIndicatorModifier`, Settings › System › HUD | Replaces the system HUDs |
 | Download indicator | `components/Live activities/DownloadView.swift` | Downloads in progress |
 | Face animation | `components/AnimatedFace.swift` | Idle face in the closed notch |
@@ -27,7 +27,7 @@ back, start from that branch.
 
 | Feature | Where | What it does |
 | --- | --- | --- |
-| Ice | `boringNotch/Ice`, Settings › Ice | Menu bar extras organizer: sections, reveal gestures, search, spacing |
+| Ice | `callaNotch/Ice`, Settings › Ice | Menu bar extras organizer: sections, reveal gestures, search, spacing |
 | Sweep | `SweepService/` (XPC), Settings › Sweep | Disk usage and safe cleanup |
 | Sparkle updates | `updater/`, `CheckForUpdatesView` | App self-update |
 
@@ -37,7 +37,7 @@ back, start from that branch.
 | --- | --- | --- |
 | Live call | `components/Calla/CallaCopilotLiveView.swift`, `CopilotLiveSession` | Zen / compact / full call panel: summary, answers, transcript |
 | Call host | `CallaCallHost/` | Capture, VAD, Whisper transcription, advisor, recap |
-| Engine | `BoringCallaEngine/` (XPC) | Owns the host, status, history, private setup |
+| Engine | `CallaEngine/` (XPC) | Owns the host, status, history, private setup |
 | Local brain (agy) | `Intelligence/Sources/IntelligenceProviders/Agy*` | Antigravity CLI as the local model, Google sign-in |
 | Gateway fallback | `Tutor/Gateway`, `Distribution/Sources/CallaGateway`, Settings › Copilot › Models | Remote OpenClaw Gateway when the local brain fails |
 | Personas | `Intelligence/.../Prompts/live/personas` | Per-call persona shaping answers |

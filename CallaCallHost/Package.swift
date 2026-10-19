@@ -6,7 +6,7 @@ import PackageDescription
 //  * this one pulls a whisper.cpp xcframework, and TutorHost's `swift test`
 //    should not start downloading one;
 //  * TutorHost lives inside the vendored `Tutor/` subtree, which has already
-//    diverged from upstream by hand. New boring-owned code stays out of it.
+//    diverged from upstream by hand. New calla-owned code stays out of it.
 let package = Package(
     name: "CallaCallHost",
     platforms: [.macOS(.v14)],

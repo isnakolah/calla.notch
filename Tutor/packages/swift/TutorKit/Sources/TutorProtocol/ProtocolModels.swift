@@ -3,7 +3,7 @@ import Foundation
 public enum TutorProtocolVersion {
     /// New Engine-owned control planes speak v4. v2/v3 remain accepted only
     /// while standalone TutorHost/Gateway deployments are in their rollback
-    /// window; Boring engine mode must require v4 at its ingress boundary.
+    /// window; Calla engine mode must require v4 at its ingress boundary.
     public static let current = 4
     public static let supported = 2...4
 

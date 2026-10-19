@@ -151,7 +151,7 @@ public struct TutorHistoryStats: Sendable, Equatable, Codable {
     public let captureByteCount: Int
 }
 
-/// One-time Boring projection imports deliberately contain only durable
+/// One-time Calla projection imports deliberately contain only durable
 /// progression facts. Raw legacy entry text never becomes Tutor history.
 public struct TutorLearningImport: Sendable, Equatable {
     public let bundleID: String
@@ -287,7 +287,7 @@ public extension CallaStore {
             }.first
     }
 
-    /// Bounded status projection for Boring UI. This never exposes runtime
+    /// Bounded status projection for Calla UI. This never exposes runtime
     /// bytes and cannot be used to select a revision for execution.
     func tutorRuntimeManifestRecords(limit: Int = 200) throws -> [TutorRuntimeManifestRecord] {
         let boundedLimit = min(max(limit, 1), 200)
@@ -340,7 +340,7 @@ public extension CallaStore {
             [.text(sourceFile), .text(digest), .text(status), .int(importedCount), .text(errorCode.map { String($0.prefix(128)) }), .date(Date())])
     }
 
-    /// Inserts Boring-owned learning projections only when no canonical row is
+    /// Inserts Calla-owned learning projections only when no canonical row is
     /// present. Legacy data has no trustworthy modification time, so replacing
     /// an existing Store row would violate canonical-state precedence.
     func importTutorLearning(_ imports: [TutorLearningImport]) throws -> Int {

@@ -55,10 +55,10 @@ done
 #
 # Skipped when the tooltip's own buttons sent us: it has already said something
 # more specific than "Thinking…", and this would only overwrite it.
-# CALLA_RUNTIME_ROOT is exported by BoringCallaEngine before it launches the
+# CALLA_RUNTIME_ROOT is exported by CallaEngine before it launches the
 # host, and LessonRelay passes the environment through, so it is already set on
 # every real invocation. The default keeps a bare shell or Raycast call working.
-CALLA_ROOT="${CALLA_RUNTIME_ROOT:-$HOME/Library/Application Support/boringNotch/Calla}"
+CALLA_ROOT="${CALLA_RUNTIME_ROOT:-$HOME/Library/Application Support/calla.notch/Calla}"
 SOCKET="$CALLA_ROOT/tutor-host.sock"
 if [[ -S "$SOCKET" && "${CALLA_QUIET:-0}" != "1" ]]; then
   /usr/bin/python3 - "$SOCKET" <<'THINKING' >/dev/null 2>&1 || true

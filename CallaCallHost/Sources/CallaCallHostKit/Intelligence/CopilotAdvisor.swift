@@ -6,7 +6,7 @@ import IntelligenceStore
 import os.log
 
 private let advisorLog = Logger(
-    subsystem: "theboringteam.boringnotch.callhost",
+    subsystem: "org.calla.notch.callhost",
     category: "intelligence"
 )
 
@@ -41,6 +41,12 @@ public actor CopilotAdvisor {
         public var runtimeRoot: URL
         /// The knowledge base and call history. Absent in probes and tests.
         public var store: CallaStore?
+        /// Whether a question heard on the call is answered on its own.
+        ///
+        /// Off leaves everything else running — the ledger, the running
+        /// summary, recall, the recap — and a question asked deliberately
+        /// (`askManual`) is still answered. Only automatic admission stops.
+        public var answersQuestions: Bool
 
         public init(
             callID: String,
@@ -52,7 +58,8 @@ public actor CopilotAdvisor {
             liveTier: ModelTier,
             summaryModel: String?,
             runtimeRoot: URL,
-            store: CallaStore? = nil
+            store: CallaStore? = nil,
+            answersQuestions: Bool = true
         ) {
             self.callID = callID
             self.generation = max(0, generation)
@@ -64,6 +71,7 @@ public actor CopilotAdvisor {
             self.summaryModel = summaryModel
             self.runtimeRoot = runtimeRoot
             self.store = store
+            self.answersQuestions = answersQuestions
         }
     }
 
@@ -386,6 +394,7 @@ public actor CopilotAdvisor {
         // Code owns automatic admission; Call still records every turn, retrieves
         // knowledge, answers coordinated requests, and builds history/recaps.
         guard codingContext() == nil else { closeChunkIfDue(); return }
+        guard config.answersQuestions else { closeChunkIfDue(); return }
         let questions = statements.filter { $0.speaker == .remote && $0.invitesAnAnswer }
         guard !questions.isEmpty else {
             trace("no question in \(statements.count) statement(s); ledger only")

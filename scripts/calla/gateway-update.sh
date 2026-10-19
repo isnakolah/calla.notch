@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Private Gateway updater. No host picker or public-route fallback. `--staged`
-# serves Xcode Debug; `--bundle` serves immutable artifact inside installed Boring.
+# serves Xcode Debug; `--bundle` serves immutable artifact inside installed Calla.
 set -euo pipefail
 
 mode="${1:-}"

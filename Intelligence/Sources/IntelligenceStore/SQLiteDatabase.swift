@@ -62,6 +62,9 @@ final class SQLiteDatabase {
 
     deinit { sqlite3_close_v2(handle) }
 
+    /// Rows changed by the most recent INSERT, UPDATE or DELETE.
+    var changes: Int { Int(sqlite3_changes(handle)) }
+
     // MARK: - Statements
 
     func execute(_ sql: String) throws {

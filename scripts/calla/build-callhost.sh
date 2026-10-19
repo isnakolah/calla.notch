@@ -14,7 +14,7 @@ CONFIGURATION="${CONFIGURATION:-Release}"
 SWIFT_CONFIGURATION="release"
 [[ "$CONFIGURATION" == "Debug" ]] && SWIFT_CONFIGURATION="debug"
 
-# Same identity the rest of Boring's Calla runtime uses. Changing it resets
+# Same identity the rest of Calla's Calla runtime uses. Changing it resets
 # every TCC grant the user has already given, which is why deploy.sh guards it.
 IDENTITY="${EXPANDED_CODE_SIGN_IDENTITY:-${CALLA_SIGN_IDENTITY:-Calla Local Signing}}"
 if [[ -z "$IDENTITY" || "$IDENTITY" == "-" ]]; then

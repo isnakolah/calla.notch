@@ -8,7 +8,7 @@ let target = "isnakolah@nomonhomelab.tailec0dca.ts.net"
 
 func remote(_ script: String, input: Data? = nil, timeout: TimeInterval = 60) throws -> String {
     guard files.isExecutableFile(atPath: tailscale) else {
-        throw SetupFailure("Tailscale is not installed. Run Boring Notch setup to connect the optional Gateway.")
+        throw SetupFailure("Tailscale is not installed. Run calla.notch setup to connect the optional Gateway.")
     }
     return try Commands.run(tailscale, ["ssh", target, script], input: input, timeout: timeout).output
 }
@@ -27,7 +27,7 @@ do {
               digest.allSatisfy({ $0.isHexDigit }) else { throw SetupFailure("Invalid Gateway manifest.") }
         print(digest)
     } else if !enabled && !(action == "check" && args.contains("--setup")) {
-        emit(Data("{\"ok\":false,\"code\":\"GATEWAY_DISABLED\",\"summary\":\"Gateway skipped. Run Boring Notch setup to connect it.\"}".utf8))
+        emit(Data("{\"ok\":false,\"code\":\"GATEWAY_DISABLED\",\"summary\":\"Gateway skipped. Run calla.notch setup to connect it.\"}".utf8))
         exit(action == "check" ? 0 : 78)
     } else {
         switch action {

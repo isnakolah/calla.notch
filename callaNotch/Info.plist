@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>org.calla.notch.setup</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>callanotch-setup</string>
+			</array>
+		</dict>
+	</array>
+	<key>CallaSetupProtocolVersion</key>
+	<integer>1</integer>
+	<key>CallaSetupUIVersion</key>
+	<integer>1</integer>
+	<key>NSAppDataUsageDescription</key>
+	<string>calla.notch imports the previous installation's settings and Shelf data into its renamed container. Original data is kept for rollback.</string>
+	<key>NSAppTransportSecurity</key>
+	<dict>
+		<key>NSAllowsArbitraryLoads</key>
+		<true/>
+	</dict>
+	<key>NSBonjourServices</key>
+	<array>
+		<string>_kdeconnect._udp</string>
+	</array>
+	<key>NSLocalNetworkUsageDescription</key>
+	<string>calla.notch discovers paired LocalSend and KDE Connect devices on your local network to send Shelf items.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>The call copilot transcribes your side of a call on this Mac to suggest how to answer. Audio never leaves your Mac.</string>
+	<key>NSScreenCaptureUsageDescription</key>
+	<string>Call Copilot captures system audio. Screen Quiz captures only your selected window and sends screenshots plus selected context through local AGY to the remote model sessions you configure, with a possible arbiter and one fresh automatic retry for failed requests. Independent web research may occur. Quiz captures stay encrypted until you delete them. Quiz never clicks, types, or submits.</string>
+	<key>SUAutomaticallyUpdate</key>
+	<false/>
+	<key>SUEnableAutomaticChecks</key>
+	<false/>
+	<key>SUEnableDownloaderService</key>
+	<true/>
+	<key>SUEnableInstallerLauncherService</key>
+	<true/>
+	<key>UTImportedTypeDeclarations</key>
+	<array>
+		<dict/>
+	</array>
+</dict>
+</plist>

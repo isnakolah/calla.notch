@@ -3,13 +3,13 @@
 <plist version="1.0">
 <dict>
     <key>CFBundleDisplayName</key>
-    <string>Boring Calla Overlay</string>
+    <string>calla.notch Overlay</string>
     <key>CFBundleExecutable</key>
     <string>CallaOverlayHelper</string>
     <key>CFBundleIdentifier</key>
-    <string>theboringteam.boringnotch.CallaOverlayHelper</string>
+    <string>org.calla.notch.CallaOverlayHelper</string>
     <key>CFBundleName</key>
-    <string>Boring Calla Overlay</string>
+    <string>calla.notch Overlay</string>
     <key>CFBundlePackageType</key>
     <string>APPL</string>
     <!-- The renderer draws over the application being taught and must never

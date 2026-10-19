@@ -191,7 +191,7 @@ public actor AgyHost {
     private func start() async throws {
         stop()
         guard AgyLocator.hasCredentials() else {
-            throw IntelligenceFailure.unauthenticated("Sign in to AGY from Boring Notch before starting the copilot")
+            throw IntelligenceFailure.unauthenticated("Sign in to AGY from calla.notch before starting the copilot")
         }
         guard await AgyConnectivity.canReachGoogle() else {
             throw IntelligenceFailure.transport("Cannot reach Google. Check your internet connection; your sign-in is unchanged")

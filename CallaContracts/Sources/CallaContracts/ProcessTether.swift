@@ -1,7 +1,7 @@
 import Darwin
 import Dispatch
 
-/// Keeps every process Boring Notch starts underneath the one that started it.
+/// Keeps every process calla.notch starts underneath the one that started it.
 ///
 /// macOS has no `PR_SET_PDEATHSIG`: when a parent dies, its children are
 /// reparented to launchd and keep running. Killing the notch used to leave a
@@ -39,7 +39,7 @@ public enum ProcessTether {
         fi
         wait "$c"
         """
-        return ("/bin/sh", ["-c", script, "boringnotch-tether", String(parent), executable] + arguments)
+        return ("/bin/sh", ["-c", script, "callanotch-tether", String(parent), executable] + arguments)
     }
 
     /// Calls `handler` once when `pid` exits, or at once if it already has.

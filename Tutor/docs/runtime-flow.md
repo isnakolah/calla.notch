@@ -1,9 +1,9 @@
 # Calla Tutor runtime flow
 
-> Boring deployment uses Gateway-only OpenClaw. It does not install, launch,
-> pair, or enroll an OpenClaw node on Mac. Boring reaches Gateway's owner-only
+> Calla deployment uses Gateway-only OpenClaw. It does not install, launch,
+> pair, or enroll an OpenClaw node on Mac. Calla reaches Gateway's owner-only
 > `calla-course` and `calla-feedback` adapters over SSH. Node topology below is
-> legacy standalone Tutor documentation and is not a Boring runtime path.
+> legacy standalone Tutor documentation and is not a Calla runtime path.
 
 What actually runs, where it runs, and how to prove it end to end. Read
 [agent-context.md](agent-context.md) first for the authority model; this
@@ -298,9 +298,9 @@ reinstall, and a node reconnect. Adding an operation means adding it to
 the `contracts.tools` list in `openclaw.plugin.json`, and the Swift dispatch —
 all five, or the tool exists and does nothing.
 
-## Boring Engine mode (protocol v4)
+## Calla Engine mode (protocol v4)
 
-`runtimeMode=engine` is one-way authority reduction for embedded Boring. The
+`runtimeMode=engine` is one-way authority reduction for embedded Calla. The
 Engine creates a run/generation only after persisting it, sends typed Host
 commands, validates Host receipts against current identity, and advances only
 on deterministic `satisfied`. `unsatisfied`/`unknown` hold step and may request
@@ -313,7 +313,7 @@ files. Engine validates, encrypts, persists capture plus pending request, then
 routes. Gateway feedback is a separate owner-only socket using
 `runEmbeddedAgent(images:, disableTools:true)` with no Tutor tools/node calls.
 
-Boring does not load OpenClaw or `tutor.host` on Mac. Gateway-only authoring and
+Calla does not load OpenClaw or `tutor.host` on Mac. Gateway-only authoring and
 feedback travel through owner-only SSH adapters; deterministic capture,
-verification, overlay, and progression remain in Boring Engine/TutorHost.
-Standalone mode retains legacy node behavior outside Boring deployment.
+verification, overlay, and progression remain in Calla Engine/TutorHost.
+Standalone mode retains legacy node behavior outside Calla deployment.

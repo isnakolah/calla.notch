@@ -85,8 +85,8 @@ jobs:
       run: |
         xcodebuild \
           -resolvePackageDependencies \
-          -project boringNotch.xcodeproj \
-          -scheme boringNotch
+          -project callaNotch.xcodeproj \
+          -scheme callaNotch
 
     - name: Run Calla package matrix
       if: matrix.language == 'swift'
@@ -98,17 +98,17 @@ jobs:
         swift test --package-path CallaContracts
         echo "AGY_LIVE remains opt-in; live provider probe skipped unless explicitly enabled."
 
-    - name: Build Boring Notch
+    - name: Build calla.notch
       if: matrix.language == 'swift'
       run: |
         set -o pipefail
 
         xcodebuild \
-          -project boringNotch.xcodeproj \
-          -scheme boringNotch \
+          -project callaNotch.xcodeproj \
+          -scheme callaNotch \
           -configuration Release \
           -destination "platform=macOS" \
-          -derivedDataPath "$RUNNER_TEMP/boringNotch-derived-data" \
+          -derivedDataPath "$RUNNER_TEMP/callaNotch-derived-data" \
           CODE_SIGNING_ALLOWED=NO \
           CODE_SIGNING_REQUIRED=NO \
           CALLA_UNSIGNED_BUILD=1 \

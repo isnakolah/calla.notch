@@ -1,8 +1,8 @@
 import Foundation
 
-/// Boring owns every new Tutor runtime file. This source is compiled only into
-/// Boring's private runtime; it never reads or imports the retired Calla app
-/// container. `CALLA_RUNTIME_ROOT` is set by BoringCallaEngine before launch.
+/// Calla owns every new Tutor runtime file. This source is compiled only into
+/// Calla's private runtime; it never reads or imports the retired Calla app
+/// container. `CALLA_RUNTIME_ROOT` is set by CallaEngine before launch.
 enum CallaRuntime {
     struct ActiveLesson: Codable {
         let courseID: String
@@ -43,7 +43,7 @@ enum CallaRuntime {
 
     static let root: URL = {
         let fallback = URL(fileURLWithPath: NSHomeDirectory())
-            .appendingPathComponent("Library/Application Support/boringNotch/Calla", isDirectory: true)
+            .appendingPathComponent("Library/Application Support/calla.notch/Calla", isDirectory: true)
         guard let value = ProcessInfo.processInfo.environment["CALLA_RUNTIME_ROOT"],
               value.hasPrefix("/"), !value.contains("..") else { return fallback }
         return URL(fileURLWithPath: value, isDirectory: true).standardizedFileURL
@@ -57,7 +57,7 @@ enum CallaRuntime {
         root.appendingPathComponent("cache", isDirectory: true).appendingPathComponent(name)
     }
 
-    /// Boring's private log directory, written by BoringCallaEngine's child
+    /// Calla's private log directory, written by CallaEngine's child
     /// stdio redirection. The retired `~/Library/Logs/Calla` is shared with the
     /// legacy install, where two hosts' lines were indistinguishable.
     static var logs: URL { root.appendingPathComponent("logs", isDirectory: true) }
@@ -97,7 +97,7 @@ enum CallaRuntime {
                      to: file("host-status.json"))
     }
 
-    /// Gateway-to-node capability proof. Boring reads this bounded receipt to
+    /// Gateway-to-node capability proof. Calla reads this bounded receipt to
     /// show a real paired-node status; no model-visible operation writes it.
     static func recordCapabilityHandshake(engineBuild: String, nodeContractHash: String) {
         writeReceipt(CapabilityHandshake(engineBuild: engineBuild,
@@ -106,7 +106,7 @@ enum CallaRuntime {
                      to: file("capability-handshake.json"))
     }
 
-    /// Boring reads this tiny state receipt for its own notch and Settings UI.
+    /// Calla reads this tiny state receipt for its own notch and Settings UI.
     /// It contains route identity only—never a capture, coordinates, prompt, or
     /// model response.
     static func recordActiveLesson(courseID: String, lessonID: String, lessonTitle: String) {

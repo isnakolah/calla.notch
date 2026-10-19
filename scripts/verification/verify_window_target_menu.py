@@ -9,8 +9,8 @@ import subprocess
 import tempfile
 
 root = Path(__file__).resolve().parents[2]
-source = (root / 'boringNotch/components/Calla/CallaWindowTargetMenu.swift').read_text()
-source = source[:source.index('/// Code\'s catalog')].replace('import CallaContracts\n', '')
+source = (root / 'callaNotch/components/Calla/CallaWindowTargetMenu.swift').read_text()
+source = source.split("/// Code's catalog", 1)[0].replace('import CallaContracts\n', '')
 fixture = r'''
 struct QuizWindowTarget: Equatable {
     var id: String

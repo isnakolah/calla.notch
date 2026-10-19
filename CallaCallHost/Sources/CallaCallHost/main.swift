@@ -10,7 +10,7 @@ import Foundation
 ///
 /// Runs outside the sandboxed notch app because it needs microphone and screen
 /// recording, and those TCC grants attach to the executable that actually
-/// captures. It is driven by BoringCallaEngine over a Unix socket in normal use;
+/// captures. It is driven by CallaEngine over a Unix socket in normal use;
 /// the subcommands here exist so each layer can be exercised on its own without
 /// the rest of the stack.
 
@@ -484,7 +484,7 @@ case "models":
     }
 
 case "serve":
-    // How BoringCallaEngine runs a call: start capturing, keep going until the
+    // How CallaEngine runs a call: start capturing, keep going until the
     // engine sends SIGINT, then shut down cleanly so the trailing utterance and
     // the WAV headers are not lost.
     let model = resolveModel()
@@ -630,7 +630,7 @@ case "serve":
             case .capture:
                 let read = await session.captureScreen()
                 var snapshot = await session.lifecycleSnapshot()
-                if read == nil { snapshot.actionableError = "Screenshot failed. Check Screen & System Audio Recording for Boring Notch." }
+                if read == nil { snapshot.actionableError = "Screenshot failed. Check Screen & System Audio Recording for calla.notch." }
                 return CallHostEvent(callID: config.callID, generation: config.generation,
                                      kind: .screenshot, snapshot: snapshot)
             case .stop:

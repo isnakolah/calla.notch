@@ -4,12 +4,12 @@ import IntelligenceCore
 import IntelligenceStore
 import os.log
 
-private let sessionLog = Logger(subsystem: "theboringteam.boringnotch.callhost", category: "session")
+private let sessionLog = Logger(subsystem: "org.calla.notch.callhost", category: "session")
 
 /// Where the four processes meet.
 ///
 /// Mirrors the tutor runtime's convention: a 0700 directory of small JSON files
-/// under Application Support, written atomically at 0600. `BoringCallaEngine`
+/// under Application Support, written atomically at 0600. `CallaEngine`
 /// reads these on its existing status poll, so the notch picks up call state
 /// without a second polling loop anywhere.
 public enum CallHostPaths {
@@ -20,7 +20,7 @@ public enum CallHostPaths {
         }
         return FileManager.default
             .homeDirectoryForCurrentUser
-            .appendingPathComponent("Library/Application Support/boringNotch/Calla/copilot", isDirectory: true)
+            .appendingPathComponent("Library/Application Support/calla.notch/Calla/copilot", isDirectory: true)
     }
 
     public static var callsDirectory: URL { root.appendingPathComponent("calls", isDirectory: true) }
@@ -485,7 +485,11 @@ public actor CallSession {
             liveTier: config.liveTier,
             summaryModel: config.summaryModel,
             runtimeRoot: CallHostPaths.root,
-            store: config.store
+            store: config.store,
+            // Retired for now. Automatic answers chased every question on the
+            // call, including ones put to someone else, and the panel kept
+            // jumping between them. The summary, recall and recap still run.
+            answersQuestions: false
         ))
         // Not `.ready` yet: nothing has been loaded and no microphone is open.
         // `start()` walks this forward, and the notch draws each step.

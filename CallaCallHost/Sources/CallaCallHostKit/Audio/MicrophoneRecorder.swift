@@ -2,7 +2,7 @@
 import Foundation
 import os.log
 
-private let micLog = Logger(subsystem: "theboringteam.boringnotch.callhost", category: "microphone")
+private let micLog = Logger(subsystem: "org.calla.notch.callhost", category: "microphone")
 
 /// The `me` leg: microphone capture, converted to whisper format.
 ///

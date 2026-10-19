@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Build Boring Tutor Gateway release directory from one checked-out Tutor tree."""
+"""Build Calla Tutor Gateway release directory from one checked-out Tutor tree."""
 
 from __future__ import annotations
 
@@ -24,7 +24,7 @@ def build_release(tutor: Path, output: Path, version: str) -> Path:
     if output.exists():
         shutil.rmtree(output)
     output.mkdir(mode=0o700, parents=True)
-    # Gateway/openclaw is Boring's canonical development plugin path. It is a
+    # Gateway/openclaw is Calla's canonical development plugin path. It is a
     # source-layout alias during migration, so the release has no Calla
     # checkout-path dependency.
     copytree(tutor / "Gateway/openclaw", output / "plugin")

@@ -1,7 +1,7 @@
 import Foundation
 import os.log
 
-private let socketLog = Logger(subsystem: "theboringteam.boringnotch.callhost", category: "gateway")
+private let socketLog = Logger(subsystem: "org.calla.notch.callhost", category: "gateway")
 
 /// Frames on the wire to the gateway plugin.
 ///

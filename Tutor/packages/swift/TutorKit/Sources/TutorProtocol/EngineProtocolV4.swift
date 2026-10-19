@@ -151,7 +151,7 @@ public struct TutorHostEvent: Codable, Equatable, Sendable {
 }
 
 /// Typed control frame. Payload remains generic so portable TutorKit has no
-/// dependency on Boring's Store or XPC DTOs.
+/// dependency on Calla's Store or XPC DTOs.
 public struct TutorControlEnvelope<Payload: Codable & Sendable>: Codable, Sendable {
     public let protocolVersion: Int
     public let requestID: String

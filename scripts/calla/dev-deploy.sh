@@ -4,10 +4,10 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 TUTOR="$ROOT/Tutor"
-ARTIFACT_DIRECTORY="${TMPDIR:-/tmp}/boring-calla-artifact"
+ARTIFACT_DIRECTORY="${TMPDIR:-/tmp}/calla-calla-artifact"
 RELEASE_DIRECTORY="$ARTIFACT_DIRECTORY/release"
 ARTIFACT="$ARTIFACT_DIRECTORY/calla-gateway.tar.gz"
-CACHE_DIRECTORY="$HOME/Library/Application Support/boringNotch/Calla"
+CACHE_DIRECTORY="$HOME/Library/Application Support/calla.notch/Calla"
 CACHE_FILE="$CACHE_DIRECTORY/debug-gateway-source.sha256"
 mkdir -p "$ARTIFACT_DIRECTORY"
 

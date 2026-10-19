@@ -13,7 +13,7 @@ import Foundation
 /// succeeded. No payload, no region, no capture bytes, no window title, no
 /// document name. The file is safe to read out loud.
 enum StepTiming {
-    /// Boring's private runtime root, which is 0700. This log is the one
+    /// Calla's private runtime root, which is 0700. This log is the one
     /// diagnostic that carries a rectangle, so the shared
     /// `~/Library/Logs/Calla` the retired install also writes to is the wrong
     /// home for it.

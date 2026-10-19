@@ -1,0 +1,280 @@
+{
+  "schema": 1,
+  "product": "calla.notch",
+  "favicon": "No standalone favicon source is present. Xcode generates the bundled AppIcon.icns from Assets.xcassets/AppIcon.appiconset.",
+  "assets": [
+    {
+      "original_path": "boringNotch/Assets.xcassets/AppIcon.appiconset/notch-stage-icon2 2.png",
+      "path": "Branding/Assets.xcassets/AppIcon.appiconset/icon-16@1x.png",
+      "sha256": "d05dbc368ffb7185f914b1272bd95ec0d9c62eceaab04c2bfad618437289eea3",
+      "status": "active",
+      "asset": "AppIcon",
+      "usage": [
+        "Finder, Dock, app bundle"
+      ],
+      "size": "16x16",
+      "scale": "1x",
+      "idiom": "mac",
+      "dimensions": [
+        16,
+        16
+      ],
+      "replacement": "Replace the active catalog file in place",
+      "credits": "Original icon: @maxtron95; upstream source attribution: docs/provenance/README.md"
+    },
+    {
+      "original_path": "boringNotch/Assets.xcassets/AppIcon.appiconset/notch-stage-icon2 5.png",
+      "path": "Branding/Assets.xcassets/AppIcon.appiconset/icon-16@2x.png",
+      "sha256": "2bdc05b1db0092f3bae1320609f2f9991531d0d7f222d21fd1c0138f3d46e7e8",
+      "status": "active",
+      "asset": "AppIcon",
+      "usage": [
+        "Finder, Dock, app bundle"
+      ],
+      "size": "16x16",
+      "scale": "2x",
+      "idiom": "mac",
+      "dimensions": [
+        32,
+        32
+      ],
+      "replacement": "Replace the active catalog file in place",
+      "credits": "Original icon: @maxtron95; upstream source attribution: docs/provenance/README.md"
+    },
+    {
+      "original_path": "boringNotch/Assets.xcassets/AppIcon.appiconset/notch-stage-icon2 6.png",
+      "path": "Branding/Assets.xcassets/AppIcon.appiconset/icon-32@1x.png",
+      "sha256": "2bdc05b1db0092f3bae1320609f2f9991531d0d7f222d21fd1c0138f3d46e7e8",
+      "status": "active",
+      "asset": "AppIcon",
+      "usage": [
+        "Finder, Dock, app bundle"
+      ],
+      "size": "32x32",
+      "scale": "1x",
+      "idiom": "mac",
+      "dimensions": [
+        32,
+        32
+      ],
+      "replacement": "Replace the active catalog file in place",
+      "credits": "Original icon: @maxtron95; upstream source attribution: docs/provenance/README.md"
+    },
+    {
+      "original_path": "boringNotch/Assets.xcassets/AppIcon.appiconset/notch-stage-icon2 11.png",
+      "path": "Branding/Assets.xcassets/AppIcon.appiconset/icon-32@2x.png",
+      "sha256": "0fdb794d56d80ac2a41640f381957936ee48154e865a750cb03c52e254af0aff",
+      "status": "active",
+      "asset": "AppIcon",
+      "usage": [
+        "Finder, Dock, app bundle"
+      ],
+      "size": "32x32",
+      "scale": "2x",
+      "idiom": "mac",
+      "dimensions": [
+        64,
+        64
+      ],
+      "replacement": "Replace the active catalog file in place",
+      "credits": "Original icon: @maxtron95; upstream source attribution: docs/provenance/README.md"
+    },
+    {
+      "original_path": "boringNotch/Assets.xcassets/AppIcon.appiconset/notch-stage-icon2 12.png",
+      "path": "Branding/Assets.xcassets/AppIcon.appiconset/icon-128@1x.png",
+      "sha256": "2b701ddd3506c33efcb5d440cd22213a89e7c14e4c9c84a47bc073c2f2ca8a08",
+      "status": "active",
+      "asset": "AppIcon",
+      "usage": [
+        "Finder, Dock, app bundle"
+      ],
+      "size": "128x128",
+      "scale": "1x",
+      "idiom": "mac",
+      "dimensions": [
+        128,
+        128
+      ],
+      "replacement": "Replace the active catalog file in place",
+      "credits": "Original icon: @maxtron95; upstream source attribution: docs/provenance/README.md"
+    },
+    {
+      "original_path": "boringNotch/Assets.xcassets/AppIcon.appiconset/notch-stage-icon2 13.png",
+      "path": "Branding/Assets.xcassets/AppIcon.appiconset/icon-128@2x.png",
+      "sha256": "46c26366799be40866c9ac92ae7320d07247c654eebf7949dd83764cdee00138",
+      "status": "active",
+      "asset": "AppIcon",
+      "usage": [
+        "Finder, Dock, app bundle"
+      ],
+      "size": "128x128",
+      "scale": "2x",
+      "idiom": "mac",
+      "dimensions": [
+        256,
+        256
+      ],
+      "replacement": "Replace the active catalog file in place",
+      "credits": "Original icon: @maxtron95; upstream source attribution: docs/provenance/README.md"
+    },
+    {
+      "original_path": "boringNotch/Assets.xcassets/AppIcon.appiconset/notch-stage-icon2 7.png",
+      "path": "Branding/Assets.xcassets/AppIcon.appiconset/icon-256@1x.png",
+      "sha256": "46c26366799be40866c9ac92ae7320d07247c654eebf7949dd83764cdee00138",
+      "status": "active",
+      "asset": "AppIcon",
+      "usage": [
+        "Finder, Dock, app bundle"
+      ],
+      "size": "256x256",
+      "scale": "1x",
+      "idiom": "mac",
+      "dimensions": [
+        256,
+        256
+      ],
+      "replacement": "Replace the active catalog file in place",
+      "credits": "Original icon: @maxtron95; upstream source attribution: docs/provenance/README.md"
+    },
+    {
+      "original_path": "boringNotch/Assets.xcassets/AppIcon.appiconset/notch-stage-icon2 8.png",
+      "path": "Branding/Assets.xcassets/AppIcon.appiconset/icon-256@2x.png",
+      "sha256": "9d8ea6b739bbc0e31fce06461979001a134058c6e4385c8ce2f52331a765cfee",
+      "status": "active",
+      "asset": "AppIcon",
+      "usage": [
+        "Finder, Dock, app bundle"
+      ],
+      "size": "256x256",
+      "scale": "2x",
+      "idiom": "mac",
+      "dimensions": [
+        512,
+        512
+      ],
+      "replacement": "Replace the active catalog file in place",
+      "credits": "Original icon: @maxtron95; upstream source attribution: docs/provenance/README.md"
+    },
+    {
+      "original_path": "boringNotch/Assets.xcassets/AppIcon.appiconset/notch-stage-icon2 9.png",
+      "path": "Branding/Assets.xcassets/AppIcon.appiconset/icon-512@1x.png",
+      "sha256": "9d8ea6b739bbc0e31fce06461979001a134058c6e4385c8ce2f52331a765cfee",
+      "status": "active",
+      "asset": "AppIcon",
+      "usage": [
+        "Finder, Dock, app bundle"
+      ],
+      "size": "512x512",
+      "scale": "1x",
+      "idiom": "mac",
+      "dimensions": [
+        512,
+        512
+      ],
+      "replacement": "Replace the active catalog file in place",
+      "credits": "Original icon: @maxtron95; upstream source attribution: docs/provenance/README.md"
+    },
+    {
+      "original_path": "boringNotch/Assets.xcassets/AppIcon.appiconset/notch-stage-icon2 10.png",
+      "path": "Branding/Assets.xcassets/AppIcon.appiconset/icon-512@2x.png",
+      "sha256": "9bbe31cc7f080d0c820c2e3b5056e258bf2bf75dac9b7d9a4dfd10b12b03a2df",
+      "status": "active",
+      "asset": "AppIcon",
+      "usage": [
+        "Finder, Dock, app bundle"
+      ],
+      "size": "512x512",
+      "scale": "2x",
+      "idiom": "mac",
+      "dimensions": [
+        1024,
+        1024
+      ],
+      "replacement": "Replace the active catalog file in place",
+      "credits": "Original icon: @maxtron95; upstream source attribution: docs/provenance/README.md"
+    },
+    {
+      "original_path": "boringNotch/Assets.xcassets/logo.imageset/256-mac 1.png",
+      "path": "Branding/Assets.xcassets/AppLogoSmall.imageset/app-logo.png",
+      "sha256": "f3aea0925edd2cd54876d96f0f1283d5bb1bac1eeb4fb5f608529cc04094ebd9",
+      "status": "active",
+      "asset": "AppLogoSmall",
+      "usage": [
+        "Unreferenced legacy logo"
+      ],
+      "idiom": "universal",
+      "dimensions": [
+        256,
+        256
+      ],
+      "replacement": "Replace the active catalog file in place",
+      "credits": "Original icon: @maxtron95; upstream source attribution: docs/provenance/README.md"
+    },
+    {
+      "original_path": "boringNotch/Assets.xcassets/logo2.imageset/BoringNotch icon.png",
+      "path": "Branding/Assets.xcassets/AppLogo.imageset/app-logo.png",
+      "sha256": "ed35052aa4bd507751fbc38ed25a9dba2f0ddbca9e2a366d46a188b48ce39998",
+      "status": "active",
+      "asset": "AppLogo",
+      "usage": [
+        "Onboarding"
+      ],
+      "idiom": "universal",
+      "dimensions": [
+        1024,
+        1024
+      ],
+      "replacement": "Replace the active catalog file in place",
+      "credits": "Original icon: @maxtron95; upstream source attribution: docs/provenance/README.md"
+    },
+    {
+      "original_path": "boringNotch/Assets.xcassets/theboringteam.imageset/TheBoringTeam.svg",
+      "path": "Branding/Archive/UpstreamWordmark.imageset/upstream-wordmark.svg",
+      "sha256": "4cda6369f31b5d1f24f9f8a80c00f7e40060684a7c590794e41b53486263f78f",
+      "status": "archive",
+      "asset": "UpstreamWordmark",
+      "usage": [
+        "Removed from onboarding"
+      ],
+      "idiom": "universal",
+      "replacement": "Reference only; excluded from app bundle",
+      "credits": "Original icon: @maxtron95; upstream source attribution: docs/provenance/README.md"
+    },
+    {
+      "original_path": "boringNotch/boring.m4a",
+      "path": "Branding/Archive/welcome.m4a",
+      "sha256": "2f5f1ecde2c14c71b4ede7558dbd6b572e854c3c73703b1f8e9aa9a80c966ac9",
+      "status": "archive",
+      "usage": [
+        "Unused audio removed from application resources"
+      ],
+      "replacement": "Reference only; excluded from app bundle",
+      "credits": "Original icon: @maxtron95; upstream source attribution: docs/provenance/README.md"
+    },
+    {
+      "source_url": "https://framerusercontent.com/images/RFK4vs0kn8pRMuOO58JeyoemXA.png?scale-down-to=256",
+      "status": "archive",
+      "usage": [
+        "Removed upstream README logo"
+      ],
+      "path": "Branding/Archive/upstream-readme-logo.png",
+      "sha256": "edcf3b4b3bef8ede3366f2197a90a5fc02f33f926452b8db023f59f761795452",
+      "dimensions": [
+        256,
+        256
+      ],
+      "replacement": "Reference only; excluded from app bundle",
+      "credits": "Original icon: @maxtron95; upstream source attribution: docs/provenance/README.md"
+    },
+    {
+      "path": "Branding/Archive/app-logo-small-original.webp",
+      "sha256": "3337e4e3d55f486d590c44108028162d0bd571c662e64537ae681f7fd02c5b57",
+      "status": "archive",
+      "usage": [
+        "Original small logo was a WebP file mislabeled as PNG; active copy converted to real PNG"
+      ],
+      "replacement": "Reference only; excluded from app bundle",
+      "credits": "See docs/provenance/README.md"
+    }
+  ]
+}

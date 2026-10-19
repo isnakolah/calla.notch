@@ -2,7 +2,7 @@
 import PackageDescription
 
 let package = Package(
-    name: "BoringCallaEngineValidation",
+    name: "CallaEngineValidation",
     platforms: [.macOS(.v14)],
     dependencies: [.package(path: "CallaContracts"), .package(path: "Intelligence")],
     targets: [
@@ -11,14 +11,14 @@ let package = Package(
             dependencies: [.product(name: "CallaContracts", package: "CallaContracts"),
                            .product(name: "IntelligenceCore", package: "Intelligence"),
                            .product(name: "IntelligenceProviders", package: "Intelligence")],
-            path: "BoringCallaEngine",
-            exclude: ["BoringCallaEngine.swift", "BoringCallaEngineProtocol.swift", "BoringCallaEngine.entitlements", "Info.plist", "main.swift", "QuizEngineController.swift", "QuizHistoryKey.swift"],
+            path: "CallaEngine",
+            exclude: ["CallaEngine.swift", "CallaEngineProtocol.swift", "CallaEngine.entitlements", "Info.plist", "main.swift", "QuizEngineController.swift", "QuizHistoryKey.swift"],
             sources: ["CallaCopilotCommandValidation.swift", "CallaAgyLoginParsing.swift", "CallFolderExport.swift", "QuizReadinessCache.swift", "CodingSessionCore.swift", "CodingSessionController.swift", "CodingAgyWorker.swift", "WaveWorkerPool.swift", "CodingSessionVault.swift", "CodeHistoryKey.swift", "QuizHostRunner.swift"]
         ),
         .target(
             name: "CallaNotchPresentation",
             dependencies: [.product(name: "CallaContracts", package: "CallaContracts")],
-            path: "boringNotch/components/Calla",
+            path: "callaNotch/components/Calla",
             exclude: [
                 "CallaCopilotLiveView.swift", "CallaCopilotSignInView.swift",
                 "CallaCopilotEndingView.swift", "CallaCopilotStartFailure.swift", "CallaCopilotStartingView.swift",
@@ -37,7 +37,7 @@ let package = Package(
         ),
         .target(
             name: "NotchSizing",
-            path: "boringNotch/sizing",
+            path: "callaNotch/sizing",
             exclude: ["matters.swift", "NotchResizeSession.swift"],
             sources: ["NotchSizing.swift", "NotchBehaviour.swift"]
         ),
@@ -46,14 +46,14 @@ let package = Package(
         // testing on its own.
         .target(
             name: "NotchShortcuts",
-            path: "boringNotch/Shortcuts",
+            path: "callaNotch/Shortcuts",
             exclude: ["ShortcutConstants.swift", "NotchSessionShortcuts.swift"],
             sources: ["NotchSessionRouting.swift"]
         ),
         .testTarget(
             name: "CallaEngineValidationTests",
             dependencies: ["CallaEngineValidation", "CallaNotchPresentation", "NotchSizing", "NotchShortcuts"],
-            path: "BoringCallaEngineTests/Tests"
+            path: "CallaEngineTests/Tests"
         )
     ]
 )

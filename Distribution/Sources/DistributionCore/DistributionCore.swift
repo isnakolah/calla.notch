@@ -1,3 +1,4 @@
+import CallaContracts
 import CryptoKit
 import Darwin
 import Foundation
@@ -10,18 +11,18 @@ public struct SetupFailure: LocalizedError {
 
 public enum Layout {
     public static let home = URL(fileURLWithPath: String(cString: getpwuid(getuid()).pointee.pw_dir))
-    public static let support = home.appendingPathComponent("Library/Application Support/boringNotch")
+    public static let support = CallaBrand.support(in: home)
     public static let setup = support.appendingPathComponent("Setup")
     public static let sessions = support.appendingPathComponent("Calla/Setup/sessions")
     /// Installed into Components (see `ComponentLayout`); `Managed/agy` is a
     /// link to it for builds that still look there.
     public static let agy = support.appendingPathComponent("Components/agy/current/agy")
-    public static let app = URL(fileURLWithPath: "/Applications/boringNotch.app")
+    public static let app = CallaBrand.installedApp
     public static let tangit = app.appendingPathComponent("Contents/Helpers/tangit")
     public static func provider(_ name: String, in app: URL = Layout.app) -> URL {
         app.appendingPathComponent("Contents/Resources/Tangit/Providers/\(name)/bin/\(name)")
     }
-    public static let callHost = "Contents/XPCServices/BoringCallaEngine.xpc/Contents/Resources/CallaRuntime/CallaCallHost.app/Contents/MacOS/CallaCallHost"
+    public static let callHost = "Contents/XPCServices/CallaEngine.xpc/Contents/Resources/CallaRuntime/CallaCallHost.app/Contents/MacOS/CallaCallHost"
     public static func privateDirectory(_ url: URL) throws {
         try FileManager.default.createDirectory(at: url, withIntermediateDirectories: true,
                                                 attributes: [.posixPermissions: 0o700])
@@ -119,11 +120,18 @@ public enum Commands {
         process.executableURL = URL(fileURLWithPath: executable)
         process.arguments = arguments
         var environment = ProcessInfo.processInfo.environment
-        environment.removeValue(forKey: "BORING_SETUP_EVENT_TOKEN")
+        environment.removeValue(forKey: "CALLA_SETUP_EVENT_TOKEN")
         environment["AGY_CLI_DISABLE_AUTO_UPDATE"] = "1"
         environment["AGY_CLI_NONINTERACTIVE_HEADLESS"] = "1"
         environment["BROWSER"] = "/usr/bin/true"
         environment.merge(extra) { _, new in new }
+        if inherit && input == nil {
+            let status = try spawnInForeground(executable, arguments, environment: environment, timeout: timeout)
+            if check && status != 0 {
+                throw SetupFailure("\(URL(fileURLWithPath: executable).lastPathComponent) failed (\(status)). Retry this step; run doctor for readiness.")
+            }
+            return CommandResult(status: status, output: "")
+        }
         process.environment = environment
         let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
         try Layout.privateDirectory(directory)
@@ -155,6 +163,37 @@ public enum Commands {
             throw SetupFailure("\(URL(fileURLWithPath: executable).lastPathComponent) failed (\(process.terminationStatus)). Retry this step; run doctor for readiness.")
         }
         return CommandResult(status: process.terminationStatus, output: text)
+    }
+    /// Process starts its child in a new process group. On a terminal that
+    /// group is in the background, so an interactive tool such as Tangit's
+    /// wizard is stopped by SIGTTIN/SIGTTOU the moment it touches the screen.
+    /// posix_spawn without attributes keeps the child in the caller's group.
+    private static func spawnInForeground(_ executable: String, _ arguments: [String],
+                                          environment: [String: String], timeout: TimeInterval) throws -> Int32 {
+        let argv = ([executable] + arguments).map { strdup($0) } + [nil]
+        let envp = environment.map { strdup("\($0.key)=\($0.value)") } + [nil]
+        defer { (argv + envp).forEach { free($0) } }
+        var pid: pid_t = 0
+        let spawned = posix_spawn(&pid, executable, nil, nil, argv, envp)
+        guard spawned == 0 else { throw SetupFailure("Could not start \(URL(fileURLWithPath: executable).lastPathComponent): \(String(cString: strerror(spawned)))") }
+        let deadline = Date().addingTimeInterval(timeout)
+        var status: Int32 = 0
+        while true {
+            let result = waitpid(pid, &status, WNOHANG)
+            if result == pid { break }
+            if result == -1 && errno != EINTR { throw SetupFailure("Lost track of \(URL(fileURLWithPath: executable).lastPathComponent).") }
+            if Date() >= deadline {
+                kill(pid, SIGTERM)
+                Thread.sleep(forTimeInterval: 0.2)
+                kill(pid, SIGKILL)
+                waitpid(pid, &status, 0)
+                throw SetupFailure("\(URL(fileURLWithPath: executable).lastPathComponent) timed out; retry this step.")
+            }
+            Thread.sleep(forTimeInterval: 0.1)
+        }
+        // WIFEXITED / WEXITSTATUS, which Swift does not import.
+        let signal = status & 0x7f
+        return signal == 0 ? (status >> 8) & 0xff : 128 + signal
     }
     public static func shellQuote(_ value: String) -> String { "'" + value.replacingOccurrences(of: "'", with: "'\\''") + "'" }
 }

@@ -9,8 +9,8 @@ import ScreenCaptureKit
 /// Which applications Calla may look at, how much detail leaves this Mac, and
 /// how the overlay behaves were all constants in the source. They are the
 /// user's decisions, not the build's, so they live here and are surfaced in the
-/// Boring settings. This runtime never reads UserDefaults or legacy Calla
-/// preferences; BoringCallaEngine atomically writes complete snapshots here.
+/// Calla settings. This runtime never reads UserDefaults or legacy Calla
+/// preferences; CallaEngine atomically writes complete snapshots here.
 @MainActor
 final class TutorSettings: ObservableObject {
     static let shared = TutorSettings()
@@ -57,7 +57,7 @@ final class TutorSettings: ObservableObject {
     /// Calla does, noise once that is obvious.
     @Published var showStatusHUD: Bool
 
-    /// Whether Calla may look at the screen at all. Boring's "Watch screen"
+    /// Whether Calla may look at the screen at all. Calla's "Watch screen"
     /// switch writes this; until it was read here the switch decoded and then
     /// discarded, and `TutorHostController.captureActive` stayed hardcoded on,
     /// so turning it off changed nothing.
@@ -177,7 +177,7 @@ final class TutorSettings: ObservableObject {
         showStatusHUD = true
     }
 
-    /// Engine snapshot is authoritative. This is called by hidden Boring
+    /// Engine snapshot is authoritative. This is called by hidden Calla
     /// runtime; old Settings panes have no path to persist their own values.
     func reloadFromEngineSnapshot() {
         guard let snapshot = EnginePreferences.load() else { return }
@@ -273,7 +273,7 @@ final class TutorSettings: ObservableObject {
         accessibilityGranted = AXIsProcessTrusted()
         // The engine cannot answer this for itself. TCC grants are per
         // executable, and this host — not the XPC service — is what captures,
-        // so the service's own preflight reported the wrong process and Boring
+        // so the service's own preflight reported the wrong process and Calla
         // showed "Required" against a host holding both grants.
         CallaRuntime.recordHostStatus(screenRecordingGranted: screenRecordingGranted,
                                       accessibilityGranted: accessibilityGranted,

@@ -50,7 +50,7 @@ public enum AgyEnvironment {
 
     /// Every file that can hold a usable AGY credential, newest format first.
     ///
-    /// This exists so nothing has to keep its own list. `BoringCallaEngine` did,
+    /// This exists so nothing has to keep its own list. `CallaEngine` did,
     /// naming only `oauth_creds.json`, and on an AGY 1.1.x install that made a
     /// successful sign-in invisible: `agy` authenticated through the keyring and
     /// wrote `antigravity-oauth-token`, while the engine polled the path that no

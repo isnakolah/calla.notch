@@ -2,19 +2,20 @@
 import PackageDescription
 
 let package = Package(
-    name: "BoringNotchDistribution",
+    name: "CallaNotchDistribution",
     platforms: [.macOS(.v14)],
     products: [
-        .executable(name: "boring-notch", targets: ["BoringNotchSetup"]),
+        .executable(name: "calla-notch", targets: ["CallaNotchSetup"]),
         .executable(name: "calla-gateway", targets: ["CallaGateway"]),
-        .library(name: "BoringNotchSetupUI", targets: ["BoringNotchSetupUI"]),
+        .library(name: "CallaNotchSetupUI", targets: ["CallaNotchSetupUI"]),
         .library(name: "DistributionCore", targets: ["DistributionCore"]),
     ],
+    dependencies: [.package(path: "../CallaContracts")],
     targets: [
-        .target(name: "DistributionCore"),
-        .executableTarget(name: "BoringNotchSetup", dependencies: ["DistributionCore"]),
+        .target(name: "DistributionCore", dependencies: [.product(name: "CallaContracts", package: "CallaContracts")]),
+        .executableTarget(name: "CallaNotchSetup", dependencies: ["DistributionCore"]),
         .executableTarget(name: "CallaGateway", dependencies: ["DistributionCore"]),
-        .target(name: "BoringNotchSetupUI", dependencies: ["DistributionCore"], path: "Sources/BoringNotchSetupUI"),
+        .target(name: "CallaNotchSetupUI", dependencies: ["DistributionCore"], path: "Sources/CallaNotchSetupUI"),
         .testTarget(name: "DistributionCoreTests", dependencies: ["DistributionCore"]),
     ]
 )

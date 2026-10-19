@@ -3,7 +3,7 @@ import Foundation
 import ScreenCaptureKit
 import os.log
 
-private let systemLog = Logger(subsystem: "theboringteam.boringnotch.callhost", category: "systemAudio")
+private let systemLog = Logger(subsystem: "org.calla.notch.callhost", category: "systemAudio")
 
 /// The `them` leg: everything coming out of the speakers.
 ///

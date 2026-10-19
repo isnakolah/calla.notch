@@ -3,7 +3,7 @@ import IntelligenceCore
 import IntelligenceProviders
 import os.log
 
-private let namerLog = Logger(subsystem: "theboringteam.boringnotch.callhost", category: "speakers")
+private let namerLog = Logger(subsystem: "org.calla.notch.callhost", category: "speakers")
 
 /// Guesses who the unnamed voices on a call were, from what was said.
 ///

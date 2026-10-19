@@ -2,7 +2,7 @@ import Foundation
 import os.log
 import whisper
 
-private let whisperLog = Logger(subsystem: "theboringteam.boringnotch.callhost", category: "whisper")
+private let whisperLog = Logger(subsystem: "org.calla.notch.callhost", category: "whisper")
 
 /// Whether whisper's encoder ended up on CoreML/ANE after the last load.
 ///

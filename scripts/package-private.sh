@@ -10,6 +10,10 @@ BUILD=""
 SOURCE_APP=""
 TANGIT_SOURCE="$ROOT/../tangit"
 SETTINGS=""
+# The call archive's enrollment secret (CALLA_ENROLL_SECRET in the backend's
+# .env). Anyone holding the DMG can enroll a Mac, so keep the DMG private.
+ENROLL_SECRET_FILE="$HOME/.config/calla/enroll-secret"
+ARCHIVE_URL="https://calla-api.nomonlab.com"
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --version) VERSION="${2:?missing version}"; shift 2 ;;
@@ -19,7 +23,9 @@ while [[ $# -gt 0 ]]; do
     --tangit-source) TANGIT_SOURCE="${2:?missing Tangit source}"; shift 2 ;;
     # A snapshot from About › Export settings. The installed app applies it once.
     --settings) SETTINGS="${2:?missing settings snapshot}"; shift 2 ;;
-    -h|--help) echo "Usage: scripts/package-private.sh [--version X.Y.Z] [--build N] [--identity NAME] [--app PREBUILT.app] [--tangit-source DIRECTORY] [--settings SNAPSHOT.plist]"; exit 0 ;;
+    --enroll-secret-file) ENROLL_SECRET_FILE="${2:?missing enrollment secret file}"; shift 2 ;;
+    --archive-url) ARCHIVE_URL="${2:?missing archive URL}"; shift 2 ;;
+    -h|--help) echo "Usage: scripts/package-private.sh [--version X.Y.Z] [--build N] [--identity NAME] [--app PREBUILT.app] [--tangit-source DIRECTORY] [--settings SNAPSHOT.plist] [--enroll-secret-file FILE] [--archive-url URL]"; exit 0 ;;
     *) echo "Unknown argument: $1" >&2; exit 2 ;;
   esac
 done
@@ -28,16 +34,18 @@ if [[ -n "$SETTINGS" ]]; then
   plutil -lint -s "$SETTINGS" && [[ "$(plutil -extract format raw -o - "$SETTINGS" 2>/dev/null)" == 1 ]] \
     || { echo "Not a settings snapshot: $SETTINGS" >&2; exit 2; }
 fi
-if [[ -z "$VERSION" ]]; then VERSION="$(sed -n 's/.*MARKETING_VERSION = \([^;]*\);/\1/p' "$ROOT/boringNotch.xcodeproj/project.pbxproj" | head -1)"; fi
+[[ -s "$ENROLL_SECRET_FILE" ]] || { echo "Missing call archive enrollment secret: $ENROLL_SECRET_FILE (CALLA_ENROLL_SECRET from the backend's .env)" >&2; exit 1; }
+[[ "$ARCHIVE_URL" == https://* ]] || { echo "The archive URL must be https: $ARCHIVE_URL" >&2; exit 2; }
+if [[ -z "$VERSION" ]]; then VERSION="$(sed -n 's/.*MARKETING_VERSION = \([^;]*\);/\1/p' "$ROOT/callaNotch.xcodeproj/project.pbxproj" | head -1)"; fi
 if [[ -z "$BUILD" ]]; then
-  previous="$(sed -n 's/.*CURRENT_PROJECT_VERSION = \([^;]*\);/\1/p' "$ROOT/boringNotch.xcodeproj/project.pbxproj" | head -1)"
+  previous="$(sed -n 's/.*CURRENT_PROJECT_VERSION = \([^;]*\);/\1/p' "$ROOT/callaNotch.xcodeproj/project.pbxproj" | head -1)"
   if [[ -f "$OUT/last-build" ]]; then cached="$(cat "$OUT/last-build")"; [[ "$cached" =~ ^[0-9]+$ ]] && (( cached > previous )) && previous="$cached"; fi
   BUILD="$((previous + 1))"
 fi
 [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ && "$BUILD" =~ ^[0-9]+$ ]] || { echo "Use a numeric X.Y.Z version and numeric build." >&2; exit 2; }
 [[ "$(uname -m)" == arm64 ]] || { echo "Run the private package build natively on Apple Silicon." >&2; exit 1; }
 security find-identity -v -p codesigning | /usr/bin/grep -Fq "\"$IDENTITY\"" || { echo "Missing persistent signing identity: $IDENTITY" >&2; exit 1; }
-echo "Building private Boring Notch $VERSION ($BUILD)"
+echo "Building private calla.notch $VERSION ($BUILD)"
 echo "Build logs: $OUT"
 TOOLCHAINS=com.apple.dt.toolchain.XcodeDefault xcrun swift build --package-path "$ROOT/Distribution" -c release --triple arm64-apple-macosx14.0 >"$OUT/setup-build.log" 2>&1 || { tail -70 "$OUT/setup-build.log" >&2; exit 1; }
 BINARIES="$(TOOLCHAINS=com.apple.dt.toolchain.XcodeDefault xcrun swift build --package-path "$ROOT/Distribution" -c release --triple arm64-apple-macosx14.0 --show-bin-path)"
@@ -48,17 +56,17 @@ CODE_SIGN_IDENTITY[sdk=macosx*] = $IDENTITY
 CODE_SIGN_STYLE = Manual
 DEVELOPMENT_TEAM =
 CONFIG
-  xcodebuild -project "$ROOT/boringNotch.xcodeproj" -scheme boringNotch -configuration Release \
+  xcodebuild -project "$ROOT/callaNotch.xcodeproj" -scheme callaNotch -configuration Release \
     -derivedDataPath "$OUT/DerivedData" -destination 'generic/platform=macOS' \
     -xcconfig "$OUT/private-signing.xcconfig" ARCHS=arm64 ONLY_ACTIVE_ARCH=NO \
     MARKETING_VERSION="$VERSION" CURRENT_PROJECT_VERSION="$BUILD" build >"$OUT/app-build.log" 2>&1 \
     || { rg -n 'error:|BUILD FAILED' "$OUT/app-build.log" >&2 || tail -80 "$OUT/app-build.log" >&2; exit 1; }
-  SOURCE_APP="$OUT/DerivedData/Build/Products/Release/boringNotch.app"
+  SOURCE_APP="$OUT/DerivedData/Build/Products/Release/calla.notch.app"
 fi
 [[ -d "$SOURCE_APP" ]] || { echo "Built app missing: $SOURCE_APP" >&2; exit 1; }
 STAGE="$(mktemp -d "$OUT/.package.XXXXXX")"
 trap 'rm -rf "$STAGE"' EXIT
-APP="$STAGE/Boring Notch.app"
+APP="$STAGE/calla.notch.app"
 ditto "$SOURCE_APP" "$APP"
 PRIVATE="$APP/Contents/Resources/PrivateSetup"
 rm -rf "$PRIVATE"
@@ -71,10 +79,15 @@ mv "$APP/Contents/Resources/Tangit/Tangit-LICENSE.txt" "$PRIVATE/"
 mv "$APP/Contents/Resources/Tangit/tangit-build.json" "$PRIVATE/"
 mv "$APP/Contents/Resources/Tangit/Go-dependency-notices.txt" "$PRIVATE/"
 ditto "$ROOT/Distribution/Licenses" "$PRIVATE/Licenses"
-ditto "$BINARIES/boring-notch" "$APP/Contents/Helpers/boring-notch"
+ditto "$BINARIES/calla-notch" "$APP/Contents/Helpers/calla-notch"
 ditto "$BINARIES/calla-gateway" "$APP/Contents/Helpers/calla-gateway"
 ditto "$ROOT/Distribution/START HERE.txt" "$PRIVATE/START HERE.txt"
 [[ -z "$SETTINGS" ]] || install -m 0644 "$SETTINGS" "$PRIVATE/settings.plist"
+python3 - "$ENROLL_SECRET_FILE" "$ARCHIVE_URL" "$PRIVATE/archive-enrollment.json" <<'PY'
+import json, pathlib, sys
+secret = pathlib.Path(sys.argv[1]).read_text().strip()
+pathlib.Path(sys.argv[3]).write_text(json.dumps({'url': sys.argv[2], 'secret': secret}) + '\n')
+PY
 python3 - "$ROOT" "$APP" "$VERSION" "$BUILD" <<'PY'
 import json, pathlib, plistlib, subprocess, sys
 root, app = map(pathlib.Path, sys.argv[1:3]); version, build = sys.argv[3:5]
@@ -87,11 +100,11 @@ manifest.update(schema=1, version=version, build=int(build), architecture='arm64
 (app / 'Contents/Resources/PrivateSetup/manifest.json').write_text(json.dumps(manifest, indent=2) + '\n')
 info = app / 'Contents/Info.plist'
 data = plistlib.loads(info.read_bytes())
-if data.get('BoringSetupProtocolVersion') != 1 or data.get('BoringSetupUIVersion') != 1:
+if data.get('CallaSetupProtocolVersion') != 1 or data.get('CallaSetupUIVersion') != 1:
     raise SystemExit('Built app does not implement private setup protocol v1; rebuild from current source.')
-data.update(BoringPrivateDistribution=True, SUEnableAutomaticChecks=False, SUAutomaticallyUpdate=False,
+data.update(CallaPrivateDistribution=True, SUEnableAutomaticChecks=False, SUAutomaticallyUpdate=False,
             CFBundleShortVersionString=version, CFBundleVersion=build, LSMinimumSystemVersion='15.0')
-data['CFBundleDisplayName'] = 'Boring Notch'
+data['CFBundleDisplayName'] = 'calla.notch'
 data['NSAppleEventsUsageDescription'] = 'Open Tangit in Terminal when you choose its profile wizard or launch button.'
 data.pop('SUFeedURL', None); data.pop('SUPublicEDKey', None)
 info.write_bytes(plistlib.dumps(data))
@@ -104,7 +117,7 @@ import os, pathlib, re, subprocess, sys
 app=pathlib.Path(sys.argv[1])
 # SwiftPM leaves a development-toolchain search path on its executables.
 # Relocate that lookup to the enclosing app before re-signing the payload.
-for name in ('CallaCallHost', 'boring-notch', 'calla-gateway'):
+for name in ('CallaCallHost', 'calla-notch', 'calla-gateway'):
     for executable in app.rglob(name):
         if not executable.is_file() or executable.is_symlink():
             continue
@@ -119,12 +132,12 @@ for name in ('CallaCallHost', 'boring-notch', 'calla-gateway'):
 PY
 # macOS 15 provides the Swift runtime. Scan actual executables, not arbitrary
 # debug support files inside third-party frameworks.
-xcrun swift-stdlib-tool --copy --scan-executable "$APP/Contents/MacOS/boringNotch" \
-  --scan-executable "$APP/Contents/Helpers/boring-notch" \
+xcrun swift-stdlib-tool --copy --scan-executable "$APP/Contents/MacOS/callaNotch" \
+  --scan-executable "$APP/Contents/Helpers/calla-notch" \
   --scan-executable "$APP/Contents/Helpers/calla-gateway" --platform macosx \
   --destination "$APP/Contents/Frameworks" --strip-bitcode --sign "$IDENTITY"
-codesign --force --sign "$IDENTITY" --identifier theboringteam.boringnotch.setup "$APP/Contents/Helpers/boring-notch"
-codesign --force --sign "$IDENTITY" --identifier theboringteam.boringnotch.gateway "$APP/Contents/Helpers/calla-gateway"
+codesign --force --sign "$IDENTITY" --identifier org.calla.notch.setup "$APP/Contents/Helpers/calla-notch"
+codesign --force --sign "$IDENTITY" --identifier org.calla.notch.gateway "$APP/Contents/Helpers/calla-gateway"
 # Re-seal nested bundles before their parents, preserving existing identifiers
 # and entitlements. Private signing deliberately does not enable hardened runtime.
 python3 - "$APP" "$IDENTITY" <<'PY'
@@ -144,17 +157,17 @@ for path in app.rglob('*'):
 for path in sorted(objects, key=lambda p: len(p.parts), reverse=True):
     subprocess.run(['codesign','--force','--sign',identity,'--preserve-metadata=identifier,entitlements',str(path)], check=True)
 PY
-codesign --force --sign "$IDENTITY" --entitlements "$ROOT/boringNotch/boringNotch.entitlements" "$APP"
+codesign --force --sign "$IDENTITY" --entitlements "$ROOT/callaNotch/callaNotch.entitlements" "$APP"
 codesign --verify --deep --strict "$APP"
-"$APP/Contents/Helpers/boring-notch" validate-package "$APP"
+"$APP/Contents/Helpers/calla-notch" validate-package "$APP"
 python3 "$ROOT/scripts/verification/verify_private_package.py" "$APP"
-NAME="boringNotch-private-arm64-$VERSION-$BUILD"
+NAME="calla.notch-private-arm64-$VERSION-$BUILD"
 IMAGE="$OUT/$NAME.dmg"
 [[ ! -e "$IMAGE" ]] || { echo "Package already exists: $IMAGE. Use a higher build number." >&2; exit 1; }
-hdiutil create -quiet -srcfolder "$STAGE" -volname 'Boring Notch Setup' -fs HFS+ -format UDZO "$IMAGE"
+hdiutil create -quiet -srcfolder "$STAGE" -volname 'calla.notch Setup' -fs HFS+ -format UDZO "$IMAGE"
 hdiutil verify -quiet "$IMAGE"
 (cd "$OUT" && shasum -a 256 "$NAME.dmg") >"$IMAGE.sha256"
 cp "$PRIVATE/manifest.json" "$OUT/$NAME.manifest.json"
 printf '%s\n' "$BUILD" >"$OUT/last-build"
 echo "Private installer ready: $IMAGE"
-echo "Transfer the DMG to the other Mac; open Boring Notch.app."
+echo "Transfer the DMG to the other Mac; open calla.notch.app."

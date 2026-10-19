@@ -1,8 +1,10 @@
+> Pre-rebrand validation records are preserved in [the historical snapshot](provenance/private-installation-before-rebrand.md). Historical results below do not verify the renamed build.
+
 # Private installation on another Mac
 
 ## User intent
 
-Make this customized Boring Notch easy to install on another Mac that has no
+Make this customized calla.notch easy to install on another Mac that has no
 development tools installed. One guided setup should explain and prepare the
 required tools, accounts, models, and permissions, then make the app and Tangit
 ready to launch. Put a transferable copy in Downloads.
@@ -12,7 +14,7 @@ downloads, together with Codex, AGY, and the runtimes needed to launch them.
 Use device-code login for Tangit's Codex accounts. Prevent missing AGY
 credentials or an internet outage from repeatedly opening the browser.
 
-The final installation flow should expose only **Boring Notch.app** for the
+The final installation flow should expose only **calla.notch.app** for the
 unsigned-app approval in Privacy & Security. The earlier command launchers were
 being rejected, and the transient welcome disappeared after approval. Replace
 that experience with a persistent setup window inside the app. Normal macOS
@@ -21,14 +23,14 @@ privacy permissions remain separate from that app-opening approval.
 ## What was implemented
 
 - A single-app disk image with the installer, private components, and provider
-  tools inside **Boring Notch.app**. There are no `.command` launchers or
+  tools inside **calla.notch.app**. There are no `.command` launchers or
   separate setup applications.
-- A native setup window with nine steps, live per-step activity, determinate
+- A native setup window with eight steps, live per-step activity, determinate
   download progress, elapsed time, prompts, errors, retry/resume controls, and
-  actions to open Boring Notch or Tangit. Private builds suppress the old
+  actions to open calla.notch or Tangit. Private builds suppress the old
   transient notch welcome.
 - Installation through the app's existing XPC service while retaining the
-  main app's sandbox. Setup installs into `/Applications/boringNotch.app` and
+  main app's sandbox. Setup installs into `/Applications/calla.notch.app` and
   preserves existing user data during repair or replacement.
 - Tangit built from the sibling source tree, automatic discovery of bundled
   providers, and Codex device authentication by default.
@@ -42,13 +44,12 @@ privacy permissions remain separate from that app-opening approval.
 
 | Component | Delivery |
 | --- | --- |
-| Customized Boring Notch, Calla engine, capture hosts, Tutor host, frameworks, setup helpers, and private Gateway payload | Bundled in the app |
+| Customized calla.notch, Calla engine, capture hosts, Tutor host, frameworks, setup helpers, and private Gateway payload | Bundled in the app |
 | Tangit `0.1.0-private+b1335a0a24df` | Compiled from the local Tangit working tree and bundled |
 | Codex CLI `0.162.1`, Claude Code `2.1.290`, AGY `1.3.5` | Bundled native tools with required resources and licenses |
-| Small English live speech model, about 488 MB | Reused if already in place (Components, a carried `Boring Notch Components` folder, Mila); otherwise downloaded |
+| Small English live speech model, about 488 MB | Reused if already in place (Components, a carried `calla.notch Components` folder, Mila); otherwise downloaded |
 | Optional archive speech models, about 2.8 GB | Same, if selected |
 | Apple Command Line Tools for Git | Installed if Git is missing; full Xcode is unnecessary |
-| Tailscale | Downloaded if the optional existing Gateway is enabled |
 | Accounts, passwords, API keys, OAuth tokens, SSH private keys, and signing private key | Not transferred; the recipient supplies their own accounts |
 
 The private Gateway payload supports the existing remote server. Setup does
@@ -57,7 +58,7 @@ not provision a new local Gateway or OpenClaw installation.
 ### One place for tools and models
 
 Everything setup installs outside the app lives in
-`~/Library/Application Support/boringNotch/Components`:
+`~/Library/Application Support/calla.notch/Components`:
 
 ```
 Components/
@@ -77,7 +78,7 @@ only then downloads:
 
 1. already in Components (models verified by SHA-256, cached in a
    `.<file>.verified` sidecar so a resume does not re-read gigabytes);
-2. a `Boring Notch Components` folder beside the disk image, in Downloads,
+2. a `calla.notch Components` folder beside the disk image, in Downloads,
    on the Desktop, or at the top of any mounted drive;
 3. the copy bundled in the package (tools);
 4. the same version elsewhere on the Mac (`~/.local/bin`, Homebrew,
@@ -86,9 +87,9 @@ only then downloads:
 5. a download with byte progress, speed and time left, resumed with HTTP
    range requests after an interruption.
 
-`boring-notch export-components [folder]` writes this Mac's speech models to
-a `Boring Notch Components` folder (default: Downloads; hard links when on the
-same disk). `boring-notch components [--archive]` installs or checks
+`calla-notch export-components [folder]` writes this Mac's speech models to
+a `calla.notch Components` folder (default: Downloads; hard links when on the
+same disk). `calla-notch components [--archive]` installs or checks
 everything without the rest of setup.
 
 ### Unsigned build, least hassle
@@ -105,11 +106,11 @@ flag from the installed app and from everything in Components.
 | Area | Main files |
 | --- | --- |
 | Packaging, tool pinning, and portable binary checks | `scripts/package-private.sh`, `scripts/prepare-tangit.py`, `Distribution/dependencies.json`, `scripts/verification/verify_private_package.py` |
-| In-app setup window and private first launch | `Distribution/Sources/BoringNotchSetupUI/SetupWindowController.swift`, `boringNotch/PrivateSetup.swift`, `boringNotch/boringNotchApp.swift`, `boringNotch/BoringViewCoordinator.swift` |
-| Guided installation, app bridge, and Terminal launch | `Distribution/Sources/BoringNotchSetup/`, `Distribution/Sources/DistributionCore/SetupSessionHost.swift`, `Distribution/Sources/DistributionCore/TerminalLauncher.swift` |
+| In-app setup window and private first launch | `Distribution/Sources/CallaNotchSetupUI/SetupWindowController.swift`, `callaNotch/PrivateSetup.swift`, `callaNotch/callaNotchApp.swift`, `callaNotch/CallaViewCoordinator.swift` |
+| Guided installation, app bridge, and Terminal launch | `Distribution/Sources/CallaNotchSetup/`, `Distribution/Sources/DistributionCore/SetupSessionHost.swift`, `Distribution/Sources/DistributionCore/TerminalLauncher.swift` |
 | Validated app replacement and repair | `Distribution/Sources/DistributionCore/PackageInstaller.swift` |
-| XPC transport and AGY login/browser handling | `BoringCallaEngine/BoringCallaEngine.swift`, `boringNotch/components/Calla/CallaEngineClient.swift` |
-| AGY background credential/connectivity checks | `Intelligence/Sources/IntelligenceProviders/AgyConnectivity.swift`, `AgyEnvironment.swift`, `AgyHost.swift`, `AgyTransport.swift`, `BoringNotchXPCHelper/UsageProbes/AGYUsageProbe.swift` |
+| XPC transport and AGY login/browser handling | `CallaEngine/CallaEngine.swift`, `callaNotch/components/Calla/CallaEngineClient.swift` |
+| AGY background credential/connectivity checks | `Intelligence/Sources/IntelligenceProviders/AgyConnectivity.swift`, `AgyEnvironment.swift`, `AgyHost.swift`, `AgyTransport.swift`, `CallaNotchXPCHelper/UsageProbes/AGYUsageProbe.swift` |
 | Tangit device login and bundled provider discovery, in sibling `../tangit` | `internal/provider/provider.go`, `internal/app/profiles.go`, `internal/app/bundled_providers.go`, `internal/app/setup_quick.go`, `internal/app/app.go`, `internal/app/types.go` |
 
 ## Fresh-Mac fixes (2026-10-15)
@@ -134,46 +135,11 @@ engineering and conversations. The `Tutor/` source tree remains because the
 optional Gateway release is still built from `Tutor/Gateway`; the Gateway
 health check now requires only the Gateway process.
 
-## Delivered package and verification
+## Previous delivery records
 
-Documented delivery: **2.7.3 (284)**, copied to Downloads on **2026-10-15**.
-
-- DMG: `/Users/isnakolah/Downloads/boringNotch-private-arm64-2.7.3-284.dmg`
-- Size: 349,082,699 bytes, approximately 333 MiB.
-- Checksum and manifest: adjacent `.dmg.sha256` and `.manifest.json` files.
-- Build output and recorded evidence: `build/private/`, including
-  `verification-284.json`.
-
-SHA-256:
-
-```text
-428657bc0a115eae9f7a609375764432433cdab4ebe65bbb7425d3c51daa846b
-```
-
-Completed checks recorded for this delivery:
-
-- The mounted disk image contained one visible item, **Boring Notch.app**, and
-  no `.command` files inside the app.
-- Package validation checked required resources and nested code signatures.
-  All 52 Mach-O files supported arm64, met the macOS 15 requirement, and linked
-  only to system or bundled libraries.
-- Bundled Tangit, Codex, Claude, and AGY reported their versions with an
-  isolated home and a minimal system PATH. Tangit's doctor found its bundled
-  Codex and Claude; its empty-profile warning was expected before setup.
-- The build 284 setup window was visually inspected: it displayed **Begin
-  setup** and all nine steps and remained open. On build 282, the integrated
-  setup reached the real installation confirmation through XPC; declining
-  kept the window open with **Resume setup**.
-- The Downloads copy matched the source package checksum. The existing
-  installed app on the development Mac was not replaced during this check.
-
-The package uses **Calla Local Signing** and is not Apple-notarized. The
-single-app approval flow has not been exercised on a separate clean Mac, so
-an exact Gatekeeper prompt count is not proven. Full fresh installation,
-privacy approvals, live account authentication, audio capture, and AGY offline
-recovery with a real account still need acceptance on the receiving Mac.
-The AGY fix is implemented and built; these package checks do not establish
-end-to-end offline behavior. No new test suite run is claimed by this record.
+The previous package and its validation results are recorded in the
+[pre-rebrand snapshot](provenance/private-installation-before-rebrand.md).
+Those results do not verify the current product identity.
 
 ## Building another package
 
@@ -201,22 +167,24 @@ are included in the DMG.
 
 ## On the receiving Mac
 
-1. Copy the DMG, and any `Boring Notch Components` folder, from a USB drive
+1. Copy the DMG, and any `calla.notch Components` folder, from a USB drive
    (no macOS approval needed), or download it. Open it, and open
-   **Boring Notch.app**.
+   **calla.notch.app**.
    Choose **Begin setup**. Its native window shows the actual installer prompts
    and stays open while you approve permissions.
 2. If macOS blocks the app, attempt to open it once, then choose
-   **System Settings → Privacy & Security → Open Anyway** for Boring Notch.
-   Reopen Boring Notch.app if macOS does not bring it back automatically.
+   **System Settings → Privacy & Security → Open Anyway** for calla.notch.
+   Reopen calla.notch.app if macOS does not bring it back automatically.
 3. Follow the numbered setup: application, managed AGY, meeting settings,
-   Google sign-in, speech models, permissions, optional Gateway, meeting test,
-   and Tangit profile setup. Tangit, standalone Codex 0.162.1, Claude 2.1.290,
+   Google sign-in, speech models, permissions, meeting test, and Tangit
+   profiles. The Tangit step explains the wizard first, then opens it in
+   Terminal: a profile name (e.g. `work`), the provider (codex for ChatGPT,
+   claude for Claude) and how to sign in. Repeat it for each account. Tangit, standalone Codex 0.162.1, Claude 2.1.290,
    and AGY 1.3.5 are already bundled in the DMG.
 
 The receiving machine needs an Apple Silicon processor, macOS 15 or later,
 internet, your Google account, and administrator access if needed for
-Applications or Tailscale installation. No repository, compiler, Homebrew,
+Applications. No repository, compiler, Homebrew,
 Python, Node, or Go is needed on the receiving Mac. If Git is missing, setup
 opens Apple's Command Line Tools installer and waits for its completion.
 The full Xcode app is unnecessary. Allow at least 3 GB free when no speech
@@ -244,7 +212,7 @@ clip played in Safari or another app. It verifies that *both* sources produced
 transcript turns and checks an AI response. The test call is saved in History,
 where you can delete it. Capture stops automatically if setup is interrupted.
 
-The disk image contains one application: **Boring Notch.app**. Setup is a
+The disk image contains one application: **calla.notch.app**. Setup is a
 persistent native window inside that application. There is no separate installer
 application or .command launcher to approve in Gatekeeper. The private app retains
 its sandbox; installation runs through its existing bundled XPC service and native
@@ -257,7 +225,7 @@ wizard; macOS may ask for Terminal automation permission for that action.
 
 Private builds suppress the transient notch welcome. Native prompts are explicit
 structured events, and progress and errors remain visible. Double-click the app
-or use Setup, Repair & Updates to reopen setup. Once finished, choose Open Boring
+or use Setup, Repair & Updates to reopen setup. Once finished, choose Open Calla
 Notch to switch from the mounted image to the installed copy.
 
 ## Tangit and provider login
@@ -272,7 +240,7 @@ the receiving Mac.
 Tangit finds providers in the app's `Contents/Resources/Tangit/Providers`
 directory even with a minimal PATH.
 Setup offers profile creation and authentication, then a direct launch. Later,
-use `tangit`, `boring-notch tangit`, or the setup window’s **Open Tangit** button. The command
+use `tangit`, `calla-notch tangit`, or the setup window’s **Open Tangit** button. The command
 wrapper preserves unrelated existing installations; the latter two options
 always open this package's copy. Existing profiles and credentials are retained.
 
@@ -298,7 +266,7 @@ on the receiving Mac to confirm account access.
 ## Updates and repairs
 
 Build the next package on the development Mac, transfer it, and open its
-**Boring Notch.app** to run setup again. Existing preferences, accounts, calendars, history, encryption
+**calla.notch.app** to run setup again. Existing preferences, accounts, calendars, history, encryption
 keys and verified model downloads stay in place. A different signing identity
 or an older private build is rejected. End Tangit and bundled provider sessions
 before replacement. Updates also wait until you end active calls
@@ -308,9 +276,9 @@ before the previous app is replaced; a failed replacement restores it.
 From the app, choose **Setup, Repair & Updates…**. In a new Terminal window:
 
 ```sh
-boring-notch doctor
-boring-notch repair
-boring-notch update /path/to/new-package.dmg
+calla-notch doctor
+calla-notch repair
+calla-notch update /path/to/new-package.dmg
 ```
 
 `doctor` checks signatures, the live model's checksum, credential presence,
@@ -319,7 +287,7 @@ settings. Online account validity and actual audio capture are checked by
 setup's login/model catalog and meeting test. `repair` rechecks the actual
 installation, replaces damaged live model downloads, and offers retries for
 incomplete steps. Tools install from the bundled copies. Every download
-(models, Tailscale, and tools if a bundle were missing) shows progress and
+(models, and tools if a bundle were missing) shows progress and
 resumes after an interruption.
 
 The first version uses transferred/downloaded packages for updates. It does
@@ -329,18 +297,10 @@ background AGY and bundled Claude updates are disabled in app-owned processes. T
 version, update `Distribution/dependencies.json` from Google's official
 manifest, validate compatibility, and build another package.
 
-## Optional private Gateway
+## Gateway
 
-The wizard installs the official, checksum-verified, signed Tailscale package
-if needed, opens its login, and uses Tailscale SSH to the existing Gateway.
-Your Tailscale identity must be allowed to connect to the server's owner
-account. Device or SSH approval is completed in Tailscale's browser flow.
-Your existing Mac's SSH private keys are never transferred.
-
-Skipping Gateway disables its polling, remote relays and meeting fallback.
-Local AGY meetings remain usable. A Gateway outage is reported separately
-from local readiness. OpenClaw and server-side Python stay on the Gateway.
-Gateway release updates retain the existing explicit owner-triggered action.
+Setup no longer offers the Gateway. Private installs start with it off; it can
+be turned on later in Settings › Models once the Mac can reach the server.
 
 ## Validation commands for future changes
 
@@ -350,7 +310,7 @@ for the documentation update:
 ```sh
 swift test --package-path Distribution
 swift test --package-path Intelligence --filter 'AgyLocatorTests|AgyEnvironmentTests'
-scripts/verification/verify_private_package.py /path/to/boringNotch.app
+scripts/verification/verify_private_package.py /path/to/calla.notch.app
 ```
 
 The package builder verifies nested signatures, required resources, arm64

@@ -8,7 +8,7 @@ import Vision
 /// One picture of what is on screen during a call, and the words in it.
 ///
 /// Taken here because this host is the executable holding the Screen
-/// Recording grant. Boring Notch's own windows are left out, so pressing the
+/// Recording grant. calla.notch's own windows are left out, so pressing the
 /// button in the notch does not photograph the notch.
 public enum ScreenSnapshot {
     public struct Result: Sendable {
@@ -37,7 +37,7 @@ public enum ScreenSnapshot {
         let pointer = CGEvent(source: nil)?.location ?? .zero
         guard let display = content.displays.first(where: { CGDisplayBounds($0.displayID).contains(pointer) })
                 ?? content.displays.first else { throw Failure.noDisplay }
-        let own = content.applications.filter { $0.bundleIdentifier.hasPrefix("theboringteam.boringnotch") }
+        let own = content.applications.filter { $0.bundleIdentifier.hasPrefix("org.calla.notch") }
         let filter = SCContentFilter(display: display, excludingApplications: own, exceptingWindows: [])
 
         let configuration = SCStreamConfiguration()

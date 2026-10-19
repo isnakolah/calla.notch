@@ -15,9 +15,9 @@ parser.add_argument('--output', type=Path, default=Path('/tmp/coding-viewport-re
 parser.add_argument('--fixture', type=Path, default=Path(__file__).with_name('coding_viewport_fixture.swift'))
 args = parser.parse_args()
 args.output.mkdir(parents=True, exist_ok=True)
-source = (root / 'boringNotch/components/Calla/CallaCopilotTabView.swift').read_text()
+source = (root / 'callaNotch/components/Calla/CallaCopilotTabView.swift').read_text()
 components = source[source.index('// MARK: - Live coding reading surface'):source.index('struct WavePreparationControls:')]
-quiz = (root / 'boringNotch/components/Calla/CallaQuizPresentation.swift').read_text()
+quiz = (root / 'callaNotch/components/Calla/CallaQuizPresentation.swift').read_text()
 tokens = quiz[quiz.index('    enum CodeTokenRole:'):quiz.index('    // MARK: - Answer history')]
 fixture = args.fixture.read_text()
 with tempfile.TemporaryDirectory(prefix='coding-layout-') as scratch:

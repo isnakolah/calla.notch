@@ -1,0 +1,80 @@
+//
+//  AboutPane.swift
+//  callaNotch
+//
+//  Moved out of SettingsView.swift. That file had grown to 2076 lines holding
+//  eleven panes and an XPC subsystem, while every newer pane already lived in
+//  its own file under Panes/.
+//
+
+import Defaults
+import Sparkle
+import SwiftUI
+
+struct About: View {
+    @State private var showBuildNumber: Bool = false
+    let updaterController: SPUStandardUpdaterController
+    @Environment(\.openWindow) var openWindow
+    var body: some View {
+        SettingsPane(.about) {
+            SettingCard("Version") {
+                VStack(spacing: 10) {
+                    SettingFact(title: "Release name", value: Defaults[.releaseName])
+                    SettingFact(title: "Version", value: versionText)
+                }
+                .contentShape(Rectangle())
+                .onTapGesture { withAnimation { showBuildNumber.toggle() } }
+            }
+
+            SettingCard("Updates") {
+                if PrivateDistribution.enabled {
+                    Text("Install the next private DMG using its setup launcher. Your accounts, settings, meeting history and downloaded models are preserved. This build uses private packages for updates.")
+                        .font(NotchType.rowDetail).foregroundStyle(.secondary)
+                    Button("Open Setup, Repair & Updates…") { PrivateDistribution.openSetup() }
+                } else {
+                // Sparkle ships this as a bare `Section`, so it needs a Form to
+                // sit in. Scoped to this card rather than the whole pane.
+                Form { UpdaterSettingsView(updater: updaterController.updater) }
+                    .formStyle(.columns)
+                }
+            }
+
+            SettingCard("Move to another Mac") {
+                Text("Saves every setting to Downloads as calla.notch Settings.plist. Build the private package with --settings and the other Mac starts with them; sign-ins, permissions and call history stay on this Mac.")
+                    .font(NotchType.rowDetail).foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                Button("Export settings") { SettingsTransfer.export() }
+            }
+
+            SettingCard("Source") {
+                HStack(spacing: 8) {
+                    Image("Github")
+                        .resizable().aspectRatio(contentMode: .fit).frame(width: 16)
+                    Text("isnakolah/calla.notch").font(NotchType.rowTitle)
+                    Spacer(minLength: 8)
+                    Button("Open on GitHub") {
+                        if let url = URL(string: "https://github.com/isnakolah/calla.notch") {
+                            NSWorkspace.shared.open(url)
+                        }
+                    }
+                    .controlSize(.small)
+                }
+            }
+
+            Text("calla.notch")
+                .font(NotchType.rowDetail)
+                .foregroundStyle(.tertiary)
+                .frame(maxWidth: .infinity, alignment: .center)
+                .padding(.top, 4)
+        }
+        .toolbar {
+            CheckForUpdatesView(updater: updaterController.updater)
+        }
+    }
+
+    private var versionText: String {
+        let version = Bundle.main.releaseVersionNumber ?? "unknown"
+        guard showBuildNumber, let build = Bundle.main.buildVersionNumber else { return version }
+        return "\(version) (\(build))"
+    }
+}

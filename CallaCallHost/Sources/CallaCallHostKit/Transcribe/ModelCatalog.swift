@@ -2,7 +2,7 @@ import CryptoKit
 import Foundation
 import os.log
 
-private let modelLog = Logger(subsystem: "theboringteam.boringnotch.callhost", category: "models")
+private let modelLog = Logger(subsystem: "org.calla.notch.callhost", category: "models")
 
 /// A ggml whisper model plus, optionally, its CoreML encoder build.
 public struct WhisperModel: Identifiable, Hashable, Codable, Sendable {

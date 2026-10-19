@@ -38,7 +38,7 @@ enum Schema {
 
         var errorDescription: String? {
             switch self {
-            case .unsupportedFutureVersion(let version): "Tutor store schema \(version) is newer than this Boring build"
+            case .unsupportedFutureVersion(let version): "Tutor store schema \(version) is newer than this Calla build"
             }
         }
     }

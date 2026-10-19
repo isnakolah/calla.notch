@@ -271,13 +271,13 @@ final class TutorHostController: ObservableObject {
         guard TutorProtocolVersion.accepts(request.protocolVersion) else {
             return failure(request, "unsupported_version", "Tutor protocol version must be in supported range 2...4")
         }
-        // Boring's Engine owns run state, progression and feedback routing. A
+        // Calla's Engine owns run state, progression and feedback routing. A
         // Gateway/model operation must never regain those powers by reaching
         // the same embedded Host socket that standalone mode uses.
         if Self.isEngineRuntime,
            Self.engineUnavailableOperations.contains(request.operation) {
             return failure(request, "OPERATION_NOT_AVAILABLE_IN_ENGINE_MODE",
-                           "This operation is unavailable in Boring Engine mode")
+                           "This operation is unavailable in Calla Engine mode")
         }
         // Recorded before any validation: the menu needs to show that Calla is
         // reaching this Mac even when what it sent was refused.
@@ -501,7 +501,7 @@ final class TutorHostController: ObservableObject {
                 }
                 stopLesson()
                 payload = ["status": .string("stopped")]
-            // Boring XPC owns these local-only operations. They are never
+            // Calla XPC owns these local-only operations. They are never
             // registered as OpenClaw/model tools; owner-only socket permission
             // and the engine process are their capability boundary.
             case "course_start":
@@ -559,7 +559,7 @@ final class TutorHostController: ObservableObject {
                 LessonRelay.shared.handle(event: "ask", text: text)
                 payload = ["status": .string("asking")]
             case "request_screen_recording":
-                // Boring engine is sole caller. This stays outside model tools;
+                // Calla engine is sole caller. This stays outside model tools;
                 // direct request gives TCC the exact capture executable.
                 TutorSettings.shared.requestScreenRecordingApproval()
                 payload = ["status": .string("Screen Recording request shown")]
@@ -858,7 +858,7 @@ final class TutorHostController: ObservableObject {
         // miss. Exact runtime must arrive through Engine resync first.
         if Self.isEngineRuntime {
             endLesson()
-            return "Exact course runtime is unavailable. Boring will resync before this course can start."
+            return "Exact course runtime is unavailable. Calla will resync before this course can start."
         }
         // Standalone cache miss remains its legacy private refresh boundary.
         CourseControlRelay.shared.send("refresh-runtime", payload: [:], accepted: "Refreshing course cache…")
@@ -1002,7 +1002,7 @@ final class TutorHostController: ObservableObject {
         lastCorrection = nil
         // Engine owns durable transition and progression. Host may observe only
         // when standalone explicitly selected; automatic local advancement is
-        // forbidden in Boring Engine mode.
+        // forbidden in Calla Engine mode.
         if !Self.isEngineRuntime { startLiveStepWatch() }
     }
 
@@ -1955,7 +1955,7 @@ private final class AccessibilityTutorEngine {
         }
         // Feedback is a disclosure boundary, unlike a normal authored overlay.
         // A recently-focused subject is useful for resuming a lesson after the
-        // Boring UI takes focus, but it is never enough to authorize pixels.
+        // Calla UI takes focus, but it is never enough to authorize pixels.
         // Capture only when exact allowlisted target is frontmost *now*.
         guard let application = NSWorkspace.shared.frontmostApplication,
               application.bundleIdentifier == bundleID,
@@ -2505,8 +2505,8 @@ final class BlenderBridgeObserver {
     /// Where a live Blender add-on announces its loopback endpoint.
     ///
     /// The add-on lives inside Blender's own scripts directory and knows
-    /// nothing about Boring's runtime root, so it has always written to
-    /// `~/Library/Caches/CallaTutor`. Moving Tutor into Boring moved only this
+    /// nothing about Calla's runtime root, so it has always written to
+    /// `~/Library/Caches/CallaTutor`. Moving Tutor into Calla moved only this
     /// reader to the runtime cache, and the two stopped meeting: no descriptor
     /// meant no layout, every Blender target resolved to nothing, and the
     /// pointer and tooltip never appeared for any lesson. Both are read, newest

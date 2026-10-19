@@ -2,13 +2,13 @@
 
 ## Health checks
 
-Run after signed Boring install and matching Gateway promotion:
+Run after signed Calla install and matching Gateway promotion:
 
 ```bash
-codesign --verify --deep --strict /Applications/boringNotch.app
-codesign --verify --deep --strict /Applications/boringNotch.app/Contents/XPCServices/BoringCallaEngine.xpc
-test -S "$HOME/Library/Application Support/boringNotch/Calla/tutor-host.sock"
-test -S "$HOME/Library/Application Support/boringNotch/Calla/engine-ingress.sock"
+codesign --verify --deep --strict /Applications/calla.notch.app
+codesign --verify --deep --strict /Applications/calla.notch.app/Contents/XPCServices/CallaEngine.xpc
+test -S "$HOME/Library/Application Support/calla.notch/Calla/tutor-host.sock"
+test -S "$HOME/Library/Application Support/calla.notch/Calla/engine-ingress.sock"
 ssh isnakolah@nomonhomelab 'export PATH="$HOME/.npm-global/bin:/usr/local/bin:/usr/bin:/bin"; openclaw plugins inspect tutor; test -S "$HOME/.openclaw/tutor/feedback-control.sock"'
 ```
 
@@ -55,11 +55,11 @@ owner click. Do not copy raw request/image/model output into logs or tickets.
 - Stop/restart during reply: request becomes cancelled/stale. It must never be
   resent automatically or render against new run generation.
 - Gateway release failure: installer restores previous current pointer/config.
-  Keep Boring installed app and DB unchanged while investigating receipt.
+  Keep Calla installed app and DB unchanged while investigating receipt.
 
 ## Rollback
 
-Quit Boring before manual app-data work. Keep v5 database, encrypted captures,
+Quit Calla before manual app-data work. Keep v5 database, encrypted captures,
 pre-migration backup, compatibility projections and standalone Calla data intact.
 Do not downgrade schema or delete history. Use explicit standalone deployment
-only outside Boring; no Boring configuration activates it.
+only outside Calla; no Calla configuration activates it.

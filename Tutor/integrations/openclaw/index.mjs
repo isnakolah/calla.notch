@@ -61,7 +61,7 @@ const plugin = {
           await pushCourseRuntime(api, config);
         }).catch(() => {});
       }
-      // Boring Engine mode may author, compile, preflight and publish courses,
+      // Calla Engine mode may author, compile, preflight and publish courses,
       // but its Gateway process never receives live Tutor tools or lesson
       // prompts. Snapshot pushes below are owner/control-plane traffic only.
       if (config.runtimeMode !== "engine") {

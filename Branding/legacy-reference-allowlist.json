@@ -1,0 +1,60 @@
+{
+  "schema": 1,
+  "files": {
+    "Branding/manifest.json": {
+      "sha256": "2d092aea1bd65295a5f985853c1b6f4adadf24800323291b0b8e2f1575ef23e9",
+      "references": 18,
+      "reason": "Original source and asset provenance"
+    },
+    "CallaContracts/Sources/CallaContracts/LegacyBrand.swift": {
+      "sha256": "d785d5750d02cceafe57b07afd3148ea4f9ab742def93694fe2175e78a630266",
+      "references": 6,
+      "reason": "Read-only compatibility table"
+    },
+    "scripts/verification/verify_branding.py": {
+      "sha256": "7071bb3575dbba6e4929f82ed1161b5038ad47269fa5b79d69f92feb550576be",
+      "references": 1,
+      "reason": "Audit detection pattern"
+    },
+    "docs/provenance/runtime-migration.md": {
+      "sha256": "ccdb5972d8c99561ebcf27ad57f778c11f670c77596c230c10a58e3c12f2fb31",
+      "references": 23,
+      "reason": "Immutable pre-rebrand verification evidence"
+    },
+    "docs/provenance/private-installation-before-rebrand.md": {
+      "sha256": "fe3f5b0182a1c65b269dddf6922438fb2beb426db742dc6d6caef3d3734c47e5",
+      "references": 37,
+      "reason": "Immutable pre-rebrand verification evidence"
+    },
+    "docs/provenance/README.md": {
+      "sha256": "60e2d88ff1e73c3bbdcb26a63b2f436d73e9462cbb28ca8f906ae9f89510a1df",
+      "references": 2,
+      "reason": "Immutable pre-rebrand verification evidence"
+    },
+    "docs/provenance/tutor-intelligence-delivery.md": {
+      "sha256": "9a8a40af524d7a9ecbfddd3c586a9a028042bf0154955073f5fdeda4c0a1971e",
+      "references": 8,
+      "reason": "Immutable pre-rebrand verification evidence"
+    },
+    "docs/provenance/tutor-control-plane.md": {
+      "sha256": "fba6ad4aed09ba69945c46c373591142ff6a2bbdc89134fb4b575ebc823101b1",
+      "references": 11,
+      "reason": "Immutable pre-rebrand verification evidence"
+    },
+    "docs/provenance/verification/wave-interview/implementation-status.md": {
+      "sha256": "89663e2c911f6ca7924425d89c551bb08c584999928972fb90789d2d5b2eb1f6",
+      "references": 1,
+      "reason": "Immutable pre-rebrand verification evidence"
+    },
+    "docs/provenance/verification/wave-interview/2026-09-06-one-meeting-and-the-spec.md": {
+      "sha256": "370dc7510648b60209a2ff9c8de16d7afa559d9d628d5942cc852b5397defbe9",
+      "references": 2,
+      "reason": "Immutable pre-rebrand verification evidence"
+    },
+    "docs/provenance/verification/coding-reasoning-flow/verification.md": {
+      "sha256": "d751f6f3a4db394229a05b463bb7c1f38d75d5931de5504625244e375231fc1a",
+      "references": 3,
+      "reason": "Immutable pre-rebrand verification evidence"
+    }
+  }
+}

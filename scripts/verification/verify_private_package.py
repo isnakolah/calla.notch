@@ -1,12 +1,16 @@
 #!/usr/bin/env python3
 """Build-machine checks; never shipped as a receiving-Mac dependency."""
 import pathlib
+import plistlib
 import re
 import subprocess
 import sys
 
 app = pathlib.Path(sys.argv[1]).resolve()
 errors = []
+engine_info = app / "Contents/XPCServices/CallaEngine.xpc/Contents/Info.plist"
+if not engine_info.is_file() or plistlib.loads(engine_info.read_bytes()).get("XPCService", {}).get("JoinExistingSession") is not True:
+    errors.append("Engine must join the app's security session for Keychain access")
 count = 0
 for path in app.rglob("*"):
     if not path.is_file() or path.is_symlink():
@@ -42,12 +46,13 @@ for path in app.rglob("*"):
 required = [
     "Contents/Resources/Calla/Gateway/calla-gateway.tar.gz",
     "Contents/Resources/PrivateSetup/manifest.json",
+    "Contents/Resources/PrivateSetup/archive-enrollment.json",
     "Contents/Helpers/tangit",
     "Contents/Resources/Tangit/Providers/codex/bin/codex",
     "Contents/Resources/Tangit/Providers/codex/codex-path/rg",
     "Contents/Resources/Tangit/Providers/claude/bin/claude",
     "Contents/Resources/Tangit/Providers/agy/bin/agy",
-    "Contents/XPCServices/BoringCallaEngine.xpc/Contents/Resources/CallaRuntime/CallaCallHost.app/Contents/MacOS/CallaCallHost",
+    "Contents/XPCServices/CallaEngine.xpc/Contents/Resources/CallaRuntime/CallaCallHost.app/Contents/MacOS/CallaCallHost",
 ]
 # Tutor was removed; its host must not ride along from a stale build.
 for removed in ("CallaTutorHost.app", "CallaOverlayHelper.app"):

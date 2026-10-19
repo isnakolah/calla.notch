@@ -161,7 +161,7 @@ final class CourseRuntimeStore: ObservableObject {
 
     /// Engine writes compatibility projections atomically. Host only reloads
     /// one before an Engine run starts; it never writes the projection or any
-    /// durable Tutor state in Boring mode.
+    /// durable Tutor state in Calla mode.
     func reloadProjection() {
         guard let candidate = Self.read(file) else { return }
         manifest = candidate

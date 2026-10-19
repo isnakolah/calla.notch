@@ -1,9 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-<plist version="1.0"><dict>
-<key>NSScreenCaptureUsageDescription</key>
-<string>Calla Tutor and Screen Quiz capture only a selected application window. Quiz screenshots and selected context may be sent through local AGY to configured remote models for answering and web research, with one fresh automatic retry for failed requests; captures stay encrypted until manual deletion.</string>
-<key>NSAppleEventsUsageDescription</key>
-<string>Open Tangit in Terminal when you choose its profile setup or launch button.</string>
-<key>XPCService</key><dict><key>ServiceType</key><string>Application</string></dict>
-</dict></plist>

@@ -21,7 +21,7 @@ function snapshotSequencer(config) {
 }
 
 async function orderedSnapshot(config, envelope) {
-  // Standalone retains v2/v3 rollback compatibility. Only Boring Engine mode
+  // Standalone retains v2/v3 rollback compatibility. Only Calla Engine mode
   // consumes canonical Gateway snapshot ordering.
   if (config.runtimeMode !== "engine") return envelope;
   return withSnapshotIdentity(envelope, await snapshotSequencer(config).next());

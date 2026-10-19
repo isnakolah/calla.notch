@@ -23,7 +23,7 @@ struct CallaTutorHostApp: App {
     @NSApplicationDelegateAdaptor(CallaAppDelegate.self) private var appDelegate
 
     var body: some Scene {
-        // Boring owns visible UI. This child exists only for protected capture,
+        // Calla owns visible UI. This child exists only for protected capture,
         // overlay, socket, local course, and relay runtime.
         Settings { EmptyView() }
     }

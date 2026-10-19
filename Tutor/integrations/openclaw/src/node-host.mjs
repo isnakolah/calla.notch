@@ -14,11 +14,11 @@ export class TutorHostUnavailableError extends Error {
 }
 
 export function defaultTutorSocketPath() {
-  return path.join(os.homedir(), "Library", "Application Support", "boringNotch", "Calla", "tutor-host.sock");
+  return path.join(os.homedir(), "Library", "Application Support", "calla.notch", "Calla", "tutor-host.sock");
 }
 
 export function defaultEngineIngressPath() {
-  return path.join(os.homedir(), "Library", "Application Support", "boringNotch", "Calla", "engine-ingress.sock");
+  return path.join(os.homedir(), "Library", "Application Support", "calla.notch", "Calla", "engine-ingress.sock");
 }
 
 export async function invokeTutorHost(envelope, options = {}) {
@@ -34,15 +34,15 @@ export async function invokeTutorEngine(envelope, options = {}) {
   const allowed = new Set(["session_start", "catalogue", "course_status", "course_runtime", "gateway_health"]);
   validateNodeEnvelope(envelope);
   if (!allowed.has(envelope.operation)) {
-    return {ok: false, code: "OPERATION_NOT_AVAILABLE_IN_ENGINE_MODE", message: "Operation unavailable in Boring Engine mode."};
+    return {ok: false, code: "OPERATION_NOT_AVAILABLE_IN_ENGINE_MODE", message: "Operation unavailable in Calla Engine mode."};
   }
   if (typeof options.capabilityToken !== "string" || !/^[a-z0-9-]{36}$/i.test(options.capabilityToken)) {
-    throw new TypeError("Boring Engine capability token is unavailable");
+    throw new TypeError("Calla Engine capability token is unavailable");
   }
   return await invokeLocalEndpoint({...envelope, capability_token: options.capabilityToken}, {
     socketPath: options.socketPath || defaultEngineIngressPath(),
     timeoutMs: options.timeoutMs,
-    endpointName: "Boring Engine ingress",
+    endpointName: "Calla Engine ingress",
   });
 }
 
@@ -118,7 +118,7 @@ export async function handleTutorNodeHostCommand(rawParams, options = {}) {
         ok: false,
         code: "TUTOR_HOST_UNAVAILABLE",
         message: options.runtimeMode === "engine"
-          ? "Boring Engine ingress is not running or is not accepting local requests."
+          ? "Calla Engine ingress is not running or is not accepting local requests."
           : "Calla TutorHost is not running or is not accepting local requests.",
       });
     }

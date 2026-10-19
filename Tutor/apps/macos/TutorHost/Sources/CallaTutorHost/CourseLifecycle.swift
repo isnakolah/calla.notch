@@ -6,12 +6,12 @@ import UserNotifications
 /// updates into noise and hide the important ready/failed/published events.
 @MainActor
 enum CourseNotifications {
-    private static var isEmbeddedBoringRuntime: Bool {
+    private static var isEmbeddedCallaRuntime: Bool {
         ProcessInfo.processInfo.environment["CALLA_RUNTIME_MODE"] == "engine"
     }
 
     static func requestPermission() {
-        guard !isEmbeddedBoringRuntime else { return }
+        guard !isEmbeddedCallaRuntime else { return }
         UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .badge, .sound]) { _, _ in }
     }
 
@@ -23,7 +23,7 @@ enum CourseNotifications {
     /// off for good. The pane shows them live; a banner is for when the pane is
     /// closed and the answer has changed.
     static func post(for course: CourseLifecycleStore.Course, previous: CourseLifecycleStore.Course?) {
-        guard !isEmbeddedBoringRuntime else { return }
+        guard !isEmbeddedCallaRuntime else { return }
         guard previous?.phase != course.phase else { return }
         let message: (title: String, body: String)?
         switch course.phase {

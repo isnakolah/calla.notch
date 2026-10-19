@@ -1,8 +1,8 @@
-Boring Notch — private Apple Silicon package
+calla.notch — private Apple Silicon package
 
 GETTING IT ONTO THE OTHER MAC (pick the easiest)
 
-  Best: copy this disk image, plus the "Boring Notch Components" folder if
+  Best: copy this disk image, plus the "calla.notch Components" folder if
   you have one, onto a USB stick or external drive, then copy both from the
   drive onto the other Mac (into Downloads is fine). Files copied from a drive
   are not flagged by macOS, so it never asks you to approve anything.
@@ -11,14 +11,14 @@ GETTING IT ONTO THE OTHER MAC (pick the easiest)
   Either approve it once (step 2 below), or before opening the disk image run
   this in Terminal and nothing will ask again:
 
-      xattr -c ~/Downloads/boringNotch-private-*.dmg
+      xattr -c ~/Downloads/calla.notch-private-*.dmg
 
 INSTALLING
 
-1. Open the disk image, then open "Boring Notch.app" inside it.
+1. Open the disk image, then open "calla.notch.app" inside it.
 2. Only if macOS says it cannot verify the app: choose Done, open System
    Settings → Privacy & Security, scroll down, choose Open Anyway next to
-   Boring Notch, and enter your password. This is needed once; setup clears
+   calla.notch, and enter your password. This is needed once; setup clears
    the flag from the installed app and every tool it installs.
 3. Choose Begin setup. The window shows each step, what it is doing, and a
    progress bar with sizes, speed and time left for every copy or download.
@@ -31,18 +31,18 @@ Setup looks for what is already in place before downloading anything, and
 checks every file against its pinned checksum first:
 
   • tools and models from an earlier install on this Mac;
-  • a "Boring Notch Components" folder next to the disk image, in Downloads,
+  • a "calla.notch Components" folder next to the disk image, in Downloads,
     on the Desktop, or at the top of a USB drive (made on another Mac with
-    boring-notch export-components);
+    calla-notch export-components);
   • Codex, Claude and AGY bundled in this package (no download needed);
   • the same speech models from other apps that ship them.
 
 Everything it installs lives in one place:
-  ~/Library/Application Support/boringNotch/Components
+  ~/Library/Application Support/calla.notch/Components
     agy, codex, claude, models, downloads
 
 Your settings from the other Mac come with this package and are applied the
-first time Boring Notch opens. Sign-ins, permissions and call history do not
+first time calla.notch opens. Sign-ins, permissions and call history do not
 transfer; setup walks through those.
 
 You need macOS 15 or later, an Apple Silicon Mac, your Google login, and an
@@ -58,22 +58,22 @@ or Incident review (engineering); General, 1:1, Interview, Sales or Support
 goes to your AI account. Each call is saved to Documents › Calls.
 
 IF SETUP STOPS
-Reopen Boring Notch and choose Resume setup. Finished steps are kept, files
+Reopen calla.notch and choose Resume setup. Finished steps are kept, files
 already in place are kept, and an interrupted download continues where it
 stopped. Google sign-in is not reopened once it works.
 
 UPDATES
-Open the next private DMG's Boring Notch.app; it updates in place and keeps
+Open the next private DMG's calla.notch.app; it updates in place and keeps
 your accounts, settings, history and Components. End any active call and
 quit Tangit first.
 
 LATER
-Boring Notch → Setup, Repair & Updates…, or in a new Terminal window:
-  boring-notch doctor              check everything
-  boring-notch repair              rerun setup's checks
-  boring-notch components          reinstall missing tools or models
-  boring-notch export-components   copy this Mac's models for another Mac
-  boring-notch update /path/to/new-package.dmg
+calla.notch → Setup, Repair & Updates…, or in a new Terminal window:
+  calla-notch doctor              check everything
+  calla-notch repair              rerun setup's checks
+  calla-notch components          reinstall missing tools or models
+  calla-notch export-components   copy this Mac's models for another Mac
+  calla-notch update /path/to/new-package.dmg
   tangit
 
 This is a private locally signed build, not an Apple-notarized release.

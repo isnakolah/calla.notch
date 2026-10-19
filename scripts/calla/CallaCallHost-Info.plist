@@ -7,7 +7,7 @@
 	<key>CFBundleExecutable</key>
 	<string>CallaCallHost</string>
 	<key>CFBundleIdentifier</key>
-	<string>theboringteam.boringnotch.CallaCallHost</string>
+	<string>org.calla.notch.CallaCallHost</string>
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
 	<key>CFBundleName</key>

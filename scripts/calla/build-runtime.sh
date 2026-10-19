@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Build Boring's call runtime (CallaCallHost) into an XPC resource directory.
+# Build Calla's call runtime (CallaCallHost) into an XPC resource directory.
 set -euo pipefail
 trap 'echo "Calla runtime build failed at line $LINENO: $BASH_COMMAND" >&2' ERR
 
@@ -37,7 +37,7 @@ if [[ -z "${EXPANDED_CODE_SIGN_IDENTITY:-}" || "${EXPANDED_CODE_SIGN_IDENTITY}" 
     SIGN_CALLA_RUNTIME=0
     echo "Calla runtime: unsigned CI artifact (deployment-ineligible)"
   else
-    echo "missing expanded Boring signing identity for embedded Calla runtime" >&2
+    echo "missing expanded Calla signing identity for embedded Calla runtime" >&2
     exit 78
   fi
 fi
@@ -47,7 +47,7 @@ mkdir -p "$DESTINATION"
 # Blender templates here. Incremental builds must not carry them forward.
 /bin/rm -rf "$DESTINATION/CallaTutorHost.app" "$DESTINATION/CallaTutorHost" "$DESTINATION/CallaOverlayHelper" \
   "$DESTINATION/scripts" "$DESTINATION/assets"
-# The live-call capture host. It ships under Boring's identity: TCC keys the
+# The live-call capture host. It ships under Calla's identity: TCC keys the
 # microphone and screen-recording grants to the signature, and an ad-hoc one
 # cannot hold either.
 CALLHOST_PACKAGE="$ROOT/CallaCallHost"
@@ -104,7 +104,7 @@ fi
 # Pass --entitlements explicitly. A bare `codesign --force --sign` drops the
 # entitlements Xcode applied, and whichever of the two signatures lands last
 # must still carry them.
-ENTITLEMENTS="$ROOT/BoringCallaEngine/BoringCallaEngine.entitlements"
+ENTITLEMENTS="$ROOT/CallaEngine/CallaEngine.entitlements"
 if [[ "$SIGN_CALLA_RUNTIME" == "1" && -n "${CODESIGNING_FOLDER_PATH:-}" && -d "${CODESIGNING_FOLDER_PATH}" ]]; then
   if [[ -f "$ENTITLEMENTS" ]]; then
     codesign --force --sign "$EXPANDED_CODE_SIGN_IDENTITY" \

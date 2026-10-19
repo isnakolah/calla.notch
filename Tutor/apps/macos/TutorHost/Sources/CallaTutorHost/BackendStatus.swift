@@ -131,7 +131,7 @@ final class BackendStatus: ObservableObject {
         }
     }
 
-    /// Boring's engine redirects the node's stdio here. Fall back to the retired
+    /// Calla's engine redirects the node's stdio here. Fall back to the retired
     /// shared location only when the private log has never been written, so a
     /// pre-migration install still reports something rather than nothing.
     private let logURL: URL = {

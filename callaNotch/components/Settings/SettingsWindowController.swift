@@ -1,0 +1,193 @@
+//
+//  SettingsWindowController.swift
+//  callaNotch
+//
+//  Created by Alexander on 2025-06-14.
+//
+
+import AppKit
+import SwiftUI
+import Defaults
+import Sparkle
+
+class SettingsWindowController: NSWindowController {
+    static let shared = SettingsWindowController()
+    private var updaterController: SPUStandardUpdaterController?
+
+    /// Where the window is, held here so a deep link is one assignment.
+    ///
+    /// `show(tab:)` used to replace `window.contentView` with a brand-new
+    /// `NSHostingView` on every call. That threw away every `@StateObject` in
+    /// the tree along with it — a half-typed prompt, an expanded Sweep category,
+    /// a scan's UI state — for what is only a change of destination.
+    @MainActor private let router = SettingsRouter()
+    
+    private init() {
+        let window = NSWindow(
+            contentRect: NSRect(x: 0, y: 0, width: 1040, height: 700),
+            styleMask: [.titled, .closable, .miniaturizable, .resizable, .fullSizeContentView],
+            backing: .buffered,
+            defer: false
+        )
+        // Wide enough for the sidebar plus a card column without the panes
+        // having to reflow. Set once, here, rather than by whichever deep link
+        // happened to be used last.
+        window.minSize = NSSize(width: 900, height: 600)
+
+        super.init(window: window)
+        
+        setupWindow()
+    }
+    
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+    
+    func setUpdaterController(_ controller: SPUStandardUpdaterController) {
+        self.updaterController = controller
+        // Recreate the content view with the proper updater controller
+        setupWindow()
+    }
+    
+    private func setupWindow() {
+        guard let window = window else { return }
+        
+        window.title = "calla.notch Settings"
+        window.titlebarAppearsTransparent = false
+        // Each pane names itself in its own header now, so a title in the bar
+        // is the same word twice. The bar itself stays: dropping it would put
+        // the traffic lights on top of the sidebar's notch preview.
+        window.titleVisibility = .hidden
+        window.toolbarStyle = .unified
+        // Dark, always. The window is drawn around a black notch on a dark
+        // menu bar, and its previews only read correctly against a dark page.
+        window.appearance = NSAppearance(named: .darkAqua)
+        // Off, deliberately. With it on, AppKit claims any drag that does not
+        // start on an AppKit control and moves the whole window instead —
+        // which is every custom-drawn control in this window: the sliders, the
+        // call panel's resize handles, the knowledge calendar. A SwiftUI
+        // `DragGesture` on a `Shape` is background as far as the window is
+        // concerned, so it lost the drag every time.
+        //
+        // Nothing is given up. The window keeps a real titlebar with its
+        // traffic lights — see `titleVisibility` above — so it already has a
+        // drag region, and that is the one macOS windows are dragged by.
+        
+        // Make it behave like a regular app window with proper Spaces support
+        window.collectionBehavior = [.managed, .participatesInCycle, .fullScreenAuxiliary]
+        
+        // Ensure proper window behavior
+        window.hidesOnDeactivate = false
+        window.isExcludedFromWindowsMenu = false
+        
+        // Not restorable. macOS brought it back on every relaunch — at login,
+        // after an update — as an empty window nobody had asked for. Settings
+        // opens when the reader asks for it, never on its own.
+        window.isRestorable = false
+        window.identifier = NSUserInterfaceItemIdentifier("CallaNotchSettingsWindow")
+        
+        // Create the SwiftUI content
+        let settingsView = MainActor.assumeIsolated {
+            SettingsView(router: router, updaterController: updaterController)
+        }
+        let hostingView = NSHostingView(rootView: settingsView)
+        window.contentView = hostingView
+        
+        // Handle window closing
+        window.delegate = self
+    }
+    
+    func showWindow() {
+        // Set app to regular mode first
+        NSApp.setActivationPolicy(.regular)
+        
+        // If window is already visible, bring it to front properly
+        if window?.isVisible == true {
+            NSApp.activate(ignoringOtherApps: true)
+            window?.orderFrontRegardless()
+            window?.makeKeyAndOrderFront(nil)
+            return
+        }
+        
+        // Show the window with proper ordering
+        window?.orderFrontRegardless()
+        window?.makeKeyAndOrderFront(nil)
+        window?.center()
+        
+        // Activate the app and ensure window gets focus
+        NSApp.activate(ignoringOtherApps: true)
+        
+        // Force window to front after activation
+        DispatchQueue.main.async { [weak self] in
+            self?.window?.makeKeyAndOrderFront(nil)
+        }
+    }
+
+    func showShelfWindow() { show(tab: "Shelf") }
+
+
+    func showCopilotWindow(tab: String = "Copilot") { show(tab: tab) }
+
+    /// Open Settings on a given pane.
+    ///
+    /// Each deep link used to rebuild `contentView` from scratch, and the Tutor
+    /// one also resized the window to 1080x720 and left it that way for the rest
+    /// of the session — so opening Tutor once permanently changed the size of
+    /// every other pane. One window, one size the user chose, one content view —
+    /// and now one router, so moving the window somewhere costs an assignment
+    /// rather than the whole view tree.
+    ///
+    /// The string form is kept because that is what every caller passes; it is
+    /// resolved through `SettingsRoute(legacyIdentifier:)`, which still accepts
+    /// every name the flat model answered to.
+    private func show(tab: String) {
+        show(route: SettingsRoute(legacyIdentifier: tab))
+    }
+
+    func show(route: SettingsRoute) {
+        MainActor.assumeIsolated { router.go(route) }
+        showWindow()
+    }
+    
+    override func close() {
+        super.close()
+        relinquishFocus()
+    }
+    
+    private func relinquishFocus() {
+        window?.orderOut(nil)
+        
+        // Set app back to accessory mode immediately
+        NSApp.setActivationPolicy(.accessory)
+    }
+}
+
+extension SettingsWindowController: NSWindowDelegate {
+    func windowWillClose(_ notification: Notification) {
+        NotchResizeSession.shared.finish()
+        NotificationCenter.default.post(name: .callaNotchSettingsWillClose, object: nil)
+        relinquishFocus()
+    }
+    
+    func windowShouldClose(_ sender: NSWindow) -> Bool {
+        return true
+    }
+    
+    func windowDidBecomeKey(_ notification: Notification) {
+        // Ensure app is in regular mode when window becomes key
+        NSApp.setActivationPolicy(.regular)
+    }
+    
+    func windowDidResignKey(_ notification: Notification) {
+    }
+
+    func windowDidChangeScreen(_ notification: Notification) {
+        guard let window = notification.object as? NSWindow else { return }
+        NotchResizeSession.shared.retarget(to: window.screen)
+    }
+    
+}
+
+extension Notification.Name {
+    static let callaNotchSettingsWillClose = Notification.Name("CallaNotchSettingsWillClose")
+}

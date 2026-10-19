@@ -1,7 +1,7 @@
 import Foundation
 import os.log
 
-private let gateLog = Logger(subsystem: "theboringteam.boringnotch.callhost", category: "vad")
+private let gateLog = Logger(subsystem: "org.calla.notch.callhost", category: "vad")
 
 public enum SpeechGateFactory {
     public static let bundledModelName = "ggml-silero-v5.1.2"

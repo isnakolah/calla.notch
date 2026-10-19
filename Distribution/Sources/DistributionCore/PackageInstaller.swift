@@ -11,22 +11,22 @@ public enum PackageInstaller {
     public static func validate(_ app: URL) throws -> ReleaseManifest {
         let release = try manifest(in: app)
         guard let info = NSDictionary(contentsOf: app.appendingPathComponent("Contents/Info.plist")),
-              info["CFBundleIdentifier"] as? String == "theboringteam.boringnotch",
-              info["BoringPrivateDistribution"] as? Bool == true,
-              info["BoringSetupProtocolVersion"] as? Int == 1,
+              info["CFBundleIdentifier"] as? String == "org.calla.notch",
+              info["CallaPrivateDistribution"] as? Bool == true,
+              info["CallaSetupProtocolVersion"] as? Int == 1,
               info["CFBundleShortVersionString"] as? String == release.version,
               String(describing: info["CFBundleVersion"] ?? "") == String(release.build)
-        else { throw SetupFailure("This is not a matching private Boring Notch package.") }
+        else { throw SetupFailure("This is not a matching private calla.notch package.") }
         try Commands.run("/usr/bin/codesign", ["--verify", "--deep", "--strict", app.path])
-        var files = ["Contents/MacOS/boringNotch", Layout.callHost,
-                     "Contents/Helpers/boring-notch", "Contents/Helpers/calla-gateway",
-                     "Contents/XPCServices/BoringNotchXPCHelper.xpc/Contents/MacOS/BoringNotchXPCHelper",
-                     "Contents/XPCServices/BoringCallaEngine.xpc/Contents/MacOS/BoringCallaEngine"]
+        var files = ["Contents/MacOS/callaNotch", Layout.callHost,
+                     "Contents/Helpers/calla-notch", "Contents/Helpers/calla-gateway",
+                     "Contents/XPCServices/CallaNotchXPCHelper.xpc/Contents/MacOS/CallaNotchXPCHelper",
+                     "Contents/XPCServices/CallaEngine.xpc/Contents/MacOS/CallaEngine"]
         if release.tangit != nil {
             files += ["Contents/Helpers/tangit", "Contents/Resources/Tangit/Providers/codex/bin/codex",
                       "Contents/Resources/Tangit/Providers/claude/bin/claude", "Contents/Resources/Tangit/Providers/agy/bin/agy"]
         }
-        if release.graphicalSetup == true, info["BoringSetupUIVersion"] as? Int != 1 {
+        if release.graphicalSetup == true, info["CallaSetupUIVersion"] as? Int != 1 {
             throw SetupFailure("This app does not contain the integrated setup window. Obtain the complete private app.")
         }
         for path in files where !FileManager.default.isExecutableFile(atPath: app.appendingPathComponent(path).path) {
@@ -60,7 +60,7 @@ public enum PackageInstaller {
         let destination = Commands.shellQuote(destination.path)
         return """
         set -eu
-        stage=$(/usr/bin/mktemp -d \(parent)/.boring-notch-install.XXXXXX)
+        stage=$(/usr/bin/mktemp -d \(parent)/.calla-notch-install.XXXXXX)
         committed=0
         restore() {
           if [ "$committed" = 0 ] && [ -d "$stage/previous.app" ]; then

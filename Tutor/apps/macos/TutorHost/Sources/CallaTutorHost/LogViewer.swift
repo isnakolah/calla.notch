@@ -39,7 +39,7 @@ enum CallaLog: String, CaseIterable, Identifiable {
 
     static var directory: URL { CallaRuntime.logs }
 
-    /// Boring's private log directory is authoritative. The retired shared
+    /// Calla's private log directory is authoritative. The retired shared
     /// `~/Library/Logs/Calla` is still read when a file only exists there, so
     /// history from before the migration stays reachable.
     var url: URL {

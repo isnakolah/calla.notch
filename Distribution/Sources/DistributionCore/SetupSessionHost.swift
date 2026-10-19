@@ -26,7 +26,7 @@ public final class SetupSessionHost: @unchecked Sendable {
                 return ["running": true]
             }
             if command == "launchTangit" {
-                try TerminalLauncher.open(executable: Layout.app.appendingPathComponent("Contents/Helpers/boring-notch"), arguments: ["tangit"])
+                try TerminalLauncher.open(executable: Layout.app.appendingPathComponent("Contents/Helpers/calla-notch"), arguments: ["tangit"])
                 return ["ok": true]
             }
             guard let token = request["token"] as? String, UUID(uuidString: token) != nil else { throw SetupFailure("Invalid setup session.") }
@@ -71,11 +71,11 @@ public final class SetupSessionHost: @unchecked Sendable {
         guard process?.isRunning != true else { throw SetupFailure("Setup is already running. Finish or pause its current window first.") }
         _ = try PackageInstaller.validate(app)
         let process = Process()
-        process.executableURL = app.appendingPathComponent("Contents/Helpers/boring-notch")
+        process.executableURL = app.appendingPathComponent("Contents/Helpers/calla-notch")
         process.arguments = ["setup", "--gui", "--package", app.path] + (repair ? ["--repair"] : [])
         process.currentDirectoryURL = Layout.home
         var environment = ProcessInfo.processInfo.environment
-        environment["BORING_SETUP_EVENT_TOKEN"] = token
+        environment["CALLA_SETUP_EVENT_TOKEN"] = token
         environment["NSUnbufferedIO"] = "YES"
         process.environment = environment
         let stdout = Pipe(); let stdin = Pipe()
