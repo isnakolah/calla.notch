@@ -20,9 +20,11 @@ struct MusicPlayerView: View {
 
     var body: some View {
         GeometryReader { geometry in
-            let artworkSize = max(36, min(160, geometry.size.width - 12,
-                                           geometry.size.height - 44))
-            VStack(spacing: 8) {
+            // 78pt in a 168pt notch: what is left once the times and the
+            // slider below have their 36pt.
+            let artworkSize = max(36, min(78, geometry.size.width - 12,
+                                           geometry.size.height - 42))
+            VStack(spacing: 6) {
                 ZStack {
                     AlbumArtView(vm: vm, albumArtNamespace: albumArtNamespace,
                                  keepsFullSize: true)
@@ -59,19 +61,22 @@ struct MusicPlayerView: View {
                 musicManager.openMusicApp()
             } label: {
                 Text(name)
-                    .font(.system(size: 9, weight: .semibold))
+                    .font(.system(size: 10, weight: .semibold))
                     .lineLimit(1)
                     .foregroundColor(.white)
                     .padding(.horizontal, 7)
-                    .padding(.vertical, 3)
+                    .frame(height: 16)
                     .background(Capsule().fill(.white.opacity(0.18)))
             }
             .buttonStyle(PlainButtonStyle())
+            .help("Open \(name)")
+            .accessibilityLabel("Open \(name)")
+            .offset(y: 2)
         }
     }
 
     private var transportControls: some View {
-        HStack(spacing: 18) {
+        HStack(spacing: 14) {
             playbackButton("backward.fill", label: "Previous track") {
                 musicManager.previousTrack()
             }
@@ -90,9 +95,10 @@ struct MusicPlayerView: View {
                                 action: @escaping () -> Void) -> some View {
         Button(action: action) {
             Image(systemName: symbol)
-                .font(.system(size: primary ? 17 : 13, weight: .semibold))
-                .frame(width: 32, height: 32)
-                .background(primary ? Color.white.opacity(0.12) : .clear, in: Circle())
+                .font(.system(size: primary ? 15 : 13, weight: .semibold))
+                .foregroundStyle(NotchInk.primary)
+                .frame(width: primary ? 36 : 32, height: primary ? 36 : 32)
+                .background(primary ? Color.white.opacity(0.16) : .clear, in: Circle())
                 .contentShape(Circle())
         }
         .buttonStyle(.plain)
@@ -144,7 +150,7 @@ struct AlbumArtView: View {
                 .aspectRatio(contentMode: .fill)
                 .frame(width: geometry.size.width, height: geometry.size.height)
                 .clipped()
-                .clipShape(RoundedRectangle(cornerRadius: 13, style: .continuous))
+                .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
                 .matchedGeometryEffect(id: "albumArt", in: albumArtNamespace)
         }
     }
@@ -155,8 +161,8 @@ struct AlbumArtView: View {
             AppIcon(for: musicManager.bundleIdentifier ?? "com.apple.Music")
                 .resizable()
                 .aspectRatio(contentMode: .fill)
-                .frame(width: 24, height: 24)
-                .offset(x: 2, y: 2)
+                .frame(width: 20, height: 20)
+                .offset(x: 5, y: 5)
                 .transition(.scale.combined(with: .opacity))
                 .zIndex(2)
         }
@@ -468,13 +474,13 @@ struct NotchHomeView: View {
 
     private var mainContent: some View {
         GeometryReader { geo in
-            let spacing: CGFloat = 15
-            // When the calendar is shown, give media ~35% and the
-            // calendar ~65% of the available width — the calendar is the centerpiece,
-            // and the extra width lands on the agenda (the date plate is fixed-width).
+            let spacing: CGFloat = 14
+            // Three columns: music at a fixed 150, the date plate at 92 inside
+            // the calendar, and the agenda takes whatever the notch has left —
+            // so a wider notch widens the one column with text in it.
             let splitCalendar = Defaults[.showCalendar]
-            let mediaWidth = splitCalendar ? (geo.size.width - spacing) * 0.35 : nil
-            let calendarWidth = (geo.size.width - spacing) * 0.65
+            let mediaWidth: CGFloat? = splitCalendar ? 150 : nil
+            let calendarWidth = max(0, geo.size.width - 150 - spacing)
 
             HStack(alignment: .top, spacing: spacing) {
                 MusicPlayerView(albumArtNamespace: albumArtNamespace)
@@ -518,13 +524,11 @@ struct MusicSliderView: View {
                 Spacer()
                 Text(timeString(from: duration))
             }
-            .fontWeight(.medium)
             .foregroundColor(
                 Defaults[.playerColorTinting]
-                    ? Color(nsColor: color).ensureMinimumBrightness(factor: 0.6) : .gray
+                    ? Color(nsColor: color).ensureMinimumBrightness(factor: 0.6) : NotchInk.tertiary
             )
-            .font(.caption2)
-            .monospacedDigit()
+            .font(.system(size: 10, weight: .medium, design: .rounded).monospacedDigit())
 
             CustomSlider(
                 value: $sliderValue,
@@ -579,7 +583,7 @@ struct CustomSlider: View {
 
             ZStack(alignment: .leading) {
                 Rectangle()
-                    .fill(.gray.opacity(0.3))
+                    .fill(Color.white.opacity(0.16))
                     .frame(height: height)
 
                 Rectangle()

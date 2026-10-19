@@ -45,7 +45,7 @@ struct WheelPicker: View {
                     if index < spacerNum || index >= spacerNum + dateCount {
                         // Leading/trailing spacers sized to match a dot cell
                         Spacer()
-                            .frame(width: 16, height: 16)
+                            .frame(width: 16, height: 20)
                             .id(index)
                     } else {
                         let date = dateForItemIndex(index: index, spacerNum: spacerNum)
@@ -68,7 +68,7 @@ struct WheelPicker: View {
                     }
                 }
             }
-            .frame(height: style == .dots ? 16 : plateHeight)
+            .frame(height: style == .dots ? 20 : plateHeight)
             .scrollTargetLayout()
         }
         .scrollIndicators(.never)
@@ -98,53 +98,51 @@ struct WheelPicker: View {
         }
     }
 
-    // A single day rendered as a tappable dot. The selected day widens into an
-    // accent pill; today (when not selected) reads slightly brighter than the rest.
+    // A single day rendered as a tappable dot, on a 20pt-tall target. The
+    // selected day widens into a 20pt Home pill; today (when not selected) reads
+    // brighter than the rest.
     private func dotButton(
         date: Date, isSelected: Bool, id: Int, onClick: @escaping () -> Void
     ) -> some View {
         let isToday = Calendar.current.isDateInToday(date)
         let dotColor: Color = isSelected
-            ? Color.effectiveAccent
-            : Color.white.opacity(isToday ? 0.5 : 0.18)
+            ? NotchAccent.home
+            : isToday ? NotchInk.tertiary : Color.white.opacity(0.26)
         return Button(action: onClick) {
             Capsule(style: .continuous)
                 .fill(dotColor)
-                .frame(width: isSelected ? 16 : 7, height: 7)
-                .shadow(color: isSelected ? Color.effectiveAccent.opacity(0.6) : .clear, radius: 4, y: 2)
-                .frame(width: 16, height: 16)
+                .frame(width: isSelected ? 20 : 7, height: 7)
+                .frame(width: isSelected ? 28 : 16, height: 20)
                 .contentShape(Rectangle())
         }
         .buttonStyle(PlainButtonStyle())
-        .accessibilityLabel(Text(date, format: .dateTime.weekday(.wide).day()))
+        .help(Text(date, format: .dateTime.weekday(.wide).day().month(.wide)))
+        .accessibilityLabel(Text(date, format: .dateTime.weekday(.wide).day().month(.wide)))
+        .accessibilityAddTraits(isSelected ? [.isButton, .isSelected] : .isButton)
         .id(id)
     }
 
     // Full-width date card used by `.plate` style: weekday, big numeral, month/year.
     @ViewBuilder
     private func plateCard(date: Date, id: Int) -> some View {
-        let isToday = Calendar.current.isDateInToday(date)
         VStack(alignment: .center, spacing: 0) {
             Text(date.formatted(.dateTime.weekday(.wide)))
-                .font(.system(size: 11, weight: .bold))
-                .tracking(0.8)
+                .font(.system(size: 10, weight: .bold))
+                .tracking(notchCapsTracking)
                 .textCase(.uppercase)
-                .foregroundColor(isToday ? Color.effectiveAccent : .white.opacity(0.55))
+                .foregroundColor(NotchAccent.home)
                 .lineLimit(1)
-                .minimumScaleFactor(0.7)
-            VStack(spacing: 2) {
+                .minimumScaleFactor(0.8)
             Text("\(date.date)")
-                .font(.system(size: 44, weight: .bold))
+                .font(.system(size: 40, weight: .bold, design: .rounded))
                 .monospacedDigit()
-                .tracking(-1)
-                .foregroundColor(.white)
+                .tracking(-0.5)
+                .foregroundColor(NotchInk.primary)
             Text(date.formatted(.dateTime.month(.abbreviated).year()))
                 .font(.system(size: 11, weight: .medium))
-                .foregroundColor(.white.opacity(0.45))
-                .padding(.top, 2)
-            }
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
+                .foregroundColor(NotchInk.secondary)
         }
+        .frame(maxHeight: .infinity, alignment: .top)
         .frame(maxWidth: .infinity)
         .frame(height: plateHeight)
         .containerRelativeFrame(.horizontal)
@@ -207,13 +205,13 @@ struct CalendarView: View {
     // row of day-dots below that mirrors the selection and is also tappable.
     private var datePlate: some View {
         GeometryReader { geometry in
-            let plateHeight = max(0, geometry.size.height - 25)
-            VStack(alignment: .center, spacing: 9) {
+            let plateHeight = max(0, geometry.size.height - 24)
+            VStack(alignment: .center, spacing: 4) {
                 WheelPicker(selectedDate: $selectedDate, config: Config(),
                             style: .plate, plateHeight: plateHeight)
                     .frame(height: plateHeight)
                 WheelPicker(selectedDate: $selectedDate, config: Config(), style: .dots)
-                    .frame(height: 16)
+                    .frame(height: 20)
             }
             .frame(width: geometry.size.width, height: geometry.size.height)
         }
@@ -223,7 +221,7 @@ struct CalendarView: View {
         let filteredEvents = EventListView.filteredEvents(events: calendarManager.events)
         HStack(alignment: .center, spacing: 14) {
             datePlate
-                .frame(width: 84, alignment: .leading)
+                .frame(width: 92, alignment: .leading)
 
             Group {
                 if filteredEvents.isEmpty {
@@ -328,7 +326,7 @@ struct EventListView: View {
     var body: some View {
         ScrollViewReader { proxy in
             ScrollView(.vertical) {
-                LazyVStack(alignment: .leading, spacing: 4) {
+                LazyVStack(alignment: .leading, spacing: 6) {
                     ForEach(filteredEvents) { event in
                         // A tap gesture rather than a Button wrapper: the row now
                         // holds its own timer Button, and nested buttons do not
@@ -340,7 +338,6 @@ struct EventListView: View {
                             .id(event.id)
                     }
                 }
-                .padding(.trailing, 4)
             }
             .scrollIndicators(.never)
             .scrollContentBackground(.hidden)
@@ -442,15 +439,18 @@ struct EventListView: View {
         CallaKnowledgeFocus.shared.hasNotes(eventID: event.id, seriesID: event.seriesID)
     }
 
-    // Soft, leading-aligned color wash behind a card, tinted by the event's calendar.
-    private func cardBackground(_ color: Color) -> some View {
-        RoundedRectangle(cornerRadius: 9, style: .continuous)
-            .fill(
-                LinearGradient(
-                    colors: [color.opacity(0.16), color.opacity(0.05), .clear],
-                    startPoint: .leading, endPoint: .trailing
-                )
-            )
+    // A flat card: brighter for the event happening now, so the one that
+    // matters is found before a title is read. The calendar's colour is the bar.
+    private func cardBackground(current: Bool) -> some View {
+        RoundedRectangle(cornerRadius: 10, style: .continuous)
+            .fill(Color.white.opacity(current ? 0.09 : 0.045))
+    }
+
+    /// The 4pt calendar bar, flush with the card's leading edge.
+    private func calendarBar(_ color: Color) -> some View {
+        Rectangle()
+            .fill(color)
+            .frame(width: 4)
     }
 
     private func eventRow(_ event: EventModel) -> some View {
@@ -465,6 +465,7 @@ struct EventListView: View {
             let isPastToday = event.start < Date.now && Calendar.current.isDateInToday(event.start)
             return AnyView(
                 HStack(spacing: 9) {
+                    calendarBar(barColor)
                     ReminderToggle(
                         isOn: Binding(
                             get: { isCompleted },
@@ -478,27 +479,30 @@ struct EventListView: View {
                         ),
                         color: barColor
                     )
-                    Text(event.title)
-                        .font(.system(size: 11.5, weight: .semibold))
-                        .foregroundColor(.white)
-                        .lineLimit(showFullEventTitles ? nil : 1)
-                    Spacer(minLength: 0)
-                    Group {
-                        if event.isAllDay {
-                            Text("all-day")
-                                .foregroundColor(barColor)
-                        } else {
-                            Text(event.start, style: .time)
-                                .foregroundColor(.white.opacity(0.5))
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(event.title)
+                            .font(.system(size: 13, weight: .semibold))
+                            .foregroundColor(NotchInk.primary.opacity(0.8))
+                            .lineLimit(showFullEventTitles ? nil : 1)
+                        Group {
+                            if event.isAllDay {
+                                Text("all-day")
+                                    .foregroundColor(barColor)
+                            } else {
+                                Text(event.start, style: .time)
+                                    .foregroundColor(NotchInk.tertiary)
+                            }
                         }
+                        .font(.system(size: 11))
+                        .monospacedDigit()
+                        .lineLimit(1)
                     }
-                    .font(.system(size: 9.5, weight: .medium))
-                    .monospacedDigit()
-                    .lineLimit(1)
+                    Spacer(minLength: 0)
                 }
-                .padding(.horizontal, 8)
-                .padding(.vertical, 5)
-                .background(cardBackground(barColor))
+                .padding(.trailing, 7)
+                .frame(minHeight: 44)
+                .background(cardBackground(current: false))
+                .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
                 .opacity(isCompleted ? 0.4 : (isPastToday ? 0.6 : 1.0))
             )
         } else {
@@ -508,18 +512,13 @@ struct EventListView: View {
             // event's notes, which is far too expensive to repeat per body pass.
             let videoCallURL = event.videoCallURL
             return AnyView(
-                HStack(spacing: 10) {
-                    // Full-height status accent — brighter for the event happening now.
-                    Rectangle()
-                        .fill(barColor)
-                        .frame(width: 4)
-                        .cornerRadius(2)
-                        .opacity(isInProgress ? 1 : 0.85)
+                HStack(spacing: 9) {
+                    calendarBar(barColor)
 
-                    VStack(alignment: .leading, spacing: 1) {
+                    VStack(alignment: .leading, spacing: 2) {
                         Text(event.title)
-                            .font(.system(size: 11.5, weight: .semibold))
-                            .foregroundColor(.white)
+                            .font(.system(size: 13, weight: .semibold))
+                            .foregroundColor(isInProgress ? NotchInk.primary : NotchInk.primary.opacity(0.8))
                             .lineLimit(showFullEventTitles ? nil : 1)
 
                         HStack(spacing: 4) {
@@ -532,50 +531,50 @@ struct EventListView: View {
                                     (Text(event.start, style: .time)
                                         + Text(" – ")
                                         + Text(event.end, style: .time))
-                                        .foregroundColor(isInProgress ? barColor : .white.opacity(0.5))
+                                        .foregroundColor(NotchInk.tertiary)
                                 }
                             }
                             .monospacedDigit()
 
                             if let location = event.location, !location.isEmpty {
-                                Text("·").foregroundColor(.white.opacity(0.3))
+                                Text("·").foregroundColor(NotchInk.tertiary)
                                 Text(location)
-                                    .foregroundColor(.white.opacity(0.45))
+                                    .foregroundColor(NotchInk.tertiary)
                                     .lineLimit(1)
                             }
                         }
-                        .font(.system(size: 9))
+                        .font(.system(size: 11))
+                        .lineLimit(1)
                     }
                     Spacer(minLength: 0)
-                    // The row's one control.
+                    // The row's one control, and only on the event happening
+                    // now: Join on every row read as a toolbar, and the row-wide
+                    // tap still opens the call for any other event. Focus timers,
+                    // context and Quiz are a right-click away.
                     //
-                    // The trailing edge used to carry four: a video glyph, a focus
-                    // timer and a Calla course picker. At this row height that reads
-                    // as a toolbar rather than a list, and the other three are for
-                    // things nobody reaches for while scanning what is next — they
-                    // are a right-click away instead. Joining the call is what this
-                    // row is for, so it is the only thing that gets a button.
-                    //
-                    // A real Button rather than the glyph it used to be: it is the
-                    // primary action of the row, and the row-wide tap gesture is
-                    // easy to trigger by accident while scrolling.
-                    if videoCallURL != nil {
+                    // A real Button rather than a glyph: it is the primary action
+                    // of the row, and the row-wide tap gesture is easy to trigger
+                    // by accident while scrolling.
+                    if videoCallURL != nil && isInProgress {
                         Button {
                             joinEvent(event)
                         } label: {
                             Image(systemName: "video.fill")
-                                .font(.system(size: 10, weight: .semibold))
-                                .foregroundColor(barColor)
-                                .frame(width: 18, height: 18)
-                                .contentShape(Rectangle())
+                                .font(.system(size: 12, weight: .bold))
+                                .foregroundColor(NotchAccent.onAccent)
+                                .frame(width: 30, height: 30)
+                                .background(Circle().fill(NotchAccent.home))
+                                .contentShape(Circle())
                         }
                         .buttonStyle(PlainButtonStyle())
-                        .help("Join this call and start the copilot")
+                        .help("Join \(event.title)")
+                        .accessibilityLabel("Join \(event.title)")
                     }
                 }
-                .padding(.horizontal, 8)
-                .padding(.vertical, 5)
-                .background(cardBackground(barColor))
+                .padding(.trailing, 7)
+                .frame(minHeight: 44)
+                .background(cardBackground(current: isInProgress))
+                .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
                 .opacity(isEnded ? 0.5 : 1.0)
             )
         }
