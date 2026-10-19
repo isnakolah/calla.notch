@@ -100,8 +100,8 @@ enum NotchGlassType {
     /// replaces is worse — the Pomodoro badge drew its figure at 12.5 and the
     /// usage badge drew its at 11.5, so the two things flanking one notch were
     /// a point apart from each other for no reason anyone chose.
-    static let badgeFigure = Font.system(size: 12, weight: .bold, design: .rounded).monospacedDigit()
-    static let badgeLabel = Font.system(size: 10, weight: .bold, design: .rounded)
+    static let badgeFigure = Font.system(size: 11, weight: .bold, design: .rounded).monospacedDigit()
+    static let badgeLabel = Font.system(size: 8, weight: .semibold, design: .rounded)
     static let badgeGlyph = Font.system(size: 14, weight: .semibold)
 
     /// Three glyph sizes, and no fourth. Icons had been drifting across 7, 8,
