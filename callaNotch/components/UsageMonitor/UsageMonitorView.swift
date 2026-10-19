@@ -21,7 +21,7 @@ struct UsageMonitorView: View {
     @State private var pollTask: Task<Void, Never>?
 
     var body: some View {
-        VStack(spacing: 4) {
+        VStack(spacing: 2) {
             Group {
                 if page == 0 { providerPage } else { agyPage }
             }
@@ -135,23 +135,14 @@ private struct AGYGroupColumn: View {
     let onRefresh: () -> Void
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            HStack(spacing: 7) {
-                Image(systemName: "sparkles")
-                    .font(.system(size: 10, weight: .bold))
-                    .foregroundStyle(NotchAccent.quiz)
-                    .frame(width: 20, height: 20)
-                    .background(RoundedRectangle(cornerRadius: 6, style: .continuous)
-                        .fill(NotchAccent.quiz.opacity(NotchAccent.strongFill)))
-                NotchCaps(title, tint: QuotaDisplayStatus.worstColor(
-                    group?.session?.percentRemaining, group?.weekly?.percentRemaining) ?? NotchInk.secondary)
-                    .minimumScaleFactor(0.8)
+        VStack(alignment: .leading, spacing: 5) {
+            HStack {
+                Text(title).font(NotchGlassType.title).lineLimit(1).minimumScaleFactor(0.7)
                 Spacer(minLength: 0)
                 CallaHeaderGlyphButton(symbol: "arrow.clockwise", help: "Refresh AGY usage", action: onRefresh)
             }
-            .frame(height: 26)
             if let report = state.report, report.status == .ok {
-                HStack(spacing: 10) {
+                HStack(spacing: 8) {
                     // Weekly at zero blocks the 5-hour bucket too, so it is the only number that matters.
                     if let weekly = group?.weekly, weekly.percentRemaining <= 0 {
                         UsageQuotaTile(quota: weekly, isWeekly: true)
@@ -165,8 +156,7 @@ private struct AGYGroupColumn: View {
                             text: state.report?.errorDescription ?? "Checking AGY usage…")
             }
             Spacer(minLength: 0)
-        }
-        .padding(.horizontal, 12)
+        }.padding(.horizontal, 12).padding(.top, 2)
     }
 }
 
@@ -268,12 +258,13 @@ private struct ProviderUsageColumn: View {
     private var providerName: String { provider.name }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            header.frame(height: 26)
+        VStack(alignment: .leading, spacing: 5) {
+            header
             content
             Spacer(minLength: 0)
         }
         .padding(.horizontal, 12)
+        .padding(.top, 2)
     }
 
     /// Two of these sit side by side in whatever width the notch was given,
@@ -295,9 +286,15 @@ private struct ProviderUsageColumn: View {
                 .help(providerName)
 
             if showsName {
-                NotchCaps(providerName, tint: QuotaDisplayStatus.worstColor(
-                    state.report?.effectiveSession?.percentRemaining,
-                    state.report?.weekly?.percentRemaining) ?? NotchInk.secondary)
+                Text(providerName)
+                    .font(NotchGlassType.title)
+                    .foregroundStyle(
+                        QuotaDisplayStatus.worstColor(
+                            state.report?.effectiveSession?.percentRemaining,
+                            state.report?.weekly?.percentRemaining
+                        ) ?? .primary
+                    )
+                    .lineLimit(1)
                     .fixedSize()
             }
 
@@ -386,7 +383,7 @@ private struct ProviderUsageColumn: View {
         if quotas.isEmpty {
             UsageQuotaTile(quota: nil, isWeekly: false)
         } else {
-            HStack(spacing: 10) {
+            HStack(spacing: 8) {
                 ForEach(quotas) { quota in
                     UsageQuotaTile(
                         quota: quota.value,
@@ -428,46 +425,47 @@ private struct AvailableQuota: Identifiable {
 
 // MARK: - Quota Tile
 
-/// A ring per quota, the way Focus draws its countdown: what is left as the
-/// arc and the figure inside it, the window and when it comes back beside it.
+/// Unlabelled: session sits left of weekly, and the reset time (clock vs.
+/// date) tells them apart.
 private struct UsageQuotaTile: View {
     let quota: UsageReportDTO.Quota?
     let isWeekly: Bool
 
     var body: some View {
-        HStack(spacing: 7) {
-            ring
-            VStack(alignment: .leading, spacing: 2) {
-                NotchCaps(isWeekly ? "Week" : "5 hours")
-                if let quota { resetLabel(quota) }
+        VStack(alignment: .leading, spacing: 3) {
+            if let quota {
+                let status = QuotaDisplayStatus.from(percentRemaining: quota.percentRemaining)
+
+                Text("\(Int(quota.percentRemaining.rounded()))%")
+                    .font(NotchGlassType.figure)
+                    .foregroundStyle(status.color)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.6)
+
+                progressBar(percent: quota.percentRemaining, color: status.color)
+
+                resetLabel(quota)
+            } else {
+                Text("—")
+                    .font(NotchGlassType.figure)
+                    .foregroundStyle(NotchInk.tertiary)
+                Spacer(minLength: 0)
             }
-            .lineLimit(1)
-            .minimumScaleFactor(0.85)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .frame(height: 50)
-        .accessibilityElement(children: .combine)
+        .frame(height: 62)
     }
 
-    private var ring: some View {
-        let percent = quota?.percentRemaining
-        let tint = percent.map { QuotaDisplayStatus.from(percentRemaining: $0).color } ?? NotchInk.tertiary
-        return ZStack {
-            Circle().stroke(NotchInk.hairline, lineWidth: 4)
-            if let percent {
-                Circle()
-                    .trim(from: 0, to: max(0.001, min(1, percent / 100)))
-                    .stroke(tint, style: StrokeStyle(lineWidth: 4, lineCap: .round))
-                    .rotationEffect(.degrees(-90))
+    private func progressBar(percent: Double, color: Color) -> some View {
+        GeometryReader { geo in
+            ZStack(alignment: .leading) {
+                Capsule().fill(NotchPlane.track)
+                Capsule()
+                    .fill(color)
+                    .frame(width: geo.size.width * max(0, min(1, percent / 100)))
             }
-            Text(percent.map { "\(Int($0.rounded()))" } ?? "—")
-                .font(.system(size: 14, weight: .bold, design: .rounded).monospacedDigit())
-                .foregroundStyle(percent == nil ? NotchInk.tertiary : tint)
-                .minimumScaleFactor(0.7)
-                .padding(.horizontal, 6)
         }
-        .frame(width: 44, height: 44)
-        .accessibilityLabel(percent.map { "\(Int($0.rounded())) percent left" } ?? "No data")
+        .frame(height: 5)
     }
 
     @ViewBuilder
@@ -477,15 +475,15 @@ private struct UsageQuotaTile: View {
             // no "Resets in" wording. Refreshed each minute.
             TimelineView(.periodic(from: .now, by: 60)) { _ in
                 Text(Self.resetString(for: resetsAt, isWeekly: isWeekly))
-                    .font(.system(size: 11).monospacedDigit())
-                    .foregroundStyle(NotchInk.secondary)
+                    .font(NotchGlassType.caption)
+                    .foregroundStyle(NotchInk.tertiary)
                     .lineLimit(1)
             }
         } else if let resetText = quota.resetText {
             // Fallback string (e.g. Codex TTY path) — strip the "Resets in/…" prefix.
             Text(Self.stripResetPrefix(resetText))
-                .font(.system(size: 11))
-                .foregroundStyle(NotchInk.secondary)
+                .font(NotchGlassType.caption)
+                .foregroundStyle(NotchInk.tertiary)
                 .lineLimit(1)
         } else {
             EmptyView()
@@ -508,7 +506,7 @@ private struct UsageQuotaTile: View {
         } else {
             day = dateFormatter.string(from: date)
         }
-        return "\(day) \(time)"
+        return "\(day) at \(time)"
     }
 
     private static let dateFormatter: DateFormatter = {
@@ -557,7 +555,7 @@ private struct MessageView: View {
                 .fixedSize(horizontal: false, vertical: true)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .frame(height: 50, alignment: .center)
+        .frame(height: 62, alignment: .center)
     }
 }
 
