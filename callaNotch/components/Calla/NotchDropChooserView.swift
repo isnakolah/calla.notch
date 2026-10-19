@@ -35,15 +35,15 @@ struct NotchDropChooserView: View {
                 half(
                     side: .shelf,
                     symbol: "paperplane.fill",
-                    title: "Send",
+                    title: "Keep and send",
                     detail: "Keeps it on the Shelf and sends it to your phone",
-                    tint: .white)
+                    tint: NotchAccent.shelf)
                 half(
                     side: .meeting,
                     symbol: "brain",
                     title: "Remember",
                     detail: "Attaches it to a meeting for the copilot to read",
-                    tint: Color.effectiveAccent)
+                    tint: NotchAccent.call)
             }
             .background(
                 GeometryReader { proxy in
@@ -60,9 +60,9 @@ struct NotchDropChooserView: View {
                 onHover: { router.hover($0) },
                 onDrop: { side, providers in deliver(side, providers: providers) }))
         }
-        .padding(.horizontal, 16)
+        .padding(.horizontal, 4)
         .padding(.top, 4)
-        .padding(.bottom, 12)
+        .padding(.bottom, 4)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         // Spring-loading, the way a Finder folder opens if you hold a drag over
         // it. Holding still is the gesture for "this one, show me inside" —
@@ -85,25 +85,31 @@ struct NotchDropChooserView: View {
     }
 
     private var header: some View {
-        HStack(spacing: 8) {
-            Image(systemName: "arrow.down.doc")
-                .font(.system(size: 10, weight: .bold))
-                .foregroundStyle(Color.white.opacity(0.5))
-            Text(router.pending.isEmpty ? "DROP ON ONE SIDE" : "WHERE SHOULD IT GO?")
-                .font(.system(size: 8.5, weight: .bold))
-                .tracking(1.2)
-                .foregroundStyle(Color.white.opacity(0.5))
-            Spacer(minLength: 0)
+        ZStack {
+            Text(router.pending.isEmpty ? "Drop on one side" : "Where should it go?")
+                .font(.system(size: 11, weight: .semibold))
+                .foregroundStyle(NotchInk.secondary)
             if !router.pending.isEmpty {
-                Button("Cancel") {
-                    router.finish()
-                    coordinator.currentView = .home
+                HStack {
+                    Spacer(minLength: 0)
+                    Button {
+                        router.finish()
+                        coordinator.currentView = .home
+                    } label: {
+                        Text("Cancel")
+                            .font(.system(size: 11, weight: .medium))
+                            .foregroundStyle(NotchInk.secondary)
+                            .padding(.horizontal, 10)
+                            .frame(height: 26)
+                            .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                    .help("Cancel")
                 }
-                .buttonStyle(.plain)
-                .font(.system(size: 10, weight: .medium))
-                .foregroundStyle(Color.white.opacity(0.5))
             }
         }
+        .frame(maxWidth: .infinity)
+        .frame(height: 20)
     }
 
     /// One half. A drop target *and* a button — after a drop that arrived without
@@ -118,29 +124,42 @@ struct NotchDropChooserView: View {
     ) -> some View {
         let active = router.hovering == side
 
-        return VStack(spacing: 6) {
+        return HStack(spacing: 12) {
+            // The icon tile fills with the accent under the pointer.
             Image(systemName: symbol)
-                .font(.system(size: 20, weight: .medium))
-                .foregroundStyle(active ? tint : tint.opacity(0.55))
-            Text(title)
-                .font(.system(size: 12, weight: .semibold))
-                .foregroundStyle(.white)
-            Text(detail)
-                .font(.system(size: 9.5))
-                .foregroundStyle(Color.white.opacity(0.5))
-                .multilineTextAlignment(.center)
-                .fixedSize(horizontal: false, vertical: true)
+                .font(.system(size: 18, weight: .semibold))
+                .foregroundStyle(active ? NotchAccent.onAccent : Color.white.opacity(0.80))
+                .frame(width: 44, height: 44)
+                .background(RoundedRectangle(cornerRadius: 14, style: .continuous)
+                    .fill(active ? tint : Color.white.opacity(0.08)))
+            VStack(alignment: .leading, spacing: 3) {
+                Text(title)
+                    .font(.system(size: 15, weight: .bold))
+                    .foregroundStyle(active ? tint : NotchInk.primary)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.85)
+                Text(detail)
+                    .font(.system(size: 11))
+                    .lineSpacing(1)
+                    .foregroundStyle(Color.white.opacity(0.72))
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            Spacer(minLength: 0)
         }
-        .padding(.horizontal, 10)
+        .padding(.horizontal, 14)
+        .padding(.vertical, 12)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(
-            RoundedRectangle(cornerRadius: 11, style: .continuous)
-                .fill(active ? tint.opacity(0.16) : Color.white.opacity(0.05)))
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .fill(active ? tint.opacity(0.12) : Color.white.opacity(0.03)))
         .overlay(
-            RoundedRectangle(cornerRadius: 11, style: .continuous)
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
                 .strokeBorder(
-                    active ? tint : Color.white.opacity(0.14),
-                    style: StrokeStyle(lineWidth: active ? 1.5 : 1, dash: active ? [] : [4, 3])))
+                    active ? tint : Color.white.opacity(0.18),
+                    style: StrokeStyle(lineWidth: 1.5, dash: active ? [] : [4, 3])))
+        .accessibilityElement(children: .combine)
+        .accessibilityAddTraits(.isButton)
+        .accessibilityLabel("\(title). \(detail)")
         .scaleEffect(active ? 1.02 : 1)
         .animation(.spring(response: 0.25, dampingFraction: 0.8), value: active)
         .contentShape(Rectangle())

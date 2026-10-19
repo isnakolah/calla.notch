@@ -25,17 +25,15 @@ struct CallaKnowledgeDropView: View {
     @State private var draft = ""
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            header
+        Group {
             if let target = attach.presetTarget {
                 attachColumns(target)
-                typeRow(target)
             } else {
                 pickerColumns
             }
         }
-        .padding(.horizontal, 16)
-        .padding(.top, 4)
+        .padding(.horizontal, 6)
+        .padding(.top, 2)
         .padding(.bottom, 10)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         // In picker mode the only drop target was the one that appears once a
@@ -43,9 +41,8 @@ struct CallaKnowledgeDropView: View {
         // holding over Remember now does — left the file with nowhere to land.
         // The whole pane takes it, and the meeting is chosen afterwards.
         .background(
-            RoundedRectangle(cornerRadius: 12, style: .continuous)
-                .fill(paneTargeted ? Color.accentColor.opacity(0.10) : Color.clear)
-                .padding(4)
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .fill(paneTargeted ? NotchAccent.call.opacity(0.08) : Color.clear)
         )
         .onDrop(of: [.fileURL], isTargeted: $paneTargeted) { providers in
             guard attach.presetTarget == nil else { return false }
@@ -59,64 +56,13 @@ struct CallaKnowledgeDropView: View {
         }
     }
 
-    // MARK: - Header
+    // MARK: - Status
 
-    private var header: some View {
-        HStack(alignment: .firstTextBaseline, spacing: 10) {
-            Image(systemName: "paperclip")
-                .font(.system(size: 10, weight: .bold))
-                .foregroundStyle(Color.accentColor)
-
-            VStack(alignment: .leading, spacing: 1) {
-                Text(title)
-                    .font(.system(size: 13.5, weight: .semibold))
-                    .foregroundStyle(.white)
-                    .lineLimit(1)
-                Text(subtitle)
-                    .font(.system(size: 9.5))
-                    .foregroundStyle(statusTint)
-                    .lineLimit(1)
-            }
-
-            Spacer(minLength: 8)
-
-            if attach.presetTarget != nil, attach.targets.count > 1 {
-                scopeStrip
-            }
-
-            Button("Done") {
-                attach.cancelPending()
-                coordinator.currentView = .home
-                // Done means "finished filing", not "go away". Without the
-                // resize the notch keeps this pane's frame while showing a
-                // shorter one, the pointer ends up outside it, and the hover
-                // watcher closes the notch a tenth of a second later.
-                withAnimation(.spring(response: 0.42, dampingFraction: 0.85)) {
-                    vm.open()
-                }
-            }
-            .buttonStyle(.plain)
-            .font(.system(size: 10, weight: .medium))
-            .foregroundStyle(Color.white.opacity(0.5))
-        }
-    }
-
-    private var title: String {
-        if let target = attach.presetTarget { return target.title }
-        return fileSummary
-    }
-
-    private var subtitle: String {
-        if let failure = attach.failure { return failure }
-        if let status = attach.status { return status }
-        if let target = attach.presetTarget { return target.detail }
-        return "Which meeting is this for?"
-    }
-
-    private var statusTint: Color {
-        if attach.failure != nil { return NotchTint.attention }
-        if attach.status != nil { return NotchTint.healthy }
-        return Color.white.opacity(0.55)
+    /// What happened last — read, failed — or nil when there is nothing to say.
+    private var statusLine: (text: String, tint: Color)? {
+        if let failure = attach.failure { return (failure, NotchAccent.attention) }
+        if let status = attach.status { return (status, NotchAccent.call) }
+        return nil
     }
 
     private var fileSummary: String {
@@ -128,27 +74,30 @@ struct CallaKnowledgeDropView: View {
         }
     }
 
-    /// "Every repeat" versus "just this one", when the meeting recurs. Lives in
-    /// the header because it qualifies the title rather than the drop zone.
-    private var scopeStrip: some View {
-        HStack(spacing: 3) {
-            ForEach(attach.targets) { choice in
-                Button { attach.retarget(choice) } label: {
-                    Text(label(for: choice))
-                        .font(.system(size: 9, weight: .semibold))
-                        .padding(.horizontal, 7)
-                        .padding(.vertical, 3)
-                        .background(
-                            Capsule().fill(choice.id == attach.presetTarget?.id
-                                ? Color.accentColor.opacity(0.32)
-                                : Color.white.opacity(0.07)))
-                        .foregroundStyle(choice.id == attach.presetTarget?.id
-                            ? Color.white
-                            : Color.white.opacity(0.55))
-                }
-                .buttonStyle(.plain)
-            }
+    /// Done means "finished filing", not "go away".
+    private func done() {
+        attach.cancelPending()
+        coordinator.currentView = .home
+        // Without the resize the notch keeps this pane's frame while showing a
+        // shorter one, the pointer ends up outside it, and the hover watcher
+        // closes the notch a tenth of a second later.
+        withAnimation(.spring(response: 0.42, dampingFraction: 0.85)) {
+            vm.open()
         }
+    }
+
+    private var doneButton: some View {
+        Button(action: done) {
+            Text("Done")
+                .font(.system(size: 11, weight: .semibold))
+                .foregroundStyle(Color.white.opacity(0.86))
+                .padding(.horizontal, 12)
+                .frame(height: 30)
+                .background(Capsule().fill(Color.white.opacity(0.08)))
+                .contentShape(Capsule())
+        }
+        .buttonStyle(.plain)
+        .help("Done")
     }
 
     private func label(for target: KnowledgeTarget) -> String {
@@ -162,36 +111,22 @@ struct CallaKnowledgeDropView: View {
 
     // MARK: - Mode A — files in hand, choose a meeting
 
-    /// Left: what was dropped. Right: where it can go.
+    /// Left: what was dropped. Right: which meeting it is for.
     private var pickerColumns: some View {
-        HStack(alignment: .top, spacing: 10) {
-            column(header: "DROPPED") {
-                ScrollView(.vertical) {
-                    VStack(spacing: 3) {
-                        ForEach(attach.pending) { file in
-                            HStack(spacing: 7) {
-                                Image(systemName: "doc.fill")
-                                    .font(.system(size: 10))
-                                    .foregroundStyle(Color.accentColor)
-                                Text(file.name)
-                                    .font(.system(size: 10.5))
-                                    .foregroundStyle(.white)
-                                    .lineLimit(1)
-                                Spacer(minLength: 0)
-                            }
-                            .padding(.horizontal, 8)
-                            .padding(.vertical, 5)
-                            .background(
-                                RoundedRectangle(cornerRadius: 7, style: .continuous)
-                                    .fill(Color.white.opacity(0.05)))
-                        }
-                    }
-                }
-                .scrollIndicators(.never)
+        HStack(alignment: .top, spacing: 16) {
+            VStack(alignment: .leading, spacing: 0) {
+                fileCard
+                Spacer(minLength: 8)
+                doneButton
             }
-            .frame(width: 200)
+            .frame(width: 176)
+            .frame(maxHeight: .infinity, alignment: .topLeading)
 
-            column(header: "ADD TO") {
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Which meeting is this for?")
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(NotchInk.primary)
+                    .padding(.bottom, 4)
                 ScrollView(.vertical) {
                     VStack(spacing: 4) {
                         ForEach(attach.targets) { target in
@@ -201,6 +136,7 @@ struct CallaKnowledgeDropView: View {
                                 targetRow(target)
                             }
                             .buttonStyle(.plain)
+                            .help("Attach to \(target.title)")
                         }
                         if attach.targets.count <= 1 {
                             hint("No meetings in the next day and a half. It can still go to every call, or to any meeting from Settings.")
@@ -209,106 +145,189 @@ struct CallaKnowledgeDropView: View {
                 }
                 .scrollIndicators(.never)
             }
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         }
         .disabled(attach.isWorking)
         .overlay { if attach.isWorking { working } }
     }
 
-    private func targetRow(_ target: KnowledgeTarget) -> some View {
-        HStack(spacing: 8) {
-            Image(systemName: symbol(for: target))
-                .font(.system(size: 10.5, weight: .semibold))
-                .foregroundStyle(tint(for: target))
-                .frame(width: 15)
-
-            VStack(alignment: .leading, spacing: 0) {
-                Text(target.title)
-                    .font(.system(size: 11, weight: .semibold))
-                    .foregroundStyle(.white)
-                    .lineLimit(1)
-                Text(target.detail)
-                    .font(.system(size: 9))
-                    .foregroundStyle(Color.white.opacity(0.5))
-                    .lineLimit(1)
+    /// The file, with its kind as a badge and what has happened to it.
+    private var fileCard: some View {
+        HStack(spacing: 10) {
+            let ext = attach.pending.first.map { $0.url.pathExtension.uppercased() } ?? ""
+            VStack {
+                Spacer(minLength: 0)
+                Text(ext.isEmpty ? "FILE" : String(ext.prefix(4)))
+                    .font(.system(size: 10, weight: .heavy))
+                    .foregroundStyle(Color.black.opacity(0.86))
+                    .padding(.horizontal, 3)
+                    .background(RoundedRectangle(cornerRadius: 3).fill(NotchAccent.home))
+                    .padding(.bottom, 6)
             }
-
+            .frame(width: 36, height: 44)
+            .background(RoundedRectangle(cornerRadius: 7, style: .continuous).fill(Color.white.opacity(0.10)))
+            VStack(alignment: .leading, spacing: 2) {
+                Text(fileSummary)
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundStyle(NotchInk.primary)
+                    .lineLimit(1)
+                    .truncationMode(.middle)
+                Text(statusLine?.text ?? "Ready to attach")
+                    .font(.system(size: 11))
+                    .foregroundStyle(statusLine?.tint ?? NotchInk.tertiary)
+                    .lineLimit(2)
+            }
             Spacer(minLength: 0)
+        }
+        .padding(10)
+        .background(RoundedRectangle(cornerRadius: 14, style: .continuous).fill(Color.white.opacity(0.06)))
+    }
 
+    private func targetRow(_ target: KnowledgeTarget) -> some View {
+        HStack(spacing: 9) {
+            Image(systemName: symbol(for: target))
+                .font(.system(size: 11, weight: .semibold))
+                .foregroundStyle(NotchAccent.call)
+                .frame(width: 14)
+            Text(target.title)
+                .font(.system(size: 12, weight: .medium))
+                .foregroundStyle(NotchInk.primary)
+                .lineLimit(1)
+            Spacer(minLength: 0)
             if let startsAt = target.startsAt {
                 Text(startsAt, style: .time)
-                    .font(.system(size: 9, weight: .medium).monospacedDigit())
-                    .foregroundStyle(Color.white.opacity(0.45))
+                    .font(.system(size: 11).monospacedDigit())
+                    .foregroundStyle(NotchInk.tertiary)
+            } else {
+                Text(target.detail)
+                    .font(.system(size: 11))
+                    .foregroundStyle(NotchInk.tertiary)
+                    .lineLimit(1)
             }
         }
-        .padding(.horizontal, 8)
-        .padding(.vertical, 6)
+        .padding(.horizontal, 10)
+        .frame(minHeight: 30)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(
-            RoundedRectangle(cornerRadius: 7, style: .continuous)
-                .fill(Color.white.opacity(0.06)))
+        .background(RoundedRectangle(cornerRadius: 9, style: .continuous).fill(Color.white.opacity(0.04)))
         .contentShape(Rectangle())
     }
 
     // MARK: - Mode B — meeting known, add files
 
-    /// Left: bring a file in. Right: what is already there.
+    /// Left: the meeting and what is already attached. Right: bring a file in,
+    /// or type a sentence.
     ///
     /// Dragging and choosing are the same intention — "this file" — so they are
-    /// the same control rather than a target beside a button: the tile takes a
-    /// drop and opens the picker on a click. That also gives the panel back the
-    /// height it was spending on a second way to say the same thing, which is
-    /// what pushed the list and the typing row off the bottom of a normal tab.
+    /// the same control rather than a target beside a button: the zone takes a
+    /// drop and opens the picker on a click.
     private func attachColumns(_ target: KnowledgeTarget) -> some View {
-        HStack(alignment: .top, spacing: 10) {
-            column(header: "DRAG IN") {
-                dropZone(target)
-                Spacer(minLength: 0)
-            }
-            .frame(width: 200)
-
-            column(header: attach.attached.isEmpty ? "ALREADY ADDED" : "ALREADY ADDED") {
-                if attach.attached.isEmpty {
-                    hint("Nothing attached to this meeting yet.")
-                    Spacer(minLength: 0)
-                } else {
-                    attachedList
+        HStack(alignment: .top, spacing: 16) {
+            VStack(alignment: .leading, spacing: 10) {
+                meetingCard(target)
+                VStack(alignment: .leading, spacing: 4) {
+                    HStack(spacing: 6) {
+                        NotchCaps("Attached")
+                        Spacer(minLength: 0)
+                        // "Every repeat" versus "just this one", when the
+                        // meeting recurs.
+                        if attach.targets.count > 1 { scopeMenu }
+                    }
+                    if attach.attached.isEmpty {
+                        hint(statusLine?.text ?? "Nothing attached to this meeting yet.",
+                             tint: statusLine?.tint)
+                    } else {
+                        attachedList
+                    }
                 }
             }
+            .frame(width: 176)
+            .frame(maxHeight: .infinity, alignment: .topLeading)
+
+            VStack(alignment: .leading, spacing: 8) {
+                dropZone(target)
+                typeRow(target)
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
     }
 
-    private func dropZone(_ target: KnowledgeTarget) -> some View {
-        HStack(spacing: 8) {
-            Image(systemName: attach.isWorking ? "hourglass" : "doc.badge.plus")
-                .font(.system(size: 15, weight: .medium))
-                .foregroundStyle(isTargeted ? Color.accentColor : Color.white.opacity(0.5))
-            VStack(alignment: .leading, spacing: 1) {
-                Text(attach.isWorking ? "Reading…" : "Drop a file, or click to choose")
-                    .font(.system(size: 10.5, weight: .semibold))
-                    .foregroundStyle(.white)
+    private func meetingCard(_ target: KnowledgeTarget) -> some View {
+        HStack(spacing: 10) {
+            Rectangle().fill(NotchAccent.call).frame(width: 4)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(target.title)
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundStyle(NotchInk.primary)
                     .lineLimit(1)
-                Text(attach.isWorking
-                     ? "Scanned pages take a moment longer."
-                     : "PDF, deck or document.")
-                    .font(.system(size: 9))
-                    .foregroundStyle(Color.white.opacity(0.45))
+                Text(target.detail)
+                    .font(.system(size: 11))
+                    .foregroundStyle(NotchInk.tertiary)
                     .lineLimit(1)
             }
             Spacer(minLength: 0)
         }
-        .padding(.horizontal, 10)
-        .padding(.vertical, 9)
-        .frame(maxWidth: .infinity)
+        .padding(.trailing, 10)
+        .frame(height: 50)
+        .background(Color.white.opacity(0.07))
+        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+    }
+
+    private var scopeMenu: some View {
+        Menu {
+            ForEach(attach.targets) { choice in
+                Button(label(for: choice)) { attach.retarget(choice) }
+            }
+        } label: {
+            HStack(spacing: 4) {
+                Text(attach.presetTarget.map(label(for:)) ?? "Scope")
+                    .font(.system(size: 10, weight: .medium))
+                    .lineLimit(1)
+                Image(systemName: "chevron.down").font(.system(size: 7, weight: .heavy))
+            }
+            .foregroundStyle(Color.white.opacity(0.86))
+            .padding(.horizontal, 8)
+            .frame(height: 20)
+            .background(Capsule().fill(Color.white.opacity(0.08)))
+            .contentShape(Capsule())
+        }
+        .menuStyle(.borderlessButton)
+        .menuIndicator(.hidden)
+        .fixedSize()
+        .help("Which meetings this is attached to")
+    }
+
+    private func dropZone(_ target: KnowledgeTarget) -> some View {
+        HStack(spacing: 12) {
+            Image(systemName: attach.isWorking ? "hourglass" : "doc.badge.plus")
+                .font(.system(size: 20, weight: .medium))
+                .foregroundStyle(NotchAccent.call)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(attach.isWorking ? "Reading…" : "Drop a file, or click to choose")
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(NotchInk.primary)
+                    .lineLimit(1)
+                Text(attach.isWorking
+                     ? "Scanned pages take a moment longer."
+                     : "PDFs, docs, slides. Scans take a moment longer.")
+                    .font(.system(size: 11))
+                    .foregroundStyle(Color.white.opacity(0.65))
+                    .lineLimit(2)
+            }
+        }
+        .padding(.horizontal, 12)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(
-            RoundedRectangle(cornerRadius: 9, style: .continuous)
-                .fill(isTargeted ? Color.accentColor.opacity(0.14) : Color.white.opacity(0.05)))
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .fill(NotchAccent.call.opacity(isTargeted ? NotchAccent.fill : 0.06)))
         .overlay(
-            RoundedRectangle(cornerRadius: 9, style: .continuous)
-                .strokeBorder(
-                    isTargeted ? Color.accentColor : Color.white.opacity(0.16),
-                    style: StrokeStyle(lineWidth: 1, dash: [4, 3])))
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .strokeBorder(NotchAccent.call.opacity(isTargeted ? 0.9 : 0.45),
+                              style: StrokeStyle(lineWidth: 1.5, dash: [4, 3])))
         .contentShape(Rectangle())
         .onTapGesture { attach.attachChosenFiles(to: target) }
+        .accessibilityElement(children: .combine)
+        .accessibilityAddTraits(.isButton)
+        .accessibilityLabel("Drop a file, or click to choose")
         .onDrop(of: [.fileURL], isTargeted: $isTargeted) { providers in
             Task {
                 guard await attach.accept(providers) else {
@@ -327,33 +346,29 @@ struct CallaKnowledgeDropView: View {
                 ForEach(attach.attached) { note in
                     HStack(spacing: 7) {
                         Image(systemName: note.symbol)
-                            .font(.system(size: 9.5))
-                            .foregroundStyle(note.isDocument
-                                ? Color.accentColor : Color.white.opacity(0.5))
+                            .font(.system(size: 10))
+                            .foregroundStyle(note.isDocument ? NotchAccent.call : NotchInk.tertiary)
                             .frame(width: 13)
-                        VStack(alignment: .leading, spacing: 0) {
-                            Text(note.title.isEmpty ? "Untitled" : note.title)
-                                .font(.system(size: 10, weight: .medium))
-                                .foregroundStyle(.white)
-                                .lineLimit(1)
-                            Text(note.subtitle)
-                                .font(.system(size: 8.5))
-                                .foregroundStyle(Color.white.opacity(0.45))
-                                .lineLimit(1)
-                        }
+                        Text(note.title.isEmpty ? "Untitled" : note.title)
+                            .font(.system(size: 11, weight: .medium))
+                            .foregroundStyle(NotchInk.primary)
+                            .lineLimit(1)
+                            .help(note.subtitle)
                         Spacer(minLength: 0)
                         Button { attach.remove(note) } label: {
                             Image(systemName: "xmark")
                                 .font(.system(size: 8, weight: .bold))
-                                .foregroundStyle(Color.white.opacity(0.4))
+                                .foregroundStyle(NotchInk.tertiary)
+                                .frame(width: 22, height: 22)
+                                .contentShape(Rectangle())
                         }
                         .buttonStyle(.plain)
                         .help("Remove")
+                        .accessibilityLabel("Remove \(note.title)")
                     }
-                    .padding(.horizontal, 7)
-                    .padding(.vertical, 4)
+                    .padding(.leading, 7)
                     .background(
-                        RoundedRectangle(cornerRadius: 6, style: .continuous)
+                        RoundedRectangle(cornerRadius: 7, style: .continuous)
                             .fill(Color.white.opacity(0.04)))
                 }
             }
@@ -363,30 +378,38 @@ struct CallaKnowledgeDropView: View {
 
     // MARK: - Typing
 
-    /// Full width under both columns: a sentence is a different gesture from a
-    /// file, and giving it the whole footer keeps it from reading as part of
-    /// either column.
     private func typeRow(_ target: KnowledgeTarget) -> some View {
-        HStack(spacing: 7) {
+        let empty = draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        return HStack(spacing: 6) {
             TextField("Or type something it should know", text: $draft)
                 .textFieldStyle(.plain)
-                .font(.system(size: 10.5))
-                .foregroundStyle(.white)
-                .padding(.horizontal, 9)
-                .padding(.vertical, 6)
+                .font(.system(size: 12, weight: .medium))
+                .foregroundStyle(NotchInk.primary)
+                .padding(.horizontal, 12)
+                .frame(height: 32)
                 .background(
-                    RoundedRectangle(cornerRadius: 7, style: .continuous)
-                        .fill(Color.white.opacity(0.06)))
+                    RoundedRectangle(cornerRadius: 10, style: .continuous)
+                        .fill(Color.white.opacity(0.05)))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 10, style: .continuous)
+                        .strokeBorder(Color.white.opacity(0.14), lineWidth: 1))
                 .onSubmit { commitDraft(target) }
-
-            Button { commitDraft(target) } label: {
-                Image(systemName: "arrow.up.circle.fill")
-                    .font(.system(size: 15))
-                    .foregroundStyle(draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-                        ? Color.white.opacity(0.25) : Color.accentColor)
-            }
-            .buttonStyle(.plain)
-            .disabled(draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                .accessibilityLabel("Note for the copilot")
+                .overlay(alignment: .trailing) {
+                    if !empty {
+                        Button { commitDraft(target) } label: {
+                            Image(systemName: "arrow.up.circle.fill")
+                                .font(.system(size: 18))
+                                .foregroundStyle(NotchAccent.call)
+                                .frame(width: 30, height: 30)
+                                .contentShape(Rectangle())
+                        }
+                        .buttonStyle(.plain)
+                        .help("Add this note")
+                        .accessibilityLabel("Add this note")
+                    }
+                }
+            doneButton
         }
     }
 
@@ -399,26 +422,11 @@ struct CallaKnowledgeDropView: View {
 
     // MARK: - Pieces
 
-    /// A titled column. The label is what makes two panels read as a choice
-    /// rather than as two unrelated boxes.
-    private func column<Content: View>(
-        header: String,
-        @ViewBuilder content: () -> Content
-    ) -> some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text(header)
-                .font(.system(size: 8, weight: .bold))
-                .tracking(1.0)
-                .foregroundStyle(Color.white.opacity(0.35))
-            content()
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-    }
-
-    private func hint(_ text: String) -> some View {
+    private func hint(_ text: String, tint: Color? = nil) -> some View {
         Text(text)
-            .font(.system(size: 9.5))
-            .foregroundStyle(Color.white.opacity(0.4))
+            .font(.system(size: 11))
+            .lineSpacing(1)
+            .foregroundStyle(tint ?? NotchInk.secondary)
             .fixedSize(horizontal: false, vertical: true)
             .frame(maxWidth: .infinity, alignment: .leading)
     }
@@ -429,15 +437,15 @@ struct CallaKnowledgeDropView: View {
         HStack(spacing: 9) {
             ProgressView().controlSize(.small)
             Text("Reading \(fileSummary)")
-                .font(.system(size: 10.5, weight: .medium))
-                .foregroundStyle(.white)
+                .font(.system(size: 11, weight: .medium))
+                .foregroundStyle(NotchInk.primary)
                 .lineLimit(1)
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 9)
         .background(
             RoundedRectangle(cornerRadius: 9, style: .continuous)
-                .fill(Color.black.opacity(0.6)))
+                .fill(Color.black.opacity(0.7)))
     }
 
     private func symbol(for target: KnowledgeTarget) -> String {
@@ -446,15 +454,6 @@ struct CallaKnowledgeDropView: View {
         case .series: "repeat"
         case .event: "calendar"
         case .persona: "person.crop.rectangle"
-        }
-    }
-
-    private func tint(for target: KnowledgeTarget) -> Color {
-        switch target.kind {
-        case .always: Color.white.opacity(0.5)
-        case .series: Color.accentColor
-        case .event: Color.accentColor.opacity(0.75)
-        case .persona: Color.accentColor.opacity(0.6)
         }
     }
 }
