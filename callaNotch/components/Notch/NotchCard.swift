@@ -147,8 +147,10 @@ enum NotchWing {
     static let call: CGFloat = 62
     /// The glyph one side, the 64pt meter the other.
     static let hud: CGFloat = 66
-    /// An inline song change: the title and artist ride beside the art and bars.
-    static let inlineSong: CGFloat = 150
+    /// An inline song change: the title and artist ride beside the art and
+    /// bars, each wing as wide as the longer of the two up to this, past which
+    /// the title scrolls.
+    static let inlineSongMax: CGFloat = 210
     /// What the slab adds outside a wing: its own corner inset.
     static let inset: CGFloat = 14
     /// Extra room outside a wing whose text runs to its far edge, so the

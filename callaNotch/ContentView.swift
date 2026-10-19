@@ -198,6 +198,12 @@ struct ContentView: View {
     private var computedChinWidth: CGFloat {
         var chinWidth: CGFloat = vm.closedNotchSize.width
 
+        // A song change takes the closed notch from whatever held it, so it
+        // takes the hover area too.
+        if isInlineSongChange && closedNotchActivity == .music {
+            return chinWidth + NotchWing.chinGrowth(inlineSongWing) + 2 * NotchWing.textClearance
+        }
+
         if copilotSession.isLive && vm.notchState == .closed && !vm.hideOnClosed {
             // Both wings: the state dot and clock, and the activity glyph.
             chinWidth += NotchWing.chinGrowth(NotchWing.call)
@@ -211,9 +217,7 @@ struct ContentView: View {
             && vm.notchState == .closed && (musicManager.isPlaying || !musicManager.isPlayerIdle)
             && coordinator.musicLiveActivityEnabled && !vm.hideOnClosed
         {
-            chinWidth += isInlineSongChange
-                ? NotchWing.chinGrowth(NotchWing.inlineSong) + 2 * NotchWing.textClearance
-                : NotchWing.chinGrowth(NotchWing.music)
+            chinWidth += NotchWing.chinGrowth(NotchWing.music)
         }
 
         return chinWidth
@@ -1074,9 +1078,20 @@ struct ContentView: View {
             && Defaults[.sneakPeekStyles] == .inline
     }
 
+    /// Wide enough for the title and the artist at their own widths, beside
+    /// the art and the bars, up to a cap past which the title scrolls.
+    private var inlineSongWing: CGFloat {
+        let title = (musicManager.songTitle as NSString).size(
+            withAttributes: [.font: NSFont.systemFont(ofSize: 12, weight: .semibold)]).width
+        let artist = (musicManager.artistName as NSString).size(
+            withAttributes: [.font: NSFont.systemFont(ofSize: 12)]).width
+        let widest = ceil(max(title, artist)) + 22 + 7 + 2
+        return min(max(widest, NotchWing.music), NotchWing.inlineSongMax)
+    }
+
     @ViewBuilder
     func MusicLiveActivity() -> some View {
-        let wing = isInlineSongChange ? NotchWing.inlineSong : NotchWing.music
+        let wing = isInlineSongChange ? inlineSongWing : NotchWing.music
         let artistTint = Defaults[.coloredSpectrogram]
             ? Color(nsColor: musicManager.avgColor) : NotchInk.secondary
         HStack(spacing: 0) {
@@ -1145,6 +1160,7 @@ struct ContentView: View {
                         .font(.system(size: 12))
                         .lineLimit(1)
                         .truncationMode(.tail)
+                        .layoutPriority(1)
                         .foregroundStyle(artistTint)
                         .transition(.opacity)
                 }
