@@ -15,71 +15,28 @@ struct ShelfView: View {
     @StateObject private var shelfShare = ShelfShareService.shared
     @StateObject private var quickLookService = QuickLookService()
 
-    // 18 + 3 + 56 + 3 + 24 = 104, the same content canvas as Usage and
-    // Pomodoro. The rail takes the majority so queue rows can be legible.
-    private static let rowSpacing: CGFloat = 3
-    private static let railHeight: CGFloat = 56
-
     var body: some View {
-        HStack(spacing: 12) {
-            VStack(alignment: .leading, spacing: NotchGlassSpace.snug) {
-                HStack(spacing: 5) {
-                    NotchStatusDot(live: shelfShare.isSending,
-                                   tint: shelfShare.selectedDestinationReady ? NotchTint.healthy : NotchTint.attention)
-                    NotchCaps(shelfShare.isSending ? "Sending" : (shelfShare.selectedDestinationReady ? "Ready" : "Offline"))
-                    Spacer(minLength: 0)
-                    NotchGlyphButton(symbol: "gearshape", help: "Shelf settings") {
-                        SettingsWindowController.shared.showShelfWindow()
-                    }
-                }
-                CallaContextChip(title: shelfShare.selectedDestination.title,
-                                 symbol: shelfShare.selectedDestination.symbolName) {
-                    ForEach(LocalSendDestination.allCases) { destination in
-                        Button(destination.title) { shelfShare.select(destination) }
-                    }
-                }
-                Text(shelfShare.lastError ?? "Choose where your files go.")
-                    .font(NotchGlassType.caption).foregroundStyle(NotchInk.tertiary)
-                    .lineLimit(2)
-                CallaPrimaryButton(title: actionTitle,
-                                   symbol: tvm.isEmpty ? "plus" : "arrow.up.right",
-                                   enabled: !shelfShare.isSending) {
-                    if tvm.isEmpty { tvm.chooseFiles() }
-                    else if shelfShare.isAvailable && shelfShare.selectedDestinationReady {
-                        Task { await shelfShare.shareShelfItems(queuedItems) }
-                    } else { SettingsWindowController.shared.showShelfWindow() }
-                }
-            }
-            .frame(width: 158, alignment: .leading)
-            NotchColumnDivider()
-            VStack(alignment: .leading, spacing: NotchGlassSpace.snug) {
-                HStack {
-                    NotchCaps(tvm.isEmpty ? "Files" : summary)
-                    Spacer(minLength: 4)
-                    NotchGlyphButton(symbol: "plus", help: "Add files") { tvm.chooseFiles() }
-                    if !tvm.isEmpty {
-                        NotchGlyphButton(symbol: "trash", help: "Clear queue") { tvm.clear() }
-                            .disabled(shelfShare.isSending)
-                    }
-                }
+        HStack(alignment: .top, spacing: 16) {
+            VStack(alignment: .leading, spacing: 8) {
+                queueHeader
                 if tvm.isEmpty {
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text("Drop files here").font(NotchGlassType.title).foregroundStyle(NotchInk.primary)
-                        Text("They stay queued until you send.")
-                            .font(NotchGlassType.caption).foregroundStyle(NotchInk.tertiary)
-                    }
-                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
+                    dropZone
                 } else {
-                    queueRail.frame(maxHeight: .infinity)
+                    queueRail
                 }
             }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+
+            VStack(spacing: 8) {
+                destinationChip
+                sendButton
+            }
+            .frame(width: 132)
+            .frame(maxHeight: .infinity)
         }
+        .padding(.top, 4)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .padding(.vertical, 8)
-        .padding(.horizontal, 12)
-        .notchCard()
-        .notchTabInsets()
+        .padding(.bottom, 10)
         // One drop target for the whole tab: dropping queues, sending is always
         // an explicit press.
         .onDrop(of: [.fileURL, .url, .utf8PlainText, .plainText, .data, .image], isTargeted: $vm.dropZoneTargeting) { providers in
@@ -94,79 +51,234 @@ struct ShelfView: View {
         .quickLookPresenter(using: quickLookService)
     }
 
-    // MARK: - Queue rail
+    // MARK: - Queue
 
-    private var actionTitle: String {
-        if shelfShare.isSending { return "Sending \(Int(shelfShare.sendFraction * 100))%" }
-        if tvm.isEmpty { return "Choose files" }
-        if !shelfShare.isAvailable { return "Set up sharing" }
-        if !shelfShare.selectedDestinationReady {
-            return shelfShare.isPaired(shelfShare.selectedDestination)
-                ? "Connect \(shelfShare.selectedDestination.title)" : "Pair \(shelfShare.selectedDestination.title)"
+    /// What is queued, in the tab's accent, with Clear beside it. A send error
+    /// takes the line over, since it is the one thing worth reading here then.
+    private var queueHeader: some View {
+        HStack(spacing: 8) {
+            NotchCaps(shelfShare.lastError ?? summary,
+                      tint: shelfShare.lastError == nil ? NotchAccent.shelf : NotchAccent.attention)
+            Spacer(minLength: 4)
+            if !tvm.isEmpty {
+                Button { tvm.clear() } label: {
+                    Text("Clear")
+                        .font(.system(size: 10, weight: .medium))
+                        .foregroundStyle(NotchInk.secondary)
+                        .padding(.horizontal, 8)
+                        .frame(height: 20)
+                        .contentShape(Capsule())
+                }
+                .buttonStyle(.plain)
+                .disabled(shelfShare.isSending)
+                .help("Remove everything from the queue")
+                .accessibilityLabel("Clear the queue")
+            }
         }
-        return "Send to \(shelfShare.selectedDestination.title)"
+        .frame(height: 20)
+    }
+
+    private var dropZone: some View {
+        Button { tvm.chooseFiles() } label: {
+            HStack(spacing: 12) {
+                Image(systemName: "square.and.arrow.down")
+                    .font(.system(size: 19, weight: .medium))
+                    .foregroundStyle(NotchAccent.shelf)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Drop files here")
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundStyle(NotchInk.primary)
+                    Text("They wait here until you send them")
+                        .font(NotchGlassType.caption)
+                        .foregroundStyle(NotchInk.secondary)
+                }
+            }
+            .frame(maxWidth: .infinity)
+            .frame(height: 78)
+            .background(
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    .fill(NotchAccent.shelf.opacity(isDropTargeted ? NotchAccent.fill : 0.05))
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    .strokeBorder(NotchAccent.shelf.opacity(isDropTargeted ? 0.9 : 0.45),
+                                  style: StrokeStyle(lineWidth: 1, dash: [4, 3]))
+            )
+            .contentShape(RoundedRectangle(cornerRadius: 12))
+        }
+        .buttonStyle(.plain)
+        .help("Choose files to queue")
     }
 
     private var queueRail: some View {
-        railContent
-            .padding(2)
-            .background(isDropTargeted ? Color.effectiveAccent.opacity(0.1) : .clear,
-                        in: RoundedRectangle(cornerRadius: 8))
-            .contentShape(Rectangle())
-            .onTapGesture {
-                guard !selection.consumeChipClick() else { return }
-                selection.clear()
+        ScrollView(.horizontal) {
+            HStack(alignment: .top, spacing: 10) {
+                ForEach(tvm.items) { item in
+                    ShelfQueueChip(
+                        item: item,
+                        isSelected: selection.isSelected(item.id),
+                        transfer: shelfShare.transfers[item.id],
+                        onRemove: { tvm.remove(item) }
+                    )
+                }
+                addTile
             }
+            .padding(.top, 5)
+            .padding(.trailing, 6)
+        }
+        .scrollIndicators(.never)
+        .padding(.top, -5)
+        .background(isDropTargeted ? NotchAccent.shelf.opacity(0.08) : .clear,
+                    in: RoundedRectangle(cornerRadius: 10))
+        .environmentObject(quickLookService)
+        .onAppear { ShelfStateViewModel.shared.cleanupInvalidItems() }
+        .contentShape(Rectangle())
+        .onTapGesture {
+            guard !selection.consumeChipClick() else { return }
+            selection.clear()
+        }
     }
 
-    @ViewBuilder
-    private var railContent: some View {
-        if tvm.isEmpty {
-            VStack(spacing: 6) {
-                Image(systemName: "tray.and.arrow.down")
-                    .font(.system(size: 19, weight: .light))
-                    .foregroundStyle(Color.effectiveAccent.opacity(0.8))
-                Text("Drop files to queue")
-                    .font(.system(size: 12, weight: .semibold))
-                    .foregroundStyle(NotchInk.primary)
-                Button { tvm.chooseFiles() } label: {
-                    Label("Choose files", systemImage: "plus")
-                        .font(.system(size: 10, weight: .semibold))
-                        .padding(.horizontal, 12).padding(.vertical, 5)
-                        .background(.white.opacity(0.08), in: Capsule())
-                }
-                .buttonStyle(.plain)
-                .foregroundStyle(NotchInk.secondary)
+    private var addTile: some View {
+        VStack(spacing: 5) {
+            Button { tvm.chooseFiles() } label: {
+                Image(systemName: "plus")
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundStyle(NotchInk.secondary)
+                    .frame(width: ShelfQueueChip.size.width, height: ShelfQueueChip.size.height)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 10, style: .continuous)
+                            .strokeBorder(Color.white.opacity(0.24),
+                                          style: StrokeStyle(lineWidth: 1, dash: [4, 3]))
+                    )
+                    .contentShape(RoundedRectangle(cornerRadius: 10))
             }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-        } else {
-            // Two columns, filling row-major, scrolling down.
-            //
-            // It was two rows scrolling sideways, which put the fifth item off
-            // the right-hand edge with nothing to say it was there — and a
-            // sideways scroller of wide, short chips reads as a broken list
-            // rather than a grid. Down is the direction a list of things grows.
-            ScrollView(.vertical) {
-                LazyVGrid(
-                    columns: [GridItem(.flexible())],
-                    alignment: .leading,
-                    spacing: 4
-                ) {
-                    ForEach(tvm.items) { item in
-                        ShelfQueueChip(
-                            item: item,
-                            isSelected: selection.isSelected(item.id),
-                            transfer: shelfShare.transfers[item.id],
-                            onRemove: { tvm.remove(item) }
-                        )
-                    }
-                }
-                .frame(maxWidth: .infinity, alignment: .topLeading)
-            }
-            .scrollIndicators(.never)
-            .environmentObject(quickLookService)
-            .onAppear { ShelfStateViewModel.shared.cleanupInvalidItems() }
+            .buttonStyle(.plain)
+            .help("Add files")
+            .accessibilityLabel("Add files")
+            Text("Add")
+                .font(.system(size: 10))
+                .foregroundStyle(NotchInk.tertiary)
         }
+        .frame(width: ShelfQueueChip.columnWidth)
+    }
+
+    // MARK: - Send
+
+    /// Where files go, and whether it can take them. The menu also carries
+    /// Shelf settings, which had its own glyph before.
+    private var destinationChip: some View {
+        Menu {
+            ForEach(LocalSendDestination.allCases) { destination in
+                Button(destination.title) { shelfShare.select(destination) }
+            }
+            Divider()
+            Button("Shelf settings…") { SettingsWindowController.shared.showShelfWindow() }
+        } label: {
+            HStack(spacing: 7) {
+                Image(systemName: shelfShare.selectedDestination.symbolName)
+                    .font(.system(size: 12, weight: .semibold))
+                Text(shelfShare.selectedDestination.title)
+                    .font(.system(size: 12, weight: .semibold))
+                    .lineLimit(1)
+                Spacer(minLength: 0)
+                Circle()
+                    .fill(statusColor)
+                    .frame(width: 6, height: 6)
+                    .opacity(shelfShare.isDiscovering ? 0.4 : 1)
+                Text(statusWord)
+                    .font(.system(size: 10, weight: .medium))
+                    .foregroundStyle(NotchInk.secondary)
+                    .lineLimit(1)
+                    .fixedSize()
+            }
+            .foregroundStyle(NotchInk.primary)
+            .padding(.horizontal, 10)
+            .frame(height: 30)
+            .background(RoundedRectangle(cornerRadius: 10, style: .continuous).fill(Color.white.opacity(0.07)))
+            .contentShape(RoundedRectangle(cornerRadius: 10))
+        }
+        .menuStyle(.borderlessButton)
+        .menuIndicator(.hidden)
+        .help("Destination: \(shelfShare.selectedDestination.title), \(statusWord). Change")
+        .accessibilityLabel("Destination: \(shelfShare.selectedDestination.title), \(statusWord). Change")
+    }
+
+    private var sendButton: some View {
+        Button {
+            if shelfShare.isAvailable && shelfShare.selectedDestinationReady {
+                Task { await shelfShare.shareShelfItems(queuedItems) }
+            } else {
+                SettingsWindowController.shared.showShelfWindow()
+            }
+        } label: {
+            ZStack(alignment: .leading) {
+                if shelfShare.isSending {
+                    GeometryReader { geo in
+                        Rectangle()
+                            .fill(NotchAccent.shelf)
+                            .frame(width: geo.size.width * shelfShare.sendFraction)
+                    }
+                    .animation(.smooth(duration: 0.3), value: shelfShare.sendFraction)
+                }
+                HStack(spacing: 7) {
+                    Image(systemName: canSend || shelfShare.isSending ? "arrow.up" : "exclamationmark.circle")
+                        .font(.system(size: 12, weight: .heavy))
+                    Text(actionTitle)
+                        .font(.system(size: 13, weight: .bold))
+                        .monospacedDigit()
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.8)
+                }
+                .foregroundStyle(sendInk)
+                .frame(maxWidth: .infinity)
+            }
+            .padding(.horizontal, 12)
+            .frame(height: 40)
+            .background(RoundedRectangle(cornerRadius: 12, style: .continuous).fill(sendFill))
+            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+            .contentShape(RoundedRectangle(cornerRadius: 12))
+        }
+        .buttonStyle(.plain)
+        .disabled(tvm.isEmpty || shelfShare.isSending)
+        .help(actionTitle)
+    }
+
+    private var canSend: Bool {
+        !tvm.isEmpty && shelfShare.isAvailable && shelfShare.selectedDestinationReady
+    }
+
+    private var sendFill: Color {
+        if shelfShare.isSending { return NotchAccent.shelf.opacity(0.35) }
+        if canSend { return NotchAccent.shelf }
+        return Color.white.opacity(tvm.isEmpty ? 0.07 : 0.10)
+    }
+
+    private var sendInk: Color {
+        if canSend && !shelfShare.isSending { return NotchAccent.onAccent }
+        return tvm.isEmpty ? NotchInk.tertiary : NotchInk.primary
+    }
+
+    private var statusColor: Color {
+        if shelfShare.selectedDestinationReady { return NotchAccent.call }
+        return shelfShare.isPaired(shelfShare.selectedDestination) ? NotchAccent.attention : NotchInk.tertiary
+    }
+
+    private var statusWord: String {
+        if shelfShare.isSending { return "Sending" }
+        if shelfShare.selectedDestinationReady { return "Ready" }
+        return shelfShare.isPaired(shelfShare.selectedDestination) ? "Offline" : "Not paired"
+    }
+
+    private var actionTitle: String {
+        if shelfShare.isSending { return "Sending \(Int(shelfShare.sendFraction * 100))%" }
+        let destination = shelfShare.selectedDestination.title
+        if tvm.isEmpty { return "Send to \(destination)" }
+        if !shelfShare.isAvailable { return "Set up sharing" }
+        if !shelfShare.selectedDestinationReady {
+            return shelfShare.isPaired(shelfShare.selectedDestination) ? "Connect \(destination)" : "Pair \(destination)"
+        }
+        return "Send to \(destination)"
     }
 
     // MARK: - Derived state
@@ -180,11 +292,11 @@ struct ShelfView: View {
     }
 
     private var summary: String {
-        guard !tvm.isEmpty else { return "" }
+        guard !tvm.isEmpty else { return "Nothing queued" }
         if selection.hasSelection {
             return "\(queuedItems.count) of \(tvm.items.count) selected"
         }
-        return tvm.items.count == 1 ? "1 item" : "\(tvm.items.count) items"
+        return "\(tvm.items.count) queued"
     }
 
     // MARK: - Actions
