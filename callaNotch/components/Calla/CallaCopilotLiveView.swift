@@ -89,15 +89,15 @@ struct CallaCopilotLiveView: View {
                             standingStrip(lead)
                         }
                     }
-                    .padding(.trailing, 16)
+                    .padding(.trailing, 22)
                     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
 
                     Rectangle()
-                        .fill(Color.white.opacity(0.08))
+                        .fill(Color.white.opacity(0.10))
                         .frame(width: 1)
                     transcriptColumn
-                        .padding(.leading, 14)
-                        .frame(width: 230)
+                        .padding(.leading, 18)
+                        .frame(width: 236)
                         .frame(maxHeight: .infinity, alignment: .topLeading)
                         .transition(.opacity)
                 }
@@ -348,7 +348,7 @@ struct CallaCopilotLiveView: View {
                     HStack(spacing: 6) {
                         CallaWaveBars(tint: CallaCallInk.summary)
                         Text("catching up")
-                            .font(.system(size: 10, design: .monospaced))
+                            .font(.system(size: 11))
                             .foregroundStyle(NotchInk.tertiary)
                     }
                     .transition(.opacity)
@@ -358,9 +358,9 @@ struct CallaCopilotLiveView: View {
 
             if let lead = account.lead {
                 Text(lead)
-                    .font(.system(size: compact ? 15.5 : 17, weight: .medium))
+                    .font(.system(size: compact ? 16 : 18, weight: .medium))
                     .tracking(-0.15)
-                    .lineSpacing(1.5)
+                    .lineSpacing(3)
                     .foregroundStyle(.white.opacity(0.96))
                     .lineLimit(compact ? 3 : 4)
                     .fixedSize(horizontal: false, vertical: true)
@@ -372,16 +372,16 @@ struct CallaCopilotLiveView: View {
 
             if !lately.isEmpty || !open.isEmpty {
                 VStack(alignment: .leading, spacing: 0) {
-                    Rectangle().fill(Color.white.opacity(0.08)).frame(height: 1)
-                        .padding(.bottom, 9)
-                    HStack(alignment: .top, spacing: 16) {
+                    Rectangle().fill(Color.white.opacity(0.10)).frame(height: 1)
+                        .padding(.bottom, 12)
+                    HStack(alignment: .top, spacing: 18) {
                         if !lately.isEmpty {
                             accountColumn("Lately", symbol: "checkmark", tint: CallaCallInk.summary,
-                                          lines: lately, ink: .white.opacity(0.72))
+                                          lines: lately, ink: .white.opacity(0.75))
                         }
                         if !open.isEmpty {
                             accountColumn("Still open", symbol: "circle", tint: CallaCallInk.answer,
-                                          lines: open, ink: .white.opacity(0.9))
+                                          lines: open, ink: .white.opacity(0.92))
                         }
                     }
                 }
@@ -391,16 +391,20 @@ struct CallaCopilotLiveView: View {
 
     private func accountColumn(_ title: String, symbol: String, tint: Color,
                                lines: [String], ink: Color) -> some View {
-        VStack(alignment: .leading, spacing: 5) {
-            HStack(spacing: 5) {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack(spacing: 6) {
                 Image(systemName: symbol)
-                    .font(.system(size: 8, weight: .bold))
+                    .font(.system(size: 9, weight: .heavy))
                     .foregroundStyle(tint)
-                CallaEyebrow(title, tint: NotchInk.tertiary)
+                Text(title.uppercased())
+                    .font(.system(size: 10, weight: .bold))
+                    .tracking(notchCapsTracking)
+                    .foregroundStyle(NotchInk.tertiary)
             }
             ForEach(Array(lines.enumerated()), id: \.offset) { _, line in
                 Text(line)
-                    .font(.system(size: 11.5))
+                    .font(.system(size: 12))
+                    .lineSpacing(1.5)
                     .foregroundStyle(ink)
                     .lineLimit(2)
                     .fixedSize(horizontal: false, vertical: true)
@@ -464,7 +468,7 @@ struct CallaCopilotLiveView: View {
                 Text(uncertain
                      ? "The transcript is uncertain. Edit the question and press Answer."
                      : "One appears here the moment a question worth answering is asked.")
-                    .font(.system(size: 12.5))
+                    .font(.system(size: 13))
                     .foregroundStyle(NotchInk.secondary)
                     .fixedSize(horizontal: false, vertical: true)
             }
@@ -487,37 +491,60 @@ struct CallaCopilotLiveView: View {
     }
 
     private var halfDeafBlock: some View {
-        HStack(alignment: .top, spacing: 12) {
-            Image(systemName: "speaker.slash.fill")
-                .font(.system(size: 15, weight: .medium))
-                .foregroundStyle(CallaCallInk.problem)
-                .frame(width: 34, height: 34)
-                .background(RoundedRectangle(cornerRadius: 10).fill(CallaCallInk.problem.opacity(0.14)))
-            VStack(alignment: .leading, spacing: 5) {
-                Text("Their side isn't coming through")
-                    .font(.system(size: 14.5, weight: .semibold))
-                    .foregroundStyle(.white)
-                Text("Only your microphone is being captured, so the account has one side of the call. Grant Screen Recording so the other side is transcribed too.")
-                    .font(.system(size: 12))
-                    .foregroundStyle(NotchInk.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
-                Button {
-                    if let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenCapture") {
-                        NSWorkspace.shared.open(url)
-                    }
-                } label: {
-                    Text("Open Screen Recording settings")
-                        .font(.system(size: 11.5, weight: .semibold))
-                        .foregroundStyle(.black)
-                        .padding(.horizontal, 11)
-                        .padding(.vertical, 5)
-                        .background(RoundedRectangle(cornerRadius: 8).fill(Color.white.opacity(0.95)))
-                }
-                .buttonStyle(.plain)
-                .padding(.top, 3)
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(spacing: 8) {
+                CallaEyebrow("Only hearing you", tint: CallaCallInk.problem)
+                Spacer(minLength: 4)
             }
+            .frame(height: 22)
+            halfDeafBanner
         }
-        .padding(.top, 6)
+    }
+
+    /// Their side is missing, and the one press that fixes it.
+    private var halfDeafBanner: some View {
+        HStack(spacing: 14) {
+            Image(systemName: "speaker.slash.fill")
+                .font(.system(size: 18, weight: .medium))
+                .foregroundStyle(CallaCallInk.problem)
+            VStack(alignment: .leading, spacing: 3) {
+                Text("Their side isn't coming through")
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundStyle(NotchInk.primary)
+                Text("Only your microphone is being captured. Grant Screen Recording so the other side is transcribed too.")
+                    .font(.system(size: 12))
+                    .lineSpacing(1)
+                    .foregroundStyle(Color.white.opacity(0.75))
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            Button {
+                if let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenCapture") {
+                    NSWorkspace.shared.open(url)
+                }
+            } label: {
+                Text("Open settings")
+                    .font(.system(size: 12, weight: .bold))
+                    .foregroundStyle(NotchAccent.onAccent)
+                    .padding(.horizontal, 14)
+                    .frame(height: 36)
+                    .background(RoundedRectangle(cornerRadius: 12, style: .continuous).fill(CallaCallInk.problem))
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .help("Open Screen Recording settings")
+            .accessibilityLabel("Open Screen Recording settings")
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 14)
+        .background(
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .fill(CallaCallInk.problem.opacity(0.10))
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .strokeBorder(CallaCallInk.problem.opacity(0.30), lineWidth: 1)
+        )
     }
 
     // MARK: - Compact
@@ -525,30 +552,46 @@ struct CallaCopilotLiveView: View {
     /// Being in the call: what is being heard, the four things you might press,
     /// and the words going by underneath.
     private var compactPanel: some View {
-        VStack(alignment: .leading, spacing: 14) {
+        VStack(alignment: .leading, spacing: 0) {
             compactStatus
-            HStack(spacing: 10) {
-                CallaLargeButton(title: copilot.screenshotCount > 0
-                                    ? "Screenshot · \(copilot.screenshotCount)" : "Screenshot",
-                                 symbol: "camera") {
-                    engine.takeScreenshot()
-                    NSHapticFeedbackManager.defaultPerformer.perform(.generic, performanceTime: .now)
+            if mode == .halfDeaf {
+                VStack(alignment: .leading, spacing: 12) {
+                    halfDeafBanner
+                    HStack {
+                        Spacer(minLength: 0)
+                        CallaLargeButton(title: "End call", symbol: "stop.fill", role: .destructive,
+                                         height: 40) {
+                            engine.endCall()
+                        }
+                    }
                 }
-                CallaLargeButton(title: pinned ? "Unpin" : "Keep open",
-                                 symbol: pinned ? "pin.slash" : "pin",
-                                 selected: pinned) {
-                    AppDelegate.shared?.toggleUniversalNotchPin(for: vm)
+                .padding(.top, 18)
+            } else {
+                VStack(alignment: .leading, spacing: 12) {
+                    HStack(spacing: 10) {
+                        CallaLargeButton(title: "Screenshot", symbol: "camera",
+                                         count: copilot.screenshotCount) {
+                            engine.takeScreenshot()
+                            NSHapticFeedbackManager.defaultPerformer.perform(.generic, performanceTime: .now)
+                        }
+                        CallaLargeButton(title: pinned ? "Unpin" : "Keep open",
+                                         symbol: pinned ? "pin.slash" : "pin",
+                                         selected: pinned) {
+                            AppDelegate.shared?.toggleUniversalNotchPin(for: vm)
+                        }
+                        CallaLargeButton(title: "Full view", symbol: "arrow.up.left.and.arrow.down.right") {
+                            session.toggleLayout()
+                        }
+                        Spacer(minLength: 0)
+                        CallaLargeButton(title: "End call", symbol: "stop.fill", role: .destructive) {
+                            engine.endCall()
+                        }
+                    }
+                    Spacer(minLength: 0)
+                    CallaTranscriptTicker(turns: turns)
                 }
-                CallaLargeButton(title: "Full view", symbol: "arrow.up.left.and.arrow.down.right") {
-                    session.toggleLayout()
-                }
-                Spacer(minLength: 0)
-                CallaLargeButton(title: "End call", symbol: "stop.fill", role: .destructive) {
-                    engine.endCall()
-                }
+                .padding(.top, 18)
             }
-            Spacer(minLength: 0)
-            CallaTranscriptTicker(turns: turns)
         }
         .padding(.top, 4)
     }
@@ -556,17 +599,19 @@ struct CallaCopilotLiveView: View {
     private var pinned: Bool { vm.isPinned || session.pinsNotchOpen }
 
     private var compactStatus: some View {
-        HStack(spacing: 10) {
+        HStack(spacing: 14) {
             CallaWaveBars(tint: mode == .halfDeaf ? CallaCallInk.problem : CallaCallInk.summary,
                           active: copilot.speaking != nil)
-                .frame(width: 18)
-            VStack(alignment: .leading, spacing: 2) {
+                .scaleEffect(1.6)
+                .frame(width: 26, height: 22)
+            VStack(alignment: .leading, spacing: 3) {
                 Text(mode == .halfDeaf ? "Only hearing you" : "Listening to both sides")
-                    .font(.system(size: 16, weight: .semibold))
+                    .font(.system(size: 20, weight: .semibold))
+                    .tracking(-0.2)
                     .foregroundStyle(mode == .halfDeaf ? CallaCallInk.problem : NotchInk.primary)
                 Text(compactDetail)
-                    .font(.system(size: 11.5))
-                    .foregroundStyle(NotchInk.tertiary)
+                    .font(.system(size: 13))
+                    .foregroundStyle(NotchInk.secondary)
                     .lineLimit(1)
             }
             Spacer(minLength: 0)
@@ -574,7 +619,7 @@ struct CallaCopilotLiveView: View {
     }
 
     private var compactDetail: String {
-        if mode == .halfDeaf { return "Screen Recording is off for the call host, so their side is not transcribed." }
+        if mode == .halfDeaf { return "Screen Recording is off for the call host." }
         var parts: [String] = []
         switch copilot.speaking {
         case "me": parts.append("You are speaking")
@@ -596,7 +641,7 @@ struct CallaCopilotLiveView: View {
                 CallaEyebrow("Transcript", tint: NotchInk.tertiary)
                 Spacer(minLength: 4)
                 Text(copilot.systemAudioActive ? "Both sides" : "Only you")
-                    .font(.system(size: 10.5))
+                    .font(.system(size: 11))
                     .foregroundStyle(copilot.systemAudioActive ? NotchInk.tertiary : CallaCallInk.problem)
             }
             .frame(height: 22)
@@ -605,13 +650,13 @@ struct CallaCopilotLiveView: View {
                 Text(copilot.systemAudioActive
                      ? "Turns appear here as they are transcribed on this Mac."
                      : "Grant Screen Recording so the other side is transcribed too.")
-                    .font(.system(size: 11.5))
+                    .font(.system(size: 12))
                     .foregroundStyle(NotchInk.tertiary)
                     .fixedSize(horizontal: false, vertical: true)
                 Spacer(minLength: 0)
             } else {
                 let shown = Array(turns.suffix(6))
-                VStack(alignment: .leading, spacing: 9) {
+                VStack(alignment: .leading, spacing: 10) {
                     ForEach(shown, id: \.seq) { turn in
                         turnRow(turn, isNewest: turn.seq == shown.last?.seq,
                                 isQuestion: turn.seq == questionTurnSeq)
@@ -634,27 +679,28 @@ struct CallaCopilotLiveView: View {
         return turns.last(where: { $0.seq <= answer.id && $0.isRemote })?.seq
     }
 
+    /// The speaker and clock on one line, the words under them; the newest
+    /// turn at full ink and the rest stepped back.
     private func turnRow(_ turn: CallaCallTurn, isNewest: Bool, isQuestion: Bool) -> some View {
-        HStack(alignment: .firstTextBaseline, spacing: 8) {
-            Text(turn.clock)
-                .font(.system(size: 9.5, design: .monospaced).monospacedDigit())
-                .foregroundStyle(NotchInk.tertiary)
-                .frame(width: 34, alignment: .leading)
-            VStack(alignment: .leading, spacing: 2) {
-                HStack(spacing: 5) {
-                    Text(turn.speakerLabel)
-                        .font(.system(size: 10.5, weight: .semibold))
-                        .foregroundStyle(turn.isRemote ? CallaCallInk.summary : NotchInk.tertiary)
-                    if isQuestion {
-                        CallaEyebrow("question", tint: CallaCallInk.answer)
-                    }
+        VStack(alignment: .leading, spacing: 2) {
+            HStack(alignment: .firstTextBaseline, spacing: 7) {
+                Text(turn.speakerLabel.uppercased())
+                    .font(.system(size: 10, weight: .bold))
+                    .tracking(notchCapsTracking)
+                    .foregroundStyle(turn.isRemote ? CallaCallInk.summary : NotchInk.secondary)
+                Text(turn.clock)
+                    .font(.system(size: 10, design: .monospaced).monospacedDigit())
+                    .foregroundStyle(Color.white.opacity(0.45))
+                if isQuestion {
+                    CallaEyebrow("question", tint: CallaCallInk.answer)
                 }
-                Text(turn.text)
-                    .font(.system(size: 11.5))
-                    .foregroundStyle(.white.opacity(isNewest || isQuestion ? 0.9 : 0.6))
-                    .textSelection(.enabled)
-                    .fixedSize(horizontal: false, vertical: true)
             }
+            Text(turn.text)
+                .font(.system(size: 12))
+                .lineSpacing(1.5)
+                .foregroundStyle(isNewest ? NotchInk.primary : .white.opacity(isQuestion ? 0.9 : 0.6))
+                .textSelection(.enabled)
+                .fixedSize(horizontal: false, vertical: true)
         }
         .padding(isQuestion ? 7 : 0)
         .background {
@@ -770,10 +816,12 @@ struct LivePulse: View {
 
     var body: some View {
         Circle()
-            .fill(active ? NotchTint.healthy : NotchTint.attention)
-            .frame(width: 6, height: 6)
-            .scaleEffect(expanded ? 1.35 : 1)
-            .opacity(expanded ? 0.55 : 1)
+            .fill(active ? NotchAccent.call : NotchAccent.attention)
+            .frame(width: 8, height: 8)
+            .background(Circle().fill((active ? NotchAccent.call : NotchAccent.attention).opacity(0.22))
+                .padding(-4)
+                .scaleEffect(expanded ? 1.2 : 1))
+            .opacity(expanded ? 0.8 : 1)
             .animation(active ? .easeInOut(duration: 1.1).repeatForever(autoreverses: true) : .default,
                        value: expanded)
             .onAppear { expanded = active }
@@ -958,13 +1006,12 @@ struct CallaCopilotLiveHeader: View {
     }
 
     private func leadingRow(badge: Bool, persona: Bool) -> some View {
-        HStack(spacing: NotchGlassSpace.tight) {
+        HStack(spacing: 9) {
             LivePulse(active: copilot.running && copilot.systemAudioActive)
             if CallaCopilotLiveView.answersRetired {
                 Text(workingLabel ?? (mode == .halfDeaf ? "Only you" : "Listening"))
-                    .font(NotchGlassType.bandLabel)
-                    .foregroundStyle(workingLabel != nil ? CallaCallInk.summary
-                                     : mode == .halfDeaf ? CallaCallInk.problem : NotchInk.secondary)
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundStyle(mode == .halfDeaf ? CallaCallInk.problem : CallaCallInk.summary)
                     .lineLimit(1)
                     .fixedSize()
             } else {
@@ -972,8 +1019,8 @@ struct CallaCopilotLiveHeader: View {
             }
             if let elapsed = CallaCopilotPresentation.elapsed(since: copilot.startedAt, now: now) {
                 Text(elapsed)
-                    .font(NotchGlassType.inlineFigure)
-                    .foregroundStyle(NotchInk.secondary)
+                    .font(.system(size: 12, design: .monospaced).monospacedDigit())
+                    .foregroundStyle(Color.white.opacity(0.80))
                     .lineLimit(1)
                     .fixedSize()
                     .layoutPriority(2)
@@ -1044,29 +1091,52 @@ struct CallaCopilotLiveHeader: View {
         .animation(.smooth(duration: 0.2), value: selected)
     }
 
+    /// Screenshot, the two capture states, pin, layout and End, in that order.
+    /// Compact draws Screenshot and End as large buttons in the panel, so the
+    /// band leaves them out there.
     private var trailing: some View {
-        HStack(spacing: NotchGlassSpace.tight) {
-            Image(systemName: copilot.micActive ? "mic.fill" : "mic.slash.fill")
-                .font(NotchGlassType.glyphSmall)
-                .foregroundStyle(copilot.micActive ? NotchInk.secondary : NotchTint.attention)
-                .padding(2)
-                .contentShape(Rectangle())
+        let pinned = vm.isPinned || session.pinsNotchOpen
+        let full = session.layout == .full
+        return HStack(spacing: 2) {
+            if full {
+                // What is being shared becomes context: the words on it go to
+                // the copilot, and the picture is filed with the call.
+                CallaWingButton(symbol: "camera",
+                                tint: shotNote == nil ? Color.white.opacity(0.70) : CallaCallInk.summary,
+                                badge: copilot.screenshotCount) {
+                    takeScreenshot()
+                }
+                .scaleEffect(shutter ? 0.78 : 1)
+                .opacity(shutter ? 0.4 : 1)
+                .animation(.spring(response: 0.3, dampingFraction: 0.7), value: copilot.screenshotCount)
+                .notchTooltip(copilot.screenshotCount > 0
+                              ? "Screenshot the shared screen · \(copilot.screenshotCount) so far"
+                              : "Screenshot the shared screen",
+                              symbol: "camera")
+                .accessibilityLabel(copilot.screenshotCount > 0
+                                    ? "Take a screenshot for context, \(copilot.screenshotCount) taken"
+                                    : "Take a screenshot for context")
+            }
+
+            CallaWingIndicator(symbol: copilot.micActive ? "mic" : "mic.slash",
+                               tint: copilot.micActive ? Color.white.opacity(0.70) : NotchAccent.attention)
                 .notchTooltip(copilot.micActive ? "Your microphone is being captured"
                                                 : "Your microphone is not being captured",
                               symbol: copilot.micActive ? "mic.fill" : "mic.slash.fill")
+                .accessibilityLabel(copilot.micActive ? "Your microphone is being captured"
+                                                      : "Your microphone is not being captured")
             // Reports the setting rather than asserting a guarantee: hidden from
             // captures when "Hide from screen recording" is on, visible when off.
-            Image(systemName: hiddenFromCapture ? "eye.slash.fill" : "eye.fill")
-                .font(NotchGlassType.glyphSmall)
-                .foregroundStyle(hiddenFromCapture ? NotchInk.secondary : NotchTint.attention)
-                .padding(2)
-                .contentShape(Rectangle())
+            CallaWingIndicator(symbol: hiddenFromCapture ? "eye.slash" : "eye",
+                               tint: hiddenFromCapture ? Color.white.opacity(0.70) : NotchAccent.attention)
                 .notchTooltip(hiddenFromCapture ? "Hidden from screen shares"
                                                 : "Visible in screen shares — turn on Hide in Settings",
                               symbol: hiddenFromCapture ? "eye.slash.fill" : "eye.fill")
+                .accessibilityLabel(hiddenFromCapture ? "Hidden from screen recording"
+                                                      : "Visible in screen recording")
 
             if !CallaCopilotLiveView.answersRetired {
-                NotchGlyphButton(symbol: "questionmark.bubble") {
+                CallaWingButton(symbol: "questionmark.bubble") {
                     NotificationCenter.default.post(name: .callaCallAskQuestion, object: nil)
                 }
                 .notchTooltip("Ask about what was just said", symbol: "questionmark.bubble",
@@ -1074,56 +1144,31 @@ struct CallaCopilotLiveHeader: View {
                 .accessibilityLabel("Ask about what was just said")
             }
 
-            // Compact draws these as large buttons in the panel itself.
-            if session.layout == .full {
-            // What is being shared becomes context: the words on it go to
-            // the copilot, and the picture is filed with the call.
-            NotchGlyphButton(symbol: "camera",
-                             tint: shotNote == nil ? NotchInk.tertiary : CallaCallInk.summary) {
-                takeScreenshot()
-            }
-            .scaleEffect(shutter ? 0.78 : 1)
-            .opacity(shutter ? 0.4 : 1)
-            .overlay(alignment: .topTrailing) {
-                if copilot.screenshotCount > 0 {
-                    CallaSuperscript(count: copilot.screenshotCount)
-                        .offset(x: 4, y: -1)
-                        .transition(.scale.combined(with: .opacity))
-                }
-            }
-            .animation(.spring(response: 0.3, dampingFraction: 0.7), value: copilot.screenshotCount)
-            .notchTooltip(copilot.screenshotCount > 0
-                          ? "Screenshot the shared screen · \(copilot.screenshotCount) so far"
-                          : "Screenshot the shared screen",
-                          symbol: "camera")
-            .accessibilityLabel("Take a screenshot for context")
-
-            // Collapse to the answer alone and back.
-            NotchGlyphButton(symbol: session.layout == .full
-                                ? "arrow.down.right.and.arrow.up.left"
-                                : "arrow.up.left.and.arrow.down.right") {
-                session.toggleLayout()
-            }
-            .notchTooltip(session.layout == .full ? "Compact" : "Full, with the transcript",
-                          symbol: session.layout == .full ? "arrow.down.right.and.arrow.up.left"
-                                                          : "arrow.up.left.and.arrow.down.right",
-                          shortcut: shortcutKeys(.copilotToggleLayout))
-            .accessibilityLabel(session.layout == .full ? "Compact layout" : "Full layout")
-
             // Pin belongs to the notch, while Call contributes a temporary
             // automatic hold. The same action is available system-wide.
-            NotchGlyphButton(symbol: (vm.isPinned || session.pinsNotchOpen) ? "pin.fill" : "pin") {
+            CallaWingButton(symbol: pinned ? "pin.fill" : "pin",
+                            tint: pinned ? NotchAccent.call : Color.white.opacity(0.70)) {
                 AppDelegate.shared?.toggleUniversalNotchPin(for: vm)
             }
-            .notchTooltip((vm.isPinned || session.pinsNotchOpen) ? "Unpin the notch" : "Pin the notch open",
-                          symbol: (vm.isPinned || session.pinsNotchOpen) ? "pin.fill" : "pin")
-            .accessibilityLabel((vm.isPinned || session.pinsNotchOpen) ? "Unpin notch" : "Pin notch open")
+            .notchTooltip(pinned ? "Unpin the notch" : "Pin the notch open",
+                          symbol: pinned ? "pin.fill" : "pin")
+            .accessibilityLabel(pinned ? "Unpin notch" : "Pin notch open")
 
-            NotchGlyphButton(symbol: "stop.fill", tint: NotchTint.stuck) {
-                engine.endCall()
+            // Collapse to the compact panel and back.
+            CallaWingButton(symbol: full ? "arrow.down.right.and.arrow.up.left"
+                                         : "arrow.up.left.and.arrow.down.right") {
+                session.toggleLayout()
             }
-            .notchTooltip("End the call", symbol: "stop.fill", shortcut: shortcutKeys(.copilotToggleCall))
-            .accessibilityLabel("End call")
+            .notchTooltip(full ? "Compact" : "Full, with the transcript",
+                          symbol: full ? "arrow.down.right.and.arrow.up.left"
+                                       : "arrow.up.left.and.arrow.down.right",
+                          shortcut: shortcutKeys(.copilotToggleLayout))
+            .accessibilityLabel(full ? "Compact view" : "Full view")
+
+            if full {
+                CallaEndPill { engine.endCall() }
+                    .notchTooltip("End the call", symbol: "stop.fill", shortcut: shortcutKeys(.copilotToggleCall))
+                    .accessibilityLabel("End call")
             }
         }
     }
@@ -1139,9 +1184,9 @@ struct CallaCopilotLiveHeader: View {
 
     private func tint(for tone: CallaCopilotPresentation.Tone) -> Color {
         switch tone {
-        case .active: return NotchTint.healthy
-        case .ready: return .effectiveAccent
-        case .warning: return NotchTint.attention
+        case .active: return NotchAccent.call
+        case .ready: return NotchAccent.call
+        case .warning: return NotchAccent.attention
         }
     }
 }
@@ -1178,12 +1223,12 @@ struct CallaAmbientWings: View {
             HStack(spacing: 8) {
                 Circle()
                     .fill(status.tint)
-                    .frame(width: 6, height: 6)
-                    .background(Circle().fill(status.tint.opacity(0.25)).frame(width: 12, height: 12))
+                    .frame(width: 7, height: 7)
+                    .background(Circle().fill(status.tint.opacity(0.22)).padding(-4))
                 if let elapsed = CallaCopilotPresentation.elapsed(since: copilot.startedAt, now: now) {
                     Text(elapsed)
-                        .font(.system(size: 11.5, design: .monospaced).monospacedDigit())
-                        .foregroundStyle(.white.opacity(0.88))
+                        .font(.system(size: 12, design: .monospaced).monospacedDigit())
+                        .foregroundStyle(.white.opacity(0.86))
                 }
                 Spacer(minLength: 0)
             }
@@ -1198,18 +1243,18 @@ struct CallaAmbientWings: View {
                 Spacer(minLength: 0)
                 if copilot.screenshotCount > 0 {
                     Image(systemName: "camera.fill")
-                        .font(.system(size: 10, weight: .medium))
-                        .foregroundStyle(.white.opacity(0.55))
+                        .font(.system(size: 11, weight: .medium))
+                        .foregroundStyle(.white.opacity(0.56))
                         .overlay(alignment: .topTrailing) {
                             CallaSuperscript(count: copilot.screenshotCount)
-                                .offset(x: 6, y: -4)
+                                .offset(x: 8, y: -6)
                         }
                         .padding(.trailing, 6)
                         .accessibilityLabel("\(copilot.screenshotCount) screenshots")
                 }
                 CallaWaveBars(tint: status.tint, active: status.moving)
                 Text(status.text)
-                    .font(.system(size: 11.5, weight: .medium))
+                    .font(.system(size: 12, weight: .semibold))
                     .foregroundStyle(status.tint)
                     .contentTransition(.opacity)
             }
@@ -1270,8 +1315,8 @@ struct CallaCopilotAmbientView: View {
         .fixedSize(horizontal: false, vertical: true)
         .textSelection(.enabled)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(.horizontal, 24)
-        .padding(.top, 6)
+        .padding(.horizontal, 28)
+        .padding(.top, 10)
         .background {
             GeometryReader { proxy in
                 Color.clear.preference(key: AmbientHeightKey.self, value: proxy.size.height)
@@ -1303,27 +1348,27 @@ struct CallaCopilotAmbientView: View {
         .onDisappear { answerTask?.cancel() }
     }
 
+    /// The lead sentence, then two points: the newest settled one, and the
+    /// first thing still open, tagged so.
     private func accountView(_ lead: String) -> some View {
-        let trail = account.trail(2)
         let open = copilot.openQuestions.first
+        let trail = account.trail(open == nil ? 2 : 1)
         return VStack(alignment: .leading, spacing: 9) {
-            CallaEyebrow("Where it stands", tint: CallaCallInk.summary)
             Text(lead)
-                .font(.system(size: 15.5, weight: .medium))
-                .tracking(-0.15)
-                .lineSpacing(1.5)
+                .font(.system(size: 16, weight: .medium))
+                .lineSpacing(2.5)
                 .foregroundStyle(.white.opacity(0.96))
             if !trail.isEmpty || open != nil {
                 VStack(alignment: .leading, spacing: 5) {
-                    ForEach(Array(trail.enumerated()), id: \.element) { index, point in
-                        pointRow(point, ink: .white.opacity(index == trail.count - 1 ? 0.7 : 0.5))
+                    ForEach(Array(trail.enumerated()), id: \.element) { _, point in
+                        pointRow(point, ink: .white.opacity(0.72))
                     }
                     if let open {
-                        HStack(alignment: .firstTextBaseline, spacing: 7) {
+                        HStack(alignment: .firstTextBaseline, spacing: 9) {
                             marker(CallaCallInk.answer)
                             Text(open)
                                 .font(.system(size: 12))
-                                .foregroundStyle(.white.opacity(0.9))
+                                .foregroundStyle(.white.opacity(0.92))
                             CallaTag(text: "open", tint: CallaCallInk.answer)
                         }
                     }
@@ -1333,8 +1378,8 @@ struct CallaCopilotAmbientView: View {
     }
 
     private func pointRow(_ point: String, ink: Color) -> some View {
-        HStack(alignment: .firstTextBaseline, spacing: 7) {
-            marker(.white.opacity(0.3))
+        HStack(alignment: .firstTextBaseline, spacing: 9) {
+            marker(.white.opacity(0.45))
             Text(point)
                 .font(.system(size: 12))
                 .foregroundStyle(ink)
@@ -1343,7 +1388,7 @@ struct CallaCopilotAmbientView: View {
     }
 
     private func marker(_ tint: Color) -> some View {
-        Circle().fill(tint).frame(width: 4, height: 4)
+        Circle().fill(tint).frame(width: 5, height: 5)
             .alignmentGuide(.firstTextBaseline) { $0[VerticalAlignment.center] + 4 }
     }
 
@@ -1443,12 +1488,14 @@ enum CallaCallInk {
     static let summary = NotchAccent.call
     static let problem = NotchAccent.attention
     static let ended = Color.white.opacity(0.55)
+    /// Text on the coral wash an End control wears.
+    static let endInk = Color(notchHex: 0xFF8A8A)
 }
 
 enum CallaCallType {
-    static let eyebrow = Font.system(size: 9.5, weight: .medium, design: .monospaced)
+    static let eyebrow = Font.system(size: 11, weight: .bold)
     static let figure = Font.system(size: 11, weight: .regular, design: .monospaced).monospacedDigit()
-    static let question = Font.system(size: 12.5)
+    static let question = Font.system(size: 13)
 }
 
 /// The caps label that names what a block is — "They asked", "Where it stands".
@@ -1464,7 +1511,7 @@ struct CallaEyebrow: View {
     var body: some View {
         Text(text.uppercased())
             .font(CallaCallType.eyebrow)
-            .tracking(1.3)
+            .tracking(notchCapsTracking)
             .foregroundStyle(tint)
             .lineLimit(1)
             .fixedSize()
@@ -1506,12 +1553,12 @@ struct CallaTag: View {
 
     var body: some View {
         Text(text.uppercased())
-            .font(.system(size: 8.5, weight: .medium, design: .monospaced))
-            .tracking(0.8)
+            .font(.system(size: 10, weight: .bold))
+            .tracking(0.6)
             .foregroundStyle(tint)
-            .padding(.horizontal, 5)
+            .padding(.horizontal, 6)
             .padding(.vertical, 1)
-            .overlay(RoundedRectangle(cornerRadius: 4).strokeBorder(tint.opacity(0.8), lineWidth: 1))
+            .background(RoundedRectangle(cornerRadius: 6).fill(tint.opacity(NotchAccent.fill)))
             .fixedSize()
     }
 }
@@ -1647,8 +1694,11 @@ struct CallaSuperscript: View {
 
     var body: some View {
         Text("\(count)")
-            .font(.system(size: 8, weight: .bold).monospacedDigit())
-            .foregroundStyle(.white)
+            .font(.system(size: 10, weight: .bold, design: .rounded).monospacedDigit())
+            .foregroundStyle(NotchAccent.onAccent)
+            .padding(.horizontal, 3)
+            .frame(minWidth: 13, minHeight: 13)
+            .background(Capsule().fill(NotchAccent.call))
             .fixedSize()
             .accessibilityHidden(true)
     }
@@ -1695,13 +1745,16 @@ extension View {
 
 // MARK: - Compact controls
 
-/// A control big enough to hit mid-sentence without looking: 40pt tall, the
-/// glyph and its name, and a press you can feel.
+/// A control big enough to hit mid-sentence without looking: 46pt tall, the
+/// glyph and its name, and a press you can feel. End wears a coral wash.
 struct CallaLargeButton: View {
     let title: String
     let symbol: String
     var selected = false
     var role: ButtonRole?
+    /// A count in a mint pill after the title — screenshots taken.
+    var count: Int = 0
+    var height: CGFloat = 46
     let action: () -> Void
 
     @State private var hovering = false
@@ -1710,32 +1763,114 @@ struct CallaLargeButton: View {
 
     var body: some View {
         Button(role: role, action: action) {
-            HStack(spacing: 8) {
+            HStack(spacing: 9) {
                 Image(systemName: symbol)
                     .font(.system(size: 13, weight: .semibold))
                 Text(title)
-                    .font(.system(size: 13, weight: .semibold))
+                    .font(.system(size: 13, weight: destructive ? .bold : .semibold))
                     .lineLimit(1)
+                if count > 0 {
+                    Text("\(count)")
+                        .font(.system(size: 11, weight: .bold).monospacedDigit())
+                        .foregroundStyle(NotchAccent.call)
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 1)
+                        .background(Capsule().fill(NotchAccent.call.opacity(0.20)))
+                }
             }
-            .foregroundStyle(destructive || selected ? Color.white : NotchInk.primary.opacity(0.9))
-            .padding(.horizontal, 16)
-            .frame(height: 40)
+            .foregroundStyle(destructive ? CallaCallInk.endInk : selected ? NotchAccent.call : NotchInk.primary)
+            .padding(.leading, destructive ? 16 : 15)
+            .padding(.trailing, destructive ? 20 : 18)
+            .frame(height: height)
             .background {
-                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                RoundedRectangle(cornerRadius: height > 40 ? 14 : 12, style: .continuous)
                     .fill(fill)
             }
-            .contentShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+            .contentShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
         }
         .buttonStyle(CallaPressStyle())
         .onHover { hovering = $0 }
         .animation(.easeOut(duration: 0.12), value: hovering)
-        .accessibilityLabel(title)
+        .help(title)
+        .accessibilityLabel(count > 0 ? "\(title), \(count)" : title)
     }
 
     private var fill: Color {
-        if destructive { return Color(red: 0.86, green: 0.23, blue: 0.19).opacity(hovering ? 1 : 0.9) }
-        if selected { return Color.effectiveAccent.opacity(hovering ? 0.75 : 0.6) }
-        return Color.white.opacity(hovering ? 0.16 : 0.10)
+        if destructive { return NotchAccent.stop.opacity(hovering ? 0.26 : 0.16) }
+        if selected { return NotchAccent.call.opacity(hovering ? 0.26 : NotchAccent.fill) }
+        return Color.white.opacity(hovering ? 0.14 : 0.08)
+    }
+}
+
+/// A 28pt glyph button in the live band beside the housing.
+struct CallaWingButton: View {
+    let symbol: String
+    var tint: Color = Color.white.opacity(0.70)
+    var badge: Int = 0
+    let action: () -> Void
+
+    @State private var hovering = false
+
+    var body: some View {
+        Button(action: action) {
+            Image(systemName: symbol)
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundStyle(hovering && tint == Color.white.opacity(0.70) ? NotchInk.primary : tint)
+                .frame(width: 28, height: 28)
+                .background(Circle().fill(hovering ? Color.white.opacity(0.10) : .clear))
+                .contentShape(Circle())
+        }
+        .buttonStyle(.plain)
+        .overlay(alignment: .topTrailing) {
+            if badge > 0 {
+                CallaSuperscript(count: badge)
+                    .offset(x: 0, y: 1)
+                    .allowsHitTesting(false)
+                    .transition(.scale.combined(with: .opacity))
+            }
+        }
+        .onHover { hovering = $0 }
+    }
+}
+
+/// A state in the band that is not a control — the mic, capture hiding — drawn
+/// at a wing button's size so the row keeps one rhythm.
+struct CallaWingIndicator: View {
+    let symbol: String
+    var tint: Color = Color.white.opacity(0.70)
+
+    var body: some View {
+        Image(systemName: symbol)
+            .font(.system(size: 12, weight: .semibold))
+            .foregroundStyle(tint)
+            .frame(width: 28, height: 28)
+            .contentShape(Rectangle())
+    }
+}
+
+/// The coral End pill at the end of a live band.
+struct CallaEndPill: View {
+    var title = "End"
+    let action: () -> Void
+
+    @State private var hovering = false
+
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: 6) {
+                Image(systemName: "stop.fill").font(.system(size: 9, weight: .bold))
+                Text(title).font(.system(size: 11, weight: .bold))
+            }
+            .foregroundStyle(CallaCallInk.endInk)
+            .padding(.leading, 10)
+            .padding(.trailing, 12)
+            .frame(height: 26)
+            .background(Capsule().fill(NotchAccent.stop.opacity(hovering ? 0.26 : 0.16)))
+            .contentShape(Capsule())
+        }
+        .buttonStyle(.plain)
+        .onHover { hovering = $0 }
+        .padding(.leading, 6)
     }
 }
 
@@ -1775,13 +1910,12 @@ struct CallaTranscriptTicker: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            Rectangle().fill(NotchInk.hairline).frame(height: 1)
             // The strip is far wider than the notch. It hangs in an overlay so
             // its width never reaches the layout: as a child it became the
             // panel's ideal width and stretched the notch across the screen.
             Color.clear
                 .frame(maxWidth: .infinity)
-                .frame(height: 30)
+                .frame(height: 38)
                 .overlay(alignment: .trailing) {
                     TimelineView(.animation(paused: lag <= 0)) { context in
                         let elapsed = CGFloat(context.date.timeIntervalSince(since))
@@ -1806,7 +1940,9 @@ struct CallaTranscriptTicker: View {
                                        .init(color: .clear, location: 1)],
                                startPoint: .leading, endPoint: .trailing)
             }
+            .padding(.horizontal, 14)
         }
+        .background(RoundedRectangle(cornerRadius: 12, style: .continuous).fill(Color.white.opacity(0.05)))
         .onPreferenceChange(TickerWidthKey.self) { newWidth in
             defer { width = newWidth }
             // Older turns trimmed off the front shrink the strip without
@@ -1831,19 +1967,19 @@ struct CallaTranscriptTicker: View {
     @ViewBuilder private var strip: some View {
         if shown.isEmpty {
             Text("The transcript runs here as people speak.")
-                .font(.system(size: 12))
+                .font(.system(size: 13))
                 .foregroundStyle(NotchInk.tertiary)
         } else {
             HStack(spacing: 18) {
                 ForEach(Array(shown.enumerated()), id: \.element.seq) { index, turn in
-                    HStack(spacing: 7) {
+                    HStack(spacing: 10) {
                         Text(turn.speakerLabel.uppercased())
-                            .font(.system(size: 9.5, weight: .bold))
-                            .tracking(0.6)
+                            .font(.system(size: 10, weight: .bold))
+                            .tracking(notchCapsTracking)
                             .foregroundStyle(turn.isRemote ? CallaCallInk.summary : NotchInk.tertiary)
                         Text(turn.text)
-                            .font(.system(size: 12.5))
-                            .foregroundStyle(.white.opacity(index == shown.count - 1 ? 0.95 : 0.6))
+                            .font(.system(size: 13))
+                            .foregroundStyle(.white.opacity(index == shown.count - 1 ? 0.90 : 0.6))
                     }
                     .lineLimit(1)
                 }
