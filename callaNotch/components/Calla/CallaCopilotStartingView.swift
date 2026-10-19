@@ -78,57 +78,43 @@ struct CallaCopilotStartingView: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: NotchGlassSpace.snug) {
-            NotchCardHeader(state: failed ? "Call did not start" : "Starting the call",
-                            live: !failed,
-                            tint: failed ? NotchTint.stuck : NotchTint.active,
-                            figure: nil) {
-                NotchGlyphButton(symbol: failed ? "xmark" : "stop.fill",
-                                 help: failed ? "Dismiss" : "Cancel") {
-                    if failed {
+        CallaLifecycleLayout(
+            eyebrow: failed ? "Call did not start" : "Starting the call",
+            tint: failed ? NotchAccent.stop : NotchAccent.call,
+            headline: failed ? failure.headline : headline,
+            detail: failed ? failure.detail(copilot: copilot) : footnote,
+            steps: Step.allCases.map(\.label),
+            completed: min(completedSteps, Step.allCases.count - (failed ? 1 : 0)),
+            failed: failed,
+            trailing: {
+                // Things still arriving that never hold up the recording.
+                Text(supporting)
+                    .font(.system(size: 11, weight: .medium))
+                    .foregroundStyle(Color.white.opacity(0.80))
+                    .lineLimit(1)
+                    .padding(.horizontal, 9)
+                    .frame(height: 22)
+                    .background(Capsule().fill(Color.white.opacity(0.08)))
+                if !failed {
+                    CallaHeaderGlyphButton(symbol: "stop.fill", help: "Cancel") { engine.endCall() }
+                }
+            },
+            actions: {
+                if failed {
+                    if let remedy = failure.remedy {
+                        CallaLifecycleButton(title: remedy.title, weight: .primary) { perform(remedy) }
+                    }
+                    CallaLifecycleButton(title: "Close", weight: .plain) {
                         session.dismissStartupFailure()
-                    } else {
-                        engine.endCall()
                     }
                 }
-            }
-
-            if failed { failureBody } else { progressBody }
-
-            Spacer(minLength: 0)
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
-        .padding(.horizontal, 14)
-        .padding(.vertical, 10)
+            })
         .animation(.smooth(duration: 0.2), value: copilot.startupStage)
         .animation(.smooth(duration: 0.2), value: copilot.brainWarm)
         .animation(.smooth(duration: 0.2), value: failed)
     }
 
     // MARK: - Coming up
-
-    @ViewBuilder private var progressBody: some View {
-        Text(headline)
-            .font(NotchGlassType.title)
-            .foregroundStyle(NotchInk.primary)
-            .lineLimit(1)
-
-        CallaStepBar(total: Step.allCases.count, completed: completedSteps, tint: NotchTint.active)
-
-        Text(footnote)
-            .font(NotchGlassType.caption)
-            .foregroundStyle(NotchInk.tertiary)
-            .lineLimit(2)
-            .fixedSize(horizontal: false, vertical: true)
-
-        // Below the line: things that are still arriving and never hold up the
-        // recording. One line rather than two rows — neither blocks the call, so
-        // neither has earned a row of its own in a panel this size.
-        Text(supporting)
-            .font(NotchGlassType.caption)
-            .foregroundStyle(NotchInk.tertiary)
-            .lineLimit(1)
-    }
 
     private var headline: String {
         if reachedListening { return "Listening" }
@@ -159,36 +145,6 @@ struct CallaCopilotStartingView: View {
 
     private var brainLabel: String {
         copilot.activeProvider == "gateway" ? "Gateway brain" : "Local brain"
-    }
-
-    // MARK: - Did not start
-
-    @ViewBuilder private var failureBody: some View {
-        Text(failure.headline)
-            .font(NotchGlassType.title)
-            .foregroundStyle(NotchInk.primary)
-            .lineLimit(2)
-            .fixedSize(horizontal: false, vertical: true)
-
-        Text(failure.detail(copilot: copilot))
-            .font(NotchGlassType.detail)
-            .foregroundStyle(NotchInk.secondary)
-            .lineLimit(3)
-            .fixedSize(horizontal: false, vertical: true)
-
-        Spacer(minLength: 0)
-
-        HStack(spacing: NotchGlassSpace.tight) {
-            if let remedy = failure.remedy {
-                Button(remedy.title) { perform(remedy) }
-                    .buttonStyle(.borderedProminent)
-            }
-            Button(failure.remedy == nil ? "Dismiss" : "Not now") {
-                session.dismissStartupFailure()
-            }
-            Spacer(minLength: 0)
-        }
-        .controlSize(.small)
     }
 
     private func perform(_ remedy: CopilotStartFailure.Remedy) {
