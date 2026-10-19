@@ -71,36 +71,31 @@ struct CallaQuizPreflightView: View {
 
     var body: some View {
         CallaPreflightCard(
-            state: preparing ? "Preparing" : "Ready",
+            state: preparing ? "Preparing" : (canStart ? "Ready" : "Not ready"),
             live: false,
-            tint: .effectiveAccent,
+            tint: canStart || preparing ? NotchAccent.quiz : NotchAccent.attention,
             mode: $mode,
             switcherEnabled: !engine.status.copilot.running && !engine.status.quiz.active && !preparing,
             headline: headline,
-            headlineTint: canStart ? NotchInk.primary : NotchTint.attention,
+            headlineTint: NotchInk.primary,
             detail: detail,
             checks: checks,
             context: { meetingChip },
             controls: {
+                CallaPrimaryButton(title: preparing ? "Preparing…" : "Start Quiz",
+                                   symbol: preparing ? "circle.dotted" : "viewfinder",
+                                   tint: NotchAccent.quiz,
+                                   enabled: canStart) { start() }
+                    // Return started nothing before, on a panel whose only
+                    // primary action is this button.
+                    .keyboardShortcut(.defaultAction)
+                    .accessibilityLabel(preparing ? "Preparing Quiz" : "Start Quiz")
                 targetMenu
-                NotchChip(tint: canStart ? .effectiveAccent : nil, action: { start() }) {
-                    if preparing {
-                        Image(systemName: "circle.dotted").font(NotchGlassType.glyphSmall)
-                    }
-                    Text(preparing ? "Preparing…" : "Start Quiz")
-                }
-                .opacity(canStart ? 1 : 0.45)
-                .disabled(!canStart)
-                // Return started nothing before, on a panel whose only primary
-                // action is this button.
-                .keyboardShortcut(.defaultAction)
-                .accessibilityLabel(preparing ? "Preparing Quiz" : "Start Quiz")
             },
             utility: {
-                NotchGlyphButton(symbol: "gearshape", help: "Quiz settings") {
+                CallaHeaderGlyphButton(symbol: "gearshape", help: "Quiz settings") {
                     SettingsWindowController.shared.showCopilotWindow(tab: "Quiz")
                 }
-                .accessibilityLabel("Quiz settings")
             })
         .task { refresh() }
         // Holding ~190 MB per voter is worth it while the reader is deciding, and

@@ -39,9 +39,9 @@ struct CallaQuizLiveHeader: View {
 
     private func confidenceTint(_ confidence: Int) -> Color {
         switch confidence {
-        case 85...: NotchTint.healthy
+        case 85...: NotchAccent.quiz
         case 60 ..< 85: NotchInk.secondary
-        default: NotchTint.attention
+        default: NotchAccent.attention
         }
     }
 
@@ -49,17 +49,20 @@ struct CallaQuizLiveHeader: View {
         HStack(spacing: 0) {
             // Both halves are narrower than they look, so every label is
             // `fixedSize` rather than allowed to wrap mid-word.
-            HStack(spacing: NotchGlassSpace.tight) {
-                NotchStatusDot(live: quiz.active, tint: tint)
+            HStack(spacing: 9) {
+                Circle()
+                    .fill(tint)
+                    .frame(width: 8, height: 8)
+                    .background(Circle().fill(tint.opacity(quiz.active ? 0.22 : 0)).padding(-4))
                 Text(CallaQuizPresentation.stateLine(for: quiz))
-                    .font(NotchGlassType.bandLabel)
+                    .font(.system(size: 12, weight: .semibold))
                     .foregroundStyle(tint)
                     .lineLimit(1)
                     .fixedSize()
                 if let elapsed {
                     Text(elapsed)
-                        .font(NotchGlassType.inlineFigure)
-                        .foregroundStyle(NotchInk.secondary)
+                        .font(.system(size: 12, design: .monospaced).monospacedDigit())
+                        .foregroundStyle(Color.white.opacity(0.80))
                         .lineLimit(1)
                         .fixedSize()
                         .help("Time on this question")
@@ -68,72 +71,86 @@ struct CallaQuizLiveHeader: View {
                 // How sure, beside how long. Both are facts about the run rather
                 // than parts of the answer, so they belong together up here.
                 if let shown = position.answer, shown.verified {
-                    Text("\(shown.confidence)%")
-                        .font(NotchGlassType.inlineFigure)
-                        .foregroundStyle(confidenceTint(shown.confidence))
-                        .lineLimit(1)
-                        .fixedSize()
+                    pill("\(shown.confidence)%", tint: confidenceTint(shown.confidence), rounded: true)
                         .help("How much the council agreed")
                         .accessibilityLabel("Confidence \(shown.confidence) percent")
                     if shown.isRefinement {
-                        Image(systemName: "wand.and.stars")
-                            .font(NotchGlassType.glyphSmall)
-                            .foregroundStyle(NotchTint.healthy)
+                        pill("Improved", tint: NotchAccent.home, rounded: false)
                             .help("A stronger model improved this answer")
-                            .accessibilityLabel("Improved answer")
+                            .accessibilityLabel("Improved by a stronger model")
                     }
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
 
-            HStack(spacing: NotchGlassSpace.tight) {
+            HStack(spacing: 2) {
                 retargetMenu
-                NotchGlyphButton(symbol: session.layout == .full
-                                 ? "rectangle.compress.vertical" : "rectangle.expand.vertical",
-                                 help: session.layout == .full ? "Compact panel" : "Expanded panel") {
-                    session.toggleLayout()
-                }
-                .accessibilityLabel(session.layout == .full ? "Compact panel" : "Expanded panel")
 
                 if quiz.state == .paused {
-                    NotchGlyphButton(symbol: "play.fill", help: shortcutHelp("Resume Quiz", .sessionHold)) { send(.resume) }
+                    CallaWingButton(symbol: "play.fill", tint: Color.white.opacity(0.80)) { send(.resume) }
+                        .help(shortcutHelp("Resume Quiz", .sessionHold))
                         .accessibilityLabel("Resume Quiz")
                 } else {
-                    NotchGlyphButton(symbol: "pause.fill", help: shortcutHelp("Pause Quiz", .sessionHold)) { send(.pause) }
+                    CallaWingButton(symbol: "pause.fill", tint: Color.white.opacity(0.80)) { send(.pause) }
+                        .help(shortcutHelp("Pause Quiz", .sessionHold))
                         .accessibilityLabel("Pause Quiz")
                 }
 
                 // Reports the setting rather than asserting a guarantee — the
                 // same rule the call header follows.
-                Image(systemName: hiddenFromCapture ? "eye.slash.fill" : "eye.fill")
-                    .font(NotchGlassType.glyphSmall)
-                    .foregroundStyle(hiddenFromCapture ? NotchInk.secondary : NotchTint.attention)
+                CallaWingIndicator(symbol: hiddenFromCapture ? "eye.slash" : "eye",
+                                   tint: hiddenFromCapture ? Color.white.opacity(0.70) : NotchAccent.attention)
                     .help(hiddenFromCapture
                           ? "Hidden from screen recordings and shares"
                           : "Visible in screen recordings and shares — turn on Hide from screen recording in Settings")
+                    .accessibilityLabel(hiddenFromCapture ? "Hidden from screen recording"
+                                                          : "Visible in screen recording")
 
-                NotchGlyphButton(symbol: (vm.isPinned || session.pinsNotchOpen) ? "pin.fill" : "pin",
-                                 help: (vm.isPinned || session.pinsNotchOpen) ? "Unpin notch" : "Pin notch open") {
+                let pinned = vm.isPinned || session.pinsNotchOpen
+                CallaWingButton(symbol: pinned ? "pin.fill" : "pin",
+                                tint: pinned ? NotchAccent.quiz : Color.white.opacity(0.70)) {
                     AppDelegate.shared?.toggleUniversalNotchPin(for: vm)
                 }
-                .accessibilityLabel((vm.isPinned || session.pinsNotchOpen) ? "Unpin notch" : "Pin notch open")
+                .help(pinned ? "Unpin notch" : "Pin notch open")
+                .accessibilityLabel(pinned ? "Unpin notch" : "Pin notch open")
 
-                NotchGlyphButton(symbol: "stop.fill", help: "Stop Quiz") { send(.stop) }
+                CallaWingButton(symbol: session.layout == .full
+                                ? "arrow.down.right.and.arrow.up.left" : "arrow.up.left.and.arrow.down.right") {
+                    session.toggleLayout()
+                }
+                .help(session.layout == .full ? "Compact panel" : "Expanded panel")
+                .accessibilityLabel(session.layout == .full ? "Compact panel" : "Expanded panel")
+
+                CallaEndPill(title: "Stop") { send(.stop) }
+                    .help("Stop Quiz")
                     .accessibilityLabel("Stop Quiz")
             }
             .frame(maxWidth: .infinity, alignment: .trailing)
         }
-        .padding(.horizontal, 14)
+        .padding(.leading, 22)
+        .padding(.trailing, 16)
         .onReceive(clockTick) { now = $0 }
         .task { refreshTargets() }
     }
 
+    private func pill(_ text: String, tint: Color, rounded: Bool) -> some View {
+        Text(text)
+            .font(.system(size: rounded ? 11 : 10, weight: .bold, design: rounded ? .rounded : .default)
+                .monospacedDigit())
+            .foregroundStyle(tint)
+            .padding(.horizontal, 7)
+            .frame(height: 20)
+            .background(Capsule().fill(tint.opacity(0.18)))
+            .lineLimit(1)
+            .fixedSize()
+    }
+
     private var tint: Color {
         switch stage {
-        case .failed: NotchTint.stuck
-        case .paused: NotchTint.paused
-        case .answered: NotchTint.healthy
-        default: .effectiveAccent
+        case .failed: NotchAccent.stop
+        case .paused, .stopping: NotchInk.tertiary
+        case .collecting: NotchAccent.attention
+        default: NotchAccent.quiz
         }
     }
 
@@ -173,12 +190,22 @@ struct CallaQuizLiveHeader: View {
             Divider()
             Button("Refresh windows") { refreshTargets() }
         } label: {
-            Image(systemName: "scope").font(NotchGlassType.glyphSmall)
+            Text(CallaQuizPresentation.targetLabel(for: quiz.target))
+                .font(.system(size: 11))
+                .foregroundStyle(Color.white.opacity(0.80))
+                .lineLimit(1)
+                .truncationMode(.tail)
+                .padding(.horizontal, 8)
+                .frame(maxWidth: 96)
+                .frame(height: 22)
+                .background(Capsule().fill(Color.white.opacity(0.08)))
+                .frame(height: 28)
+                .contentShape(Rectangle())
         }
         .menuStyle(.borderlessButton)
         .menuIndicator(.hidden)
         .fixedSize()
-        .foregroundStyle(NotchInk.tertiary)
+        .padding(.trailing, 2)
         .help("Capturing \(CallaQuizPresentation.targetLabel(for: quiz.target)) — click to retarget")
         .accessibilityLabel("Capturing \(CallaQuizPresentation.targetLabel(for: quiz.target)). Retarget window")
         // The list goes stale the moment a window closes, and the menu is the

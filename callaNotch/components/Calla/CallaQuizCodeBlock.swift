@@ -34,8 +34,8 @@ struct CallaQuizCodeBlock: View {
     }
 
     private var resolvedSize: CGFloat {
-        let base = CGFloat(max(7, min(24, fontSize)))
-        return compact ? max(7, base - 1) : base
+        let base = CGFloat(max(10, min(24, fontSize)))
+        return compact ? max(10, base - 1) : base
     }
 
     /// The configured face, or the system monospaced one.
@@ -64,13 +64,13 @@ struct CallaQuizCodeBlock: View {
             if !compact { header }
             ScrollViewReader { proxy in
                 ScrollView(wraps ? [.vertical] : [.vertical, .horizontal]) {
-                    VStack(alignment: .leading, spacing: 1) {
+                    VStack(alignment: .leading, spacing: resolvedSize * 0.6 - 1) {
                         ForEach(Array(lines.enumerated()), id: \.offset) { item in
                             row(number: item.offset + 1, line: item.element)
                                 .id(item.offset)
                         }
                     }
-                    .padding(.vertical, compact ? 2 : 6)
+                    .padding(.vertical, compact ? 8 : 14)
                     .frame(maxWidth: wraps ? .infinity : nil, alignment: .leading)
                 }
                 .onChange(of: session.quizAnswerScroll) { _, request in
@@ -84,14 +84,14 @@ struct CallaQuizCodeBlock: View {
             }
         }
         .background(
-            RoundedRectangle(cornerRadius: NotchGlassRadius.chip, style: .continuous)
-                .fill(Color.black.opacity(0.28))
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .fill(Self.panel)
         )
         .overlay(
-            RoundedRectangle(cornerRadius: NotchGlassRadius.chip, style: .continuous)
-                .strokeBorder(NotchInk.hairline, lineWidth: 1)
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .strokeBorder(Color.white.opacity(0.08), lineWidth: 1)
         )
-        .clipShape(RoundedRectangle(cornerRadius: NotchGlassRadius.chip, style: .continuous))
+        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
     }
 
     private var header: some View {
@@ -115,17 +115,30 @@ struct CallaQuizCodeBlock: View {
             }
             .accessibilityLabel(wraps ? "Stop wrapping long lines" : "Wrap long lines")
         }
-        .padding(.horizontal, 8)
-        .padding(.vertical, 5)
-        .background(Color.white.opacity(0.04))
+        .padding(.horizontal, 12)
+        .padding(.vertical, 4)
+        .background(Color.white.opacity(0.03))
     }
+
+    /// A dark editor panel, so code reads as code against the slab.
+    private static let panel = Color(notchHex: 0x0D1117)
+    private static let ink = Color(notchHex: 0xE6EDF3)
+
+    /// Names a solution reaches for that are the language's own, not the
+    /// author's. Coloured apart from keywords and the author's functions.
+    private static let builtins: Set<String> = [
+        "print", "len", "range", "enumerate", "zip", "map", "filter", "sorted", "reversed",
+        "sum", "min", "max", "abs", "any", "all", "list", "dict", "set", "tuple", "str",
+        "int", "float", "bool", "isinstance", "heapq", "deque", "defaultdict", "Counter",
+        "Math", "console", "Array", "Object", "String", "Number", "Set", "Map",
+    ]
 
     private func row(number: Int, line: String) -> some View {
         HStack(alignment: .top, spacing: 0) {
             if showsLineNumbers, !(compact && lines.count == 1) {
                 Text("\(number)")
                     .font(face)
-                    .foregroundStyle(NotchInk.hairline)
+                    .foregroundStyle(Color.white.opacity(0.32))
                     .frame(width: gutterWidth, alignment: .trailing)
                     .padding(.trailing, 8)
                     // The gutter is scaffolding, and reading it aloud line by
@@ -138,20 +151,31 @@ struct CallaQuizCodeBlock: View {
                 .fixedSize(horizontal: !wraps, vertical: true)
                 .frame(maxWidth: wraps ? .infinity : nil, alignment: .leading)
         }
-        .padding(.horizontal, compact ? 4 : 6)
+        .padding(.horizontal, compact ? 12 : 16)
     }
 
-    /// Four roles and no more, drawn from the palette the rest of the notch uses.
+    /// Keywords lavender, the author's functions sky, the language's builtins
+    /// aqua; strings mint, numbers sun, comments stepped back.
     private func highlighted(_ line: String) -> AttributedString {
         var result = AttributedString()
-        for token in CallaQuizPresentation.tokenize(line) {
+        let tokens = CallaQuizPresentation.tokenize(line)
+        for (index, token) in tokens.enumerated() {
             var piece = AttributedString(token.text)
+            let callsNext = tokens.dropFirst(index + 1).first { !$0.text.allSatisfy(\.isWhitespace) }?.text == "("
             switch token.role {
-            case .keyword: piece.foregroundColor = .effectiveAccent
-            case .string: piece.foregroundColor = NotchTint.healthy
-            case .number: piece.foregroundColor = NotchTint.attention
-            case .comment: piece.foregroundColor = NotchInk.tertiary
-            case .plain: piece.foregroundColor = NotchInk.primary
+            case .keyword:
+                piece.foregroundColor = Self.builtins.contains(token.text) ? NotchAccent.shelf : NotchAccent.home
+            case .string: piece.foregroundColor = NotchAccent.call
+            case .number: piece.foregroundColor = NotchAccent.focus
+            case .comment: piece.foregroundColor = Color.white.opacity(0.45)
+            case .plain:
+                if Self.builtins.contains(token.text) {
+                    piece.foregroundColor = NotchAccent.shelf
+                } else if callsNext, token.text.first.map({ $0.isLetter || $0 == "_" }) == true {
+                    piece.foregroundColor = NotchAccent.quiz
+                } else {
+                    piece.foregroundColor = Self.ink
+                }
             }
             result.append(piece)
         }

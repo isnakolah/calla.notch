@@ -22,110 +22,138 @@ struct CallaQuizEndedView: View {
         CallaQuizPresentation.position(session.quizAnswerCursor, history: history)
     }
 
+    private var failed: Bool { outcome?.failure?.isEmpty == false }
+
     var body: some View {
-        VStack(alignment: .leading, spacing: NotchGlassSpace.snug) {
-            header
+        VStack(alignment: .leading, spacing: 12) {
+            CallaEyebrow(capsLine, tint: failed ? NotchAccent.stop : NotchInk.tertiary)
             if let failure = outcome?.failure, !failure.isEmpty {
-                HStack(spacing: NotchGlassSpace.hair + 3) {
-                    Image(systemName: "exclamationmark.triangle.fill")
-                        .font(NotchGlassType.glyphSmall)
-                        .foregroundStyle(NotchTint.stuck)
-                    Text(failure)
-                        .font(NotchGlassType.detail)
-                        .foregroundStyle(NotchInk.secondary)
-                        .lineLimit(2)
-                }
+                Text(failure)
+                    .font(.system(size: 13))
+                    .foregroundStyle(NotchInk.secondary)
+                    .lineLimit(2)
             }
             answerArea
+            Spacer(minLength: 0)
+            HStack(spacing: 10) {
+                if let answer = position.answer, answer.verified {
+                    button(copied ? "Copied" : "Copy answer", primary: false) {
+                        NSPasteboard.general.clearContents()
+                        NSPasteboard.general.setString(
+                            CallaQuizPresentation.copyableText(for: answer), forType: .string)
+                        copied = true
+                    }
+                    .accessibilityLabel(copied ? "Answer copied" : "Copy complete answer")
+                }
+                button("Done", primary: true) { session.dismissQuizOutcome() }
+            }
         }
-        .padding(NotchGlassSpace.card)
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .notchCard()
-        .notchTabInsets()
+        .padding(.horizontal, 18)
+        .padding(.top, 10)
+        .padding(.bottom, 12)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .onChange(of: position.answer?.id) { _, _ in copied = false }
     }
 
-    private var header: some View {
-        NotchCardHeader(state: history.isEmpty ? "Quiz stopped" : "Quiz finished",
-                        live: false,
-                        tint: outcome?.failure?.isEmpty == false ? NotchTint.stuck : NotchTint.healthy,
-                        figure: history.isEmpty ? nil : "\(history.count) answered") {
-            if position.count > 1 {
-                NotchGlyphButton(symbol: "chevron.left", help: "Previous answer") {
-                    session.quizAnswerBack(history: history)
-                }
-                .disabled(!position.canGoBack)
-                .opacity(position.canGoBack ? 1 : 0.35)
-                .accessibilityLabel("Previous answer")
-                NotchGlyphButton(symbol: "chevron.right", help: "Next answer") {
-                    session.quizAnswerForward(history: history)
-                }
-                .disabled(!position.canGoForward)
-                .opacity(position.canGoForward ? 1 : 0.35)
-                .accessibilityLabel("Next answer")
-            }
-            NotchGlyphButton(symbol: "xmark", help: "Dismiss") {
-                session.dismissQuizOutcome()
-            }
-            .accessibilityLabel("Dismiss")
-        }
+    private var capsLine: String {
+        let state = history.isEmpty ? "Quiz stopped" : "Quiz finished"
+        return history.isEmpty ? state : "\(state) · \(history.count) answered"
     }
 
+    private func button(_ title: String, primary: Bool, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Text(title)
+                .font(.system(size: 13, weight: primary ? .bold : .semibold))
+                .foregroundStyle(primary ? NotchAccent.onAccent : NotchInk.primary)
+                .padding(.horizontal, primary ? 18 : 16)
+                .frame(height: 40)
+                .background(RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    .fill(primary ? NotchAccent.quiz : Color.white.opacity(0.08)))
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .help(title)
+        .accessibilityLabel(title)
+    }
+
+    /// The last answer in a card, with the pager beside it.
     @ViewBuilder
     private var answerArea: some View {
         if let answer = position.answer {
-            VStack(alignment: .leading, spacing: NotchGlassSpace.hair) {
-                HStack(spacing: NotchGlassSpace.tight) {
-                    NotchCaps(answer.verified ? "Last answer" : "No answer",
-                              tint: answer.verified ? NotchInk.secondary : NotchTint.attention)
-                    if answer.verified {
-                        Text("\(answer.confidence)%")
-                            .font(NotchGlassType.minorFigure)
-                            .foregroundStyle(NotchInk.tertiary)
-                            .accessibilityLabel("Confidence \(answer.confidence) percent")
-                    }
-                    if let label = position.label {
-                        Text(label)
-                            .font(NotchGlassType.minorFigure)
-                            .foregroundStyle(NotchInk.tertiary)
-                            .accessibilityLabel("Answer \(label)")
-                    }
-                    Spacer(minLength: 4)
-                    if answer.verified {
-                        NotchGlyphButton(symbol: copied ? "checkmark" : "doc.on.doc",
-                                         help: copied ? "Copied" : "Copy complete answer") {
-                            NSPasteboard.general.clearContents()
-                            NSPasteboard.general.setString(
-                                CallaQuizPresentation.copyableText(for: answer), forType: .string)
-                            copied = true
+            HStack(spacing: 14) {
+                VStack(alignment: .leading, spacing: 4) {
+                    HStack(spacing: 8) {
+                        Text((answer.verified ? "Last answer" : "No answer").uppercased())
+                            .font(.system(size: 10, weight: .bold))
+                            .tracking(notchCapsTracking)
+                            .foregroundStyle(answer.verified ? NotchAccent.quiz : NotchAccent.attention)
+                        if answer.verified {
+                            Text("\(answer.confidence)%")
+                                .font(.system(size: 10, weight: .bold, design: .rounded).monospacedDigit())
+                                .foregroundStyle(NotchAccent.quiz)
+                                .padding(.horizontal, 6)
+                                .padding(.vertical, 1)
+                                .background(Capsule().fill(NotchAccent.quiz.opacity(0.18)))
+                                .accessibilityLabel("Confidence \(answer.confidence) percent")
                         }
-                        .accessibilityLabel(copied ? "Answer copied" : "Copy complete answer")
                     }
-                }
-                if let summary = answer.summary, !summary.isEmpty {
-                    Text(summary)
-                        .font(NotchGlassType.caption)
-                        .foregroundStyle(NotchInk.tertiary)
-                        .lineLimit(1)
-                        .truncationMode(.tail)
-                        .accessibilityLabel("Question: \(summary)")
-                }
-                ScrollView(.vertical) {
-                    Text(answer.verified ? answer.answer
+                    Text(answer.verified ? CallaQuizLiveView.split(answer.answer).lead
                          : "The council could not agree on this question.")
                         .font(answer.kind == .code
-                              ? .system(size: 12, design: .monospaced) : NotchGlassType.answer)
+                              ? .system(size: 14, design: .monospaced) : .system(size: 20, weight: .bold))
                         .foregroundStyle(answer.verified ? NotchInk.primary : NotchInk.secondary)
+                        .lineLimit(2)
                         .textSelection(.enabled)
-                        .frame(maxWidth: .infinity, alignment: .leading)
+                    if let summary = answer.summary, !summary.isEmpty {
+                        Text("Q · \(summary)")
+                            .font(.system(size: 12))
+                            .foregroundStyle(NotchInk.tertiary)
+                            .lineLimit(1)
+                            .truncationMode(.tail)
+                            .accessibilityLabel("Question: \(summary)")
+                    }
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                if position.count > 1 {
+                    HStack(spacing: 6) {
+                        pager("chevron.left", label: "Previous answer", enabled: position.canGoBack) {
+                            session.quizAnswerBack(history: history)
+                        }
+                        if let label = position.label {
+                            Text(label)
+                                .font(.system(size: 12, design: .rounded).monospacedDigit())
+                                .foregroundStyle(NotchInk.secondary)
+                                .accessibilityLabel("Answer \(label)")
+                        }
+                        pager("chevron.right", label: "Next answer", enabled: position.canGoForward) {
+                            session.quizAnswerForward(history: history)
+                        }
+                    }
                 }
             }
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+            .padding(.horizontal, 16)
+            .padding(.vertical, 14)
+            .background(RoundedRectangle(cornerRadius: 16, style: .continuous).fill(Color.white.opacity(0.05)))
         } else {
             Text("No questions were answered in this session.")
-                .font(NotchGlassType.row)
-                .foregroundStyle(NotchInk.tertiary)
-                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
+                .font(.system(size: 20, weight: .semibold))
+                .foregroundStyle(NotchInk.secondary)
         }
+    }
+
+    private func pager(_ symbol: String, label: String, enabled: Bool,
+                       action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Image(systemName: symbol)
+                .font(.system(size: 11, weight: .bold))
+                .foregroundStyle(enabled ? NotchInk.primary : Color.white.opacity(0.30))
+                .frame(width: 30, height: 30)
+                .background(Circle().fill(Color.white.opacity(enabled ? 0.08 : 0.04)))
+                .contentShape(Circle())
+        }
+        .buttonStyle(.plain)
+        .disabled(!enabled)
+        .help(label)
+        .accessibilityLabel(label)
     }
 }

@@ -79,13 +79,14 @@ struct CallaQuizLiveView: View {
                 ])
             }
         }
-        .padding(NotchGlassSpace.card)
+        // Straight on the slab, like the live call: the notch is the container.
+        .padding(.horizontal, 18)
+        .padding(.top, 10)
+        .padding(.bottom, 12)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .notchCard()
-        // A long answer must scroll inside the card, never draw past its bottom
-        // edge and out of the notch's curve.
-        .clipShape(RoundedRectangle(cornerRadius: NotchGlassRadius.card, style: .continuous))
-        .notchTabInsets()
+        // A long answer must scroll inside the panel, never draw past its
+        // bottom edge and out of the notch's curve.
+        .clipped()
         .onChange(of: history.count) { _, _ in
             session.reconcileQuizAnswerCursor(history: history)
         }
@@ -100,30 +101,43 @@ struct CallaQuizLiveView: View {
     @ViewBuilder
     private var answerCanvas: some View {
         if let answer = position.answer {
-            VStack(alignment: .leading, spacing: NotchGlassSpace.hair + 2) {
-                answerHeader(answer)
+            let isCode = answer.verified
+                && (answer.kind == .code || CallaQuizPresentation.looksLikeCode(answer.answer))
+                && !CallaQuizPresentation.code(from: answer.answer).isEmpty
+            VStack(alignment: .leading, spacing: 6) {
+                answerHeader(answer, isCode: isCode)
                 if answer.verified {
-                    answerBody(answer)
+                    answerBody(answer, isCode: isCode)
                 } else {
                     unanswered
+                }
+                if !isCode, let summary = answer.summary, !summary.isEmpty {
+                    Spacer(minLength: 0)
+                    Text("Q · \(summary)")
+                        .font(.system(size: 12))
+                        .foregroundStyle(NotchInk.tertiary)
+                        .lineLimit(1)
+                        .truncationMode(.tail)
+                        .accessibilityLabel("Question: \(summary)")
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         }
     }
 
-    /// The question, and the controls for stepping between answers.
+    /// The caps, then — for code, where the question has no room at the foot —
+    /// the question, then the pager and Copy.
     ///
-    /// Confidence and the refinement note used to sit here. They are facts *about*
-    /// the answer rather than the answer itself, and on a surface this small they
-    /// pushed the thing the reader came for down the card — so confidence now sits
-    /// in the band beside the clock, and the rationale in History.
+    /// Confidence and the refinement note sit in the band beside the clock: they
+    /// are facts *about* the answer rather than the answer itself.
     @ViewBuilder
-    private func answerHeader(_ answer: QuizFinalAnswer) -> some View {
-        HStack(alignment: .firstTextBaseline, spacing: NotchGlassSpace.tight) {
-            if let summary = answer.summary, !summary.isEmpty {
-                Text(summary)
-                    .font(NotchGlassType.caption)
+    private func answerHeader(_ answer: QuizFinalAnswer, isCode: Bool) -> some View {
+        HStack(spacing: 8) {
+            CallaEyebrow(answer.verified ? "Answer" : "No answer",
+                         tint: answer.verified ? NotchAccent.quiz : NotchAccent.attention)
+            if isCode, let summary = answer.summary, !summary.isEmpty {
+                Text("Q · \(summary)")
+                    .font(.system(size: 12))
                     .foregroundStyle(NotchInk.tertiary)
                     .lineLimit(1)
                     .truncationMode(.tail)
@@ -132,21 +146,29 @@ struct CallaQuizLiveView: View {
             Spacer(minLength: 4)
             if working {
                 Image(systemName: "circle.dotted")
-                    .font(NotchGlassType.glyphSmall)
-                    .foregroundStyle(Color.effectiveAccent)
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundStyle(NotchAccent.quiz)
                     .symbolEffect(.variableColor.iterative, isActive: true)
                     .help(workingLabel)
                     .accessibilityLabel(workingLabel)
             }
             answerNavigation
             if answer.verified {
-                NotchGlyphButton(symbol: copied ? "checkmark" : "doc.on.doc",
-                                 help: copied ? "Copied" : "Copy complete answer") {
-                    copy(answer)
+                Button { copy(answer) } label: {
+                    Text(copied ? "Copied" : (isCode ? "Copy code" : "Copy"))
+                        .font(.system(size: 11, weight: .bold))
+                        .foregroundStyle(isCode ? NotchAccent.onAccent : NotchAccent.quiz)
+                        .padding(.horizontal, 12)
+                        .frame(height: 28)
+                        .background(Capsule().fill(isCode ? NotchAccent.quiz : NotchAccent.quiz.opacity(0.18)))
+                        .contentShape(Capsule())
                 }
+                .buttonStyle(.plain)
+                .help(copied ? "Copied" : "Copy complete answer")
                 .accessibilityLabel(copied ? "Answer copied" : "Copy complete answer")
             }
         }
+        .frame(height: 28)
     }
 
     private var workingLabel: String {
@@ -163,163 +185,226 @@ struct CallaQuizLiveView: View {
     @ViewBuilder
     private var answerNavigation: some View {
         if position.count > 1 {
-            HStack(spacing: NotchGlassSpace.hair) {
-                NotchGlyphButton(symbol: "chevron.left", help: "Previous answer") {
+            HStack(spacing: 6) {
+                pagerButton("chevron.left", label: "Previous answer", enabled: position.canGoBack) {
                     session.quizAnswerBack(history: history)
                 }
-                .disabled(!position.canGoBack)
-                .opacity(position.canGoBack ? 1 : 0.35)
-                .accessibilityLabel("Previous answer")
-                NotchGlyphButton(symbol: position.hasNewer ? "chevron.right.2" : "chevron.right",
-                                 help: position.hasNewer ? "Newer answers" : "Next answer") {
+                if let label = position.label {
+                    Text(label)
+                        .font(.system(size: 12, design: .rounded).monospacedDigit())
+                        .foregroundStyle(NotchInk.secondary)
+                        .accessibilityLabel("Answer \(label)")
+                }
+                pagerButton(position.hasNewer ? "chevron.right.2" : "chevron.right",
+                            label: position.hasNewer ? "Jump to newer answers" : "Next answer",
+                            enabled: position.canGoForward) {
                     session.quizAnswerForward(history: history)
                 }
-                .disabled(!position.canGoForward)
-                .opacity(position.canGoForward ? 1 : 0.35)
-                .accessibilityLabel(position.hasNewer ? "Jump to newer answers" : "Next answer")
             }
         }
     }
 
+    private func pagerButton(_ symbol: String, label: String, enabled: Bool,
+                             action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Image(systemName: symbol)
+                .font(.system(size: 11, weight: .bold))
+                .foregroundStyle(enabled ? NotchInk.primary : Color.white.opacity(0.30))
+                .frame(width: 28, height: 28)
+                .background(Circle().fill(Color.white.opacity(enabled ? 0.08 : 0.04)))
+                .contentShape(Circle())
+        }
+        .buttonStyle(.plain)
+        .disabled(!enabled)
+        .help(label)
+        .accessibilityLabel(label)
+    }
+
     @ViewBuilder
-    private func answerBody(_ answer: QuizFinalAnswer) -> some View {
-        if answer.kind == .code || CallaQuizPresentation.looksLikeCode(answer.answer) {
-            let parsed = CallaQuizPresentation.code(from: answer.answer)
-            if parsed.isEmpty {
-                proseBody(answer)
-            } else {
-                CallaQuizCodeBlock(code: parsed, compact: session.layout != .full,
-                                   wraps: $wrapsCode)
-                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-            }
+    private func answerBody(_ answer: QuizFinalAnswer, isCode: Bool) -> some View {
+        if isCode {
+            CallaQuizCodeBlock(code: CallaQuizPresentation.code(from: answer.answer),
+                               compact: session.layout != .full, wraps: $wrapsCode)
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         } else {
             proseBody(answer)
         }
     }
 
+    /// The answer's first line set large — the thing read from across a desk —
+    /// and whatever follows it as the explanation.
     private func proseBody(_ answer: QuizFinalAnswer) -> some View {
-        ScrollView(.vertical) {
-            Text(answer.answer)
-                .font(session.layout == .full ? NotchGlassType.answer
-                                              : NotchGlassType.answerLarge)
-                .foregroundStyle(NotchInk.primary)
-                .textSelection(.enabled)
-                .frame(maxWidth: .infinity, alignment: .leading)
+        let parts = Self.split(answer.answer)
+        return ScrollView(.vertical) {
+            VStack(alignment: .leading, spacing: 6) {
+                Text(parts.lead)
+                    .font(.system(size: parts.lead.count > 70 ? 20 : 32, weight: .bold))
+                    .tracking(parts.lead.count > 70 ? -0.2 : -0.5)
+                    .lineSpacing(1)
+                    .foregroundStyle(NotchInk.primary)
+                    .minimumScaleFactor(0.7)
+                if let rest = parts.rest {
+                    Text(rest)
+                        .font(.system(size: 14))
+                        .lineSpacing(2.5)
+                        .foregroundStyle(Color.white.opacity(0.82))
+                }
+            }
+            .textSelection(.enabled)
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+    }
+
+    /// The first non-empty line, and the rest of the text after it.
+    static func split(_ answer: String) -> (lead: String, rest: String?) {
+        let trimmed = answer.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard let newline = trimmed.firstIndex(of: "\n") else { return (trimmed, nil) }
+        let lead = String(trimmed[..<newline]).trimmingCharacters(in: .whitespaces)
+        let rest = String(trimmed[newline...]).trimmingCharacters(in: .whitespacesAndNewlines)
+        return (lead, rest.isEmpty ? nil : rest)
     }
 
     /// An unverified answer carries no model text by contract — `QuizFinalAnswer`
     /// replaces it with a sentinel so unvetted output cannot reach the screen.
     /// Rendering that sentinel printed the same three words as heading and body.
     private var unanswered: some View {
-        VStack(alignment: .leading, spacing: NotchGlassSpace.hair) {
+        VStack(alignment: .leading, spacing: 4) {
             Text("The council could not agree on this question.")
-                .font(NotchGlassType.row)
-                .foregroundStyle(NotchInk.secondary)
+                .font(.system(size: 20, weight: .semibold))
+                .foregroundStyle(NotchInk.primary)
             Text("Scroll the target or wait for the next question.")
-                .font(NotchGlassType.caption)
-                .foregroundStyle(NotchInk.tertiary)
+                .font(.system(size: 13))
+                .foregroundStyle(NotchInk.secondary)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
     }
 
     // MARK: - Other stages
 
-    private var waiting: some View {
-        VStack(spacing: NotchGlassSpace.snug) {
-            if working {
-                Image(systemName: "circle.dotted")
-                    .font(NotchGlassType.glyphLarge)
-                    .foregroundStyle(Color.effectiveAccent)
-                    .symbolEffect(.variableColor.iterative, isActive: true)
+    /// The title and sentence every non-answer stage leads with.
+    private func stageText(_ title: String, detail: String?, caps: String? = nil,
+                           capsTint: Color = NotchInk.tertiary) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            if let caps { CallaEyebrow(caps, tint: capsTint) }
+            Text(title)
+                .font(.system(size: 22, weight: .semibold))
+                .tracking(-0.2)
+                .foregroundStyle(NotchInk.primary)
+                .lineLimit(2)
+            if let detail {
+                Text(detail)
+                    .font(.system(size: 13))
+                    .lineSpacing(2)
+                    .foregroundStyle(NotchInk.secondary)
+                    .lineLimit(2)
+                    .fixedSize(horizontal: false, vertical: true)
             }
-            Text(working ? workingLabel : "Watching for the first question…")
-                .font(NotchGlassType.title)
-                .foregroundStyle(working ? NotchInk.primary : NotchInk.tertiary)
+        }
+    }
+
+    private var waiting: some View {
+        HStack(spacing: 18) {
+            Image(systemName: working ? "circle.dotted" : "viewfinder")
+                .font(.system(size: 26, weight: .medium))
+                .foregroundStyle(NotchAccent.quiz)
+                .symbolEffect(.variableColor.iterative, isActive: working)
+                .frame(width: 64, height: 64)
+                .background(RoundedRectangle(cornerRadius: 20, style: .continuous)
+                    .fill(NotchAccent.quiz.opacity(0.12)))
+                .accessibilityHidden(true)
+            stageText(working ? workingLabel : "Watching for the first question…",
+                      detail: working ? nil
+                        : "Reading \(CallaQuizPresentation.targetLabel(for: quiz.target)). An answer shows up here as soon as a question is on screen.")
                 .accessibilityAddTraits(.updatesFrequently)
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
     }
 
     private func centered(_ text: String) -> some View {
-        Text(text)
-            .font(NotchGlassType.row)
-            .foregroundStyle(NotchInk.tertiary)
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
+        stageText(text, detail: nil)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
     }
 
+    /// The question runs past the edge: both scroll directions, the one asked
+    /// for (down when nothing was asked) as the primary.
     @ViewBuilder
     private func collecting(_ prompt: QuizCommandKind?) -> some View {
-        VStack(spacing: NotchGlassSpace.snug) {
-            Text(prompt == nil ? "Collecting the question…"
-                 : "The question runs past the window edge.")
-                .font(NotchGlassType.row)
-                .foregroundStyle(NotchInk.secondary)
-                .multilineTextAlignment(.center)
-            if let prompt {
-                NotchChip(tint: .effectiveAccent, action: { send(prompt) }) {
-                    Image(systemName: prompt == .scrollUp ? "arrow.up" : "arrow.down")
-                        .font(NotchGlassType.glyphSmall)
-                    Text(prompt == .scrollUp ? "Scroll target up" : "Scroll target down")
-                    if let shortcut = KeyboardShortcuts.getShortcut(
-                        for: prompt == .scrollUp ? .sessionScrollUp : .sessionScrollDown) {
-                        Text(shortcut.description)
-                            .font(NotchGlassType.minorFigure)
-                            .foregroundStyle(NotchInk.tertiary)
-                    }
-                }
-                .accessibilityLabel(prompt == .scrollUp ? "Scroll target up" : "Scroll target down")
+        let primary: QuizCommandKind = prompt == .scrollUp ? .scrollUp : .scrollDown
+        VStack(alignment: .leading, spacing: 12) {
+            stageText("Collecting the question…",
+                      detail: prompt == nil ? "Reading what is on screen."
+                        : "The question runs past the window edge. Scroll it so the rest is visible.",
+                      caps: prompt == nil ? nil : "Needs a scroll", capsTint: NotchAccent.attention)
+            Spacer(minLength: 0)
+            HStack(spacing: 10) {
+                scrollButton(.scrollUp, primary: primary == .scrollUp)
+                scrollButton(.scrollDown, primary: primary == .scrollDown)
             }
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+    }
+
+    private func scrollButton(_ command: QuizCommandKind, primary: Bool) -> some View {
+        let up = command == .scrollUp
+        let title = up ? "Scroll target up" : "Scroll target down"
+        let shortcut = KeyboardShortcuts.getShortcut(for: up ? .sessionScrollUp : .sessionScrollDown)
+        return stageButton(title, symbol: up ? "arrow.up" : "arrow.down", primary: primary,
+                           help: shortcut.map { "\(title) — \($0.description)" } ?? title) {
+            send(command)
+        }
+    }
+
+    private func stageButton(_ title: String, symbol: String?, primary: Bool, help: String? = nil,
+                             action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            HStack(spacing: 9) {
+                if let symbol { Image(systemName: symbol).font(.system(size: 13, weight: .semibold)) }
+                Text(title).font(.system(size: 13, weight: primary ? .bold : .semibold)).lineLimit(1)
+            }
+            .foregroundStyle(primary ? NotchAccent.onAccent : NotchInk.primary)
+            .padding(.leading, symbol == nil ? 18 : 15)
+            .padding(.trailing, 18)
+            .frame(height: 46)
+            .background(RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .fill(primary ? NotchAccent.quiz : Color.white.opacity(0.08)))
+            .contentShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+        }
+        .buttonStyle(.plain)
+        .help(help ?? title)
+        .accessibilityLabel(title)
     }
 
     @ViewBuilder
     private func paused(_ reason: String?) -> some View {
-        VStack(spacing: NotchGlassSpace.snug) {
-            Text(reason ?? "Paused")
-                .font(NotchGlassType.row)
-                .foregroundStyle(reason == nil ? NotchInk.secondary : NotchTint.attention)
-                .multilineTextAlignment(.center)
-                .lineLimit(2)
-            NotchChip(tint: .effectiveAccent, action: { send(.resume) }) {
-                Image(systemName: "play.fill").font(NotchGlassType.glyphSmall)
-                Text("Resume")
+        VStack(alignment: .leading, spacing: 12) {
+            stageText("Quiz is paused",
+                      detail: reason ?? "Nothing is being read. Resume when the next question is on screen.")
+            Spacer(minLength: 0)
+            HStack(spacing: 10) {
+                stageButton("Resume", symbol: "play.fill", primary: true) { send(.resume) }
+                stageButton("Open Quiz settings", symbol: nil, primary: false) {
+                    SettingsWindowController.shared.showCopilotWindow(tab: "Quiz")
+                }
             }
-            .accessibilityLabel("Resume Quiz")
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
     }
 
     @ViewBuilder
     private func failed(_ reason: String) -> some View {
-        VStack(spacing: NotchGlassSpace.snug) {
-            Image(systemName: "exclamationmark.triangle.fill")
-                .font(NotchGlassType.glyphLarge)
-                .foregroundStyle(NotchTint.stuck)
-            Text(reason)
-                .font(NotchGlassType.row)
-                .foregroundStyle(NotchInk.secondary)
-                .multilineTextAlignment(.center)
-                .lineLimit(3)
-            NotchChip(action: { SettingsWindowController.shared.showCopilotWindow(tab: "Quiz") }) {
-                Text("Open Quiz settings")
+        VStack(alignment: .leading, spacing: 12) {
+            stageText(reason, detail: nil, caps: "Quiz stopped", capsTint: NotchAccent.stop)
+            Spacer(minLength: 0)
+            stageButton("Open Quiz settings", symbol: nil, primary: false) {
+                SettingsWindowController.shared.showCopilotWindow(tab: "Quiz")
             }
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .accessibilityAddTraits(.updatesFrequently)
     }
 
     // MARK: - Helpers
-
-    private func confidenceTint(_ confidence: Int) -> Color {
-        switch confidence {
-        case 85...: NotchTint.healthy
-        case 60 ..< 85: NotchInk.secondary
-        default: NotchTint.attention
-        }
-    }
 
     private func copy(_ answer: QuizFinalAnswer) {
         NSPasteboard.general.clearContents()
