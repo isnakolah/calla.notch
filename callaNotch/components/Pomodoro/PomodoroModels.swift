@@ -33,9 +33,9 @@ enum PomodoroPhase: String, Codable, Hashable, Defaults.Serializable {
 
     var tint: Color {
         switch self {
-        case .work: return .effectiveAccent
-        case .shortBreak: return .init(red: 0.24, green: 0.80, blue: 0.66)
-        case .longBreak: return .init(red: 0.34, green: 0.72, blue: 0.96)
+        case .work: return NotchAccent.focus
+        case .shortBreak: return NotchAccent.shelf
+        case .longBreak: return NotchAccent.quiz
         }
     }
 
