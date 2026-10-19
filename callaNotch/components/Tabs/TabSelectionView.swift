@@ -43,12 +43,20 @@ struct TabSelectionView: View {
     }
 
     var body: some View {
-        HStack(spacing: 5) {
-            ForEach(items) { item in
+        HStack(spacing: 2) {
+            ForEach(Array(items.enumerated()), id: \.element) { index, item in
+                // Settings is a control, not a place: a hairline keeps it from
+                // reading as a fifth tab.
+                if item == .settings, index > 0 {
+                    Rectangle()
+                        .fill(Color.white.opacity(0.14))
+                        .frame(width: 1, height: 14)
+                        .padding(.horizontal, 4)
+                        .accessibilityHidden(true)
+                }
                 view(for: item)
             }
         }
-        .clipShape(Capsule())
     }
 
     private func isVisible(_ item: NotchHeaderItem) -> Bool {
@@ -84,43 +92,34 @@ struct TabSelectionView: View {
 
     private func tabButton(_ item: NotchHeaderItem, destination: NotchViews) -> some View {
         let selected = coordinator.currentView == destination
-        return TabButton(label: item.label, icon: item.icon, selected: selected) {
+        let liveBehind = item == .copilot && callaEngine.status.copilot.running && !selected
+        return TabButton(
+            label: item.label, icon: item.icon, selected: selected,
+            accent: item.accent,
+            restingInk: liveBehind ? NotchAccent.call : NotchInk.tertiary,
+            showsLiveDot: liveBehind
+        ) {
             withAnimation(.smooth) {
                 coordinator.currentView = destination
             }
         }
         .frame(height: 26)
-        .foregroundStyle(tint(for: item, selected: selected))
         .background {
-            Capsule()
-                .fill(selected ? Color(nsColor: .secondarySystemFill) : .clear)
-                .matchedGeometryEffect(id: "capsule", in: animation, isSource: selected)
+            if selected {
+                Capsule()
+                    .fill(item.accent.opacity(NotchAccent.fill))
+                    .matchedGeometryEffect(id: "capsule", in: animation)
+            }
         }
-    }
-
-    /// Selection is the primary ink; an unselected tab is tertiary — the same
-    /// two steps every other surface uses, rather than `.white` and `.gray`,
-    /// which were a third and fourth grey in a vocabulary that has four.
-    ///
-    /// A live call keeps the copilot tab green even when another tab is showing,
-    /// since that is the state worth noticing mid-call.
-    private func tint(for item: NotchHeaderItem, selected: Bool) -> Color {
-        if item == .copilot, callaEngine.status.copilot.running, !selected {
-            return NotchTint.healthy
-        }
-        return selected ? NotchInk.primary : NotchInk.tertiary
     }
 
     private func circleButton(icon: String, label: String, action: @escaping () -> Void) -> some View {
         Button(action: action) {
-            Capsule()
-                .fill(.black)
-                .frame(width: NotchGlassSpace.control, height: NotchGlassSpace.control)
-                .overlay {
-                    Image(systemName: icon)
-                        .font(NotchGlassType.glyph)
-                        .foregroundStyle(NotchInk.primary)
-                }
+            Image(systemName: icon)
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundStyle(NotchInk.tertiary)
+                .frame(width: 26, height: 26)
+                .contentShape(Circle())
         }
         .buttonStyle(PlainButtonStyle())
         .help(label)

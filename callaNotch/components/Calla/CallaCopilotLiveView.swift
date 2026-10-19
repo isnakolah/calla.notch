@@ -1436,12 +1436,12 @@ private struct AmbientHeightKey: PreferenceKey {
 /// read as one surface that changes size rather than three panels.
 ///
 /// One colour per job, so what the notch is showing is known before a word of
-/// it is read: amber is an answer, blue is the running account, coral is
-/// something wrong with capture. Nothing else in a call is tinted.
+/// it is read: mint is the running account, sun is what is still open, orange
+/// is something wrong with capture. Nothing else in a call is tinted.
 enum CallaCallInk {
-    static let answer = Color(red: 1.0, green: 0.70, blue: 0.14)
-    static let summary = Color(red: 0.49, green: 0.72, blue: 1.0)
-    static let problem = Color(red: 1.0, green: 0.52, blue: 0.40)
+    static let answer = NotchAccent.focus
+    static let summary = NotchAccent.call
+    static let problem = NotchAccent.attention
     static let ended = Color.white.opacity(0.55)
 }
 

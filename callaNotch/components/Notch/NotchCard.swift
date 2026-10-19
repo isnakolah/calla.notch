@@ -33,7 +33,10 @@ enum NotchInk {
     /// two-line explanation read at a glance costs real effort.
     static let reading = Color.white.opacity(0.93)
     /// Labels, units, and anything that is off.
-    static let tertiary = Color.white.opacity(0.42)
+    ///
+    /// 56%, not 42%: at 42% a 10pt label on the black slab fell below what can
+    /// be read at a glance.
+    static let tertiary = Color.white.opacity(0.56)
     /// A rule or a track. Never text.
     static let hairline = Color.white.opacity(0.12)
 }
@@ -67,7 +70,7 @@ enum NotchGlassType {
     /// Small print under a figure. The Usage tab's caption, by another name.
     static let caption = Font.system(size: 10)
     /// State and labels. Always tracked, always upper-cased at the call site.
-    static let caps = Font.system(size: 9, weight: .bold)
+    static let caps = Font.system(size: 10, weight: .bold)
     /// A figure inline with text — elapsed time, a count in a header.
     static let inlineFigure = Font.system(size: 11, design: .rounded).monospacedDigit()
     /// The smallest figure that still changes in place.

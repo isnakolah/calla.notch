@@ -74,6 +74,44 @@ enum NotchTint {
     static var paused: Color { .secondary }
 }
 
+/// The notch's own palette: one accent per tab, plus two that mean something
+/// wherever they appear.
+///
+/// `NotchTint` stays the Settings window's vocabulary, where the system colours
+/// read correctly in both appearances. The notch is black in every theme, so it
+/// can spend brighter, lighter stops that would wash out on a white window.
+/// A tab's accent marks its one live element; a tinted fill behind it is the
+/// accent at `fill` opacity.
+enum NotchAccent {
+    static let home = Color(notchHex: 0xB69CFF)
+    static let focus = Color(notchHex: 0xFFD15C)
+    static let shelf = Color(notchHex: 0x4FE0C6)
+    static let call = Color(notchHex: 0x5BE49B)
+    static let quiz = Color(notchHex: 0x6CB8FF)
+    /// Waiting on the reader: a permission, a blocker, a muted mic.
+    static let attention = Color(notchHex: 0xFFA94D)
+    /// Stopped, or the control that stops it.
+    static let stop = Color(notchHex: 0xFF6B6B)
+
+    /// The wash behind an accent — a selected tab, a chip, a segment.
+    static let fill: Double = 0.16
+    /// The same wash where it has to hold its own against neighbouring fills.
+    static let strongFill: Double = 0.22
+
+    /// Ink on a solid accent fill. Every accent here is light, so the label on
+    /// it is near-black rather than white.
+    static let onAccent = Color.black.opacity(0.86)
+}
+
+extension Color {
+    init(notchHex hex: UInt32) {
+        self.init(
+            red: Double((hex >> 16) & 0xFF) / 255,
+            green: Double((hex >> 8) & 0xFF) / 255,
+            blue: Double(hex & 0xFF) / 255)
+    }
+}
+
 // MARK: - Type
 
 /// One scale.

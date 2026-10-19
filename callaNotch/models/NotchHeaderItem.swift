@@ -39,7 +39,7 @@ enum NotchHeaderItem: String, CaseIterable, Identifiable, Codable, Defaults.Seri
     var label: String {
         switch self {
         case .home: return "Home"
-        case .pomodoro: return "Pomodoro"
+        case .pomodoro: return "Focus"
         case .usage: return "Usage"
         case .shelf: return "Shelf"
         case .copilot: return "Call"
@@ -50,13 +50,25 @@ enum NotchHeaderItem: String, CaseIterable, Identifiable, Codable, Defaults.Seri
 
     var icon: String {
         switch self {
-        case .home: return "house.fill"
-        case .pomodoro: return "timer.circle.fill"
+        case .home: return "house"
+        case .pomodoro: return "timer"
         case .usage: return "chart.bar.xaxis"
-        case .shelf: return "tray.fill"
-        case .copilot: return "waveform.badge.mic"
-        case .settings: return "gear"
+        case .shelf: return "tray"
+        case .copilot: return "waveform"
+        case .settings: return "slider.horizontal.3"
         case .none: return ""
+        }
+    }
+
+    /// The tab's one colour: its selected capsule, and the live element in the
+    /// view it opens.
+    var accent: Color {
+        switch self {
+        case .home: return NotchAccent.home
+        case .pomodoro: return NotchAccent.focus
+        case .shelf: return NotchAccent.shelf
+        case .copilot: return NotchAccent.call
+        case .usage, .settings, .none: return NotchInk.primary
         }
     }
 
