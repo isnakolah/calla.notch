@@ -199,11 +199,11 @@ struct ContentView: View {
         var chinWidth: CGFloat = vm.closedNotchSize.width
 
         if copilotSession.isLive && vm.notchState == .closed && !vm.hideOnClosed {
-            // Room for the activity glyph and the call clock.
-            chinWidth += 150
+            // Both wings: the state dot and clock, and the activity glyph.
+            chinWidth += NotchWing.chinGrowth
         } else if pomodoro.isActive && vm.notchState == .closed && !vm.hideOnClosed {
-            // Room for the phase ring and the "20m 15s" countdown.
-            chinWidth += 150
+            // Both wings: the ring and clock, and the block dots.
+            chinWidth += NotchWing.chinGrowth
         } else if Defaults[.showUsageBesideNotch] && vm.notchState == .closed && !vm.hideOnClosed {
             // Room for a "CLAUDE 23/38" badge on each side of the notch.
             chinWidth += 150
@@ -211,7 +211,7 @@ struct ContentView: View {
             && vm.notchState == .closed && (musicManager.isPlaying || !musicManager.isPlayerIdle)
             && coordinator.musicLiveActivityEnabled && !vm.hideOnClosed
         {
-            chinWidth += (2 * max(0, vm.effectiveClosedNotchHeight - 12) + 20)
+            chinWidth += isInlineSongChange ? 2 * NotchWing.inlineSongWidth + 8 : NotchWing.chinGrowth
         }
 
         return chinWidth
@@ -277,7 +277,11 @@ struct ContentView: View {
                     // beside the notch — instead of clipping them away.
                     .background(alignment: .top) {
                         notchBackground
-                            .frame(width: vm.notchState == .open || closedNotchActivity == .usage
+                            // Wings carry the slab with them, as the usage badges
+                            // always did: one black strip, the housing in the
+                            // middle and a fact either side, never a glyph sitting
+                            // loose on the menu bar.
+                            .frame(width: vm.notchState == .open || closedNotchActivity.drawsWings
                                    ? nil : vm.closedNotchSize.width)
                             .clipShape(currentNotchShape)
                     }
@@ -697,13 +701,20 @@ struct ContentView: View {
                           // Old sneak peek music
                           else if coordinator.sneakPeek.type == .music {
                               if vm.notchState == .closed && !vm.hideOnClosed && Defaults[.sneakPeekStyles] == .standard {
-                                  HStack(alignment: .center) {
-                                      Image(systemName: "music.note")
-                                      GeometryReader { geo in
-                                          MarqueeText(.constant(musicManager.songTitle + " - " + musicManager.artistName),  textColor: Defaults[.playerColorTinting] ? Color(nsColor: musicManager.avgColor).ensureMinimumBrightness(factor: 0.6) : .gray, minDuration: 1, frameWidth: geo.size.width)
-                                      }
+                                  // The chin a song change drops: title over
+                                  // artist, centred, to 80pt overall.
+                                  VStack(spacing: 1) {
+                                      Text(musicManager.songTitle)
+                                          .font(.system(size: 13, weight: .semibold))
+                                          .foregroundStyle(NotchInk.primary)
+                                      Text(musicManager.artistName)
+                                          .font(.system(size: 11))
+                                          .foregroundStyle(NotchInk.secondary)
                                   }
-                                  .foregroundStyle(.gray)
+                                  .lineLimit(1)
+                                  .truncationMode(.tail)
+                                  .frame(width: vm.closedNotchSize.width + 2 * NotchWing.width - 36)
+                                  .frame(height: max(0, 80 - vm.effectiveClosedNotchHeight - 10))
                                   .padding(.bottom, 10)
                               }
                           }
@@ -1052,100 +1063,76 @@ struct ContentView: View {
         }
     }
 
+    /// An inline song change: the title and artist ride in the wings, which
+    /// widen so the notch reaches 584pt overall.
+    private var isInlineSongChange: Bool {
+        coordinator.expandingView.show
+            && coordinator.expandingView.type == .music
+            && Defaults[.sneakPeekStyles] == .inline
+    }
+
     @ViewBuilder
     func MusicLiveActivity() -> some View {
-        HStack {
-            Image(nsImage: musicManager.albumArt)
-                .resizable()
-                .clipped()
-                .clipShape(
-                    RoundedRectangle(
-                        cornerRadius: MusicPlayerImageSizes.cornerRadiusInset.closed)
-                )
-                .matchedGeometryEffect(id: "albumArt", in: albumArtNamespace)
-                .frame(
-                    width: max(0, vm.effectiveClosedNotchHeight - 12),
-                    height: max(0, vm.effectiveClosedNotchHeight - 12)
-                )
+        let wing = isInlineSongChange ? NotchWing.inlineSongWidth : NotchWing.width
+        let artistTint = Defaults[.coloredSpectrogram]
+            ? Color(nsColor: musicManager.avgColor) : NotchInk.secondary
+        HStack(spacing: 0) {
+            HStack(spacing: 7) {
+                Image(nsImage: musicManager.albumArt)
+                    .resizable()
+                    .aspectRatio(contentMode: .fill)
+                    .frame(width: 22, height: 22)
+                    .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
+                    .matchedGeometryEffect(id: "albumArt", in: albumArtNamespace)
+                    .accessibilityLabel("Album artwork")
+                if isInlineSongChange {
+                    MarqueeText(
+                        .constant(musicManager.songTitle),
+                        font: .system(size: 12, weight: .semibold),
+                        nsFont: .callout,
+                        textColor: NotchInk.primary,
+                        minDuration: 0.4,
+                        frameWidth: wing - 32
+                    )
+                    .transition(.opacity)
+                }
+            }
+            .frame(width: wing, alignment: .leading)
 
             Rectangle()
                 .fill(.black)
-                .overlay(
-                    HStack(alignment: .top) {
-                        if coordinator.expandingView.show
-                            && coordinator.expandingView.type == .music
-                        {
-                            MarqueeText(
-                                .constant(musicManager.songTitle),
-                                textColor: Defaults[.coloredSpectrogram]
-                                    ? Color(nsColor: musicManager.avgColor) : Color.gray,
-                                minDuration: 0.4,
-                                frameWidth: 100
-                            )
-                            .opacity(
-                                (coordinator.expandingView.show
-                                    && Defaults[.sneakPeekStyles] == .inline)
-                                    ? 1 : 0
-                            )
-                            Spacer(minLength: vm.closedNotchSize.width)
-                            // Song Artist
-                            Text(musicManager.artistName)
-                                .lineLimit(1)
-                                .truncationMode(.tail)
-                                .foregroundStyle(
-                                    Defaults[.coloredSpectrogram]
-                                        ? Color(nsColor: musicManager.avgColor)
-                                        : Color.gray
-                                )
-                                .opacity(
-                                    (coordinator.expandingView.show
-                                        && coordinator.expandingView.type == .music
-                                        && Defaults[.sneakPeekStyles] == .inline)
-                                        ? 1 : 0
-                                )
-                        }
-                    }
-                )
-                .frame(
-                    width: (coordinator.expandingView.show
-                        && coordinator.expandingView.type == .music
-                        && Defaults[.sneakPeekStyles] == .inline)
-                        ? 380
-                        : vm.closedNotchSize.width
-                            + -cornerRadiusInsets.closed.top
-                )
+                .frame(width: vm.closedNotchSize.width - 20)
 
-            HStack {
-                if useMusicVisualizer {
-                    Rectangle()
-                        .fill(
-                            Defaults[.coloredSpectrogram]
-                                ? Color(nsColor: musicManager.avgColor).gradient
-                                : Color.gray.gradient
-                        )
-                        .frame(width: 50, alignment: .center)
-                        .matchedGeometryEffect(id: "spectrum", in: albumArtNamespace)
-                        .mask {
-                            AudioSpectrumView(isPlaying: $musicManager.isPlaying)
-                                .frame(width: 16, height: 12)
-                        }
-                } else {
-                    LottieAnimationContainer()
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+            HStack(spacing: 7) {
+                if isInlineSongChange {
+                    Text(musicManager.artistName)
+                        .font(.system(size: 12))
+                        .lineLimit(1)
+                        .truncationMode(.tail)
+                        .foregroundStyle(artistTint)
+                        .transition(.opacity)
                 }
+                Group {
+                    if useMusicVisualizer {
+                        Rectangle()
+                            .fill(
+                                Defaults[.coloredSpectrogram]
+                                    ? AnyShapeStyle(Color(nsColor: musicManager.avgColor).gradient)
+                                    : AnyShapeStyle(NotchAccent.home)
+                            )
+                            .matchedGeometryEffect(id: "spectrum", in: albumArtNamespace)
+                            .mask {
+                                AudioSpectrumView(isPlaying: $musicManager.isPlaying)
+                                    .frame(width: 18, height: 14)
+                            }
+                    } else {
+                        LottieAnimationContainer()
+                    }
+                }
+                .frame(width: 18 + gestureProgress / 2, height: 14)
+                .accessibilityLabel(musicManager.isPlaying ? "Playing" : "Paused")
             }
-            .frame(
-                width: max(
-                    0,
-                    vm.effectiveClosedNotchHeight - 12
-                        + gestureProgress / 2
-                ),
-                height: max(
-                    0,
-                    vm.effectiveClosedNotchHeight - 12
-                ),
-                alignment: .center
-            )
+            .frame(width: wing, alignment: .trailing)
         }
         // SwiftUI `onDrop` is unreliable in our non-activating transparent
         // panel while closed. Native AppKit drag registration owns that state.

@@ -19,50 +19,46 @@ struct PomodoroNotchBadge: View {
 
     @ObservedObject private var pomodoro = PomodoroManager.shared
 
-    /// Both sides get the same width so the black spacer stays centred on the
-    /// physical notch. Without this the wider countdown drags the layout left
-    /// and slides under the notch itself.
-    /// Accommodates the widest clock (`1:00:00`) without moving either side
-    /// when a session crosses an hour boundary.
-    private let sideWidth: CGFloat = 74
-
-    /// The last minute of a work block gets a red, slightly urgent readout.
+    /// The last minute of a block turns the whole badge coral.
     private var isFinalStretch: Bool {
         pomodoro.isRunning && pomodoro.remaining <= 60
     }
 
     private var tint: Color {
-        if pomodoro.runState == .paused { return .gray }
-        return isFinalStretch ? .red : pomodoro.phase.tint
+        if pomodoro.runState == .paused { return NotchInk.tertiary }
+        return isFinalStretch ? NotchAccent.stop : pomodoro.phase.tint
     }
 
     var body: some View {
         HStack(spacing: 0) {
-            phaseIcon
-                .frame(width: sideWidth, alignment: .trailing)
-                .padding(.trailing, 10)
+            // Left: what is running — the phase ring and its clock.
+            HStack(spacing: 7) {
+                ring
+                Text(notchClockString(pomodoro.remaining))
+                    .font(.system(size: 13, weight: .bold, design: .rounded).monospacedDigit())
+                    .foregroundStyle(tint)
+                    .contentTransition(.numericText())
+                    .animation(.smooth(duration: 0.25), value: pomodoro.remaining)
+                    .fixedSize()
+            }
+            .frame(width: NotchWing.width, alignment: .leading)
 
             Rectangle()
                 .fill(.black)
                 .frame(width: notchWidth)
 
-            readout
-                .frame(width: sideWidth, alignment: .leading)
-                .padding(.leading, 10)
+            // Right: how it is going — one segment per block in the cycle.
+            blocks
+                .frame(width: NotchWing.width, alignment: .trailing)
         }
-        // Hug the content so the black pill ends where the timer does, instead
-        // of stretching to the window's full width. Same trick as the usage badges.
         .fixedSize()
         .frame(height: height, alignment: .center)
-        // A paused session should read as "not running" from the corner of the
-        // eye, before the icon is ever parsed.
-        .opacity(pomodoro.runState == .paused ? 0.45 : 1)
         .animation(.smooth(duration: 0.2), value: pomodoro.runState)
         .onHover { hovering in
             if hovering { onBadgeHover?() }
         }
-        // The closed notch is where this spends its life, and a bare glyph plus
-        // a clock read out as nothing at all.
+        // The closed notch is where this spends its life, and a ring plus a
+        // clock read out as nothing at all.
         .accessibilityElement(children: .combine)
         .accessibilityLabel(accessibilityReadout)
     }
@@ -72,19 +68,30 @@ struct PomodoroNotchBadge: View {
         return "\(phase), \(notchClockString(pomodoro.remaining)) remaining"
     }
 
-    private var phaseIcon: some View {
-        Image(systemName: pomodoro.statusIcon)
-            .font(NotchGlassType.badgeGlyph)
-            .foregroundStyle(tint)
-            .contentTransition(.symbolEffect)
+    private var ring: some View {
+        ZStack {
+            Circle().stroke(Color.white.opacity(0.18), lineWidth: 2.5)
+            Circle()
+                .trim(from: 0, to: max(0.001, pomodoro.progress))
+                .stroke(tint, style: StrokeStyle(lineWidth: 2.5, lineCap: .round))
+                .rotationEffect(.degrees(-90))
+        }
+        .frame(width: 13, height: 13)
+        .padding(1.5)
     }
 
-    private var readout: some View {
-        Text(notchClockString(pomodoro.remaining))
-            .font(NotchGlassType.badgeFigure)
-            .contentTransition(.numericText())
-            .foregroundStyle(isFinalStretch ? NotchTint.stuck : NotchInk.primary)
-        .fixedSize()
-        .animation(.smooth(duration: 0.25), value: pomodoro.remaining)
+    private var blocks: some View {
+        let cycle = max(1, min(6, pomodoro.selectedPreset.cyclesBeforeLongBreak))
+        let done = pomodoro.phase == .longBreak ? cycle : pomodoro.completedWorkBlocks % cycle
+        let current = pomodoro.phase.isWork ? done : nil
+        return HStack(spacing: 3) {
+            ForEach(0..<cycle, id: \.self) { index in
+                Capsule()
+                    .fill(index < done ? tint
+                          : index == current ? tint.opacity(isFinalStretch ? 0.85 : 0.5)
+                          : Color.white.opacity(0.18))
+                    .frame(width: 10, height: 5)
+            }
+        }
     }
 }

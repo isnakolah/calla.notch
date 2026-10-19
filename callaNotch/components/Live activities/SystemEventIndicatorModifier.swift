@@ -99,6 +99,8 @@ struct DraggableProgressBar: View {
     @EnvironmentObject var vm: CallaViewModel
     @Binding var value: CGFloat
     var onChange: ((CGFloat) -> Void)? = nil
+    /// A fixed fill for the inline HUD's meter, which tints by what it measures.
+    var tint: Color? = nil
     
     @State private var isDragging = false
     @State private var dragOffset: CGFloat = 0
@@ -111,7 +113,7 @@ struct DraggableProgressBar: View {
                         .fill(.tertiary)
                     Capsule()
                         .fill(
-                            Defaults[.enableGradient] ?
+                            tint.map { AnyShapeStyle($0) } ?? (Defaults[.enableGradient] ?
                                 AnyShapeStyle(LinearGradient(
                                     colors: Defaults[.systemEventIndicatorUseAccent] ?
                                         [Color.effectiveAccent, Color.effectiveAccent.ensureMinimumBrightness(factor: 0.2)] :
@@ -119,7 +121,7 @@ struct DraggableProgressBar: View {
                                     startPoint: .trailing,
                                     endPoint: .leading
                                 )) :
-                                AnyShapeStyle(Defaults[.systemEventIndicatorUseAccent] ? Color.effectiveAccent : Color.white)
+                                AnyShapeStyle(Defaults[.systemEventIndicatorUseAccent] ? Color.effectiveAccent : Color.white))
                         )
                         .frame(width: max(0, min(geo.size.width * value, geo.size.width)))
                         .shadow(color: Defaults[.systemEventIndicatorShadow] ?

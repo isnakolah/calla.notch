@@ -15,9 +15,11 @@ struct InlineHUD: View {
     @Binding var icon: String
     @Binding var hoverAnimation: Bool
     @Binding var gestureProgress: CGFloat
+    /// Icon on the left, its level on the right: a 64pt meter, or for the mic a
+    /// flat row of bars. No words — the label and percentage stay opt-in.
     var body: some View {
-        HStack {
-            HStack(spacing: 5) {
+        HStack(spacing: 0) {
+            HStack(spacing: 6) {
                 Group {
                     switch (type) {
                         case .volume:
@@ -25,95 +27,96 @@ struct InlineHUD: View {
                                 Image(systemName: SpeakerSymbol(value))
                                     .contentTransition(.interpolate)
                                     .symbolVariant(value > 0 ? .none : .slash)
-                                    .frame(width: 20, height: 15, alignment: .leading)
                             } else {
                                 Image(systemName: icon)
                                     .contentTransition(.interpolate)
                                     .opacity(value.isZero ? 0.6 : 1)
-                                    .scaleEffect(value.isZero ? 0.85 : 1)
-                                    .frame(width: 20, height: 15, alignment: .leading)
                             }
                         case .brightness:
                             Image(systemName: BrightnessSymbol(value))
                                 .contentTransition(.interpolate)
-                                .frame(width: 20, height: 15, alignment: .center)
                         case .backlight:
                             Image(systemName: value > 0.5 ? "light.max" : "light.min")
                                 .contentTransition(.interpolate)
-                                .frame(width: 20, height: 15, alignment: .center)
                         case .mic:
                             Image(systemName: "mic")
-                                .symbolRenderingMode(.hierarchical)
                                 .symbolVariant(value > 0 ? .none : .slash)
                                 .contentTransition(.interpolate)
-                                .frame(width: 20, height: 15, alignment: .center)
                         default:
                             EmptyView()
                     }
                 }
-                .foregroundStyle(.white)
-                .symbolVariant(.fill)
-                
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundStyle(tint)
+                .frame(width: 20, height: 15, alignment: .leading)
+
                 if Defaults[.showInlineHUDLabel] {
                     Text(Type2Name(type))
-                        .font(.subheadline)
-                        .fontWeight(.medium)
+                        .font(.system(size: 12, weight: .medium))
                         .lineLimit(1)
                         .allowsTightening(true)
                         .contentTransition(.numericText())
                 }
             }
-            .padding(.trailing, 4)
-            .frame(width: 100 - (hoverAnimation ? 0 : 12) + gestureProgress / 2, height: vm.notchSize.height - (hoverAnimation ? 0 : 12), alignment: .trailing)
-            
+            .frame(width: NotchWing.width + gestureProgress / 2, alignment: .leading)
+
             Rectangle()
                 .fill(.black)
                 .frame(width: vm.closedNotchSize.width - 20)
-            
-            HStack {
-                if (type == .mic) {
-                    Text(value.isZero ? "muted" : "unmuted")
-                        .foregroundStyle(.gray)
-                        .lineLimit(1)
-                        .allowsTightening(true)
-                        .multilineTextAlignment(.trailing)
-                        .frame(maxWidth: .infinity, alignment: .trailing)
-                        .contentTransition(.interpolate)
+
+            HStack(spacing: 6) {
+                if type == .mic {
+                    micLevel
                 } else {
-                        HStack {
-                        DraggableProgressBar(value: $value, onChange: { v in
-                            if type == .volume {
-                                VolumeManager.shared.setAbsolute(Float32(v))
-                            } else if type == .brightness {
-                                BrightnessManager.shared.setAbsolute(value: Float32(v))
-                            }
-                        })
-                        if (type == .volume && value.isZero) {
-                            Text("muted")
-                                .font(.caption)
-                                .fontWeight(.medium)
-                                .foregroundStyle(.gray)
-                                .lineLimit(1)
-                                .allowsTightening(true)
-                                .multilineTextAlignment(.trailing)
-                        } else if Defaults[.showClosedNotchHUDPercentage] {
-                            Text("\(Int(value * 100))%")
-                                .font(.caption)
-                                .fontWeight(.medium)
-                                .foregroundStyle(.gray)
-                                .lineLimit(1)
-                                .allowsTightening(true)
-                                .multilineTextAlignment(.trailing)
-                        }
+                    if Defaults[.showClosedNotchHUDPercentage] {
+                        Text("\(Int(value * 100))%")
+                            .font(.system(size: 10, weight: .medium).monospacedDigit())
+                            .foregroundStyle(NotchInk.tertiary)
+                            .lineLimit(1)
                     }
+                    DraggableProgressBar(value: $value, onChange: { v in
+                        if type == .volume {
+                            VolumeManager.shared.setAbsolute(Float32(v))
+                        } else if type == .brightness {
+                            BrightnessManager.shared.setAbsolute(value: Float32(v))
+                        }
+                    }, tint: tint)
+                    .frame(width: 64)
                 }
             }
-            .padding(.trailing, 4)
-            .frame(width: 100 - (hoverAnimation ? 0 : 12) + gestureProgress / 2, height: vm.closedNotchSize.height - (hoverAnimation ? 0 : 12), alignment: .center)
+            .frame(width: NotchWing.width + gestureProgress / 2, alignment: .trailing)
         }
         .frame(height: vm.closedNotchSize.height + (hoverAnimation ? 8 : 0), alignment: .center)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(accessibilityText)
     }
-    
+
+    /// The level a muted mic has: five bars, all flat, in orange.
+    private var micLevel: some View {
+        let muted = value.isZero
+        return HStack(spacing: 1.3) {
+            ForEach(0..<5, id: \.self) { index in
+                Capsule()
+                    .fill(muted ? NotchAccent.attention : NotchInk.primary)
+                    .frame(width: 2.5, height: muted ? 2.5 : [4, 10, 14, 8, 4][index])
+            }
+        }
+        .frame(width: 18, height: 14)
+    }
+
+    private var tint: Color {
+        switch type {
+        case .brightness, .backlight: return NotchAccent.focus
+        case .mic: return value.isZero ? NotchAccent.attention : NotchInk.primary
+        default: return NotchInk.primary
+        }
+    }
+
+    private var accessibilityText: String {
+        if type == .mic { return value.isZero ? "Microphone muted" : "Microphone on" }
+        return "\(Type2Name(type)) \(Int(value * 100)) percent"
+    }
+
     func SpeakerSymbol(_ value: CGFloat) -> String {
         switch(value) {
             case 0:

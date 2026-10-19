@@ -27,6 +27,14 @@ public enum ClosedNotchActivity: String, CaseIterable, Sendable {
     case empty
 }
 
+extension ClosedNotchActivity {
+    /// Whether this activity puts something either side of the housing, so the
+    /// black slab has to reach that far too.
+    public var drawsWings: Bool {
+        self != .empty
+    }
+}
+
 /// Everything the arbiter is allowed to look at, as plain values.
 ///
 /// Deliberately flat and `Sendable`: the whole point is that the decision can

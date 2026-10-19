@@ -22,9 +22,6 @@ struct CopilotNotchBadge: View {
     @State private var now = Date()
     private let tick = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
 
-    /// Both sides get the same width so the black spacer stays centred on the
-    /// physical notch, the same reason the Pomodoro badge does it.
-    private let sideWidth: CGFloat = 74
 
     private var copilot: CallaCopilotStatus { engine.status.copilot }
     private var quiz: QuizSessionSnapshot { engine.status.quiz }
@@ -41,18 +38,19 @@ struct CopilotNotchBadge: View {
     }
 
     var body: some View {
+        // Left says what is running — the state dot and the clock; right says
+        // how it is going — who is talking, and whether an answer is waiting.
+        // Both wings are the same width so the gap stays centred on the housing.
         HStack(spacing: 0) {
-            activity
-                .frame(width: sideWidth, alignment: .trailing)
-                .padding(.trailing, 10)
+            readout
+                .frame(width: NotchWing.width, alignment: .leading)
 
             Rectangle()
                 .fill(.black)
                 .frame(width: notchWidth)
 
-            readout
-                .frame(width: sideWidth, alignment: .leading)
-                .padding(.leading, 10)
+            activity
+                .frame(width: NotchWing.width, alignment: .trailing)
         }
         .fixedSize()
         .frame(height: height, alignment: .center)
@@ -62,39 +60,58 @@ struct CopilotNotchBadge: View {
         }
     }
 
-    /// Left of the notch: who is speaking, or that the copilot is working.
+    /// Right of the notch: who is speaking, or that the copilot is working, and
+    /// a dot when there is an answer on the table.
     ///
     /// Glyph only. There is no room for a word here, and the colours are the same
-    /// ones the open panel uses — blue for the other side, white for you, accent for
-    /// the copilot — so the two surfaces teach the same code.
+    /// ones the open panel uses, so the two surfaces teach the same code.
     private var activity: some View {
-        Image(systemName: symbol)
-            .font(.system(size: 14, weight: .semibold))
-            .foregroundStyle(tint)
-            .contentTransition(.symbolEffect)
-            .symbolEffect(.variableColor.iterative,
-                          isActive: isQuiz ? quizWorking : copilot.thinking)
-            .help(helpText)
-    }
-
-    /// Right of the notch: how long the call has run, and a dot when there is an
-    /// answer on the table.
-    private var readout: some View {
-        HStack(spacing: 5) {
-            Text(readoutText)
-                .font(.system(size: 13, weight: .medium, design: .rounded).monospacedDigit())
-                .foregroundStyle(Color.white.opacity(0.85))
+        HStack(spacing: 6) {
             if answerWaiting {
                 // The one thing worth interrupting for: an answer exists and the
                 // panel is closed.
                 Circle()
-                    .fill(Color.effectiveAccent)
-                    .shadow(color: Color.effectiveAccent.opacity(0.9), radius: 4)
-                    .frame(width: 5, height: 5)
+                    .fill(NotchAccent.focus)
+                    .frame(width: 6, height: 6)
                     .transition(.scale.combined(with: .opacity))
             }
+            Image(systemName: symbol)
+                .font(.system(size: 14, weight: .semibold))
+                .foregroundStyle(tint)
+                .contentTransition(.symbolEffect)
+                .symbolEffect(.variableColor.iterative,
+                              isActive: isQuiz ? quizWorking : copilot.thinking)
         }
         .animation(.smooth(duration: 0.2), value: answerWaiting)
+        .help(helpText)
+    }
+
+    /// Left of the notch: the state dot and how long the call has run.
+    private var readout: some View {
+        HStack(spacing: 7) {
+            Circle()
+                .fill(dotTint)
+                .frame(width: 7, height: 7)
+                .background(Circle().fill(dotTint.opacity(0.22)).padding(-3))
+            Text(readoutText)
+                .font(.system(size: 12, design: .monospaced).monospacedDigit())
+                .foregroundStyle(Color.white.opacity(0.90))
+                .fixedSize()
+        }
+        .padding(.leading, 3)
+    }
+
+    /// Mint while it is running as it should; orange when it is only hearing
+    /// one side or Quiz has failed; grey when paused.
+    private var dotTint: Color {
+        if isQuiz {
+            switch quiz.state {
+            case .failed: return NotchAccent.stop
+            case .paused: return NotchInk.tertiary
+            default: return NotchAccent.quiz
+            }
+        }
+        return copilot.systemAudioActive ? NotchAccent.call : NotchAccent.attention
     }
 
     /// Quiz has no start date on the wire, so the count of answers so far is the
@@ -134,23 +151,23 @@ struct CopilotNotchBadge: View {
     private var tint: Color {
         if isQuiz {
             switch quiz.state {
-            case .failed: return NotchTint.stuck
+            case .failed: return NotchAccent.stop
             case .paused: return NotchInk.secondary
-            case .answered: return NotchTint.healthy
-            default: return .effectiveAccent
+            case .answered: return NotchAccent.call
+            default: return NotchAccent.quiz
             }
         }
         // The panel's own vocabulary, so the closed badge and the open surface
-        // teach the same code: accent is the copilot working, white is you, and
-        // amber is the one state worth checking.
-        if copilot.working == "summary" { return Color.effectiveAccent.opacity(0.65) }
-        if copilot.thinking { return .effectiveAccent }
+        // teach the same code: mint is the call working, white is you, and
+        // orange is the one state worth checking.
+        if copilot.working == "summary" { return NotchAccent.call.opacity(0.65) }
+        if copilot.thinking { return NotchAccent.call }
         switch copilot.speaking {
-        case "them": return .effectiveAccent
+        case "them": return NotchAccent.call
         case "me": return NotchInk.primary.opacity(0.85)
         // Not grey: a call that is running but hearing nothing still needs to read
         // as running, or the badge becomes indistinguishable from a stopped one.
-        default: return copilot.systemAudioActive ? NotchInk.secondary : NotchTint.attention
+        default: return copilot.systemAudioActive ? NotchInk.secondary : NotchAccent.attention
         }
     }
 
