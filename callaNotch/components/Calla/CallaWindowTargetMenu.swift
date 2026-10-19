@@ -28,7 +28,7 @@ struct CallaWindowTargetMenu: View {
                 }
                 VStack(spacing: 0) {
                     Text(compact ? "Window" : target?.applicationName ?? "Choose window")
-                        .font(compact ? .system(size: 9, weight: .medium) : NotchGlassType.chipLabel)
+                        .font(compact ? .system(size: 10, weight: .medium) : NotchGlassType.chipLabel)
                         .lineLimit(1).truncationMode(.middle)
                     if compact, let shortcut {
                         Text(shortcut).font(.system(size: 8, design: .monospaced))
@@ -51,7 +51,7 @@ struct CallaWindowTargetMenu: View {
         .buttonStyle(.plain)
         .fixedSize()
         .background {
-            if !compact { NotchChipBackground(hovering: false, tint: .effectiveAccent) }
+            if !compact { Capsule().fill(Color.white.opacity(0.08)) }
         }
         .background(WindowMenuAnchor(target: target, windows: windows,
             allowsSavedFilesOnly: allowsSavedFilesOnly, emptyMessage: emptyMessage,

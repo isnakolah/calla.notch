@@ -175,13 +175,22 @@ struct ShelfView: View {
             Divider()
             Button("Shelf settings…") { SettingsWindowController.shared.showShelfWindow() }
         } label: {
-            HStack(spacing: 7) {
-                Image(systemName: shelfShare.selectedDestination.symbolName)
-                    .font(.system(size: 12, weight: .semibold))
-                Text(shelfShare.selectedDestination.title)
-                    .font(.system(size: 12, weight: .semibold))
-                    .lineLimit(1)
-                Spacer(minLength: 0)
+            // One Text with the dot drawn as a glyph: a borderless menu strips a
+            // label's own background and reorders mixed children.
+            (Text(Image(systemName: shelfShare.selectedDestination.symbolName))
+             + Text("  \(shelfShare.selectedDestination.title)"))
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundStyle(NotchInk.primary)
+                .lineLimit(1)
+                .contentShape(Rectangle())
+        }
+        .menuStyle(.borderlessButton)
+        .menuIndicator(.hidden)
+        .fixedSize()
+        .padding(.leading, 10)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .overlay(alignment: .trailing) {
+            HStack(spacing: 5) {
                 Circle()
                     .fill(statusColor)
                     .frame(width: 6, height: 6)
@@ -192,14 +201,11 @@ struct ShelfView: View {
                     .lineLimit(1)
                     .fixedSize()
             }
-            .foregroundStyle(NotchInk.primary)
-            .padding(.horizontal, 10)
-            .frame(height: 30)
-            .background(RoundedRectangle(cornerRadius: 10, style: .continuous).fill(Color.white.opacity(0.07)))
-            .contentShape(RoundedRectangle(cornerRadius: 10))
+            .padding(.trailing, 10)
+            .allowsHitTesting(false)
         }
-        .menuStyle(.borderlessButton)
-        .menuIndicator(.hidden)
+        .frame(height: 30)
+        .background(RoundedRectangle(cornerRadius: 10, style: .continuous).fill(Color.white.opacity(0.07)))
         .help("Destination: \(shelfShare.selectedDestination.title), \(statusWord). Change")
         .accessibilityLabel("Destination: \(shelfShare.selectedDestination.title), \(statusWord). Change")
     }
@@ -222,7 +228,7 @@ struct ShelfView: View {
                     .animation(.smooth(duration: 0.3), value: shelfShare.sendFraction)
                 }
                 HStack(spacing: 7) {
-                    Image(systemName: canSend || shelfShare.isSending ? "arrow.up" : "exclamationmark.circle")
+                    Image(systemName: canSend || shelfShare.isSending || tvm.isEmpty ? "arrow.up" : "exclamationmark.circle")
                         .font(.system(size: 12, weight: .heavy))
                     Text(actionTitle)
                         .font(.system(size: 13, weight: .bold))

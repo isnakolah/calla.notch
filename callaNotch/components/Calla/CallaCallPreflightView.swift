@@ -211,12 +211,21 @@ struct CallaCallPreflightView: View {
                 engine.endCall()
             }
         case (false, .microphone), (false, .screen):
-            CallaPrimaryButton(title: blocker == .microphone ? "Allow microphone" : "Allow screen recording",
-                               symbol: blocker == .microphone ? "mic.fill" : "rectangle.inset.filled.and.person.filled",
-                               tint: NotchAccent.attention) {
-                engine.requestCopilotPermissions()
+            // The fix's full name when the notch has the width for it.
+            ViewThatFits(in: .horizontal) {
+                HStack(spacing: 6) {
+                    permissionButton(blocker == .microphone ? "Allow microphone" : "Allow screen recording")
+                    CallaSecondaryButton(title: "Start anyway") { start() }
+                }
+                HStack(spacing: 6) {
+                    permissionButton(blocker == .microphone ? "Allow mic" : "Allow recording")
+                    CallaSecondaryButton(title: "Start anyway") { start() }
+                }
+                HStack(spacing: 6) {
+                    permissionButton("Allow")
+                    CallaSecondaryButton(title: "Start anyway") { start() }
+                }
             }
-            CallaSecondaryButton(title: "Start anyway") { start() }
         case (false, .signIn):
             CallaPrimaryButton(title: "Sign in to Gemini", symbol: "person.badge.key.fill",
                                tint: NotchAccent.attention) {
@@ -231,6 +240,15 @@ struct CallaCallPreflightView: View {
                 .keyboardShortcut(.defaultAction)
             contextChip
         }
+    }
+
+    private func permissionButton(_ title: String) -> some View {
+        CallaPrimaryButton(title: title,
+                           symbol: blocker == .microphone ? "mic.fill" : "rectangle.inset.filled.and.person.filled",
+                           tint: NotchAccent.attention) {
+            engine.requestCopilotPermissions()
+        }
+        .help(blocker == .microphone ? "Allow microphone access" : "Allow screen recording")
     }
 
     /// The next meeting today, so the reader knows what this call is for.

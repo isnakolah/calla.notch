@@ -224,7 +224,7 @@ struct CallaCheckGrid: View {
                     .font(.system(size: 12, weight: .semibold))
                     .foregroundStyle(hovered == check.id ? NotchInk.primary : NotchInk.primary.opacity(0.94))
                     .lineLimit(1)
-                    .minimumScaleFactor(0.85)
+                    .minimumScaleFactor(0.7)
             }
             Text(check.value)
                 .font(.system(size: 11))
@@ -269,7 +269,7 @@ struct CallaPrimaryButton: View {
         Button(action: action) {
             HStack(spacing: 7) {
                 Image(systemName: symbol).font(.system(size: 12, weight: .bold))
-                Text(title).font(.system(size: 12, weight: .bold)).lineLimit(1)
+                Text(title).font(.system(size: 12, weight: .bold)).lineLimit(1).fixedSize()
             }
             .foregroundStyle(ink.opacity(enabled ? 1 : 0.6))
             .padding(.leading, 13)
@@ -284,6 +284,7 @@ struct CallaPrimaryButton: View {
         }
         .buttonStyle(.plain)
         .disabled(!enabled)
+        .layoutPriority(1)
         .onHover { hovering = $0 }
         .animation(.easeOut(duration: 0.12), value: hovering)
         .help(title)
@@ -458,14 +459,12 @@ struct CallaContextChip<Content: View>: View {
         Menu {
             content
         } label: {
-            HStack(spacing: 4) {
-                Text(title)
-                    .font(.system(size: 11, weight: .medium))
-                    .lineLimit(1)
-                    .truncationMode(.tail)
-                Image(systemName: "chevron.down")
-                    .font(.system(size: 8, weight: .heavy))
-            }
+            // One Text, so a borderless menu cannot hoist the chevron in front
+            // of the title the way it does with a separate image.
+            (Text(title) + Text(" ") + Text(Image(systemName: "chevron.down")).font(.system(size: 8, weight: .heavy)))
+                .font(.system(size: 11, weight: .medium))
+                .lineLimit(1)
+                .truncationMode(.tail)
             .foregroundStyle(hovering ? NotchInk.primary : tint)
             .padding(.leading, 9)
             .padding(.trailing, 8)
@@ -571,7 +570,9 @@ struct CallaPreflightCard<Context: View, Controls: View, Utility: View>: View {
 
                 CallaCheckGrid(checks: checks, hovered: $hoveredCheck)
                     .padding(.leading, 14)
-                    .frame(width: 204)
+                    // 204pt in the artboard's 512pt notch; narrower here so a
+                    // notch sized smaller in Settings keeps room for the controls.
+                    .frame(width: 184)
                     .frame(maxHeight: .infinity)
                     .overlay(alignment: .leading) {
                         Rectangle().fill(NotchInk.hairline).frame(width: 1)

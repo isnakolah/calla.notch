@@ -82,15 +82,12 @@ struct CallaQuizPreflightView: View {
             checks: checks,
             context: { meetingChip },
             controls: {
-                CallaPrimaryButton(title: preparing ? "Preparing…" : "Start Quiz",
-                                   symbol: preparing ? "circle.dotted" : "viewfinder",
-                                   tint: NotchAccent.quiz,
-                                   enabled: canStart) { start() }
-                    // Return started nothing before, on a panel whose only
-                    // primary action is this button.
-                    .keyboardShortcut(.defaultAction)
-                    .accessibilityLabel(preparing ? "Preparing Quiz" : "Start Quiz")
-                targetMenu
+                // The window chip gives way to its compact form in a narrower
+                // notch rather than pushing the panel past the notch's width.
+                ViewThatFits(in: .horizontal) {
+                    HStack(spacing: 6) { startButton; targetMenu }
+                    HStack(spacing: 6) { startButton; compactTargetMenu }
+                }
             },
             utility: {
                 CallaHeaderGlyphButton(symbol: "gearshape", help: "Quiz settings") {
@@ -148,6 +145,24 @@ struct CallaQuizPreflightView: View {
             CallaCheck("Reasoners", symbol: "cpu",
                        ready: quiz.modelsReady, yes: "ready", no: "not ready")
         ]
+    }
+
+    private var startButton: some View {
+        CallaPrimaryButton(title: preparing ? "Preparing…" : "Start Quiz",
+                           symbol: preparing ? "circle.dotted" : "viewfinder",
+                           tint: NotchAccent.quiz,
+                           enabled: canStart) { start() }
+            // Return started nothing before, on a panel whose only primary
+            // action is this button.
+            .keyboardShortcut(.defaultAction)
+            .accessibilityLabel(preparing ? "Preparing Quiz" : "Start Quiz")
+    }
+
+    private var compactTargetMenu: some View {
+        CallaWindowTargetMenu(target: selectedWindow, windows: windows, compact: true,
+            help: "Choose the window Quiz reads", refresh: refreshWindows) { window in
+                if let window { select(window) }
+            }
     }
 
     private var targetMenu: some View {
