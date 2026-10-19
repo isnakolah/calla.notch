@@ -1127,6 +1127,7 @@ struct ContentView: View {
                     .accessibilityLabel("Album artwork")
             }
             .frame(width: wing, alignment: .trailing)
+            .padding(.trailing, NotchWing.housingClearance)
             // Text that fills the wing reaches the slab's curved lower corner,
             // which shaved the outermost letters; keep it clear of the curve.
             .padding(.leading, isInlineSongChange ? NotchWing.textClearance : 0)
@@ -1166,6 +1167,7 @@ struct ContentView: View {
                 }
             }
             .frame(width: wing, alignment: .leading)
+            .padding(.leading, NotchWing.housingClearance)
             .padding(.trailing, isInlineSongChange ? NotchWing.textClearance : 0)
         }
         // SwiftUI `onDrop` is unreliable in our non-activating transparent

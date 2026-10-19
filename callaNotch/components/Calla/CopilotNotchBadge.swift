@@ -44,6 +44,7 @@ struct CopilotNotchBadge: View {
         HStack(spacing: 0) {
             readout
                 .frame(width: NotchWing.call, alignment: .trailing)
+                .padding(.trailing, NotchWing.housingClearance)
 
             Rectangle()
                 .fill(.black)
@@ -51,6 +52,7 @@ struct CopilotNotchBadge: View {
 
             activity
                 .frame(width: NotchWing.call, alignment: .leading)
+                .padding(.leading, NotchWing.housingClearance)
         }
         .fixedSize()
         .frame(height: height, alignment: .center)

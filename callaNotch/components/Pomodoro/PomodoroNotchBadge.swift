@@ -42,6 +42,7 @@ struct PomodoroNotchBadge: View {
                     .fixedSize()
             }
             .frame(width: NotchWing.focus, alignment: .trailing)
+            .padding(.trailing, NotchWing.housingClearance)
 
             Rectangle()
                 .fill(.black)
@@ -50,6 +51,7 @@ struct PomodoroNotchBadge: View {
             // Right: how it is going — one segment per block in the cycle.
             blocks
                 .frame(width: NotchWing.focus, alignment: .leading)
+                .padding(.leading, NotchWing.housingClearance)
         }
         .fixedSize()
         .frame(height: height, alignment: .center)

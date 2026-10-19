@@ -153,12 +153,16 @@ enum NotchWing {
     static let inlineSongMax: CGFloat = 210
     /// What the slab adds outside a wing: its own corner inset.
     static let inset: CGFloat = 14
+    /// The gap between wing content and the camera housing. The black spacer
+    /// the wings sit either side of is 20pt narrower than the real notch, so
+    /// content flush against it was half hidden behind the camera.
+    static let housingClearance: CGFloat = 10
     /// Extra room outside a wing whose text runs to its far edge, so the
     /// slab's curved lower corner does not clip the last letters.
     static let textClearance: CGFloat = 10
 
     /// Hit-area growth for a closed notch with wings of this width.
-    static func chinGrowth(_ wing: CGFloat) -> CGFloat { 2 * (wing + inset) }
+    static func chinGrowth(_ wing: CGFloat) -> CGFloat { 2 * (wing + inset + housingClearance) }
 }
 
 /// The tracking on `NotchGlassType.caps`, applied wherever caps are drawn.
