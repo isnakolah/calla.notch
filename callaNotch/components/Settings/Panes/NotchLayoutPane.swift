@@ -99,12 +99,12 @@ struct NotchLayoutPane: View {
                     .frame(width: 44, height: 44)
                 if placed {
                     RoundedRectangle(cornerRadius: NotchRadius.control, style: .continuous)
-                        .strokeBorder(Color.effectiveAccent.opacity(0.55), lineWidth: 1)
+                        .strokeBorder(item.accent.opacity(0.7), lineWidth: 1.5)
                         .frame(width: 44, height: 44)
                 }
                 Image(systemName: item.icon)
                     .font(.system(size: 16, weight: .medium))
-                    .foregroundStyle(item.isEnabled ? Color.primary : Color.secondary)
+                    .foregroundStyle(placed ? item.accent : item.isEnabled ? Color.primary : Color.secondary)
             }
             .opacity(placed ? 0.55 : 1)
             .contentShape(RoundedRectangle(cornerRadius: NotchRadius.control, style: .continuous))
@@ -207,28 +207,29 @@ struct NotchLayoutPane: View {
         let item = slots(side)[index]
         let key = "\(side.rawValue):\(index)"
         let isTarget = targeted == key
+        // Drawn the way the header draws it: a placed item in its own accent
+        // over a wash of that accent, an empty slot as a dashed ring.
+        let accent = item == .none ? Color.white : item.accent
         return ZStack {
-            RoundedRectangle(cornerRadius: NotchRadius.control, style: .continuous)
-                .fill(isTarget ? Color.effectiveAccent.opacity(0.30)
-                               : (item == .none ? Color.clear : Color.white.opacity(0.10)))
+            Circle()
+                .fill(isTarget ? accent.opacity(0.30)
+                               : (item == .none ? Color.clear : accent.opacity(NotchAccent.fill)))
                 .frame(width: 42, height: 42)
                 .overlay {
                     if isTarget {
-                        RoundedRectangle(cornerRadius: NotchRadius.control, style: .continuous)
-                            .strokeBorder(Color.effectiveAccent, lineWidth: 1.5)
-                            .frame(width: 42, height: 42)
+                        Circle().strokeBorder(accent, lineWidth: 1.5)
                     }
                 }
 
             if item == .none {
-                RoundedRectangle(cornerRadius: 6, style: .continuous)
+                Circle()
                     .strokeBorder(style: StrokeStyle(lineWidth: 1, dash: [4, 4]))
                     .foregroundStyle(Color.white.opacity(0.25))
                     .frame(width: 32, height: 32)
             } else {
                 Image(systemName: item.icon)
-                    .font(.system(size: 15, weight: .medium))
-                    .foregroundStyle(item.isEnabled ? Color.white : Color.white.opacity(0.35))
+                    .font(.system(size: 15, weight: .semibold))
+                    .foregroundStyle(item.isEnabled ? accent : Color.white.opacity(0.35))
             }
         }
         .overlay(alignment: .topTrailing) {
@@ -254,12 +255,12 @@ struct NotchLayoutPane: View {
         .onHover { inside in
             withAnimation(NotchMotion.settle) { hovered = inside ? key : (hovered == key ? nil : hovered) }
         }
-        .contentShape(RoundedRectangle(cornerRadius: NotchRadius.control, style: .continuous))
+        .contentShape(Circle())
         .help(item == .none ? "Empty slot" : item.label)
         .onDrag {
             NSItemProvider(object: NSString(string: "slot:\(side.rawValue):\(index)"))
         }
-        .onDrop(of: [UTType.plainText.identifier],
+        .onDrop(of: Self.dropTypes,
                 isTargeted: Binding(get: { isTarget },
                                     set: { targeted = $0 ? key : (targeted == key ? nil : targeted) })) { providers in
             targeted = nil
@@ -296,7 +297,7 @@ struct NotchLayoutPane: View {
                               style: StrokeStyle(lineWidth: 1, dash: [4, 3]))
         )
         .contentShape(RoundedRectangle(cornerRadius: NotchRadius.control, style: .continuous))
-        .onDrop(of: [UTType.plainText.identifier],
+        .onDrop(of: Self.dropTypes,
                 isTargeted: Binding(get: { targeted == "bin" },
                                     set: { targeted = $0 ? "bin" : (targeted == "bin" ? nil : targeted) })) { providers in
             targeted = nil
@@ -407,6 +408,10 @@ struct NotchLayoutPane: View {
         }
         notice = nil
     }
+
+    /// Every text type an `NSString` drag can arrive as. Plain text alone
+    /// missed drags the system had registered as UTF-8 or generic text.
+    private static let dropTypes = [UTType.utf8PlainText, UTType.plainText, UTType.text].map(\.identifier)
 
     private func handleDrop(_ providers: [NSItemProvider],
                             _ apply: @escaping (DropPayload) -> Void) -> Bool {

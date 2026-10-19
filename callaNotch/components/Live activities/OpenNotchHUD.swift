@@ -42,39 +42,37 @@ struct OpenNotchHUD: View {
                     EmptyView()
                 }
             }
-            .font(.system(size: 14, weight: .medium))
-            .foregroundStyle(.white)
-            .frame(width: 20, alignment: .center)
+            .font(.system(size: 13, weight: .semibold))
+            .foregroundStyle(type == .brightness || type == .backlight ? NotchAccent.focus
+                             : type == .mic && value <= 0 ? NotchAccent.attention : NotchInk.primary)
+            .frame(width: 18, alignment: .center)
             
             // Slider or Status Text
             if type != .mic {
                 DraggableProgressBar(value: $value, onChange: { newVal in
                      updateSystemValue(newVal)
-                })
-                .frame(width: showPercentage ? 65 : 108) // Fixed width for consistency
+                }, tint: type == .brightness || type == .backlight ? NotchAccent.focus : NotchInk.primary)
+                .frame(width: 64)
             } else {
                 Text(value > 0 ? "Unmuted" : "Muted")
-                    .font(.system(size: 13, weight: .medium))
-                    .foregroundStyle(.white)
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundStyle(value > 0 ? NotchInk.primary : NotchAccent.attention)
                     .fixedSize()
             }
             
             // Percentage Text
             if type != .mic && showPercentage {
                 Text("\(Int(value * 100))%")
-                    .font(.system(size: 12, weight: .medium))
-                    .foregroundStyle(.gray)
+                    .font(.system(size: 10, weight: .medium))
+                    .foregroundStyle(NotchInk.tertiary)
                     .monospacedDigit()
-                    .frame(width: 35, alignment: .trailing)
+                    .frame(width: 30, alignment: .trailing)
             }
         }
         .padding(.horizontal, 10)
-        .padding(.vertical, 6)
-        .background(
-            Capsule()
-                .fill(Color.black)
-                .stroke(Color.white.opacity(0.1), lineWidth: 1)
-        )
+        .frame(height: 26)
+        .background(Capsule().fill(Color.white.opacity(0.08)))
+        .fixedSize()
     }
     
     func SpeakerSymbol(_ value: CGFloat) -> String {

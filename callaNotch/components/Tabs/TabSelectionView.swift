@@ -57,6 +57,9 @@ struct TabSelectionView: View {
                 view(for: item)
             }
         }
+        // Never squeezed: when the open-notch HUD takes the other side, a tab
+        // compressing into its neighbour read as the header breaking.
+        .fixedSize()
     }
 
     private func isVisible(_ item: NotchHeaderItem) -> Bool {
