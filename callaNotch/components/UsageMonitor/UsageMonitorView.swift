@@ -44,24 +44,26 @@ struct UsageMonitorView: View {
     /// Labeled pills instead of a bare "1 / 2" so it's obvious which page is
     /// which (and that AGY lives on the second one).
     private var pageSwitcher: some View {
-        HStack(spacing: 4) {
+        HStack(spacing: 2) {
             pagePill("Claude · Codex", index: 0)
             pagePill("AGY", index: 1)
         }
-        .padding(2)
-        .background(Capsule().fill(Color.white.opacity(0.06)))
+        .padding(.horizontal, 2)
+        .frame(height: 24)
+        .background(Capsule().fill(Color.white.opacity(0.08)))
     }
 
     private func pagePill(_ title: String, index: Int) -> some View {
         let selected = page == index
         return Button { withAnimation(.easeInOut(duration: 0.15)) { page = index } } label: {
             Text(title)
-                .font(NotchGlassType.caption.weight(selected ? .semibold : .regular))
-                .foregroundStyle(selected ? NotchInk.primary : NotchInk.secondary)
-                .padding(.horizontal, 10)
-                .padding(.vertical, 2)
+                .font(.system(size: 11, weight: selected ? .bold : .semibold))
+                .foregroundStyle(selected ? NotchInk.primary : Color.white.opacity(0.75))
+                .padding(.horizontal, 12)
+                .frame(height: 20)
                 .background(Capsule().fill(selected ? Color.white.opacity(0.16) : .clear))
-                .contentShape(Capsule())
+                .frame(height: 26)
+                .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
         .accessibilityLabel("\(title) usage")
@@ -101,9 +103,8 @@ struct UsageMonitorView: View {
     }
 
     private var divider: some View {
-        Rectangle().fill(LinearGradient(colors: [.clear, Color.primary.opacity(0.18), .clear],
-                                        startPoint: .top, endPoint: .bottom))
-            .frame(width: 1).padding(.vertical, 8)
+        Rectangle().fill(NotchInk.hairline)
+            .frame(width: 1).padding(.vertical, 4)
     }
 
     /// Re-polls only while the tab is visible. Cache lives in the manager; the
@@ -122,9 +123,8 @@ struct UsageMonitorView: View {
 
 private struct UsagePageChrome: ViewModifier {
     func body(content: Content) -> some View {
-        content.padding(.vertical, 6).padding(.horizontal, 4)
-            .background(RoundedRectangle(cornerRadius: 16).fill(Color.white.opacity(0.04)))
-            .overlay(RoundedRectangle(cornerRadius: 16).strokeBorder(Color.white.opacity(0.06), lineWidth: 1))
+        // Straight on the notch, like every other tab: the notch is the card.
+        content.padding(.vertical, 2)
     }
 }
 
@@ -139,7 +139,7 @@ private struct AGYGroupColumn: View {
             HStack {
                 Text(title).font(NotchGlassType.title).lineLimit(1).minimumScaleFactor(0.7)
                 Spacer(minLength: 0)
-                NotchGlyphButton(symbol: "arrow.clockwise", help: "Refresh AGY usage", action: onRefresh)
+                CallaHeaderGlyphButton(symbol: "arrow.clockwise", help: "Refresh AGY usage", action: onRefresh)
             }
             if let report = state.report, report.status == .ok {
                 HStack(spacing: 8) {
@@ -185,15 +185,15 @@ private enum UsageProvider {
     /// Rounded-square tint behind the fallback glyph.
     var badgeBackground: Color {
         switch self {
-        case .claude: Color(red: 0.36, green: 0.19, blue: 0.13)   // muted terracotta
-        case .codex: Color(red: 0.10, green: 0.22, blue: 0.14)    // dark green
+        case .claude: NotchAccent.home.opacity(NotchAccent.strongFill)
+        case .codex: NotchAccent.call.opacity(NotchAccent.strongFill)
         }
     }
 
     var glyphColor: Color {
         switch self {
-        case .claude: Color(red: 0.90, green: 0.51, blue: 0.34)   // Claude terracotta
-        case .codex: Color(red: 0.40, green: 0.85, blue: 0.50)    // terminal green
+        case .claude: NotchAccent.home
+        case .codex: NotchAccent.call
         }
     }
 
@@ -239,7 +239,7 @@ private struct ProviderIconBadge: View {
                 .foregroundStyle(provider.glyphColor)
         case .codex:
             Text(">_")
-                .font(.system(size: 9, weight: .bold, design: .monospaced))
+                .font(.system(size: 10, weight: .bold, design: .monospaced))
                 .foregroundStyle(provider.glyphColor)
         }
     }
@@ -328,9 +328,9 @@ private struct ProviderUsageColumn: View {
                     Image(systemName: "chevron.down")
                         .font(.system(size: 8, weight: .bold))
                 }
-                .foregroundStyle(NotchInk.secondary)
-                .padding(.horizontal, 7)
-                .padding(.vertical, 3)
+                .foregroundStyle(Color.white.opacity(0.86))
+                .padding(.horizontal, 8)
+                .frame(height: 22)
                 .background(Capsule().fill(Color.white.opacity(0.08)))
                 .contentShape(Capsule())
             }
@@ -349,8 +349,7 @@ private struct ProviderUsageColumn: View {
             }
 
             if let onRefresh {
-                NotchGlyphButton(symbol: "arrow.clockwise", help: "Refresh \(providerName) usage", action: onRefresh)
-                    .accessibilityLabel("Refresh \(providerName) usage")
+                CallaHeaderGlyphButton(symbol: "arrow.clockwise", help: "Refresh \(providerName) usage", action: onRefresh)
             }
         }
     }
@@ -589,10 +588,10 @@ enum QuotaDisplayStatus {
 
     var color: Color {
         switch self {
-        case .healthy: .green
-        case .warning: .orange
-        case .critical: .red
-        case .depleted: Color.red.opacity(0.6)
+        case .healthy: NotchAccent.call
+        case .warning: NotchAccent.attention
+        case .critical: NotchAccent.stop
+        case .depleted: NotchAccent.stop.opacity(0.6)
         }
     }
 }
