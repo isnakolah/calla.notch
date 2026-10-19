@@ -57,9 +57,9 @@ struct CallaCallPreflightView: View {
 
     private var card: some View {
         CallaPreflightCard(
-            state: copilot.running ? "In a call" : "Ready",
+            state: copilot.running ? "In a call" : (blocker == .none ? "Ready" : "Not ready"),
             live: copilot.running,
-            tint: copilot.running ? NotchTint.healthy : .effectiveAccent,
+            tint: copilot.running || blocker == .none ? NotchAccent.call : NotchAccent.attention,
             figure: copilot.running
                 ? CallaCopilotPresentation.elapsed(since: copilot.startedAt, now: now)
                 : nil,
@@ -67,15 +67,15 @@ struct CallaCallPreflightView: View {
             switcherEnabled: !copilot.running && !engine.status.quiz.active,
             includesQuiz: quizEnabled,
             headline: headline,
-            headlineTint: blocker == .none || copilot.running ? NotchInk.primary : NotchTint.attention,
+            headlineTint: NotchInk.primary,
             detail: detail,
             checks: checks,
             note: nextMeeting,
             context: { personaChip },
             controls: { callControls },
             utility: {
-                NotchGlyphButton(symbol: "clock.arrow.circlepath",
-                                 help: "Past calls, their transcripts, and what the copilot said") {
+                CallaHeaderGlyphButton(symbol: "clock.arrow.circlepath",
+                                       help: "Past calls, their transcripts, and what the copilot said") {
                     SettingsWindowController.shared.showCopilotWindow(tab: "CopilotHistory")
                 }
             })
@@ -207,24 +207,24 @@ struct CallaCallPreflightView: View {
     private var callControls: some View {
         switch (copilot.isRecording, blocker) {
         case (true, _):
-            CallaPrimaryButton(title: "End call", symbol: "stop.fill", tint: NotchTint.stuck) {
+            CallaPrimaryButton(title: "End call", symbol: "stop.fill", tint: NotchAccent.stop) {
                 engine.endCall()
             }
         case (false, .microphone), (false, .screen):
             CallaPrimaryButton(title: blocker == .microphone ? "Allow microphone" : "Allow screen recording",
-                               symbol: "checkmark.shield.fill",
-                               tint: NotchTint.attention, ink: Self.darkInk) {
+                               symbol: blocker == .microphone ? "mic.fill" : "rectangle.inset.filled.and.person.filled",
+                               tint: NotchAccent.attention) {
                 engine.requestCopilotPermissions()
             }
-            NotchChip(action: { start() }) { Text("Start anyway") }
+            CallaSecondaryButton(title: "Start anyway") { start() }
         case (false, .signIn):
             CallaPrimaryButton(title: "Sign in to Gemini", symbol: "person.badge.key.fill",
-                               tint: NotchTint.attention, ink: Self.darkInk) {
+                               tint: NotchAccent.attention) {
                 engine.loginAgy()
             }
         case (false, .model):
             CallaPrimaryButton(title: "Fetching model…", symbol: "arrow.down.circle",
-                               tint: NotchTint.active, enabled: false) {}
+                               tint: NotchAccent.call, enabled: false) {}
         case (false, .none):
             CallaPrimaryButton(title: "Start listening", symbol: "waveform",
                                enabled: copilot.available) { start() }
@@ -232,9 +232,6 @@ struct CallaCallPreflightView: View {
             contextChip
         }
     }
-
-    /// Label ink on the orange a fix wears, where white would not read.
-    private static let darkInk = Color(red: 0.10, green: 0.07, blue: 0.0)
 
     /// The next meeting today, so the reader knows what this call is for.
     private var nextMeeting: String? {

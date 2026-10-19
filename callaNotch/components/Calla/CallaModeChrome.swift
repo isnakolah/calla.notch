@@ -66,23 +66,18 @@ struct CallaModeSwitcher: View {
             ForEach(modes) { mode in
                 let active = CallaMode.resolved(selection, quiz: includesQuiz) == mode
                 Text(mode.title)
-                    .font(.system(size: 11, weight: active ? .semibold : .medium))
-                    .foregroundStyle(active ? NotchInk.primary : NotchInk.tertiary)
+                    .font(.system(size: 11, weight: active ? .bold : .semibold))
+                    .foregroundStyle(active ? NotchAccent.onAccent : Color.white.opacity(0.75))
                     .lineLimit(1)
                     .fixedSize(horizontal: true, vertical: false)
-                    // Sized to its label, not to a number. The fixed 44pt was
-                    // chosen when every mode was a four-letter word; "Interview"
-                    // rendered as "Interv…", which is a control that cannot say
-                    // what it does. The minimum keeps the short labels from
-                    // collapsing into something too small to hit.
-                    .padding(.horizontal, 8)
-                    .frame(minWidth: 44, minHeight: 20)
+                    .padding(.horizontal, 12)
+                    .frame(minHeight: 20)
                     .background {
                         if active {
-                            RoundedRectangle(cornerRadius: 6, style: .continuous)
-                                .fill(Color.white.opacity(0.14))
+                            Capsule().fill(mode.accent)
                         }
                     }
+                    .frame(minHeight: 26)
                     .contentShape(Rectangle())
                     .onTapGesture {
                         guard enabled, !active else { return }
@@ -92,19 +87,23 @@ struct CallaModeSwitcher: View {
                     .accessibilityLabel(mode.title)
             }
         }
-        .padding(2)
-        .background {
-            let shape = RoundedRectangle(cornerRadius: 8, style: .continuous)
-            ZStack {
-                shape.fill(Color.black.opacity(0.30))
-                shape.fill(Color.white.opacity(0.05))
-                shape.strokeBorder(Color.white.opacity(0.10), lineWidth: 1)
-            }
-        }
+        .padding(.horizontal, 2)
+        .frame(height: 24)
+        .background(Capsule().fill(Color.white.opacity(0.08)))
         .opacity(enabled ? 1 : 0.4)
         .allowsHitTesting(enabled)
         .help(enabled ? "Switch mode" : "A session is running")
         .fixedSize()
+    }
+}
+
+extension CallaMode {
+    /// Each mode owns one accent: mint for a call, sky for Quiz.
+    var accent: Color {
+        switch self {
+        case .call: NotchAccent.call
+        case .quiz: NotchAccent.quiz
+        }
     }
 }
 
@@ -135,20 +134,20 @@ struct CallaCheck: Identifiable {
 
         var tint: Color {
             switch self {
-            case .ready: NotchTint.healthy
-            case .blocking: NotchTint.attention
-            case .working: NotchTint.active
+            case .ready: NotchAccent.call
+            case .blocking: NotchAccent.attention
+            case .working: NotchAccent.quiz
             case .unknown: NotchInk.tertiary
             }
         }
 
-        /// The mark beside a fact's name in the grid.
+        /// The mark inside a fact's chip in the grid.
         var symbol: String {
             switch self {
             case .ready: "checkmark"
-            case .blocking: "exclamationmark.triangle.fill"
-            case .working: "arrow.down.circle"
-            case .unknown: "circle.dotted"
+            case .blocking: "exclamationmark"
+            case .working: "arrow.down"
+            case .unknown: "ellipsis"
             }
         }
 
@@ -200,7 +199,7 @@ struct CallaCheckGrid: View {
     @Binding var hovered: CallaCheck.ID?
 
     var body: some View {
-        Grid(alignment: .leading, horizontalSpacing: 14, verticalSpacing: 5) {
+        Grid(alignment: .leading, horizontalSpacing: 10, verticalSpacing: 10) {
             ForEach(Array(stride(from: 0, to: checks.count, by: 2)), id: \.self) { index in
                 GridRow {
                     cell(checks[index])
@@ -208,21 +207,33 @@ struct CallaCheckGrid: View {
                 }
             }
         }
-        .fixedSize()
     }
 
+    /// A tinted chip with its mark, the fact's name, and its status under it.
     private func cell(_ check: CallaCheck) -> some View {
-        HStack(spacing: 6) {
-            Image(systemName: check.state.symbol)
-                .font(.system(size: 9, weight: .bold))
-                .foregroundStyle(check.state.tint)
-                .frame(width: 12)
-            Text(check.label)
-                .font(NotchGlassType.detail)
-                .foregroundStyle(check.state == .blocking ? NotchTint.attention
-                                 : hovered == check.id ? NotchInk.primary : NotchInk.secondary)
+        VStack(alignment: .leading, spacing: 2) {
+            HStack(spacing: 6) {
+                Image(systemName: check.state.symbol)
+                    .font(.system(size: 8, weight: .heavy))
+                    .foregroundStyle(check.state.tint)
+                    .frame(width: 15, height: 15)
+                    .background(Circle().fill(check.state == .unknown
+                                              ? Color.white.opacity(0.10)
+                                              : check.state.tint.opacity(check.state == .blocking ? 0.20 : 0.18)))
+                Text(check.label)
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundStyle(hovered == check.id ? NotchInk.primary : NotchInk.primary.opacity(0.94))
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.85)
+            }
+            Text(check.value)
+                .font(.system(size: 11))
+                .foregroundStyle(check.state == .blocking ? NotchAccent.attention : NotchInk.secondary)
                 .lineLimit(1)
+                .truncationMode(.tail)
+                .padding(.leading, 21)
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
         .contentShape(Rectangle())
         .onHover { inside in
             withAnimation(.easeOut(duration: 0.12)) {
@@ -245,10 +256,10 @@ struct CallaCheckGrid: View {
 struct CallaPrimaryButton: View {
     let title: String
     let symbol: String
-    var tint: Color = .effectiveAccent
-    /// The label's colour. White on the accent; near-black on a light fill
-    /// such as the orange a fix wears, where white would not read.
-    var ink: Color = NotchInk.primary
+    var tint: Color = NotchAccent.call
+    /// The label's colour. Every accent in the notch palette is light, so the
+    /// label on it is near-black.
+    var ink: Color = NotchAccent.onAccent
     var enabled: Bool = true
     let action: () -> Void
 
@@ -257,25 +268,80 @@ struct CallaPrimaryButton: View {
     var body: some View {
         Button(action: action) {
             HStack(spacing: 7) {
-                Image(systemName: symbol).font(NotchGlassType.glyph)
-                Text(title).font(NotchGlassType.action).lineLimit(1)
+                Image(systemName: symbol).font(.system(size: 12, weight: .bold))
+                Text(title).font(.system(size: 12, weight: .bold)).lineLimit(1)
             }
-            .foregroundStyle(ink)
-            .padding(.horizontal, 15)
-            .frame(height: NotchGlassSpace.control)
+            .foregroundStyle(ink.opacity(enabled ? 1 : 0.6))
+            .padding(.leading, 13)
+            .padding(.trailing, 16)
+            .frame(height: 34)
             .background {
-                RoundedRectangle(cornerRadius: NotchGlassRadius.chip, style: .continuous)
+                Capsule()
                     .fill(tint.opacity(enabled ? 1 : 0.35))
                     .brightness(hovering && enabled ? 0.06 : 0)
-                    .shadow(color: tint.opacity(enabled ? 0.40 : 0), radius: 8, y: 3)
             }
-            .contentShape(Rectangle())
+            .contentShape(Capsule())
         }
         .buttonStyle(.plain)
         .disabled(!enabled)
         .onHover { hovering = $0 }
         .animation(.easeOut(duration: 0.12), value: hovering)
+        .help(title)
         .accessibilityLabel(title)
+    }
+}
+
+/// The second thing you can press beside a primary pill: a quiet 30pt capsule.
+struct CallaSecondaryButton: View {
+    let title: String
+    var symbol: String?
+    var tint: Color?
+    let action: () -> Void
+
+    @State private var hovering = false
+
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: 6) {
+                if let symbol { Image(systemName: symbol).font(.system(size: 11, weight: .semibold)) }
+                Text(title).font(.system(size: 11, weight: .semibold)).lineLimit(1)
+            }
+            .foregroundStyle(tint ?? Color.white.opacity(0.86))
+            .padding(.horizontal, 12)
+            .frame(height: 30)
+            .background(Capsule().fill((tint ?? .white).opacity(hovering ? 0.16 : 0.08)))
+            .contentShape(Capsule())
+        }
+        .buttonStyle(.plain)
+        .onHover { hovering = $0 }
+        .help(title)
+        .accessibilityLabel(title)
+    }
+}
+
+/// A round glyph button in a Calla header — history, settings. 24pt drawn,
+/// 26pt to the pointer.
+struct CallaHeaderGlyphButton: View {
+    let symbol: String
+    let help: String
+    let action: () -> Void
+
+    @State private var hovering = false
+
+    var body: some View {
+        Button(action: action) {
+            Image(systemName: symbol)
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundStyle(hovering ? NotchInk.primary : NotchInk.secondary)
+                .frame(width: 24, height: 24)
+                .background(Circle().fill(hovering ? Color.white.opacity(0.10) : .clear))
+                .frame(width: 26, height: 26)
+                .contentShape(Circle())
+        }
+        .buttonStyle(.plain)
+        .onHover { hovering = $0 }
+        .help(help)
+        .accessibilityLabel(help)
     }
 }
 
@@ -340,6 +406,7 @@ struct CallaMenuChip<Content: View>: View {
 struct CallaMenuIconButton<Content: View>: View {
     let symbol: String
     var count: Int = 0
+    var tint: Color = NotchAccent.call
     @ViewBuilder var content: Content
 
     @State private var hovering = false
@@ -364,10 +431,10 @@ struct CallaMenuIconButton<Content: View>: View {
         .overlay(alignment: .topTrailing) {
             if count > 0 {
                 Text("\(count)")
-                    .font(.system(size: 9, weight: .bold).monospacedDigit())
-                    .foregroundStyle(.white)
-                    .frame(minWidth: 14, minHeight: 14)
-                    .background(Circle().fill(Color.effectiveAccent))
+                    .font(.system(size: 10, weight: .bold).monospacedDigit())
+                    .foregroundStyle(NotchAccent.onAccent)
+                    .frame(minWidth: 15, minHeight: 15)
+                    .background(Circle().fill(tint))
                     .offset(x: 4, y: -4)
                     .allowsHitTesting(false)
             }
@@ -382,7 +449,7 @@ struct CallaMenuIconButton<Content: View>: View {
 struct CallaContextChip<Content: View>: View {
     let title: String
     var symbol: String?
-    var tint: Color = NotchInk.secondary
+    var tint: Color = Color.white.opacity(0.86)
     @ViewBuilder var content: Content
 
     @State private var hovering = false
@@ -391,33 +458,25 @@ struct CallaContextChip<Content: View>: View {
         Menu {
             content
         } label: {
-            HStack(spacing: 5) {
-                if let symbol {
-                    Image(systemName: symbol)
-                        .font(NotchGlassType.glyphSmall)
-                        .foregroundStyle(NotchInk.tertiary)
-                }
+            HStack(spacing: 4) {
                 Text(title)
-                    .font(.system(size: 10, weight: .medium))
+                    .font(.system(size: 11, weight: .medium))
                     .lineLimit(1)
                     .truncationMode(.tail)
                 Image(systemName: "chevron.down")
-                    .font(NotchGlassType.chevron)
-                    .foregroundStyle(NotchInk.tertiary)
+                    .font(.system(size: 8, weight: .heavy))
             }
             .foregroundStyle(hovering ? NotchInk.primary : tint)
-            .padding(.horizontal, 8)
-            .frame(height: 20)
+            .padding(.leading, 9)
+            .padding(.trailing, 8)
+            .frame(height: 22)
             .frame(maxWidth: 150, alignment: .leading)
-            .contentShape(Rectangle())
+            .contentShape(Capsule())
         }
         .menuStyle(.borderlessButton)
         .menuIndicator(.hidden)
         .fixedSize()
-        .background(
-            RoundedRectangle(cornerRadius: 7, style: .continuous)
-                .fill(Color.white.opacity(hovering ? 0.14 : 0.08))
-        )
+        .background(Capsule().fill(Color.white.opacity(hovering ? 0.14 : 0.08)))
         .onHover { hovering = $0 }
     }
 }
@@ -435,7 +494,8 @@ struct CallaPreflightCard<Context: View, Controls: View, Utility: View>: View {
     /// mode; the switcher on the right already says which one.
     let state: String
     var live: Bool = false
-    var tint: Color = .effectiveAccent
+    /// The state dot and caps. The mode's accent when ready, orange when not.
+    var tint: Color = NotchAccent.call
     /// A running clock, or a count. Sits after the state.
     var figure: String?
 
@@ -475,38 +535,47 @@ struct CallaPreflightCard<Context: View, Controls: View, Utility: View>: View {
         // Straight on the notch, not in a card of its own: the notch is
         // already the container, and a second outline inside it only ate
         // space and doubled the corners.
-        VStack(alignment: .leading, spacing: 0) {
+        VStack(alignment: .leading, spacing: 8) {
             header
-            Spacer(minLength: 6)
-            HStack(alignment: .top, spacing: 18) {
-                VStack(alignment: .leading, spacing: 3) {
-                    Text(headline)
-                        .font(.system(size: 15, weight: .semibold))
-                        .foregroundStyle(headlineTint)
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.85)
-                        .truncationMode(.tail)
-                    Text(hovered.map { "\($0.label) · \($0.value)" } ?? detail)
-                        .font(NotchGlassType.detail)
-                        .foregroundStyle(hovered.map { $0.state == .ready ? NotchInk.secondary : $0.state.tint }
-                                         ?? NotchInk.tertiary)
-                        .lineLimit(1)
-                        .truncationMode(.tail)
-                        .animation(.easeOut(duration: 0.12), value: hoveredCheck)
+            HStack(alignment: .top, spacing: 16) {
+                VStack(alignment: .leading, spacing: 0) {
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text(headline)
+                            .font(.system(size: 16, weight: .semibold))
+                            .tracking(-0.1)
+                            .foregroundStyle(headlineTint)
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.85)
+                            .truncationMode(.tail)
+                        Text(hovered.map { "\($0.label) · \($0.value)" } ?? detail)
+                            .font(NotchGlassType.detail)
+                            .foregroundStyle(hovered.map { $0.state == .blocking ? $0.state.tint : NotchInk.secondary }
+                                             ?? NotchInk.secondary)
+                            .lineLimit(2)
+                            .lineSpacing(1)
+                            .truncationMode(.tail)
+                            .animation(.easeOut(duration: 0.12), value: hoveredCheck)
+                    }
+                    Spacer(minLength: 6)
+                    HStack(spacing: 6) {
+                        controls
+                        if let note {
+                            ViewThatFits(in: .horizontal) {
+                                NotchCaps(note).fixedSize().padding(.leading, 4)
+                                Color.clear.frame(width: 0, height: 0)
+                            }
+                        }
+                    }
                 }
-                .frame(maxWidth: .infinity, alignment: .leading)
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+
                 CallaCheckGrid(checks: checks, hovered: $hoveredCheck)
-                    .padding(.top, 2)
-            }
-            Spacer(minLength: 6)
-            HStack(spacing: NotchGlassSpace.tight) {
-                controls
-                Spacer(minLength: 10)
-                if let note {
-                    NotchCaps(note)
-                        .truncationMode(.tail)
-                        .layoutPriority(-1)
-                }
+                    .padding(.leading, 14)
+                    .frame(width: 204)
+                    .frame(maxHeight: .infinity)
+                    .overlay(alignment: .leading) {
+                        Rectangle().fill(NotchInk.hairline).frame(width: 1)
+                    }
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
@@ -514,35 +583,32 @@ struct CallaPreflightCard<Context: View, Controls: View, Utility: View>: View {
         // insets the copilot glass by 4 at the sides and 12 at the foot, so
         // these make it 18 all round — enough to clear the lower corners'
         // curve. The top sits under the tab row, which brings its own air.
-        .padding(EdgeInsets(top: 8, leading: Self.edge - 4, bottom: Self.edge - 12, trailing: Self.edge - 4))
+        .padding(EdgeInsets(top: 2, leading: Self.edge - 4, bottom: Self.edge - 12, trailing: Self.edge - 4))
     }
 
     private static var edge: CGFloat { 18 }
 
     private var header: some View {
-        HStack(spacing: NotchGlassSpace.tight) {
-            NotchStatusDot(live: live, tint: tint)
-            NotchCaps(state, tint: live ? NotchInk.secondary : NotchInk.tertiary)
+        HStack(spacing: 8) {
+            Circle()
+                .fill(tint)
+                .frame(width: 7, height: 7)
+            NotchCaps(state, tint: tint)
                 .fixedSize()
             if let figure {
                 Text(figure)
-                    .font(NotchGlassType.inlineFigure)
-                    .foregroundStyle(NotchInk.tertiary)
+                    .font(.system(size: 11, design: .monospaced).monospacedDigit())
+                    .foregroundStyle(NotchInk.secondary)
                     .lineLimit(1)
                     .fixedSize()
             }
             context
-            // A rule rather than a gap, so the header reads as one line with
-            // its controls at the end of it.
-            Rectangle()
-                .fill(NotchInk.hairline)
-                .frame(height: 1)
-                .frame(minWidth: 6)
+            Spacer(minLength: 6)
             CallaModeSwitcher(selection: $mode,
                               enabled: switcherEnabled,
                               includesQuiz: includesQuiz)
             utility
         }
-        .frame(height: 20)
+        .frame(height: 24)
     }
 }
