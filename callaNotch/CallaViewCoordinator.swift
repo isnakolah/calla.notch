@@ -278,7 +278,12 @@ class CallaViewCoordinator: ObservableObject {
         didSet {
             if expandingView.show {
                 expandingViewTask?.cancel()
-                let duration: TimeInterval = (expandingView.type == .download ? 2 : 3)
+                // A song change gets long enough to read the title and artist.
+                let duration: TimeInterval = switch expandingView.type {
+                case .download: 2
+                case .music: 5
+                default: 3
+                }
                 let currentType = expandingView.type
                 expandingViewTask = Task { [weak self] in
                     try? await Task.sleep(for: .seconds(duration))

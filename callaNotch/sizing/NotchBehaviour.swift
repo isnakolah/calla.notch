@@ -58,6 +58,8 @@ public struct ClosedNotchInputs: Equatable, Sendable {
     public var musicPlaying: Bool
     public var musicPlayerIdle: Bool
     public var musicLiveActivityEnabled: Bool
+    /// A song just changed and the inline style is announcing it.
+    public var inlineSongChange: Bool
 
     public init(
         isClosed: Bool = true,
@@ -72,7 +74,8 @@ public struct ClosedNotchInputs: Equatable, Sendable {
         usageBadgesEnabled: Bool = false,
         musicPlaying: Bool = false,
         musicPlayerIdle: Bool = true,
-        musicLiveActivityEnabled: Bool = false
+        musicLiveActivityEnabled: Bool = false,
+        inlineSongChange: Bool = false
     ) {
         self.isClosed = isClosed
         self.hideOnClosed = hideOnClosed
@@ -87,6 +90,7 @@ public struct ClosedNotchInputs: Equatable, Sendable {
         self.musicPlaying = musicPlaying
         self.musicPlayerIdle = musicPlayerIdle
         self.musicLiveActivityEnabled = musicLiveActivityEnabled
+        self.inlineSongChange = inlineSongChange
     }
 }
 
@@ -101,9 +105,12 @@ public enum ClosedNotchArbiter {
     /// 1. The HUD is a direct response to a key the reader just pressed. It
     ///    outranks anything ambient because the reader is waiting for it.
     /// 2. A conversation cannot wait. A Pomodoro can.
-    /// 3. Usage and music are ambient. They lose to everything.
+    /// 3. A song change announced inline takes the notch for its few seconds,
+    ///    over whatever was there — it is news, and it hands the slot back.
+    /// 4. Usage and music are ambient. They lose to everything.
     public static let priority: [(ClosedNotchActivity, @Sendable (ClosedNotchInputs) -> Bool)] = [
         (.inlineHUD, { $0.sneakPeekShowing && $0.inlineHUDEnabled && !$0.sneakPeekIsMusic }),
+        (.music, { $0.inlineSongChange && $0.musicLiveActivityEnabled && !$0.hideOnClosed }),
         (.call, { $0.callLive && !$0.hideOnClosed }),
         (.pomodoro, { $0.pomodoroActive && !$0.hideOnClosed }),
         (.usage, { $0.usageBadgesEnabled && !$0.hideOnClosed }),

@@ -23,6 +23,20 @@ final class ClosedNotchArbiterTests: XCTestCase {
         XCTAssertEqual(ClosedNotchArbiter.activity(for: inputs), .pomodoro)
     }
 
+    /// An inline song change takes the slot from whatever holds it, for its
+    /// few seconds — but not from a HUD the reader just summoned.
+    func testAnInlineSongChangeOutranksEverythingButTheHUD() {
+        var inputs = everythingOn
+        inputs.sneakPeekShowing = false
+        inputs.inlineSongChange = true
+        XCTAssertEqual(ClosedNotchArbiter.activity(for: inputs), .music)
+        inputs.sneakPeekShowing = true
+        XCTAssertEqual(ClosedNotchArbiter.activity(for: inputs), .inlineHUD)
+        inputs.sneakPeekShowing = false
+        inputs.musicLiveActivityEnabled = false
+        XCTAssertEqual(ClosedNotchArbiter.activity(for: inputs), .call)
+    }
+
     /// A conversation cannot wait; a Pomodoro can.
     func testACallOutranksAPomodoro() {
         let inputs = ClosedNotchInputs(callLive: true, pomodoroActive: true, usageBadgesEnabled: true)

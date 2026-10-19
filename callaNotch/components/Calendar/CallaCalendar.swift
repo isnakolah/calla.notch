@@ -133,16 +133,21 @@ struct WheelPicker: View {
                 .foregroundColor(NotchAccent.home)
                 .lineLimit(1)
                 .minimumScaleFactor(0.8)
+            // The day is the figure this column exists for: set large and
+            // centred in the column rather than hung from its top edge.
             Text("\(date.date)")
-                .font(.system(size: 40, weight: .bold, design: .rounded))
+                .font(.system(size: 48, weight: .bold, design: .rounded))
                 .monospacedDigit()
-                .tracking(-0.5)
+                .tracking(-1)
                 .foregroundColor(NotchInk.primary)
+                .lineLimit(1)
+                .minimumScaleFactor(0.8)
+                .frame(height: 50)
             Text(date.formatted(.dateTime.month(.abbreviated).year()))
                 .font(.system(size: 11, weight: .medium))
                 .foregroundColor(NotchInk.secondary)
         }
-        .frame(maxHeight: .infinity, alignment: .top)
+        .frame(maxHeight: .infinity, alignment: .center)
         .frame(maxWidth: .infinity)
         .frame(height: plateHeight)
         .containerRelativeFrame(.horizontal)
@@ -481,7 +486,7 @@ struct EventListView: View {
                     )
                     VStack(alignment: .leading, spacing: 2) {
                         Text(event.title)
-                            .font(.system(size: 13, weight: .semibold))
+                            .font(.system(size: 12, weight: .semibold))
                             .foregroundColor(NotchInk.primary.opacity(0.8))
                             .lineLimit(showFullEventTitles ? nil : 1)
                         Group {
@@ -493,7 +498,7 @@ struct EventListView: View {
                                     .foregroundColor(NotchInk.tertiary)
                             }
                         }
-                        .font(.system(size: 11))
+                        .font(.system(size: 10))
                         .monospacedDigit()
                         .lineLimit(1)
                     }
@@ -517,7 +522,7 @@ struct EventListView: View {
 
                     VStack(alignment: .leading, spacing: 2) {
                         Text(event.title)
-                            .font(.system(size: 13, weight: .semibold))
+                            .font(.system(size: 12, weight: .semibold))
                             .foregroundColor(isInProgress ? NotchInk.primary : NotchInk.primary.opacity(0.8))
                             .lineLimit(showFullEventTitles ? nil : 1)
 
@@ -543,7 +548,7 @@ struct EventListView: View {
                                     .lineLimit(1)
                             }
                         }
-                        .font(.system(size: 11))
+                        .font(.system(size: 10))
                         .lineLimit(1)
                     }
                     Spacer(minLength: 0)

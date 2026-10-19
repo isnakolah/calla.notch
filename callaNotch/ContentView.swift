@@ -560,7 +560,8 @@ struct ContentView: View {
             usageBadgesEnabled: Defaults[.showUsageBesideNotch],
             musicPlaying: musicManager.isPlaying,
             musicPlayerIdle: musicManager.isPlayerIdle,
-            musicLiveActivityEnabled: coordinator.musicLiveActivityEnabled))
+            musicLiveActivityEnabled: coordinator.musicLiveActivityEnabled,
+            inlineSongChange: isInlineSongChange))
     }
 
     /// The band either side of the housing, when the notch is open.

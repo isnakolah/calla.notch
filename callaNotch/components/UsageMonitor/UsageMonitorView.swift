@@ -453,7 +453,7 @@ private struct UsageQuotaTile: View {
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .frame(height: 62)
+        .frame(height: 50)
     }
 
     private func progressBar(percent: Double, color: Color) -> some View {
@@ -555,7 +555,7 @@ private struct MessageView: View {
                 .fixedSize(horizontal: false, vertical: true)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .frame(height: 62, alignment: .center)
+        .frame(height: 50, alignment: .center)
     }
 }
 
