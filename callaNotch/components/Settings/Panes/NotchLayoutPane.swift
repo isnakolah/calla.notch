@@ -109,7 +109,7 @@ struct NotchLayoutPane: View {
             .opacity(placed ? 0.55 : 1)
             .contentShape(RoundedRectangle(cornerRadius: NotchRadius.control, style: .continuous))
             .help(placed ? "Click to take \(item.label) down" : "Click to place \(item.label)")
-            .onDrag { NSItemProvider(object: NSString(string: "item:\(item.rawValue)")) }
+            .draggable("item:\(item.rawValue)")
             .onTapGesture {
                 withAnimation(NotchMotion.settle) {
                     if placed {
@@ -257,16 +257,17 @@ struct NotchLayoutPane: View {
         }
         .contentShape(Circle())
         .help(item == .none ? "Empty slot" : item.label)
-        .onDrag {
-            NSItemProvider(object: NSString(string: "slot:\(side.rawValue):\(index)"))
-        }
-        .onDrop(of: Self.dropTypes,
-                isTargeted: Binding(get: { isTarget },
-                                    set: { targeted = $0 ? key : (targeted == key ? nil : targeted) })) { providers in
+        .draggable("slot:\(side.rawValue):\(index)")
+        // Typed drag and drop rather than `NSItemProvider`: the string arrives
+        // with the drop, so nothing is decoded on another queue after the
+        // gesture has already ended.
+        .dropDestination(for: String.self) { payloads, _ in
             targeted = nil
-            return handleDrop(providers) { payload in
-                drop(payload, on: side, at: index)
-            }
+            guard let payload = payloads.first.flatMap(parse) else { return false }
+            drop(payload, on: side, at: index)
+            return true
+        } isTargeted: { inside in
+            targeted = inside ? key : (targeted == key ? nil : targeted)
         }
         .animation(NotchMotion.settle, value: isTarget)
     }
@@ -297,19 +298,19 @@ struct NotchLayoutPane: View {
                               style: StrokeStyle(lineWidth: 1, dash: [4, 3]))
         )
         .contentShape(RoundedRectangle(cornerRadius: NotchRadius.control, style: .continuous))
-        .onDrop(of: Self.dropTypes,
-                isTargeted: Binding(get: { targeted == "bin" },
-                                    set: { targeted = $0 ? "bin" : (targeted == "bin" ? nil : targeted) })) { providers in
+        .dropDestination(for: String.self) { payloads, _ in
             targeted = nil
-            return handleDrop(providers) { payload in
-                withAnimation(NotchMotion.settle) {
-                    switch payload {
-                    case let .slot(side, index): NotchHeaderLayout.remove(on: side, at: index)
-                    case let .item(item): NotchHeaderLayout.remove(item)
-                    }
+            guard let payload = payloads.first.flatMap(parse) else { return false }
+            withAnimation(NotchMotion.settle) {
+                switch payload {
+                case let .slot(side, index): NotchHeaderLayout.remove(on: side, at: index)
+                case let .item(item): NotchHeaderLayout.remove(item)
                 }
-                notice = nil
             }
+            notice = nil
+            return true
+        } isTargeted: { inside in
+            targeted = inside ? "bin" : (targeted == "bin" ? nil : targeted)
         }
         .animation(NotchMotion.settle, value: active)
     }
@@ -369,9 +370,7 @@ struct NotchLayoutPane: View {
         .contentShape(Rectangle())
         // Still draggable, so the row you are reading is also a place you can
         // pick the thing up from. Placement itself lives in the palette above.
-        .onDrag {
-            NSItemProvider(object: NSString(string: "item:\(item.rawValue)"))
-        }
+        .draggable("item:\(item.rawValue)")
     }
 
     private func detail(for item: NotchHeaderItem) -> String? {
@@ -407,22 +406,6 @@ struct NotchLayoutPane: View {
             }
         }
         notice = nil
-    }
-
-    /// Every text type an `NSString` drag can arrive as. Plain text alone
-    /// missed drags the system had registered as UTF-8 or generic text.
-    private static let dropTypes = [UTType.utf8PlainText, UTType.plainText, UTType.text].map(\.identifier)
-
-    private func handleDrop(_ providers: [NSItemProvider],
-                            _ apply: @escaping (DropPayload) -> Void) -> Bool {
-        guard let provider = providers.first(where: { $0.canLoadObject(ofClass: NSString.self) })
-        else { return false }
-        provider.loadObject(ofClass: NSString.self) { item, _ in
-            guard let raw = (item as? NSString) as String? ?? item as? String,
-                  let payload = parse(raw) else { return }
-            DispatchQueue.main.async { apply(payload) }
-        }
-        return true
     }
 
     private func parse(_ raw: String) -> DropPayload? {
