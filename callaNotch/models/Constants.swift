@@ -190,6 +190,9 @@ extension Defaults.Keys {
     /// The preferred live surface. Legacy values are preserved;
     /// `CallaMode.resolved` maps unavailable modes to Call.
     static let callaCopilotMode = Key<String>("callaCopilotMode", default: "call")
+    static let callVPNDisconnectEnabled = Key<Bool>("callVPNDisconnectEnabled", default: false)
+    static let callVPNSelectedServiceIDs = Key<[String]>("callVPNSelectedServiceIDs", default: [])
+    static let callVPNPendingRestoreIDs = Key<[String]>("callVPNPendingRestoreIDs", default: [])
     /// Write each finished call to ~/Documents/Calls/<Type>/<date title>/.
     /// During a call, rest as a borderless frosted summary that blends into
     /// the screen; hovering brings the collapsed panel back.
@@ -231,6 +234,9 @@ extension Defaults.Keys {
     /// Which conversation the pointers are tuned for. Bound at call start; the
     /// gateway validates it against the same allowlist.
     static let callaCopilotPersona = Key<String>("callaCopilotPersona", default: "generic")
+    /// Calendar sources whose linked meetings may be offered in the Call notch.
+    static let calendarCallAccountIDs = Key<[String]>("calendarCallAccountIDs", default: [])
+    static let calendarDefaultCallPersona = Key<String>("calendarDefaultCallPersona", default: "generic")
 
     // How big the call panel is, in both layouts. Stored as Double because
     // `Defaults` has no CGFloat bridge; clamped on read by `CallaPanelSize`, so

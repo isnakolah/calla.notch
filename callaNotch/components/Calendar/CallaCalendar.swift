@@ -375,14 +375,14 @@ struct EventListView: View {
 
     }
 
-    /// Join opens the meeting and nothing else.
-    ///
-    /// It used to start Call capture for whichever event was clicked. The live
-    /// call is the Wave interview now — that was the one path left that could
-    /// start it as some other meeting, which would have run the interview
-    /// persona and the interview's knowledge against an unrelated call.
+    /// The video button prepares the selected meeting in the notch. Start call
+    /// there handles the VPN and opens the meeting link.
     private func joinEvent(_ event: EventModel) {
-        openEvent(event)
+        guard callaCopilotEnabled else { return }
+        calendarManager.selectCallMeeting(event)
+        Defaults[.callaCopilotMode] = "call"
+        CallaViewCoordinator.shared.currentView = .copilot
+        NotificationCenter.default.post(name: .callaCallWantsNotch, object: nil)
     }
 
     /// Turns the event's remaining time window into a Pomodoro plan and starts
@@ -560,7 +560,7 @@ struct EventListView: View {
                     // A real Button rather than a glyph: it is the primary action
                     // of the row, and the row-wide tap gesture is easy to trigger
                     // by accident while scrolling.
-                    if videoCallURL != nil && isInProgress {
+                    if videoCallURL != nil && isInProgress && callaCopilotEnabled {
                         Button {
                             joinEvent(event)
                         } label: {
@@ -572,8 +572,8 @@ struct EventListView: View {
                                 .contentShape(Circle())
                         }
                         .buttonStyle(PlainButtonStyle())
-                        .help("Join \(event.title)")
-                        .accessibilityLabel("Join \(event.title)")
+                        .help("Open \(event.title) in Call")
+                        .accessibilityLabel("Open \(event.title) in Call")
                     }
                 }
                 .padding(.trailing, 7)

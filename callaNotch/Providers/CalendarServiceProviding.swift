@@ -161,6 +161,7 @@ extension CalendarModel {
     init(from calendar: EKCalendar) {
         self.init(
             id: calendar.calendarIdentifier,
+            accountID: calendar.source.sourceIdentifier,
             account: calendar.accountTitle,
             title: calendar.title,
             color: calendar.color,

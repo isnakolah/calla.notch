@@ -132,7 +132,7 @@ struct NotchResizeSnapshot: Sendable {
 /// An explicit pin set during an interview expires with that interview.
 /// Pins deliberately set on ordinary tabs retain their normal lifetime.
 struct NotchPinState: Equatable, Sendable {
-    enum Scope: Equatable, Sendable { case manual, interview }
+    enum Scope: Equatable, Sendable { case manual, interview, meeting }
     private(set) var scope: Scope?
     var isPinned: Bool { scope != nil }
     mutating func set(_ enabled: Bool, duringInterview: Bool) {
@@ -140,5 +140,11 @@ struct NotchPinState: Equatable, Sendable {
     }
     mutating func releaseInterview() {
         if scope == .interview { scope = nil }
+    }
+    mutating func holdMeeting() {
+        if scope == nil { scope = .meeting }
+    }
+    mutating func releaseMeeting() {
+        if scope == .meeting { scope = nil }
     }
 }

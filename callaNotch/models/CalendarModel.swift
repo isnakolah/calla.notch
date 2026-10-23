@@ -10,6 +10,7 @@ import Cocoa
 
 struct CalendarModel: Equatable {
     let id: String
+    let accountID: String
     let account: String
     let title: String
     let color: NSColor

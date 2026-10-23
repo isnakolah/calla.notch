@@ -172,6 +172,8 @@ class CallaViewModel: NSObject, ObservableObject {
     }
 
     func releaseInterviewPin() { pinState.releaseInterview() }
+    func holdMeetingOpen() { pinState.holdMeeting() }
+    func releaseMeetingPin() { pinState.releaseMeeting() }
 
     func close() {
         guard !NotchResizeSession.shared.isEditing(self) else { return }

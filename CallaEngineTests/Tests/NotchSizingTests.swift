@@ -33,6 +33,18 @@ final class NotchSizingTests: XCTestCase {
         XCTAssertFalse(pin.isPinned)
     }
 
+    func testMeetingPinHoldsUntilMeetingEndsWithoutClearingManualPin() {
+        var pin = NotchPinState()
+        pin.holdMeeting()
+        XCTAssertTrue(pin.isPinned)
+        pin.releaseMeeting()
+        XCTAssertFalse(pin.isPinned)
+        pin.set(true, duringInterview: false)
+        pin.holdMeeting()
+        pin.releaseMeeting()
+        XCTAssertTrue(pin.isPinned)
+    }
+
     func testProfileDefaultsAndBounds() {
         assertSize(NotchSizeProfile.normal.defaultSize, CGSize(width: 512, height: 168))
         assertSize(NotchSizeProfile.callExpanded.defaultSize, CGSize(width: 720, height: 400))
