@@ -34,6 +34,8 @@ import Foundation
     func revealCallFolder(_ callID: String, with reply: @escaping (Data) -> Void)
     /// Writes the app's settings snapshot to Downloads, for carrying to another Mac.
     func saveSettingsSnapshot(_ data: Data, with reply: @escaping (Data) -> Void)
+    /// Exports the recent Calla unified-log timeline to Downloads.
+    func exportDiagnostics(with reply: @escaping (Data) -> Void)
     /// Writes a folder for every past call that lacks one.
     func exportPastCalls(with reply: @escaping (Data) -> Void)
     /// Call archive backend: sync now, sign in again, restore, dismiss a notice.
