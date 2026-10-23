@@ -1,3 +1,4 @@
+import CoreGraphics
 import Foundation
 
 // MARK: - The closed notch's one content slot
