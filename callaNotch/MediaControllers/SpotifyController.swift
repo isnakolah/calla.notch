@@ -7,6 +7,7 @@
 
 import Foundation
 import Combine
+import OSLog
 import SwiftUI
 
 class SpotifyController: MediaControllerProtocol {
@@ -36,6 +37,8 @@ class SpotifyController: MediaControllerProtocol {
 
     private var lastArtworkURL: String?
     private var artworkFetchTask: Task<Void, Never>?
+    private var artworkFetchURL: String?
+    private var currentArtworkURL: String?
     
     init() {
         setupPlaybackStateChangeObserver()
@@ -110,6 +113,7 @@ class SpotifyController: MediaControllerProtocol {
         let isRepeating = descriptor.atIndex(8)?.booleanValue ?? false
         let volumePercentage = descriptor.atIndex(9)?.int32Value ?? 50
         let artworkURL = descriptor.atIndex(10)?.stringValue ?? ""
+        currentArtworkURL = artworkURL
         
         var state = PlaybackState(
             bundleIdentifier: "com.spotify.client",
@@ -131,31 +135,46 @@ class SpotifyController: MediaControllerProtocol {
             state.artwork = existingArtwork
         }
 
-    playbackState = state
+        playbackState = state
 
-        if !artworkURL.isEmpty, let url = URL(string: artworkURL) {
-            guard artworkURL != lastArtworkURL || state.artwork == nil else { return }
+        guard !artworkURL.isEmpty, let url = URL(string: artworkURL) else {
             artworkFetchTask?.cancel()
-
-            let currentState = state
-
-            artworkFetchTask = Task {
+            artworkFetchTask = nil
+            artworkFetchURL = nil
+            return
+        }
+        if state.artwork != nil || artworkFetchURL == artworkURL { return }
+        artworkFetchTask?.cancel()
+        artworkFetchURL = artworkURL
+        artworkFetchTask = Task { [weak self] in
+            for attempt in 0..<3 {
                 do {
                     let data = try await ImageService.shared.fetchImageData(from: url)
-
                     await MainActor.run { [weak self] in
-                        guard let self = self else { return }
-                        var updatedState = currentState
+                        guard let self, !Task.isCancelled,
+                              self.currentArtworkURL == artworkURL else { return }
+                        var updatedState = self.playbackState
                         updatedState.artwork = data
                         self.playbackState = updatedState
                         self.lastArtworkURL = artworkURL
+                        self.artworkFetchURL = nil
                         self.artworkFetchTask = nil
                     }
+                    return
                 } catch {
-                    await MainActor.run { [weak self] in
-                        self?.artworkFetchTask = nil
+                    if Task.isCancelled { return }
+                    if attempt == 2 {
+                        Logger(subsystem: "org.calla.notch", category: "artwork")
+                            .error("Spotify artwork fetch failed: \(error.localizedDescription, privacy: .public)")
+                    } else {
+                        try? await Task.sleep(for: .seconds(5))
                     }
                 }
+            }
+            await MainActor.run { [weak self] in
+                guard self?.artworkFetchURL == artworkURL else { return }
+                self?.artworkFetchURL = nil
+                self?.artworkFetchTask = nil
             }
         }
     }

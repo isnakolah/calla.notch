@@ -59,6 +59,9 @@ class MusicManager: ObservableObject {
     private var browserArtworkTask: Task<Void, Never>?
     private var browserArtworkKey: String?
     private var browserArtworkRetryAt = Date.distantPast
+    private var spotifyArtworkTask: Task<Void, Never>?
+    private var spotifyArtworkKey: String?
+    private var spotifyArtworkRetryAt = Date.distantPast
 
     // Store last values at the time artwork was changed
     private var lastArtworkTitle: String = "I'm Handsome"
@@ -102,6 +105,8 @@ class MusicManager: ObservableObject {
     
     public func destroy() {
         debounceIdleTask?.cancel()
+        browserArtworkTask?.cancel()
+        spotifyArtworkTask?.cancel()
         cancellables.removeAll()
         controllerCancellables.removeAll()
         flipWorkItem?.cancel()
@@ -241,6 +246,36 @@ class MusicManager: ObservableObject {
         }
 
         let browserKey = [state.bundleIdentifier, state.title, state.artist, state.album].joined(separator: "|")
+        if spotifyArtworkKey != browserKey {
+            spotifyArtworkTask?.cancel()
+            spotifyArtworkTask = nil
+            spotifyArtworkKey = browserKey
+            spotifyArtworkRetryAt = .distantPast
+        }
+        if activeController is NowPlayingController,
+           state.bundleIdentifier == "com.spotify.client", state.artwork == nil,
+           usingAppIconForArtwork, spotifyArtworkTask == nil, Date() >= spotifyArtworkRetryAt {
+            spotifyArtworkRetryAt = Date().addingTimeInterval(15)
+            spotifyArtworkTask = Task { @MainActor [weak self] in
+                defer { if self?.spotifyArtworkKey == browserKey { self?.spotifyArtworkTask = nil } }
+                guard let descriptor = try? await AppleScriptHelper.execute(
+                    "tell application id \"com.spotify.client\" to get {name, artist, artwork url} of current track"),
+                      descriptor.numberOfItems >= 3,
+                      descriptor.atIndex(1)?.stringValue == state.title,
+                      descriptor.atIndex(2)?.stringValue == state.artist,
+                      let address = descriptor.atIndex(3)?.stringValue,
+                      let url = URL(string: address),
+                      !Task.isCancelled else { return }
+                guard let data = try? await ImageService.shared.fetchImageData(from: url),
+                      let image = NSImage(data: data), !Task.isCancelled,
+                      let self, self.spotifyArtworkKey == browserKey,
+                      self.artworkData == nil else { return }
+                Logger(subsystem: "org.calla.notch", category: "artwork")
+                    .notice("Spotify artwork: cover applied to Now Playing track")
+                self.usingAppIconForArtwork = false
+                self.updateAlbumArt(newAlbumArt: image)
+            }
+        }
         if browserArtworkKey != browserKey {
             browserArtworkTask?.cancel()
             browserArtworkTask = nil
