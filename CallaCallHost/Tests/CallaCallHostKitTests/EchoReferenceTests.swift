@@ -170,4 +170,15 @@ final class EchoReferenceTests: XCTestCase {
         XCTAssertTrue(EchoReference.standardize([1]).isEmpty)
         XCTAssertFalse(EchoReference.standardize([0, 1, 0, 1, 0, 1]).isEmpty)
     }
+
+    func testArchiveEchoCleanupKeepsRealReplies() {
+        let turns = [
+            CallTurn(seq: 0, source: .them, t0: 10, t1: 12, text: "The release is ready to ship"),
+            CallTurn(seq: 1, source: .me, t0: 10.2, t1: 12.1, text: "The release is ready to ship."),
+            CallTurn(seq: 2, source: .me, t0: 13, t1: 14, text: "Yes, let's ship it"),
+            CallTurn(seq: 3, source: .me, t0: 20, t1: 21, text: "The release is ready to ship")
+        ]
+        let cleaned = ArchiveTranscriber.removingSpeakerEchoes(from: turns)
+        XCTAssertEqual(cleaned.map(\.seq), [0, 2, 3])
+    }
 }

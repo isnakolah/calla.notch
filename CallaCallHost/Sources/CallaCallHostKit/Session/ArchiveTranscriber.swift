@@ -64,7 +64,8 @@ public enum ArchiveTranscriber {
         // Both legs were transcribed independently against the same call clock,
         // so interleaving by start time reconstructs the conversation.
         turns.sort { $0.t0 < $1.t0 }
-        let ordered = turns.enumerated().map { index, turn in
+        let cleaned = removingSpeakerEchoes(from: turns)
+        let ordered = cleaned.enumerated().map { index, turn in
             CallTurn(id: turn.id, seq: index, source: turn.source, t0: turn.t0, t1: turn.t1, text: turn.text)
         }
 
@@ -95,5 +96,26 @@ public enum ArchiveTranscriber {
         let elapsed = Date().timeIntervalSince(started)
         archiveLog.notice("re-transcribed \(callDirectory.lastPathComponent, privacy: .public): \(ordered.count, privacy: .public) turns in \(elapsed, privacy: .public)s")
         return Result(turns: ordered.count, duration: elapsed)
+    }
+
+    /// The mic can hear the remote speaker through laptop speakers. Archive
+    /// transcription runs each leg independently, so remove only mic segments
+    /// that closely overlap and repeat a system-audio segment. Genuine replies
+    /// remain even if their words resemble something said earlier.
+    static func removingSpeakerEchoes(from turns: [CallTurn]) -> [CallTurn] {
+        let remote = turns.filter { $0.source == .them }
+        return turns.filter { turn in
+            guard turn.source == .me else { return true }
+            let candidate = CallSession.echoKey(turn.text)
+            guard !candidate.isEmpty else { return true }
+            return !remote.contains { other in
+                let gap = max(0, max(turn.t0, other.t0) - min(turn.t1, other.t1))
+                guard gap <= 0.6, abs(turn.t0 - other.t0) <= 2 else { return false }
+                let reference = CallSession.echoKey(other.text)
+                let words = candidate.split(separator: " ").count
+                return words <= 3 ? candidate == reference
+                    : CallSession.isEcho(candidate, of: reference)
+            }
+        }
     }
 }
