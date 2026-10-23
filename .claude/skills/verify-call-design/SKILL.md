@@ -9,6 +9,7 @@ You are checking the macOS app against two design canvases in this repo:
 
 - `design/zen-mode/`: newer. Zen, the panel on click, the floating window.
 - `design/call-redesign/`: approach, hover, closed notch, spin out, settings.
+- `design/call-tab/`: newest. The call tab at rest and choosing a call type.
 
 `design/README.md` lists what is meant to be implemented and what is
 deliberately left out. Do not report a deliberately-left-out item as a failure.
@@ -20,11 +21,13 @@ Work through the four stages in order and stop to report if a stage fails.
 ```sh
 xcodebuild -project callaNotch.xcodeproj -scheme callaNotch -configuration Debug build
 swift test --filter "ClosedCallLineTests|MeetingApproachTests|MeetingClosedActivityTests|FloatingPanelTests|ZenContentTests|ClosedNotchArbiterTests"
+(cd CallaContracts && swift test --filter "CallTypeRankingTests|CalendarCallPolicyTests")
 ```
 
 The rules the designs depend on are pure and tested in
-`CallaEngineTests/Tests/CallSurfaceTests.swift`. If a test fails, the design
-rule in its name is broken: say which, and quote the assertion.
+`CallaEngineTests/Tests/CallSurfaceTests.swift` and, for the call type ranking,
+`CallaContracts/Tests/CallaContractsTests/CallTypeRankingTests.swift`. If a test
+fails, the design rule in its name is broken: say which, and quote the assertion.
 
 ## 2. The code matches each design decision
 
@@ -49,6 +52,15 @@ Read each file named below and confirm the rule. Note the line you checked.
 | `zen-mode/FloatStrip` | The minus button shrinks it to a one-line strip that keeps its top edge; the chevron grows it back | `CallaFloatingCallState.strip`, `CallaFloatingCallWindow.applyStrip` |
 | `call-redesign/SpinOut` | The window is always on top, on every Space including full screen, follows the hide-from-screen-recording setting, and remembers its place per display | `CallaFloatingCallPanel`, `applySharingType`, `callaFloatingFrames` |
 | `call-redesign/SettingsCalls` | "Where the call panel lives": In the notch / Floating / Where I left it | `CopilotPane`, `CallPanelHome`, `CopilotLiveSession.apply(running:)` |
+| `call-tab/TabReady`, `TabMeeting` | The tab is four lines at 512×168: state word, what the call is, one line (type and why), and the rail. No readiness grid, no Answers check, no person-icon menu | `CallaCallPreflightView.tab`, `header`, `line`, `rail` |
+| `call-tab/TabReady` | The rail shows the most likely types (3, fewer if the width runs out), More…, notes and the button; hovering a type puts "listens for …" on the detail line | `typeChips`, `chipRow`, `CallaCopilotPersona.listensFor` |
+| `call-tab/TabFirst` | When Calla is not sure, nothing is picked, the chips get faint rings, and Start opens the picker | `CallTypeRanker.rank` (`pickScore`, `pickLead`), `callType`, `start()` |
+| `call-tab/TabBlocked` | A missing permission takes the headline and the button; the type shrinks to one chip | `rail` `.microphone`/`.screen` case, `currentTypeChip` |
+| `call-tab/Picker` | Every type in one ranked list with reason and Most likely / Likely / Maybe; three rows show, the rest scroll; no system dialog anywhere | `picker(startsCall:)`, `CallTypeRow`; no `confirmationDialog` in `CallaCallPreflightView` |
+| `call-tab/PickerChange` | Typing narrows the list, Return picks the first, Esc goes back | `filteredEntries`, `onSubmit`, `onExitCommand`, `.cancelAction` |
+| `call-tab/Picker` | A repeating meeting has one single-line scope button: Every … / Just this one; no button wraps | `meetingRepeats`, `forEveryOccurrence`, `CallaHeaderTextButton` |
+| `call-tab/TodayCalls` | "N today" opens the upcoming calls in the notch, each with its type as a ranked menu; a ring marks Calla's guess | `todayList`, `meetingRow`, `MeetingTypeMenu` |
+| `call-tab` purple note | The recommender ranks every type from: your past choice for the series, similar meetings, the model's top three, every title match, the meeting's shape, your history | `MeetingCategoryStore.ranking(for:)`, `similar(to:)`, `CallTypeHistory`, engine `suggestMeetingCategory` (returns up to three ids) |
 
 ## 3. It behaves like the design in the running app
 
@@ -79,6 +91,16 @@ and set it beside the artboard.
    floating window (`ZenStates` row 1, `PanelTrouble`, `FloatTrouble`).
 9. With "Hide from screen recording" on, share your screen in a call app: neither the
    notch nor the floating window appears in what others see (`InCallShare`).
+10. With no call, open the call tab at the default notch size. All four lines fit with
+    nothing cut by the lower curve, and no button wraps (`call-tab/TabReady`). Hover each
+    chip: the detail line says what it listens for.
+11. Start a plain call twice with the same type around the same time of day, then come
+    back: that type is ringed and "Start call" starts without asking (`TabReady`).
+    With an empty history, Start opens the ranked picker instead (`TabFirst`, `Picker`).
+12. In the picker, type "re": only Retro and Refinement remain; Return picks the first;
+    Esc returns to the tab (`PickerChange`).
+13. With calendar calls enabled, press "N today": the list shows each meeting's type;
+    change one from its menu and reopen: the change stuck (`TodayCalls`).
 
 ## 4. Report
 

@@ -321,8 +321,15 @@ final class MeetingCategoryStore: ObservableObject {
     private struct Choice: Codable {
         var confirmed: String?
         var suggested: String?
+        /// The model's reading, best first. `suggested` is its head, kept for
+        /// choices stored before the model returned more than one.
+        var ranked: [String]?
         var fingerprint: String?
         var attemptedAt: Date?
+        /// What the confirmed choice was made for, so a meeting sharing a title
+        /// word or a guest can lean the same way.
+        var title: String?
+        var guests: [String]?
     }
 
     @Published private(set) var revision = 0
@@ -352,24 +359,84 @@ final class MeetingCategoryStore: ObservableObject {
             ?? (seriesID.flatMap { choices["series:\($0)"]?.confirmed })
     }
 
+    /// The type Calla would start this meeting with, when it is sure of one.
     func suggestion(for event: EventModel) -> String? {
-        choices[eventKey(event)]?.suggested
-            ?? seriesKey(event).flatMap { choices[$0]?.suggested }
-            ?? CalendarCallPolicy.suggestedPersona(for: event.title)
+        ranking(for: event).pick
+    }
+
+    /// Every call type in order of how likely it is for this call. Without a
+    /// meeting, only the reader's own history speaks.
+    func ranking(for event: EventModel?, now: Date = Date()) -> CallTypeRanker.Ranking {
+        let candidates = CallaCopilotPersona.all(including: Array(Defaults[.callaCopilotCustomPersonas].keys))
+        let history = CallTypeHistory.shared
+        guard let event else {
+            return CallTypeRanker.rank(.init(
+                candidates: candidates, atThisTime: history.atThisTime(now),
+                last: history.last, usage: history.usage))
+        }
+        let own = [eventKey(event), seriesKey(event)].compactMap { $0 }
+        // A choice stored before the model ranked kept only its head; one
+        // without a fingerprint was the title's guess, which the ranker reads
+        // from the title itself.
+        let model = own.lazy.compactMap { self.choices[$0]?.ranked }.first
+            ?? own.lazy.compactMap { key in self.choices[key].flatMap { $0.fingerprint == nil ? nil : $0.suggested } }
+                .first.map { [$0] } ?? []
+        let minutes = Int(event.end.timeIntervalSince(event.start) / 60)
+        let fallback = Defaults[.calendarDefaultCallPersona]
+        return CallTypeRanker.rank(.init(
+            candidates: candidates, confirmed: confirmed(for: event),
+            similar: similar(to: event, excluding: Set(own)), model: model, title: event.title,
+            participantCount: event.participants.isEmpty ? nil : event.participants.count,
+            repeats: event.hasRecurrenceRules, durationMinutes: minutes > 0 ? minutes : nil,
+            usage: history.usage, defaultType: fallback == "generic" ? nil : fallback))
+    }
+
+    /// Confirmed choices for other meetings that share a guest or a title word.
+    private func similar(to event: EventModel, excluding own: Set<String>) -> [String: Int] {
+        let words = Self.significantWords(event.title)
+        let guests = Set(Self.guests(event))
+        guard !words.isEmpty || !guests.isEmpty else { return [:] }
+        var counts: [String: Int] = [:]
+        for (key, choice) in choices where !own.contains(key) {
+            guard let confirmed = choice.confirmed else { continue }
+            let sharesWord = !words.isDisjoint(with: Self.significantWords(choice.title ?? ""))
+            let sharesGuest = !guests.isDisjoint(with: choice.guests ?? [])
+            if sharesWord || sharesGuest { counts[confirmed, default: 0] += 1 }
+        }
+        return counts
+    }
+
+    /// Words that say what a meeting is about, not that it is a meeting.
+    private static func significantWords(_ title: String) -> Set<String> {
+        let filler: Set<String> = ["with", "and", "the", "for", "sync", "meeting", "call", "weekly",
+                                   "daily", "monthly", "chat", "catch", "team", "about", "from"]
+        return Set(title.lowercased().split { !$0.isLetter && !$0.isNumber }
+            .map(String.init).filter { $0.count >= 4 && !filler.contains($0) })
+    }
+
+    private static func guests(_ event: EventModel) -> [String] {
+        event.participants.filter { !$0.isCurrentUser }.map { $0.name.lowercased() }.filter { !$0.isEmpty }
     }
 
     func save(_ persona: String, for event: EventModel, occurrenceOnly: Bool = false) {
         save(persona, eventID: event.id, seriesID: seriesKey(event).map { String($0.dropFirst("series:".count)) },
-             occurrenceOnly: occurrenceOnly)
+             occurrenceOnly: occurrenceOnly, title: event.title, guests: Self.guests(event))
     }
 
-    func save(_ persona: String, eventID: String, seriesID: String?, occurrenceOnly: Bool = false) {
+    func save(_ persona: String, eventID: String, seriesID: String?, occurrenceOnly: Bool = false,
+              title: String? = nil, guests: [String]? = nil) {
         guard CallaCopilotPersona.all(including: Array(Defaults[.callaCopilotCustomPersonas].keys))
             .contains(persona) else { return }
         let key = !occurrenceOnly && seriesID?.isEmpty == false
             ? "series:\(seriesID!)" : "event:\(eventID)"
         var choice = choices[key] ?? Choice()
-        guard choice.confirmed != persona else { return }
+        if let title { choice.title = title }
+        if let guests { choice.guests = guests }
+        guard choice.confirmed != persona else {
+            choices[key] = choice
+            persist()
+            return
+        }
         choice.confirmed = persona
         choices[key] = choice
         persist()
@@ -412,10 +479,9 @@ final class MeetingCategoryStore: ObservableObject {
         }
         // Do not overwrite a choice made while the model was answering.
         guard choices[key]?.confirmed == nil else { return }
-        let normalized = guess?.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
         var choice = choices[key] ?? Choice()
-        choice.suggested = normalized.flatMap { CallaPersonaCatalog.builtIn.contains($0) ? $0 : nil }
-            ?? CalendarCallPolicy.suggestedPersona(for: event.title)
+        choice.ranked = guess
+        choice.suggested = guess?.first ?? CalendarCallPolicy.suggestedPersona(for: event.title)
         choice.attemptedAt = Date()
         // A failed model request can be retried on the next calendar refresh.
         choice.fingerprint = guess == nil ? nil : fingerprint
@@ -428,5 +494,39 @@ final class MeetingCategoryStore: ObservableObject {
             UserDefaults.standard.set(data, forKey: storageKey)
         }
         revision &+= 1
+    }
+}
+
+/// The call types the reader has started, newest last, for the ranker's
+/// history signals: what was used at this time of day, last, and most often.
+@MainActor
+final class CallTypeHistory {
+    static let shared = CallTypeHistory()
+
+    private let storageKey = "calla.callTypeStarts.v1"
+    private let limit = 80
+    private(set) var starts: [CallTypeRanker.Start]
+
+    private init() {
+        starts = (UserDefaults.standard.data(forKey: storageKey)
+            .flatMap { try? JSONDecoder().decode([CallTypeRanker.Start].self, from: $0) }) ?? []
+    }
+
+    func record(_ type: String, at date: Date = Date()) {
+        starts.append(.init(type: type, at: date))
+        if starts.count > limit { starts.removeFirst(starts.count - limit) }
+        if let data = try? JSONEncoder().encode(starts) {
+            UserDefaults.standard.set(data, forKey: storageKey)
+        }
+    }
+
+    var last: String? { starts.last?.type }
+
+    var usage: [String: Int] {
+        Dictionary(starts.map { ($0.type, 1) }, uniquingKeysWith: +)
+    }
+
+    func atThisTime(_ now: Date) -> [String] {
+        CallTypeRanker.atThisTime(starts, now: now)
     }
 }

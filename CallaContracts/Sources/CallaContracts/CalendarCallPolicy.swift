@@ -16,6 +16,13 @@ public enum CalendarCallPolicy {
 
     /// An ambiguous title leaves the choice to the calendar default.
     public static func suggestedPersona(for title: String) -> String? {
+        let matches = titleMatches(for: title)
+        return matches.count == 1 ? matches[0].id : nil
+    }
+
+    /// Every call type the title names, with the phrase that named it. The
+    /// ranker counts each one; `suggestedPersona` only trusts a lone match.
+    public static func titleMatches(for title: String) -> [(id: String, phrase: String)] {
         let text = title.lowercased()
         let patterns: [(String, [String])] = [
             ("standup", ["standup", "stand-up", "daily scrum"]),
@@ -30,12 +37,11 @@ public enum CalendarCallPolicy {
             ("support", ["support"]),
             ("review", ["sprint review"])
         ]
-        let matches = patterns.filter { entry in
-            entry.1.contains { phrase in
+        return patterns.compactMap { id, phrases in
+            phrases.first { phrase in
                 let pattern = "\\b\(NSRegularExpression.escapedPattern(for: phrase))\\b"
                 return text.range(of: pattern, options: .regularExpression) != nil
-            }
+            }.map { (id: id, phrase: $0) }
         }
-        return matches.count == 1 ? matches[0].0 : nil
     }
 }

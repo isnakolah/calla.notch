@@ -1,0 +1,321 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Call tab prototype</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+body{margin:0;background:#1C1D21;font-family:system-ui,-apple-system,"SF Pro Text",sans-serif;color:#fff}
+a{color:#409CFF}a:hover{color:#6BB2FF}
+button{font:inherit;color:inherit;border:0;background:none;padding:0;cursor:pointer;white-space:nowrap}
+.caps{font:700 10.5px/1 system-ui,-apple-system,sans-serif;letter-spacing:.07em;text-transform:uppercase;color:rgba(255,255,255,.72)}
+.rounded{font-family:ui-rounded,"SF Pro Rounded",system-ui,sans-serif;font-variant-numeric:tabular-nums}
+.tb{height:30px;padding:0 10px;border-radius:9px;display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:500;color:rgba(255,255,255,.82);flex:none}
+.tb:hover{background:rgba(255,255,255,.08);color:#fff}
+.go{height:30px;padding:0 14px;border-radius:15px;color:#fff;font-size:13px;font-weight:600;display:inline-flex;align-items:center;gap:7px;flex:none}
+.go:hover{filter:brightness(1.1)}
+.chip{height:28px;padding:0 11px;border-radius:14px;font-size:13px;font-weight:500;display:inline-flex;align-items:center;gap:5px;flex:none}
+.chip:hover{background:rgba(255,255,255,.08)}
+.opt{height:28px;padding:0 10px;border-radius:8px;display:flex;align-items:center;gap:10px;width:100%;box-sizing:border-box;text-align:left;flex:none}
+.opt:hover{background:rgba(255,255,255,.08)}
+.ico{width:26px;height:26px;border-radius:13px;display:inline-flex;align-items:center;justify-content:center;flex:none}
+.ico:hover{background:rgba(255,255,255,.08)}
+.seg{height:20px;padding:0 8px;border-radius:6px;font-size:11.5px;font-weight:600;display:inline-flex;align-items:center}
+.demo{height:30px;padding:0 12px;border-radius:15px;font-size:12.5px;font-weight:500;display:inline-flex;align-items:center}
+.demo:hover{background:rgba(255,255,255,.1)}
+.list{display:flex;flex-direction:column;gap:2px;overflow-y:auto;height:88px;margin:0 -10px;scrollbar-width:thin}
+</style>
+</helmet>
+
+<div style="width: 1280px; height: 480px; background: #1C1D21; position: relative; overflow: hidden;">
+  <div style="position: absolute; left: 0; right: 0; top: 0; height: 32px; background: #0E0F11; display: flex; align-items: center; padding: 0 18px; gap: 18px; font-size: 13px; color: rgba(255,255,255,.72); box-sizing: border-box;">
+    <span style="font-weight: 700; color: rgba(255,255,255,.88);">Finder</span>
+    <span>File</span><span>Edit</span><span>View</span><span>Go</span>
+    <span style="flex-grow: 1;"></span>
+    <span class="rounded">Thu 09:56</span>
+  </div>
+
+  <div style="position: absolute; left: 384px; top: 0; width: 512px; height: 168px; background: #000; border-radius: 0 0 24px 24px; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 24px 60px rgba(0,0,0,.5);">
+    <div style="height: 38px; display: flex; align-items: center; padding: 0 14px; gap: 2px; flex: none;">
+      <span class="ico" aria-hidden="true"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.5)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11l8-7 8 7v9H4z"/></svg></span>
+      <span class="ico" style="background: rgba(64,156,255,.2);" aria-hidden="true"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#6BB2FF" stroke-width="2.2" stroke-linecap="round"><path d="M4 10v4M8 7v10M12 4v16M16 7v10M20 10v4"/></svg></span>
+      <span style="flex-grow: 1;"></span>
+      <span class="ico" aria-hidden="true"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.5)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1L7 17M17 7l2.1-2.1"/></svg></span>
+    </div>
+
+    <div style="flex-grow: 1; padding: 4px 24px 14px; display: flex; flex-direction: column; min-height: 0;">
+      <sc-if value="{{showTab}}" hint-placeholder-val="{{ true }}">
+        <div style="display: flex; flex-direction: column; height: 100%;">
+          <div style="display: flex; align-items: center; gap: 8px; height: 20px;">
+            <span style="width: 7px; height: 7px; border-radius: 50%; background: {{tint}}; box-shadow: 0 0 9px {{tint}};"></span>
+            <span class="caps" style="color: {{capsInk}};">{{state}}</span>
+            <span style="flex-grow: 1;"></span>
+            <span style="display: inline-flex; gap: 2px; padding: 2px; border-radius: 8px; background: rgba(255,255,255,.06);">
+              <button class="seg" style="background: rgba(255,255,255,.14); color: #fff;">Call</button>
+              <button class="seg" style="color: rgba(255,255,255,.66);">Quiz</button>
+            </span>
+          </div>
+          <span style="font-size: 17px; font-weight: 650; letter-spacing: -.01em; margin-top: 7px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{headline}}</span>
+          <span style="font-size: 12.5px; color: {{lineInk}}; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{line}}</span>
+          <div style="display: flex; align-items: center; gap: 2px; margin-top: auto; margin-left: -11px;">
+            <sc-for list="{{chips}}" as="c" hint-placeholder-count="3">
+              <button class="chip" style="background: {{c.bg}}; color: {{c.ink}}; box-shadow: {{c.ring}};" onClick="{{c.pick}}" onMouseEnter="{{c.hover}}" onMouseLeave="{{unhover}}">{{c.title}}</button>
+            </sc-for>
+            <sc-if value="{{showMore}}" hint-placeholder-val="{{ true }}"><button class="chip" style="color: #8CC4FF;" onClick="{{openChange}}">More…</button></sc-if>
+            <span style="flex-grow: 1;"></span>
+            <sc-if value="{{secondary}}" hint-placeholder-val="{{ false }}"><button class="tb" onClick="{{secondaryAct}}">{{secondary}}</button></sc-if>
+            <button class="go" style="background: {{goBg}};" onClick="{{primaryAct}}">{{primary}}</button>
+          </div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{showPicker}}" hint-placeholder-val="{{ false }}">
+        <div style="display: flex; flex-direction: column; height: 100%;">
+          <div style="display: flex; align-items: center; gap: 8px; height: 20px;">
+            <span style="width: 7px; height: 7px; border-radius: 50%; background: #409CFF; box-shadow: 0 0 9px #409CFF;"></span>
+            <span class="caps" style="flex: none;">{{pickTitle}}</span>
+            <span style="font-size: 12px; color: rgba(255,255,255,.66); flex-grow: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{pickFor}}</span>
+            <sc-if value="{{showScope}}" hint-placeholder-val="{{ false }}"><button class="tb" style="height: 22px; padding: 0 7px; font-size: 12px; color: #8CC4FF;" onClick="{{toggleScope}}">{{scopeLabel}}<svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="#8CC4FF" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 10l5-5 5 5M7 14l5 5 5-5"/></svg></button></sc-if>
+            <sc-if value="{{showHint}}" hint-placeholder-val="{{ true }}"><span style="font-size: 11.5px; color: rgba(255,255,255,.6); flex: none; white-space: nowrap;">Scroll or type a name</span></sc-if>
+            <button class="tb" style="height: 22px; padding: 0 7px; font-size: 11.5px;" onClick="{{back}}">esc</button>
+          </div>
+          <div class="list" style="margin-top: auto;">
+            <sc-for list="{{ranked}}" as="it" hint-placeholder-count="3">
+              <button class="opt" style="background: {{it.bg}}; box-shadow: {{it.ring}};" onClick="{{it.pick}}" onMouseEnter="{{it.hover}}" onMouseLeave="{{unhover}}">
+                <span style="font-size: 13px; font-weight: 600; color: #fff; width: 112px; flex: none; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{it.title}}</span>
+                <span style="font-size: 12px; color: rgba(255,255,255,.7); flex-grow: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{it.note}}</span>
+                <span style="font-size: 11.5px; font-weight: 600; color: {{it.bandInk}}; flex: none;">{{it.band}}</span>
+              </button>
+            </sc-for>
+          </div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{showRun}}" hint-placeholder-val="{{ false }}">
+        <div style="display: flex; flex-direction: column; height: 100%;">
+          <div style="display: flex; align-items: center; gap: 8px; height: 20px;">
+            <span style="width: 7px; height: 7px; border-radius: 50%; background: {{runTint}}; box-shadow: 0 0 9px {{runTint}};"></span>
+            <span class="caps">{{runState}}</span>
+            <span style="flex-grow: 1;"></span>
+            <span style="font-size: 12px; color: rgba(255,255,255,.66);">{{typeTitle}}</span>
+          </div>
+          <span style="font-size: 17px; font-weight: 650; letter-spacing: -.01em; margin-top: 7px;">{{runTitle}}</span>
+          <span style="font-size: 12.5px; color: rgba(255,255,255,.72); margin-top: 2px;">{{runLine}}</span>
+          <div style="display: flex; align-items: center; margin-top: auto;">
+            <span style="flex-grow: 1;"></span>
+            <sc-if value="{{showLive}}" hint-placeholder-val="{{ false }}"><button class="tb" style="color: #FF6961;" onClick="{{end}}">End call</button></sc-if>
+          </div>
+        </div>
+      </sc-if>
+    </div>
+  </div>
+
+  <div style="position: absolute; left: 384px; top: 196px; width: 512px; display: flex; justify-content: center; gap: 4px; padding: 6px; box-sizing: border-box; border-radius: 22px; background: rgba(255,255,255,.06);">
+    <sc-for list="{{scenes}}" as="s" hint-placeholder-count="4">
+      <button class="demo" style="background: {{s.bg}}; color: {{s.ink}};" onClick="{{s.pick}}">{{s.title}}</button>
+    </sc-for>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":480}}'>
+const TYPES = [
+  { id: 'standup', t: 'Standup', d: 'status, blockers and who owns them' },
+  { id: 'planning', t: 'Sprint planning', d: 'scope, estimates and what fits' },
+  { id: 'refinement', t: 'Refinement', d: 'acceptance criteria and edge cases' },
+  { id: 'review', t: 'Sprint review', d: 'what shipped versus what is planned' },
+  { id: 'retro', t: 'Retro', d: 'what went well, what hurt, owned actions' },
+  { id: 'design-review', t: 'Design review', d: 'the approach, the alternative, assumptions' },
+  { id: 'incident', t: 'Incident review', d: 'timeline, impact and root cause' },
+  { id: 'board-review', t: 'Board review', d: 'the guidance you wrote for it' },
+  { id: 'generic', t: 'General', d: 'plain notes on what was said' },
+  { id: 'one-on-one', t: '1:1', d: 'goals, feedback and follow-ups' },
+  { id: 'interview', t: 'Interview', d: 'claims and the evidence behind them' },
+  { id: 'sales', t: 'Sales', d: 'pricing, terms and commitments as said' },
+  { id: 'support', t: 'Support', d: 'repro, reach and the next step' }
+];
+const BY = {};
+TYPES.forEach((x) => { BY[x.id] = x; });
+
+// What the recommender returns: every type, in order, with a band and a reason.
+// `sure` is false when the top two are close: then Start asks.
+const SCENES = {
+  meeting: {
+    title: 'A meeting', sure: true, forWhat: 'for Acme renewal sync',
+    ranked: [
+      ['sales', 'Most likely', 'last Acme sync was Sales, guests from acme.com'],
+      ['support', 'Maybe', 'guests from outside your company'],
+      ['generic', 'Maybe', 'fits any call']
+    ]
+  },
+  just: {
+    title: 'Just a call', sure: true, forWhat: 'for this call',
+    ranked: [
+      ['standup', 'Most likely', 'your last three calls at this time'],
+      ['one-on-one', 'Likely', 'you use it most on Thursdays'],
+      ['generic', 'Maybe', 'fits any call']
+    ]
+  },
+  unsure: {
+    title: 'Not sure', sure: false, forWhat: 'for Weekly sync with Priya',
+    ranked: [
+      ['one-on-one', 'Likely', 'two people, every week'],
+      ['standup', 'Likely', 'the title says sync'],
+      ['generic', 'Maybe', 'fits any call']
+    ]
+  },
+  blocked: {
+    title: 'Missing call audio', sure: true, forWhat: 'for this call',
+    ranked: [
+      ['standup', 'Most likely', 'your last three calls at this time'],
+      ['one-on-one', 'Likely', 'you use it most on Thursdays'],
+      ['generic', 'Maybe', 'fits any call']
+    ]
+  }
+};
+
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { scene: 'meeting', type: 'sales', touched: false, view: 'tab', from: 'start', hover: null, scope: 'all' };
+  }
+
+  componentWillUnmount() { clearTimeout(this.timer); }
+
+  first(id) {
+    const sc = SCENES[id];
+    return sc.sure ? sc.ranked[0][0] : null;
+  }
+
+  setScene(id) {
+    clearTimeout(this.timer);
+    this.setState({ scene: id, type: this.first(id), touched: false, view: 'tab', hover: null });
+  }
+
+  begin(type) {
+    clearTimeout(this.timer);
+    this.setState({ type: type, view: 'starting', hover: null });
+    this.timer = setTimeout(() => this.setState({ view: 'live' }), 1400);
+  }
+
+  renderVals() {
+    const s = this.state;
+    const sc = SCENES[s.scene];
+    const meeting = s.scene === 'meeting';
+    const blocked = s.scene === 'blocked';
+    const unsure = s.scene === 'unsure';
+    const type = s.type ? BY[s.type] : null;
+    const hovered = s.hover ? BY[s.hover] : null;
+    const top = sc.ranked[0];
+
+    // The whole ranking: the recommender's top three, then everything else.
+    const seen = {};
+    const order = sc.ranked.map((r) => { seen[r[0]] = true; return { id: r[0], band: r[1], why: r[2] }; });
+    TYPES.forEach((x) => { if (!seen[x.id]) order.push({ id: x.id, band: '', why: '' }); });
+
+    let chipIds = order.slice(0, blocked ? 1 : 3).map((o) => o.id);
+    if (s.type && chipIds.indexOf(s.type) < 0) chipIds = [s.type].concat(chipIds.slice(0, chipIds.length - 1));
+    const chips = chipIds.map((id) => {
+      const on = id === s.type;
+      return {
+        title: blocked ? BY[id].t + ' ⌄' : BY[id].t,
+        bg: on ? 'rgba(255,255,255,.14)' : 'transparent',
+        ink: on ? '#fff' : 'rgba(255,255,255,.78)',
+        ring: on && !s.touched ? 'inset 0 0 0 1px rgba(64,156,255,.75)' : (unsure && !s.type ? 'inset 0 0 0 1px rgba(255,255,255,.2)' : 'none'),
+        pick: () => blocked ? this.setState({ view: 'picker', from: 'change', hover: null }) : this.setState({ type: id, touched: true }),
+        hover: () => this.setState({ hover: id })
+      };
+    });
+
+    let line;
+    if (hovered) line = hovered.t + ' · listens for ' + hovered.d;
+    else if (blocked) line = 'Calla needs Screen Recording to hear the other side.';
+    else if (!type) line = 'Not sure what kind of call this is. Pick one, or press Start to choose.';
+    else if (s.touched) line = (meeting ? '10:00 · Maya, Tom +2 · ' : '') + type.t + ' · listens for ' + type.d;
+    else line = (meeting ? '10:00 · ' : '') + type.t + ' · ' + top[2];
+
+    let primary = meeting ? 'Join and listen' : 'Start call';
+    let goBg = '#0A84FF';
+    let primaryAct = () => this.begin(s.type);
+    let secondary = '';
+    let secondaryAct = () => {};
+    if (!type) primaryAct = () => this.setState({ view: 'picker', from: 'start', hover: null });
+    if (blocked) {
+      primary = 'Allow call audio';
+      goBg = '#C96A00';
+      primaryAct = () => this.setState({ scene: 'just', type: this.first('just') });
+      secondary = 'Start anyway';
+      secondaryAct = () => this.begin(s.type);
+    }
+
+    const ranked = order.map((o, i) => {
+      const on = o.id === s.type;
+      const focus = o.id === s.hover;
+      return {
+        title: BY[o.id].t,
+        note: focus || !o.why ? 'listens for ' + BY[o.id].d : o.why,
+        band: o.band,
+        bandInk: o.band === 'Most likely' ? '#8CC4FF' : 'rgba(255,255,255,.66)',
+        bg: on ? 'rgba(255,255,255,.14)' : 'transparent',
+        ring: i === 0 && sc.sure ? 'inset 0 0 0 1px rgba(64,156,255,.75)' : 'none',
+        hover: () => this.setState({ hover: o.id }),
+        pick: () => {
+          if (s.from === 'start') this.begin(o.id);
+          else this.setState({ type: o.id, touched: true, view: 'tab', hover: null });
+        }
+      };
+    });
+
+    return {
+      showTab: s.view === 'tab',
+      showPicker: s.view === 'picker',
+      showRun: s.view === 'starting' || s.view === 'live',
+      showLive: s.view === 'live',
+      tint: blocked ? '#FF9F0A' : (meeting ? '#409CFF' : '#30D158'),
+      capsInk: blocked ? '#FFB340' : 'rgba(255,255,255,.82)',
+      state: blocked ? 'Not ready' : (meeting ? 'Meeting · in 03:58' : (unsure ? 'Meeting · in 12 min' : 'Ready')),
+      headline: blocked ? 'Only your side would be heard' : (meeting ? 'Acme renewal sync' : (unsure ? 'Weekly sync with Priya' : 'Start a call')),
+      lineInk: blocked && !hovered ? '#FFB340' : 'rgba(255,255,255,.76)',
+      line: line,
+      chips: chips,
+      showMore: !blocked,
+      unhover: () => this.setState({ hover: null }),
+      openChange: () => this.setState({ view: 'picker', from: 'change', hover: null }),
+      primary: primary,
+      goBg: goBg,
+      primaryAct: primaryAct,
+      secondary: secondary,
+      secondaryAct: secondaryAct,
+
+      pickTitle: s.from === 'start' ? 'Start as' : 'Call type',
+      pickFor: sc.forWhat,
+      showScope: meeting,
+      showHint: !meeting,
+      scopeLabel: s.scope === 'one' ? 'Just this one' : 'Every Acme sync',
+      toggleScope: () => this.setState({ scope: s.scope === 'one' ? 'all' : 'one' }),
+      back: () => this.setState({ view: 'tab', hover: null }),
+      ranked: ranked,
+
+      runTint: s.view === 'live' ? '#30D158' : '#409CFF',
+      runState: s.view === 'live' ? 'Listening · 00:04' : 'Starting',
+      typeTitle: type ? type.t : 'General',
+      runTitle: s.view === 'live' ? (meeting ? 'Acme renewal sync' : 'Your call') : (meeting ? 'Opening Google Meet…' : 'Starting…'),
+      runLine: s.view === 'live' ? 'Hearing both sides. The first points come in about a minute.'
+        : 'As a ' + (type ? type.t : 'General') + ' call. Calla starts listening in a moment.',
+      end: () => this.setState({ view: 'tab' }),
+
+      scenes: Object.keys(SCENES).map((id) => ({
+        title: SCENES[id].title,
+        bg: id === s.scene ? 'rgba(255,255,255,.16)' : 'transparent',
+        ink: id === s.scene ? '#fff' : 'rgba(255,255,255,.76)',
+        pick: () => this.setScene(id)
+      }))
+    };
+  }
+}
+</script>
+</body>
+</html>

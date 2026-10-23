@@ -737,7 +737,11 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                     } else if CalendarManager.shared.selectedCallMeeting != nil {
                         NotificationCenter.default.post(name: .callaCallWantsNotch, object: nil)
                     } else {
-                        engine.startCall(persona: Defaults[.callaCopilotPersona], model: Defaults[.callaCopilotLiveModel])
+                        // The shortcut never asks: the ranker's pick when it has
+                        // one, else the type of the last plain call.
+                        let persona = MeetingCategoryStore.shared.ranking(for: nil).pick
+                            ?? Defaults[.callaCopilotPersona]
+                        engine.startCall(persona: persona, model: Defaults[.callaCopilotLiveModel])
                     }
                 }
             }

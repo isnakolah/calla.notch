@@ -1,0 +1,141 @@
+{
+  "v": 3,
+  "createdOnFiles": {
+    "v": 1,
+    "at": "2026-10-23T15:10:00Z"
+  },
+  "title": "Calla Call Tab and Call Types",
+  "launch": {
+    "view": "canvas"
+  },
+  "pages": [],
+  "boards": {
+    "Main.dc.html": {
+      "x": 0,
+      "y": 0,
+      "w": 1280,
+      "h": 480,
+      "title": "Prototype · the call tab at its real 512×168, choosing a type, starting",
+      "is_interactive": true
+    },
+    "TabReady.dc.html": {
+      "x": 0,
+      "y": 900,
+      "w": 512,
+      "h": 168,
+      "title": "Tab · just a call: the most likely type, and why"
+    },
+    "TabMeeting.dc.html": {
+      "x": 592,
+      "y": 900,
+      "w": 512,
+      "h": 168,
+      "title": "Tab · a meeting: most likely first"
+    },
+    "TabFirst.dc.html": {
+      "x": 1184,
+      "y": 900,
+      "w": 512,
+      "h": 168,
+      "title": "Tab · Calla is not sure: nothing picked, Start asks"
+    },
+    "TabBlocked.dc.html": {
+      "x": 1776,
+      "y": 900,
+      "w": 512,
+      "h": 168,
+      "title": "Tab · one thing missing, one fix"
+    },
+    "Picker.dc.html": {
+      "x": 0,
+      "y": 1420,
+      "w": 512,
+      "h": 168,
+      "title": "Picker · every type, most likely first, with the reason"
+    },
+    "PickerChange.dc.html": {
+      "x": 592,
+      "y": 1420,
+      "w": 512,
+      "h": 168,
+      "title": "Picker · typing narrows the list"
+    },
+    "TodayCalls.dc.html": {
+      "x": 1184,
+      "y": 1420,
+      "w": 512,
+      "h": 168,
+      "title": "Today's calls · set each type ahead"
+    },
+    "TabToday.dc.html": {
+      "x": 1776,
+      "y": 1420,
+      "w": 512,
+      "h": 420,
+      "title": "For comparison · the tab and the dialog today"
+    }
+  },
+  "order": [
+    "Main.dc.html",
+    "TabReady.dc.html",
+    "TabMeeting.dc.html",
+    "TabFirst.dc.html",
+    "TabBlocked.dc.html",
+    "Picker.dc.html",
+    "PickerChange.dc.html",
+    "TodayCalls.dc.html",
+    "TabToday.dc.html"
+  ],
+  "notes": {
+    "t-proto": {
+      "x": 0,
+      "y": -300,
+      "text": "Say what this call is, then go",
+      "kind": "title1",
+      "maxW": 1280
+    },
+    "s-proto": {
+      "x": -380,
+      "y": 0,
+      "w": 300,
+      "text": "Everything is drawn at the notch's normal size: 512×168, with the tab row in the top 38. Nothing here grows the notch.\n\nTypes are ordered by how likely each one is for this call. The tab shows the top three; the picker is the whole list in the same order.\n\nStart confirms what you can see. It asks only when Calla is not sure.\n\nSmallest text is 11.5 px; no button wraps.\n\nSwitch scenes with the bar under the prototype.",
+      "fill": "blue"
+    },
+    "t-tab": {
+      "x": 0,
+      "y": 600,
+      "text": "The call tab: four lines, nothing more",
+      "kind": "title1",
+      "maxW": 2288
+    },
+    "s-tab": {
+      "x": -380,
+      "y": 900,
+      "w": 300,
+      "text": "1. The state word and dot. This is all of readiness while it is fine.\n2. What the call is.\n3. One line: the most likely type and why. Hovering a type borrows it to say what Calla listens for.\n4. The three most likely types, More…, and the one button.\n\nA blue ring means Calla picked it. Not sure means nothing is picked, and Start opens the picker.",
+      "fill": "green"
+    },
+    "t-pick": {
+      "x": 0,
+      "y": 1140,
+      "text": "Choosing a type: a ranked list, not a wall of pills",
+      "kind": "title1",
+      "maxW": 2288
+    },
+    "s-pick": {
+      "x": -380,
+      "y": 1420,
+      "w": 300,
+      "text": "One list of every type, most likely first. Each row: name, the reason, and Most likely / Likely / Maybe. Three rows show; scroll for the rest.\n\nHovering a row swaps its reason for what Calla listens for.\n\nType to narrow the list; Return picks, Esc goes back.\n\nA repeating meeting has one button in the top line: Every Acme sync / Just this one.",
+      "fill": "orange"
+    },
+    "s-rec": {
+      "x": 2368,
+      "y": 1420,
+      "w": 340,
+      "text": "The recommender, updated\n\nToday it returns one id or nothing, and the title keywords only count when exactly one matches.\n\nNew: it returns every type (yours included), ranked, each with a band and a short reason. Signals, strongest first:\n1. What you chose for this series before\n2. What you chose for meetings with the same guests or title words\n3. The model's top three from title, guests and description\n4. Every title keyword match, not just a lone one\n5. Shape: two people weekly, outside guests, a daily 15 minutes\n6. How often you use each type\n\nMost likely only when the top is clearly ahead. Otherwise nothing is picked and Start asks.",
+      "fill": "purple"
+    }
+  },
+  "designSystems": []
+}

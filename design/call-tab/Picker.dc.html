@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Call type picker, from Start</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+body{margin:0;background:#000;font-family:system-ui,-apple-system,"SF Pro Text",sans-serif;color:#fff}
+a{color:#409CFF}a:hover{color:#6BB2FF}
+button{font:inherit;color:inherit;border:0;background:none;padding:0;cursor:pointer;white-space:nowrap}
+.caps{font:700 10.5px/1 system-ui,-apple-system,sans-serif;letter-spacing:.07em;text-transform:uppercase;color:rgba(255,255,255,.82)}
+.tb{height:22px;padding:0 7px;border-radius:6px;display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:600;color:rgba(255,255,255,.7);flex:none}
+.tb:hover{background:rgba(255,255,255,.08);color:#fff}
+.opt{height:28px;padding:0 10px;border-radius:8px;display:flex;align-items:center;gap:10px;width:100%;box-sizing:border-box;text-align:left;flex:none}
+.opt:hover{background:rgba(255,255,255,.08)}
+.name{font-size:13px;font-weight:600;width:112px;flex:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.why{font-size:12px;color:rgba(255,255,255,.7);flex-grow:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.band{font-size:11.5px;font-weight:600;color:rgba(255,255,255,.66);flex:none}
+.ico{width:26px;height:26px;border-radius:13px;display:inline-flex;align-items:center;justify-content:center;flex:none}
+</style>
+</helmet>
+
+<div style="width: 512px; height: 168px; background: #000; border-radius: 0 0 24px 24px; display: flex; flex-direction: column; overflow: hidden;">
+  <div style="height: 38px; display: flex; align-items: center; padding: 0 14px; gap: 2px; flex: none;">
+    <span class="ico" aria-hidden="true"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.5)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11l8-7 8 7v9H4z"/></svg></span>
+    <span class="ico" style="background: rgba(64,156,255,.2);" aria-hidden="true"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#6BB2FF" stroke-width="2.2" stroke-linecap="round"><path d="M4 10v4M8 7v10M12 4v16M16 7v10M20 10v4"/></svg></span>
+    <span style="flex-grow: 1;"></span>
+    <span class="ico" aria-hidden="true"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.5)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1L7 17M17 7l2.1-2.1"/></svg></span>
+  </div>
+
+  <div style="flex-grow: 1; padding: 4px 24px 14px; display: flex; flex-direction: column;">
+    <div style="display: flex; align-items: center; gap: 8px; height: 20px;">
+      <span style="width: 7px; height: 7px; border-radius: 50%; background: #409CFF; box-shadow: 0 0 9px #409CFF;"></span>
+      <span class="caps" style="flex: none;">Start as</span>
+      <span style="font-size: 12px; color: rgba(255,255,255,.66); flex-grow: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">for Acme renewal sync</span>
+      <button class="tb" style="color: #8CC4FF;">Every Acme sync<svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="#8CC4FF" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 10l5-5 5 5M7 14l5 5 5-5"/></svg></button>
+      <button class="tb">esc</button>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 2px; margin: auto -10px 0; height: 88px; overflow: hidden;">
+      <button class="opt" style="background: rgba(255,255,255,.14); box-shadow: inset 0 0 0 1px rgba(64,156,255,.75);"><span class="name">Sales</span><span class="why">last Acme sync was Sales, guests from acme.com</span><span class="band" style="color: #8CC4FF;">Most likely</span></button>
+      <button class="opt"><span class="name">Support</span><span class="why">guests from outside your company</span><span class="band">Maybe</span></button>
+      <button class="opt"><span class="name">General</span><span class="why">fits any call</span><span class="band">Maybe</span></button>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":512,"height":168}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

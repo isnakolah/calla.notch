@@ -66,6 +66,26 @@ enum CallaCopilotPersona {
 
     static func title(_ value: String) -> String { CallaPersonaCatalog.title(value) }
 
+    /// What the type makes Calla listen for, short enough to follow "listens
+    /// for" on one line of the notch. Drawn from each type's prompt.
+    static func listensFor(_ value: String) -> String {
+        switch value {
+        case "standup": "status, blockers and who owns them"
+        case "planning": "scope, estimates and what fits"
+        case "refinement": "acceptance criteria and edge cases"
+        case "review": "what shipped versus what is planned"
+        case "retro": "what went well, what hurt, owned actions"
+        case "design-review": "the approach, the alternative, assumptions"
+        case "incident": "timeline, impact and root cause"
+        case "generic": "plain notes on what was said"
+        case "one-on-one": "goals, feedback and follow-ups"
+        case "interview": "claims and the evidence behind them"
+        case "sales": "pricing, terms and commitments as said"
+        case "support": "repro, reach and the next step"
+        default: "the guidance you wrote for it"
+        }
+    }
+
     /// Ids the user may create. Kept allowlist-shaped even though the guidance
     /// body is free text: an id can end up naming things, a paragraph cannot.
     static func isValidCustomID(_ value: String) -> Bool {

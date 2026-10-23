@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Today's calls</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+body{margin:0;background:#000;font-family:system-ui,-apple-system,"SF Pro Text",sans-serif;color:#fff}
+a{color:#409CFF}a:hover{color:#6BB2FF}
+button{font:inherit;color:inherit;border:0;background:none;padding:0;cursor:pointer;white-space:nowrap}
+.caps{font:700 10.5px/1 system-ui,-apple-system,sans-serif;letter-spacing:.07em;text-transform:uppercase;color:rgba(255,255,255,.82)}
+.rounded{font-family:ui-rounded,"SF Pro Rounded",system-ui,sans-serif;font-variant-numeric:tabular-nums}
+.tb{height:22px;padding:0 7px;border-radius:6px;display:inline-flex;align-items:center;font-size:12px;font-weight:600;color:rgba(255,255,255,.7);flex:none}
+.tb:hover{background:rgba(255,255,255,.08);color:#fff}
+.row{display:flex;align-items:center;gap:12px;height:28px;padding:0 10px;margin:0 -10px;border-radius:8px}
+.row:hover{background:rgba(255,255,255,.05)}
+.time{width:40px;font-size:12.5px;color:rgba(255,255,255,.76);flex:none}
+.title{font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex-grow:1;min-width:0}
+.type{height:24px;padding:0 10px;border-radius:12px;font-size:12.5px;font-weight:500;color:rgba(255,255,255,.88);display:inline-flex;align-items:center;flex:none}
+.type:hover{background:rgba(255,255,255,.1)}
+.ico{width:26px;height:26px;border-radius:13px;display:inline-flex;align-items:center;justify-content:center;flex:none}
+</style>
+</helmet>
+
+<div style="width: 512px; height: 168px; background: #000; border-radius: 0 0 24px 24px; display: flex; flex-direction: column; overflow: hidden;">
+  <div style="height: 38px; display: flex; align-items: center; padding: 0 14px; gap: 2px; flex: none;">
+    <span class="ico" aria-hidden="true"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.5)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11l8-7 8 7v9H4z"/></svg></span>
+    <span class="ico" style="background: rgba(64,156,255,.2);" aria-hidden="true"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#6BB2FF" stroke-width="2.2" stroke-linecap="round"><path d="M4 10v4M8 7v10M12 4v16M16 7v10M20 10v4"/></svg></span>
+    <span style="flex-grow: 1;"></span>
+    <span class="ico" aria-hidden="true"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.5)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1L7 17M17 7l2.1-2.1"/></svg></span>
+  </div>
+
+  <div style="flex-grow: 1; padding: 4px 24px 14px; display: flex; flex-direction: column;">
+    <div style="display: flex; align-items: center; gap: 8px; height: 20px;">
+      <span style="width: 7px; height: 7px; border-radius: 50%; background: #409CFF; box-shadow: 0 0 9px #409CFF;"></span>
+      <span class="caps">Today · 4 calls</span>
+      <span style="font-size: 12px; color: rgba(255,255,255,.66); flex-grow: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Blue is Calla’s best guess</span>
+      <button class="tb">esc</button>
+    </div>
+    <div style="display: flex; flex-direction: column; margin-top: auto;">
+      <div class="row" style="background: rgba(255,255,255,.07);">
+        <span class="time rounded" style="color: #8CC4FF;">10:00</span>
+        <span class="title">Acme renewal sync</span>
+        <button class="type" style="box-shadow: inset 0 0 0 1px rgba(64,156,255,.75);">Sales</button>
+      </div>
+      <div class="row">
+        <span class="time rounded">12:30</span>
+        <span class="title">Weekly sync with Priya</span>
+        <button class="type" style="color: #8CC4FF;">Choose…</button>
+      </div>
+      <div class="row">
+        <span class="time rounded">14:00</span>
+        <span class="title">Payments API design review</span>
+        <button class="type">Design review</button>
+      </div>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":512,"height":168}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

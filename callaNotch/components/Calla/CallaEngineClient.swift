@@ -1122,6 +1122,7 @@ final class CallaEngineClient: ObservableObject {
                    callID: String? = nil,
                    selectedKnowledgeNoteIDs: [String]? = nil) {
         lastCallStart = (persona, model, meeting, selectedKnowledgeNoteIDs)
+        CallTypeHistory.shared.record(persona)
         CopilotLiveSession.shared.prepareForSessionStart()
         // Starting a call on the local brain without credentials used to mean a
         // browser popping open mid-meeting with nowhere to put the code. Sign in
@@ -1174,14 +1175,18 @@ final class CallaEngineClient: ObservableObject {
         }
     }
 
-    func suggestMeetingCategory(details: String, completion: @escaping (String?) -> Void) {
+    /// The model's reading of a meeting, best first. Nil when the request
+    /// failed or nothing fit, which the caller treats as worth retrying.
+    func suggestMeetingCategory(details: String, completion: @escaping ([String]?) -> Void) {
         let connection = connection ?? makeConnection()
         guard let proxy = connection.remoteObjectProxyWithErrorHandler({ _ in
             Task { @MainActor in completion(nil) }
         }) as? CallaEngineProtocol else { completion(nil); return }
         proxy.suggestMeetingCategory(details) { data in
-            let answer = String(data: data, encoding: .utf8)
-            Task { @MainActor in completion(answer?.isEmpty == false ? answer : nil) }
+            // A comma-separated list; an older engine replies with one id.
+            let answer = String(data: data, encoding: .utf8) ?? ""
+            let ranked = CallTypeRanker.parseModelReply(answer, known: CallaPersonaCatalog.builtIn)
+            Task { @MainActor in completion(ranked.isEmpty ? nil : ranked) }
         }
     }
 

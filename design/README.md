@@ -11,6 +11,7 @@ need the canvas editor to run their scripts.
 | `live-coding/` | Live coding interview surfaces | Earlier work |
 | `call-redesign/` | The whole call: approach, hover peek, closed notch, get ready, live states, recap, spin out, notes for Calla, settings | Partly implemented, see below |
 | `zen-mode/` | Zen during a call, the panel on click, and the floating window | Implemented, see below |
+| `call-tab/` | The call tab at rest at the notch's normal 512×168, call types ranked by likelihood, the in-notch picker, today's calls | Implemented, see below |
 
 Where the two call canvases disagree, `zen-mode/` is newer and wins: it replaces
 `call-redesign/`'s live panel boards (`LiveListening`, `LiveTrouble`) and its
@@ -31,6 +32,13 @@ surfaces.
   its strip, docking at the top edge, ⌥⌘F.
 - **Zen** (`zen-mode/ZenStates`, `ZenLevels`, `ZenSettings`).
 - **Panel on click** (`zen-mode/PanelCompact`, `PanelFull`, `PanelTrouble`).
+- **Call tab** (`call-tab/Tab*`): four lines at 512×168, the three most likely
+  types on the rail, no readiness grid, the headline and button taken by
+  whatever is missing.
+- **Call types ranked** (`call-tab/Picker*`, the purple note): every type ordered
+  by `CallTypeRanker` with a band and a reason; Start asks only when Calla is not
+  sure; the picker and today's calls open in the notch, never as a dialog.
+  `call-tab/TabToday` is the old tab, kept for comparison.
 - **Settings**: where the call panel lives, the meeting pop-open switch, zen
   settings, Knowledge renamed Notes for Calla, History renamed Past calls.
 
@@ -46,7 +54,8 @@ surfaces.
 - `call-redesign/KnowledgeDrop`, `KnowledgeInCall`, `SettingsNotes`: the
   one-question notes flow, and switching notes off for one call.
 - `call-redesign/SettingsCalls`: merging the six call settings pages into one.
-- `call-redesign/Prep`: the get-ready panel without boxes.
+- `call-redesign/Prep`: the get-ready panel without boxes. `call-tab/` covers
+  the same ground at the notch's real size and replaces it for the tab.
 - `zen-mode/ZenSettings` "Stay in zen while I share my screen": needs share detection.
 - `call-redesign/InCallShare`: hidden from sharing *always*. The app keeps it as
   the user's `hideFromScreenRecording` choice, off by default.
