@@ -126,10 +126,13 @@ class CallaViewCoordinator: ObservableObject {
             forName: Notification.Name.accessibilityAuthorizationChanged,
             object: nil,
             queue: .main
-        ) { _ in
+        ) { notification in
             Task { @MainActor in
-                if Defaults[.hudReplacement] {
+                guard Defaults[.hudReplacement] else { return }
+                if notification.userInfo?["granted"] as? Bool == true {
                     await MediaKeyInterceptor.shared.start(promptIfNeeded: false)
+                } else {
+                    MediaKeyInterceptor.shared.stop()
                 }
             }
         }
@@ -144,17 +147,15 @@ class CallaViewCoordinator: ObservableObject {
                     self.hudEnableTask = nil
 
                     if change.newValue {
+                        XPCHelperClient.shared.startMonitoringAccessibilityAuthorization()
                         self.hudEnableTask = Task { @MainActor in
                             let granted = await XPCHelperClient.shared.ensureAccessibilityAuthorization(promptIfNeeded: true)
                             if Task.isCancelled { return }
 
-                            if granted {
-                                await MediaKeyInterceptor.shared.start()
-                            } else {
-                                Defaults[.hudReplacement] = false
-                            }
+                            if granted { await MediaKeyInterceptor.shared.start() }
                         }
                     } else {
+                        XPCHelperClient.shared.stopMonitoringAccessibilityAuthorization()
                         MediaKeyInterceptor.shared.stop()
                     }
                 }
@@ -162,12 +163,9 @@ class CallaViewCoordinator: ObservableObject {
 
         Task { @MainActor in
             if Defaults[.hudReplacement] {
+                XPCHelperClient.shared.startMonitoringAccessibilityAuthorization()
                 let authorized = await XPCHelperClient.shared.isAccessibilityAuthorized()
-                if !authorized {
-                    Defaults[.hudReplacement] = false
-                } else {
-                    await MediaKeyInterceptor.shared.start(promptIfNeeded: false)
-                }
+                if authorized { await MediaKeyInterceptor.shared.start(promptIfNeeded: false) }
             }
         }
     }

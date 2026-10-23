@@ -133,7 +133,9 @@ struct HUD: View {
             XPCHelperClient.shared.startMonitoringAccessibilityAuthorization()
         }
         .onDisappear {
-            XPCHelperClient.shared.stopMonitoringAccessibilityAuthorization()
+            if !hudReplacement {
+                XPCHelperClient.shared.stopMonitoringAccessibilityAuthorization()
+            }
         }
         .onReceive(NotificationCenter.default.publisher(for: .accessibilityAuthorizationChanged)) { notification in
             if let granted = notification.userInfo?["granted"] as? Bool {
