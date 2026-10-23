@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Zen states</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+body{margin:0;background:#1A1B1E;font-family:system-ui,-apple-system,"SF Pro Text",sans-serif;color:#fff}
+a{color:#6CB8FF}a:hover{color:#9ACFFF}
+button{font:inherit;color:inherit;border:0;background:none;padding:0;cursor:pointer}
+.caps{font:700 9.5px/1 system-ui,-apple-system,sans-serif;letter-spacing:.09em;text-transform:uppercase;color:rgba(255,255,255,.55)}
+.mono{font-family:ui-monospace,"SF Mono",Menlo,monospace;font-variant-numeric:tabular-nums}
+.row{display:flex;gap:28px;align-items:flex-start}
+.n{width:150px;flex:none;display:flex;flex-direction:column;gap:6px;padding-top:6px}
+.nt{font-size:14px;font-weight:600}
+.isl{width:600px;flex:none;background:#000;border-radius:0 0 22px 22px;padding:0 20px 14px;box-sizing:border-box;display:flex;flex-direction:column;gap:8px;border-top:3px solid #000}
+.band{height:34px;display:flex;align-items:center}
+.dot{width:7px;height:7px;border-radius:50%;flex:none}
+.word{font-size:12px;font-weight:600;margin-left:8px}
+.body{display:flex;flex-direction:column;gap:6px;padding:0 8px}
+.main{font-size:14.5px;font-weight:500;line-height:1.4}
+.said{font-size:12.5px;line-height:1.4;color:rgba(255,255,255,.6);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.who{font-weight:600;color:#5BE49B}
+.why{font-size:12.5px;line-height:1.5;color:rgba(255,255,255,.72);flex:1 1 0;padding-top:6px}
+.fix{height:28px;padding:0 14px;border-radius:14px;background:#FFA94D;color:rgba(0,0,0,.86);font-size:12px;font-weight:600;display:inline-flex;align-items:center;flex:none}
+</style>
+</helmet>
+
+<div style="width: 1360px; height: 760px; background: #1A1B1E; box-sizing: border-box; padding: 30px 34px; display: flex; flex-direction: column; gap: 24px;">
+
+  <div class="row">
+    <span class="n"><span class="caps" style="color: #FFA94D;">1 · Needs you</span><span class="nt">Something is wrong</span></span>
+    <div class="isl">
+      <div class="band"><span class="dot" style="background: #FFA94D; box-shadow: 0 0 0 3px rgba(255,169,77,.22);"></span><span class="word" style="color: #FFA94D;">Only you</span><span style="flex-grow: 1;"></span><span class="mono" style="font-size: 12px; color: rgba(255,255,255,.86);">08:47</span></div>
+      <div class="body">
+        <span class="main">Their side isn’t coming through since 08:10. You are still being written down.</span>
+        <span style="display: flex; gap: 8px; align-items: center;"><button class="fix">Reconnect their audio</button></span>
+      </div>
+    </div>
+    <span class="why">The only time zen carries a button. It beats everything else until fixed or dismissed, because a call that only hears you quietly produces nothing useful.</span>
+  </div>
+
+  <div class="row">
+    <span class="n"><span class="caps" style="color: #5BE49B;">2 · Just changed</span><span class="nt">A new point lands</span></span>
+    <div class="isl">
+      <div class="band"><span class="dot" style="background: #5BE49B; box-shadow: 0 0 0 3px rgba(91,228,155,.22);"></span><span class="word" style="color: #5BE49B;">New</span><span style="flex-grow: 1;"></span><span class="mono" style="font-size: 12px; color: rgba(255,255,255,.86);">14:02</span></div>
+      <div class="body">
+        <span class="main" style="color: #fff;">Seat count is still open: they said somewhere between 40 and 60.</span>
+        <span class="said">Before that: two-year deal, security letter first, Dana signs.</span>
+      </div>
+    </div>
+    <span class="why">For six seconds the word beside the dot is “New” and the line fades in. The extra line keeps what came before in view. Then the word goes back to “Listening”.</span>
+  </div>
+
+  <div class="row">
+    <span class="n"><span class="caps">3 · Most of the call</span><span class="nt">Where it stands</span></span>
+    <div class="isl">
+      <div class="band"><span class="dot" style="background: #5BE49B; box-shadow: 0 0 0 3px rgba(91,228,155,.22);"></span><span class="word" style="color: #5BE49B;">Listening</span><span style="flex-grow: 1;"></span><span class="mono" style="font-size: 12px; color: rgba(255,255,255,.86);">11:30</span></div>
+      <div class="body">
+        <span class="main" style="color: rgba(255,255,255,.96);">They want a two-year deal. Finance needs the security letter before anything is signed.</span>
+        <span class="said"><span class="who">Before</span>  two-year term in principle · Dana signs.</span>
+      </div>
+    </div>
+    <span class="why">The newest point Calla wrote, up to two lines, and the points before it on one line. No labels, and no transcript: zen only ever shows what Calla has made of the call.</span>
+  </div>
+
+  <div class="row">
+    <span class="n"><span class="caps">4 · Before a summary</span><span class="nt">Before the first point</span></span>
+    <div class="isl">
+      <div class="band"><span class="dot" style="background: #5BE49B; box-shadow: 0 0 0 3px rgba(91,228,155,.22);"></span><span class="word" style="color: #5BE49B;">Listening</span><span style="flex-grow: 1;"></span><span class="mono" style="font-size: 12px; color: rgba(255,255,255,.86);">00:38</span></div>
+      <div class="body">
+        <span class="main" style="color: rgba(255,255,255,.8);">Acme renewal sync · 4 people</span>
+        <span class="said">Hearing both sides. The first points come in about a minute.</span>
+      </div>
+    </div>
+    <span class="why">The fix for “zen isn’t there”: before the first point, zen names the meeting and says both sides are being heard, instead of drawing nothing.</span>
+  </div>
+
+  <div class="row">
+    <span class="n"><span class="caps">5 · First seconds</span><span class="nt">Nothing said yet</span></span>
+    <div class="isl">
+      <div class="band"><span class="dot" style="background: #5BE49B; box-shadow: 0 0 0 3px rgba(91,228,155,.22);"></span><span class="word" style="color: #5BE49B;">Listening</span><span style="flex-grow: 1;"></span><span class="mono" style="font-size: 12px; color: rgba(255,255,255,.86);">00:04</span></div>
+      <div class="body">
+        <span class="main" style="color: rgba(255,255,255,.7);">Acme renewal sync · 4 people</span>
+        <span class="said">Listening started. Nothing said yet.</span>
+      </div>
+    </div>
+    <span class="why">The first seconds, before anyone speaks, so it never looks like the call failed to start.</span>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1360,"height":760}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

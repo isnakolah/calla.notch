@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Get ready</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+body{margin:0;background:#000;font-family:system-ui,-apple-system,"SF Pro Text",sans-serif;color:#fff}
+a{color:#409CFF}a:hover{color:#6BB2FF}
+button{font:inherit;color:inherit;border:0;background:none;padding:0;cursor:pointer}
+.caps{font:700 9.5px/1 system-ui,-apple-system,sans-serif;letter-spacing:.09em;text-transform:uppercase;color:rgba(255,255,255,.55)}
+.rounded{font-family:ui-rounded,"SF Pro Rounded",system-ui,sans-serif;font-variant-numeric:tabular-nums}
+.tb{height:32px;padding:0 10px;border-radius:9px;display:inline-flex;align-items:center;gap:7px;font-size:12.5px;font-weight:500;color:rgba(255,255,255,.78);flex:none}
+.tb:hover{background:rgba(255,255,255,.08);color:#fff}
+.go{height:34px;padding:0 18px;border-radius:17px;background:#0A84FF;color:#fff;font-size:13px;font-weight:600;display:inline-flex;align-items:center;gap:8px;flex:none}
+.ico{width:28px;height:28px;border-radius:8px;display:inline-flex;align-items:center;justify-content:center;flex:none}
+.note{display:flex;align-items:center;gap:9px;font-size:13px;color:rgba(255,255,255,.9)}
+.why{font-size:11.5px;color:rgba(255,255,255,.5)}
+</style>
+</helmet>
+
+<div style="width: 600px; height: 340px; background: #000; border-radius: 0 0 28px 28px; box-sizing: border-box; padding: 10px 20px 16px; display: flex; flex-direction: column; gap: 14px; position: relative; overflow: hidden;">
+  <div style="position: absolute; left: 0; right: 0; top: 0; height: 46px; background: linear-gradient(180deg, rgba(255,255,255,.07), rgba(255,255,255,0)); pointer-events: none;"></div>
+
+  <div style="display: flex; align-items: center; gap: 8px; height: 26px; position: relative;">
+    <span style="width: 7px; height: 7px; border-radius: 50%; background: #409CFF; box-shadow: 0 0 10px #409CFF;"></span>
+    <span class="caps" style="color: rgba(255,255,255,.78);">Get ready · starts 10:00</span>
+    <span style="flex-grow: 1;"></span>
+    <span class="rounded" style="font-size: 11.5px; color: rgba(255,255,255,.72); margin-right: 4px;">4 people</span>
+    <button class="ico" aria-label="Fold the notch up"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.8)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 15l6-6 6 6"/></svg></button>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 6px; position: relative;">
+    <span style="font-size: 20px; font-weight: 650; letter-spacing: -.015em;">Acme renewal sync</span>
+    <span style="font-size: 12.5px; color: rgba(255,255,255,.72); display: flex; align-items: center; gap: 6px;">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#30D158" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.2 4.2L19 7"/></svg>
+      Ready. Calla will hear you and them.
+    </span>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 8px; position: relative;">
+    <span style="display: flex; align-items: baseline; gap: 10px;"><span class="caps">Calla will use</span><span style="font-size: 11px; color: rgba(255,255,255,.5);">or drop a file on the notch</span></span>
+    <span class="note"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.55)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/></svg>Renewal terms.pdf <span class="why">this call</span></span>
+    <span class="note"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.55)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8v4l3 2"/></svg>Recap of the last sync <span class="why">every Acme sync</span></span>
+    <span class="note"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.55)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19V5a2 2 0 0 1 2-2h12v18H6a2 2 0 0 1-2-2z"/><path d="M8 7h6"/></svg>How we sell <span class="why">every call</span></span>
+  </div>
+
+  <div style="display: flex; align-items: center; gap: 4px; margin-top: auto; margin-left: -10px; position: relative;">
+    <button class="tb">Sales call <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.6)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button>
+    <span class="why">from the invite</span>
+    <button class="tb" style="color: #8CC4FF;"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#8CC4FF" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add something</button>
+    <span style="flex-grow: 1;"></span>
+    <button class="tb">Not now</button>
+    <button class="go">Join and listen</button>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":600,"height":340}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

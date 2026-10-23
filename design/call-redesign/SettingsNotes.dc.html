@@ -1,0 +1,162 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Settings, Notes for Calla</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+body{margin:0;background:#141416;font-family:system-ui,-apple-system,"SF Pro Text",sans-serif;color:#fff}
+a{color:#409CFF}a:hover{color:#6BB2FF}
+button{font:inherit;color:inherit;border:0;background:none;padding:0;cursor:pointer}
+.side{display:flex;align-items:center;gap:9px;height:30px;padding:0 10px;border-radius:7px;font-size:13px;color:rgba(255,255,255,.86);text-decoration:none}
+.side:hover{background:rgba(255,255,255,.06);color:#fff}
+.grp{font-size:11px;font-weight:600;color:rgba(255,255,255,.5);padding:14px 10px 4px}
+.card{background:#232326;border:1px solid rgba(255,255,255,.08);border-radius:12px}
+.row{display:flex;align-items:center;gap:12px;min-height:52px;padding:8px 14px;box-sizing:border-box;flex-wrap:wrap}
+.row + .row{border-top:1px solid rgba(255,255,255,.07)}
+.ttl{font-size:13px;color:#fff}
+.det{font-size:11.5px;color:rgba(255,255,255,.6);line-height:1.35}
+.btn{height:28px;padding:0 12px;border-radius:7px;background:rgba(255,255,255,.10);font-size:12.5px;color:#fff;display:inline-flex;align-items:center;gap:6px;flex:none}
+.btn:hover{background:rgba(255,255,255,.16)}
+.blue{background:#0A84FF}.blue:hover{background:#2A94FF}
+.h2{font-size:13px;font-weight:600;color:#fff;margin:22px 0 8px 4px;display:flex;align-items:baseline;gap:8px}
+.ico{width:30px;height:30px;border-radius:8px;background:rgba(255,255,255,.07);display:flex;align-items:center;justify-content:center;flex:none}
+.tag{height:20px;padding:0 7px;border-radius:6px;background:rgba(10,132,255,.16);color:#8CC4FF;font-size:11px;display:inline-flex;align-items:center}
+.sw{appearance:none;-webkit-appearance:none;width:34px;height:20px;border-radius:10px;background:rgba(255,255,255,.18);position:relative;margin:0;cursor:pointer;flex:none}
+.sw::after{content:"";position:absolute;left:2px;top:2px;width:16px;height:16px;border-radius:50%;background:#fff;transition:left .15s}
+.sw:checked{background:#30D158}.sw:checked::after{left:16px}
+</style>
+</helmet>
+
+<div style="width: 100%; min-height: 860px; background: #141416; box-sizing: border-box; padding: 24px 16px;">
+  <div style="max-width: 1200px; margin: 0 auto; border-radius: 14px; overflow: hidden; border: 1px solid rgba(255,255,255,.10); background: #1C1C1F; box-shadow: 0 30px 70px rgba(0,0,0,.45);">
+    <div style="display: flex; flex-wrap: wrap;">
+
+      <nav aria-label="Settings" style="flex: 1 1 220px; max-width: 100%; background: #19191B; border-right: 1px solid rgba(255,255,255,.06); padding: 14px 10px 20px; box-sizing: border-box; display: flex; flex-direction: column; gap: 2px;">
+        <div style="display: flex; gap: 8px; padding: 0 6px 10px;">
+          <span style="width: 12px; height: 12px; border-radius: 50%; background: #FF5F57;"></span>
+          <span style="width: 12px; height: 12px; border-radius: 50%; background: #FEBC2E;"></span>
+          <span style="width: 12px; height: 12px; border-radius: 50%; background: #28C840;"></span>
+        </div>
+        <label style="display: flex; align-items: center; gap: 7px; height: 30px; border-radius: 8px; background: rgba(255,255,255,.07); padding: 0 9px; margin-bottom: 6px;">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.55)" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+          <input type="search" aria-label="Search settings" placeholder="Search" style="flex-grow: 1; min-width: 0; background: none; border: 0; outline: none; color: #fff; font: 13px system-ui, sans-serif;">
+        </label>
+        <a class="side" href="#">Home</a>
+        <span class="grp">Notch</span>
+        <a class="side" href="#">Appearance</a>
+        <a class="side" href="#">Music</a>
+        <a class="side" href="#">Calendar</a>
+        <a class="side" href="#">Shelf</a>
+        <a class="side" href="#">Focus Timer</a>
+        <span class="grp">Calls</span>
+        <a class="side" href="SettingsCalls.dc.html">Calls</a>
+        <a class="side" href="#" aria-current="page" style="background: #0A84FF; color: #fff;">Notes for Calla</a>
+        <a class="side" href="#">Past calls</a>
+        <a class="side" href="#">Screen Quiz</a>
+        <span class="grp">App</span>
+        <a class="side" href="#">General</a>
+        <a class="side" href="#">Permissions</a>
+        <a class="side" href="#">About &amp; Updates</a>
+      </nav>
+
+      <main style="flex: 999 1 560px; min-width: 0; padding: 26px 30px 34px; box-sizing: border-box;">
+        <div style="display: flex; align-items: flex-end; gap: 14px; flex-wrap: wrap;">
+          <div style="display: flex; flex-direction: column; gap: 5px; flex: 1 1 320px;">
+            <h1 style="margin: 0; font-size: 22px; font-weight: 700;">Notes for Calla</h1>
+            <p style="margin: 0; font-size: 13px; color: rgba(255,255,255,.68); line-height: 1.45;">What Calla can read when it answers. Drop files anywhere on this page, or paste text.</p>
+          </div>
+          <label style="display: flex; align-items: center; gap: 7px; height: 30px; width: 220px; max-width: 100%; border-radius: 8px; background: rgba(255,255,255,.07); padding: 0 9px;">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.55)" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+            <input type="search" aria-label="Search notes" placeholder="Search notes and files" style="flex-grow: 1; min-width: 0; background: none; border: 0; outline: none; color: #fff; font: 13px system-ui, sans-serif;">
+          </label>
+          <button class="btn blue">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+            Add
+          </button>
+        </div>
+
+        <div class="h2">Every call <span class="det">Background Calla always has</span></div>
+        <div class="card">
+          <div class="row">
+            <span class="ico"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.7)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg></span>
+            <span style="display: flex; flex-direction: column; gap: 2px; flex: 1 1 240px; min-width: 0;"><span class="ttl">About me</span><span class="det">Account lead at [YOUR COMPANY]. I run renewals for 30 customers.</span></span>
+            <span class="det">Used in 41 calls</span>
+            <button class="btn">Edit</button>
+          </div>
+          <div class="row">
+            <span class="ico"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.7)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19V5a2 2 0 0 1 2-2h12v18H6a2 2 0 0 1-2-2z"/><path d="M8 7h6"/></svg></span>
+            <span style="display: flex; flex-direction: column; gap: 2px; flex: 1 1 240px; min-width: 0;"><span class="ttl">How we sell</span><span class="det">Note · edited 2 Oct</span></span>
+            <span class="det">Used in 18 calls</span>
+            <button class="btn">Edit</button>
+          </div>
+          <div class="row">
+            <span class="ico"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.7)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/></svg></span>
+            <span style="display: flex; flex-direction: column; gap: 2px; flex: 1 1 240px; min-width: 0;"><span class="ttl">Product glossary.pdf</span><span class="det">PDF · 14 pages · read in full</span></span>
+            <span class="det">Used in 9 calls</span>
+            <button class="btn">Open</button>
+          </div>
+        </div>
+
+        <div class="h2">Meetings that repeat <span class="det">Calla adds each call’s recap to the next one</span></div>
+        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 10px;">
+          <div class="card" style="padding: 14px; display: flex; flex-direction: column; gap: 8px;">
+            <span style="display: flex; align-items: center; gap: 8px;"><span style="width: 8px; height: 8px; border-radius: 50%; background: #409CFF;"></span><span class="ttl" style="font-weight: 600;">Acme renewal sync</span></span>
+            <span class="det">Thursdays · next today at 10:00</span>
+            <span style="display: flex; gap: 5px; flex-wrap: wrap;"><span class="tag">4 recaps</span><span class="tag">Account notes</span></span>
+            <button class="btn" style="align-self: flex-start; margin-top: 4px;">Open</button>
+          </div>
+          <div class="card" style="padding: 14px; display: flex; flex-direction: column; gap: 8px;">
+            <span style="display: flex; align-items: center; gap: 8px;"><span style="width: 8px; height: 8px; border-radius: 50%; background: #BF5AF2;"></span><span class="ttl" style="font-weight: 600;">Design review</span></span>
+            <span class="det">Mondays · next 27 Oct at 14:00</span>
+            <span style="display: flex; gap: 5px; flex-wrap: wrap;"><span class="tag">2 recaps</span></span>
+            <button class="btn" style="align-self: flex-start; margin-top: 4px;">Open</button>
+          </div>
+          <div class="card" style="padding: 14px; display: flex; flex-direction: column; gap: 8px;">
+            <span style="display: flex; align-items: center; gap: 8px;"><span style="width: 8px; height: 8px; border-radius: 50%; background: #30D158;"></span><span class="ttl" style="font-weight: 600;">Team standup</span></span>
+            <span class="det">Weekdays · next tomorrow at 09:30</span>
+            <span style="display: flex; gap: 5px; flex-wrap: wrap;"><span class="tag">12 recaps</span></span>
+            <button class="btn" style="align-self: flex-start; margin-top: 4px;">Open</button>
+          </div>
+        </div>
+
+        <div class="h2">Coming up <span class="det">Just for one call, then kept with it in Past calls</span></div>
+        <div class="card">
+          <div class="row">
+            <span style="display: flex; flex-direction: column; gap: 2px; width: 120px; flex: none;"><span class="ttl" style="font-weight: 600;">Today 10:00</span><span class="det">in 2 minutes</span></span>
+            <span style="display: flex; flex-direction: column; gap: 4px; flex: 1 1 240px; min-width: 0;"><span class="ttl">Acme renewal sync</span><span style="display: flex; gap: 5px; flex-wrap: wrap;"><span class="tag">Renewal terms.pdf</span><span class="tag">Pricing sheet.xlsx</span></span></span>
+            <button class="btn">Add</button>
+          </div>
+          <div class="row">
+            <span style="display: flex; flex-direction: column; gap: 2px; width: 120px; flex: none;"><span class="ttl" style="font-weight: 600;">Today 15:30</span><span class="det">One-on-one</span></span>
+            <span style="display: flex; flex-direction: column; gap: 2px; flex: 1 1 240px; min-width: 0;"><span class="ttl">Ali / you</span><span class="det">Nothing added. Calla will use last week’s recap.</span></span>
+            <button class="btn">Add</button>
+          </div>
+        </div>
+
+        <div class="card" style="margin-top: 22px;">
+          <div class="row">
+            <span style="display: flex; flex-direction: column; gap: 2px; flex: 1 1 300px; min-width: 0;"><span class="ttl">Carry recaps forward</span><span class="det">When a meeting repeats, the last recap is added to the next call automatically.</span></span>
+            <input type="checkbox" class="sw" checked aria-label="Carry recaps forward">
+          </div>
+          <div class="row">
+            <span style="display: flex; flex-direction: column; gap: 2px; flex: 1 1 300px; min-width: 0;"><span class="ttl">Notes for one kind of call</span><span class="det">For example, a pitch deck only for sales calls. 1 note.</span></span>
+            <button class="btn">Show</button>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":860}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Call panel, full</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+body{margin:0;background:#000;font-family:system-ui,-apple-system,"SF Pro Text",sans-serif;color:#fff}
+a{color:#6CB8FF}a:hover{color:#9ACFFF}
+button{font:inherit;color:inherit;border:0;background:none;padding:0;cursor:pointer}
+.caps{font:700 9.5px/1 system-ui,-apple-system,sans-serif;letter-spacing:.09em;text-transform:uppercase;color:rgba(255,255,255,.55)}
+.mono{font-family:ui-monospace,"SF Mono",Menlo,monospace;font-variant-numeric:tabular-nums}
+.ico{width:28px;height:28px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;flex:none}
+.ico:hover{background:rgba(255,255,255,.1)}
+.end{height:26px;padding:0 12px 0 10px;border-radius:13px;background:rgba(255,107,107,.16);color:#FF8A8A;font-size:11px;font-weight:700;display:inline-flex;align-items:center;gap:6px;flex:none}
+.pt{font-size:12px;line-height:1.4}
+.turn{display:flex;flex-direction:column;gap:2px}
+.tt{font-size:12px;line-height:1.38;color:rgba(255,255,255,.6)}
+</style>
+</helmet>
+
+<div style="width: 600px; height: 360px; background: #000; border-radius: 0 0 28px 28px; box-sizing: border-box; padding: 0 20px 14px; display: flex; flex-direction: column; gap: 10px; overflow: hidden;">
+  <div style="height: 34px; display: flex; align-items: center;">
+    <span style="width: 180px; display: flex; align-items: center; gap: 8px;">
+      <span style="width: 7px; height: 7px; border-radius: 50%; background: #5BE49B; box-shadow: 0 0 0 3px rgba(91,228,155,.22);"></span>
+      <span style="font-size: 12px; font-weight: 600; color: #5BE49B;">Listening</span>
+    </span>
+    <span style="flex-grow: 1;"></span>
+    <span style="width: 180px; display: flex; align-items: center; justify-content: flex-end; gap: 2px;">
+      <span class="mono" style="font-size: 12px; color: rgba(255,255,255,.8); margin-right: 6px;">14:02</span>
+      <button class="ico" aria-label="Screenshot the shared screen"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.75)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg></button>
+      <button class="ico" aria-label="Float on top of everything"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.75)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="15" rx="2"/><rect x="12" y="11" width="6.5" height="5.5" rx="1" fill="rgba(255,255,255,.75)" stroke="none"/></svg></button>
+      <button class="ico" aria-label="Keep the panel open"><svg width="14" height="14" viewBox="0 0 24 24" fill="#5BE49B" stroke="#5BE49B" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 17v5M8 3h8l-1 7 3 3H6l3-3z"/></svg></button>
+      <button class="ico" aria-label="Compact"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.75)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 10l7-7M14 10h5M14 10V5M10 14l-7 7M10 14H5M10 14v5"/></svg></button>
+    </span>
+  </div>
+
+  <div style="display: flex; gap: 18px; flex-grow: 1; min-height: 0; padding: 4px 8px 0;">
+    <div style="flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 9px;">
+      <span class="caps" style="color: #5BE49B;">Where it stands</span>
+      <span style="font-size: 18px; font-weight: 500; line-height: 1.38; letter-spacing: -.01em;">Seat count is still open: they said somewhere between 40 and 60.</span>
+      <div style="height: 1px; background: rgba(255,255,255,.10); margin: 4px 0;"></div>
+      <div style="display: flex; gap: 18px;">
+        <div style="flex: 1 1 0; display: flex; flex-direction: column; gap: 6px;">
+          <span class="caps">Earlier</span>
+          <span class="pt" style="color: rgba(255,255,255,.75);">Two-year term, in principle</span>
+          <span class="pt" style="color: rgba(255,255,255,.75);">Security letter before signing</span>
+          <span class="pt" style="color: rgba(255,255,255,.75);">Dana signs the renewal</span>
+        </div>
+        <div style="flex: 1 1 0; display: flex; flex-direction: column; gap: 6px;">
+          <span class="caps" style="color: #FFD15C;">Still open</span>
+          <span class="pt" style="color: rgba(255,255,255,.92);">Seat count, 40 to 60</span>
+          <span class="pt" style="color: rgba(255,255,255,.92);">Who approves after Dana</span>
+        </div>
+      </div>
+    </div>
+    <div style="width: 200px; flex: none; border-left: 1px solid rgba(255,255,255,.10); padding-left: 18px; display: flex; flex-direction: column; gap: 9px; overflow: hidden;">
+      <span class="caps">Transcript · both sides</span>
+      <span class="turn"><span class="caps" style="color: #5BE49B;">Dana · 13:20</span><span class="tt">It has to clear finance before anything gets signed.</span></span>
+      <span class="turn"><span class="caps">You · 13:31</span><span class="tt">Understood. How many seats are we talking?</span></span>
+      <span class="turn"><span class="caps" style="color: #5BE49B;">Marco · 13:48</span><span class="tt" style="color: #fff;">Probably 40, could be 60 by spring.</span></span>
+    </div>
+  </div>
+
+  <div style="display: flex; align-items: center; gap: 10px; padding: 0 8px;">
+    <span style="font-size: 11px; color: rgba(255,255,255,.5);">Select any words to ask about them · ⌥⌘Q</span>
+    <span style="flex-grow: 1;"></span>
+    <button class="end"><svg width="9" height="9" viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="5" width="14" height="14" rx="2" fill="#FF8A8A"/></svg>End call</button>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":600,"height":360}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

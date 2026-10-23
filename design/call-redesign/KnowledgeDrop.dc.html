@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Add a file for Calla</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+body{margin:0;background:#000;font-family:system-ui,-apple-system,"SF Pro Text",sans-serif;color:#fff}
+a{color:#409CFF}a:hover{color:#6BB2FF}
+button{font:inherit;color:inherit;border:0;background:none;padding:0;cursor:pointer}
+.caps{font:700 9.5px/1 system-ui,-apple-system,sans-serif;letter-spacing:.09em;text-transform:uppercase;color:rgba(255,255,255,.55)}
+.rounded{font-family:ui-rounded,"SF Pro Rounded",system-ui,sans-serif;font-variant-numeric:tabular-nums}
+.tb{height:32px;padding:0 10px;border-radius:9px;display:inline-flex;align-items:center;gap:7px;font-size:12.5px;font-weight:500;color:rgba(255,255,255,.78);flex:none}
+.tb:hover{background:rgba(255,255,255,.08);color:#fff}
+.go{height:34px;padding:0 18px;border-radius:17px;background:#0A84FF;color:#fff;font-size:13px;font-weight:600;display:inline-flex;align-items:center;flex:none}
+.opt{display:flex;align-items:flex-start;gap:10px;cursor:pointer;padding:4px 0}
+.opt input{accent-color:#0A84FF;margin:3px 0 0;flex:none}
+.ot{font-size:14px;font-weight:600}
+.od{font-size:12px;color:rgba(255,255,255,.6)}
+</style>
+</helmet>
+
+<div style="width: 600px; height: 340px; background: #000; border-radius: 0 0 28px 28px; box-sizing: border-box; padding: 10px 20px 16px; display: flex; flex-direction: column; gap: 14px; position: relative; overflow: hidden;">
+  <div style="position: absolute; left: 0; right: 0; top: 0; height: 46px; background: linear-gradient(180deg, rgba(255,255,255,.07), rgba(255,255,255,0)); pointer-events: none;"></div>
+
+  <div style="display: flex; align-items: center; gap: 8px; height: 26px; position: relative;">
+    <span style="width: 7px; height: 7px; border-radius: 50%; background: #409CFF; box-shadow: 0 0 10px #409CFF;"></span>
+    <span class="caps" style="color: rgba(255,255,255,.78);">Add for Calla</span>
+    <span style="flex-grow: 1;"></span>
+    <span style="font-size: 11.5px; color: rgba(255,255,255,.72);">Dropped on the notch</span>
+  </div>
+
+  <div style="display: flex; align-items: center; gap: 12px; position: relative;">
+    <span style="width: 34px; height: 42px; border-radius: 6px; background: #F2F2F4; display: flex; align-items: flex-end; justify-content: center; padding-bottom: 5px; box-sizing: border-box; flex: none;"><span style="font: 700 8.5px/1 system-ui, sans-serif; color: #C4302B;">PDF</span></span>
+    <span style="display: flex; flex-direction: column; gap: 4px; min-width: 0;">
+      <span style="font-size: 14px; font-weight: 600;">Renewal terms.pdf</span>
+      <span style="font-size: 12px; color: rgba(255,255,255,.65); display: flex; align-items: center; gap: 6px;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#30D158" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.2 4.2L19 7"/></svg>Read all 6 pages. Calla can quote it now.</span>
+    </span>
+  </div>
+
+  <fieldset style="border: 0; margin: 0; padding: 12px 0 0; display: flex; flex-direction: column; gap: 6px; position: relative; border-top: 1px solid rgba(255,255,255,.10);">
+    <legend style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0);">When should Calla use this?</legend>
+    <span style="font-size: 16px; font-weight: 600; margin-bottom: 4px;" aria-hidden="true">When should Calla use this?</span>
+    <label class="opt"><input type="radio" name="when" checked><span style="display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap;"><span class="ot">Just the next call</span><span class="od">Acme renewal sync, today at 10:00</span></span></label>
+    <label class="opt"><input type="radio" name="when"><span style="display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap;"><span class="ot">Every Acme sync</span><span class="od">It repeats every Thursday</span></span></label>
+    <label class="opt"><input type="radio" name="when"><span style="display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap;"><span class="ot">Every call</span><span class="od">Background, like how your team works</span></span></label>
+  </fieldset>
+
+  <div style="display: flex; align-items: center; gap: 4px; margin-top: auto; position: relative;">
+    <span style="font-size: 11.5px; color: rgba(255,255,255,.5);">Change it any time in Settings › Notes for Calla</span>
+    <span style="flex-grow: 1;"></span>
+    <button class="tb">Cancel</button>
+    <button class="go">Add</button>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":600,"height":340}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

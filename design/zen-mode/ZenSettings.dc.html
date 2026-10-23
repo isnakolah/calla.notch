@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Zen settings</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+body{margin:0;background:#1C1C1F;font-family:system-ui,-apple-system,"SF Pro Text",sans-serif;color:#fff}
+a{color:#6CB8FF}a:hover{color:#9ACFFF}
+button{font:inherit;color:inherit;border:0;background:none;padding:0;cursor:pointer}
+.card{background:#232326;border:1px solid rgba(255,255,255,.08);border-radius:12px}
+.row{display:flex;align-items:center;gap:14px;min-height:56px;padding:10px 16px;box-sizing:border-box}
+.row + .row{border-top:1px solid rgba(255,255,255,.07)}
+.txt{display:flex;flex-direction:column;gap:3px;flex:1 1 0;min-width:0}
+.ttl{font-size:13px}
+.det{font-size:11.5px;line-height:1.4;color:rgba(255,255,255,.62)}
+.sw{appearance:none;-webkit-appearance:none;width:34px;height:20px;border-radius:10px;background:rgba(255,255,255,.18);position:relative;margin:0;cursor:pointer;flex:none}
+.sw::after{content:"";position:absolute;left:2px;top:2px;width:16px;height:16px;border-radius:50%;background:#fff;transition:left .15s}
+.sw:checked{background:#30D158}.sw:checked::after{left:16px}
+.pop{height:26px;padding:0 8px;border-radius:7px;background:rgba(255,255,255,.10);font:12.5px system-ui,sans-serif;color:#fff;border:0;flex:none}
+</style>
+</helmet>
+
+<div style="width: 640px; height: 560px; background: #1C1C1F; box-sizing: border-box; padding: 26px 28px; display: flex; flex-direction: column; gap: 10px;">
+  <span style="font-size: 13px; font-weight: 600; padding-left: 4px;">Zen during a call</span>
+  <span style="font-size: 12px; color: rgba(255,255,255,.62); padding: 0 4px 4px; line-height: 1.45;">When you are not pointing at the notch, the call rests as a small island under the camera.</span>
+  <div class="card">
+    <div class="row">
+      <span class="txt"><span class="ttl">Rest in zen</span><span class="det">Off: the call panel stays open until you close it.</span></span>
+      <input type="checkbox" class="sw" checked aria-label="Rest in zen">
+    </div>
+    <div class="row">
+      <span class="txt"><span class="ttl">Zen shows</span><span class="det">Brief: the newest point and the ones before it. More adds what is settled and still open.</span></span>
+      <select class="pop" aria-label="Zen shows"><option>Just the dot</option><option selected>Brief</option><option>More</option></select>
+    </div>
+    <div class="row">
+      <span class="txt"><span class="ttl">Back to zen after</span><span class="det">How long the panel waits once the pointer leaves.</span></span>
+      <select class="pop" aria-label="Back to zen after"><option>1 second</option><option selected>2 seconds</option><option>5 seconds</option></select>
+    </div>
+    <div class="row">
+      <span class="txt"><span class="ttl">Highlight new points</span><span class="det">The word beside the dot says “New” for six seconds.</span></span>
+      <input type="checkbox" class="sw" checked aria-label="Highlight new points">
+    </div>
+    <div class="row">
+      <span class="txt"><span class="ttl">Stay in zen while I share my screen</span><span class="det">Hovering shows the panel only after a click, so a pass over the notch never opens it mid-demo.</span></span>
+      <input type="checkbox" class="sw" checked aria-label="Stay in zen while sharing">
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":640,"height":560}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

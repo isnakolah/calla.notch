@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Get ready, one thing to fix</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+body{margin:0;background:#000;font-family:system-ui,-apple-system,"SF Pro Text",sans-serif;color:#fff}
+a{color:#409CFF}a:hover{color:#6BB2FF}
+button{font:inherit;color:inherit;border:0;background:none;padding:0;cursor:pointer}
+.caps{font:700 9.5px/1 system-ui,-apple-system,sans-serif;letter-spacing:.09em;text-transform:uppercase;color:rgba(255,255,255,.55)}
+.rounded{font-family:ui-rounded,"SF Pro Rounded",system-ui,sans-serif;font-variant-numeric:tabular-nums}
+.tb{height:32px;padding:0 10px;border-radius:9px;display:inline-flex;align-items:center;gap:7px;font-size:12.5px;font-weight:500;color:rgba(255,255,255,.78);flex:none}
+.tb:hover{background:rgba(255,255,255,.08);color:#fff}
+.fix{height:34px;padding:0 18px;border-radius:17px;background:#FF9F0A;color:#1A1206;font-size:13px;font-weight:600;display:inline-flex;align-items:center;flex:none}
+.ico{width:28px;height:28px;border-radius:8px;display:inline-flex;align-items:center;justify-content:center;flex:none}
+.fact{display:flex;align-items:center;gap:7px;font-size:12.5px;color:rgba(255,255,255,.8)}
+</style>
+</helmet>
+
+<div style="width: 600px; height: 340px; background: #000; border-radius: 0 0 28px 28px; box-sizing: border-box; padding: 10px 20px 16px; display: flex; flex-direction: column; gap: 14px; position: relative; overflow: hidden;">
+  <div style="position: absolute; left: 0; right: 0; top: 0; height: 46px; background: linear-gradient(180deg, rgba(255,255,255,.07), rgba(255,255,255,0)); pointer-events: none;"></div>
+  <div style="position: absolute; left: 10px; top: 50px; width: 340px; height: 170px; border-radius: 50%; background: radial-gradient(closest-side, rgba(255,159,10,.2), rgba(0,0,0,0)); filter: blur(28px); pointer-events: none;"></div>
+
+  <div style="display: flex; align-items: center; gap: 8px; height: 26px; position: relative;">
+    <span style="width: 7px; height: 7px; border-radius: 50%; background: #FF9F0A; box-shadow: 0 0 10px #FF9F0A;"></span>
+    <span class="caps" style="color: rgba(255,255,255,.78);">Get ready · starts 10:00</span>
+    <span style="flex-grow: 1;"></span>
+    <span style="font-size: 11.5px; color: rgba(255,255,255,.72); margin-right: 4px;">Acme renewal sync</span>
+    <button class="ico" aria-label="Fold the notch up"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.8)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 15l6-6 6 6"/></svg></button>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 8px; position: relative; max-width: 470px;">
+    <span style="font-size: 20px; font-weight: 650; letter-spacing: -.015em;">Calla can’t hear the other side yet</span>
+    <span style="font-size: 13px; line-height: 1.45; color: rgba(255,255,255,.72);">macOS asks once before an app can hear call audio. Click below, switch Calla on, and come back. About ten seconds.</span>
+    <span style="display: flex; align-items: center; gap: 6px; margin-top: 8px;">
+      <button class="fix">Allow call audio</button>
+      <button class="tb">Start with only my voice</button>
+    </span>
+  </div>
+
+  <div style="display: flex; gap: 22px; flex-wrap: wrap; position: relative; padding-top: 12px; border-top: 1px solid rgba(255,255,255,.10);">
+    <span class="fact"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#30D158" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.2 4.2L19 7"/></svg>Your voice</span>
+    <span class="fact"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#FF9F0A" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M12 8v4.5M12 16v.01"/></svg>Their voice</span>
+    <span class="fact"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#30D158" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.2 4.2L19 7"/></svg>3 notes ready</span>
+  </div>
+
+  <span style="margin-top: auto; font-size: 11.5px; color: rgba(255,255,255,.55); position: relative;">Audio becomes text on this Mac. Recordings are never kept unless you switch that on.</span>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":600,"height":340}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

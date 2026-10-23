@@ -1,0 +1,470 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Calla call prototype</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+body{margin:0;background:#000;font-family:system-ui,-apple-system,"SF Pro Text",sans-serif;color:#fff}
+a{color:#409CFF}a:hover{color:#6BB2FF}
+button{font:inherit;color:inherit;border:0;background:none;padding:0;cursor:pointer}
+button:focus-visible,input:focus-visible{outline:2px solid #409CFF;outline-offset:2px}
+.caps{font:700 9.5px/1 system-ui,-apple-system,sans-serif;letter-spacing:.09em;text-transform:uppercase;color:rgba(255,255,255,.55)}
+.rounded{font-family:ui-rounded,"SF Pro Rounded",system-ui,sans-serif;font-variant-numeric:tabular-nums}
+.tb{height:32px;padding:0 10px;border-radius:9px;display:inline-flex;align-items:center;gap:7px;font-size:12.5px;font-weight:500;color:rgba(255,255,255,.78);flex:none}
+.tb:hover{background:rgba(255,255,255,.08);color:#fff}
+.kbd{font:500 10.5px/1 ui-rounded,system-ui,sans-serif;color:rgba(255,255,255,.5)}
+.go{height:34px;padding:0 18px;border-radius:17px;background:#0A84FF;color:#fff;font-size:13px;font-weight:600;display:inline-flex;align-items:center;gap:8px;flex:none}
+.go:hover{background:#2A94FF}
+.end{color:#FF6961;font-weight:600}
+.ico{width:28px;height:28px;border-radius:8px;display:inline-flex;align-items:center;justify-content:center;flex:none}
+.ico:hover{background:rgba(255,255,255,.1)}
+.src{font-size:11.5px;color:#8CC4FF}
+.mi{height:34px;padding:0 12px;border-radius:8px;display:flex;align-items:center;gap:9px;font-size:12.5px;color:rgba(255,255,255,.86);width:100%;text-align:left}
+.mi:hover{background:rgba(255,255,255,.08)}
+.tile{border-radius:12px;background:#1F2125;position:relative;display:flex;align-items:center;justify-content:center;overflow:hidden}
+.av{border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:600}
+.nm{position:absolute;left:10px;bottom:8px;font-size:11.5px;color:rgba(255,255,255,.8)}
+.vc{width:44px;height:44px;border-radius:50%;background:#2C2E33;display:flex;align-items:center;justify-content:center}
+</style>
+</helmet>
+
+<div style="width: 1280px; height: 800px; position: relative; overflow: hidden; background: #0B0C0E;" onPointerMove="{{dragMove}}" onPointerUp="{{dragEnd}}">
+
+  <div style="position: absolute; left: 0; right: 0; top: 34px; bottom: 0; background: #111215; display: flex; flex-direction: column; padding: 14px 18px 14px; box-sizing: border-box; gap: 12px;">
+    <div style="display: flex; gap: 12px; flex-grow: 1; min-height: 0;">
+      <div class="tile" style="flex-grow: 1;">
+        <span class="av" style="width: 128px; height: 128px; background: #3A4A5E; color: #CFE2F7; font-size: 44px; box-shadow: 0 0 0 4px rgba(48,209,88,.6);">D</span>
+        <span class="nm" style="font-size: 13px;">Dana · Acme</span>
+      </div>
+      <div style="width: 200px; display: flex; flex-direction: column; gap: 12px; flex: none;">
+        <div class="tile" style="flex-grow: 1;"><span class="av" style="width: 56px; height: 56px; background: #4E3F5C; color: #E7D6F5; font-size: 20px;">M</span><span class="nm">Marco · Acme</span></div>
+        <div class="tile" style="flex-grow: 1;"><span class="av" style="width: 56px; height: 56px; background: #3F5A4A; color: #D3F0DE; font-size: 20px;">A</span><span class="nm">Ali</span></div>
+        <div class="tile" style="flex-grow: 1;"><span class="av" style="width: 56px; height: 56px; background: #5C4A36; color: #F5E3CC; font-size: 20px;">Y</span><span class="nm">You</span></div>
+      </div>
+    </div>
+    <div style="height: 52px; display: flex; align-items: center; justify-content: center; gap: 12px; flex: none;">
+      <span class="vc"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3a3 3 0 0 1 3 3v6a3 3 0 0 1-6 0V6a3 3 0 0 1 3-3z"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg></span>
+      <span class="vc"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="6" width="13" height="12" rx="2"/><path d="M16 10l5-3v10l-5-3"/></svg></span>
+      <span class="vc"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="13" rx="2"/><path d="M12 14V8M9 11l3-3 3 3M8 21h8"/></svg></span>
+      <span class="vc" style="width: 64px; border-radius: 22px; background: #E5484D;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 14c5-5 13-5 18 0l-2.5 2.5-3-1.5v-2.5a10 10 0 0 0-5 0V15l-3 1.5z"/></svg></span>
+    </div>
+  </div>
+
+  <sc-if value="{{showPill}}" hint-placeholder-val="{{ true }}">
+    <div onMouseEnter="{{hoverIn}}" onMouseLeave="{{hoverOut}}" style="position: absolute; left: 50%; top: 0; transform: translateX(-50%); width: {{pillW}}px; height: {{pillH}}px; background: #000; border-radius: 0 0 18px 18px; transition: width .18s ease, height .18s ease; z-index: 3; overflow: hidden;">
+      <button onClick="{{pillClick}}" aria-label="{{pillLabel}}" style="width: 100%; height: 100%; display: flex; flex-direction: column; padding: 0 16px; box-sizing: border-box; text-align: left;">
+        <span style="height: 34px; display: flex; align-items: center; width: 100%; flex: none;">
+          <span style="width: 150px; display: flex; align-items: center; gap: 7px; min-width: 0;">
+            <span style="width: 7px; height: 7px; border-radius: 50%; flex: none; background: {{pillDot}}; box-shadow: 0 0 9px {{pillGlow}};"></span>
+            <span style="font-size: 11.5px; font-weight: 600; color: {{pillLeftColor}}; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{pillLeft}}</span>
+          </span>
+          <span style="flex-grow: 1;"></span>
+          <span class="rounded" style="width: 150px; text-align: right; font-size: 11.5px; font-weight: 600; color: {{pillRightColor}}; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{pillRight}}</span>
+        </span>
+        <sc-if value="{{peek}}" hint-placeholder-val="{{ false }}">
+          <span style="display: flex; flex-direction: column; gap: 4px; padding: 6px 0 0; width: 100%;">
+            <span style="font-size: 13px; font-weight: 600; line-height: 1.3; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{peekLine}}</span>
+            <span style="font-size: 11px; color: rgba(255,255,255,.55);">{{peekHint}}</span>
+          </span>
+        </sc-if>
+      </button>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{showPanel}}" hint-placeholder-val="{{ false }}">
+    <div style="position: absolute; left: {{px}}px; top: {{py}}px; width: {{pw}}px; background: #000; border-radius: {{pr}}; border: {{pb}}; box-sizing: border-box; padding: {{pp}}; display: flex; flex-direction: column; gap: 14px; box-shadow: 0 24px 60px rgba(0,0,0,.6); z-index: 4;">
+      <div style="position: absolute; left: 0; right: 0; top: 0; height: 46px; background: linear-gradient(180deg, rgba(255,255,255,.07), rgba(255,255,255,0)); pointer-events: none; border-radius: {{pr}};"></div>
+      <div style="position: absolute; left: 20px; top: 50px; width: 300px; height: 180px; border-radius: 50%; background: radial-gradient(closest-side, {{bloom}}, rgba(0,0,0,0)); filter: blur(30px); pointer-events: none;"></div>
+
+      <sc-if value="{{floating}}" hint-placeholder-val="{{ false }}">
+        <div onPointerDown="{{dragStart}}" aria-label="Drag to move. Drag to the top edge to put it back in the notch." style="position: absolute; left: 0; right: 0; top: 0; height: 22px; cursor: grab; display: flex; justify-content: center; align-items: center; touch-action: none;">
+          <span style="width: 38px; height: 5px; border-radius: 3px; background: rgba(255,255,255,.28);"></span>
+        </div>
+      </sc-if>
+
+      <div style="display: flex; align-items: center; gap: 8px; position: relative; height: 26px;">
+        <span style="width: 7px; height: 7px; border-radius: 50%; flex: none; background: {{headDot}}; box-shadow: 0 0 10px {{headDot}};"></span>
+        <span class="caps" style="color: rgba(255,255,255,.78);">{{headState}}</span>
+        <span style="flex-grow: 1;"></span>
+        <span class="rounded" style="font-size: 11.5px; color: rgba(255,255,255,.72); margin-right: 4px;">{{headFigure}}</span>
+        <sc-if value="{{canFloat}}" hint-placeholder-val="{{ false }}">
+          <button onClick="{{toggleFloat}}" class="ico" aria-label="{{floatLabel}}" title="{{floatLabel}}">
+            <sc-if value="{{floating}}" hint-placeholder-val="{{ false }}">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.8)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 4h16"/><path d="M12 20V9M7 13l5-5 5 5"/></svg>
+            </sc-if>
+            <sc-if value="{{notFloating}}" hint-placeholder-val="{{ true }}">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.8)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="15" rx="2"/><rect x="12" y="11" width="6.5" height="5.5" rx="1" fill="rgba(255,255,255,.8)" stroke="none"/></svg>
+            </sc-if>
+          </button>
+        </sc-if>
+        <sc-if value="{{notFloating}}" hint-placeholder-val="{{ true }}">
+          <button onClick="{{collapse}}" class="ico" aria-label="Fold the notch up">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.8)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 15l6-6 6 6"/></svg>
+          </button>
+        </sc-if>
+      </div>
+
+      <sc-if value="{{isPrep}}" hint-placeholder-val="{{ false }}">
+        <div style="display: flex; flex-direction: column; gap: 14px; position: relative;">
+          <div style="display: flex; flex-direction: column; gap: 6px;">
+            <span style="font-size: 20px; font-weight: 650; letter-spacing: -.015em;">Acme renewal sync</span>
+            <span style="font-size: 12.5px; color: rgba(255,255,255,.72); display: flex; align-items: center; gap: 6px;">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#30D158" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.2 4.2L19 7"/></svg>
+              Ready. Calla will hear you and them.
+            </span>
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 8px;">
+            <span style="display: flex; align-items: baseline; gap: 10px;">
+              <span class="caps">Calla will use</span>
+              <span style="font-size: 11px; color: rgba(255,255,255,.5);">or drop a file on the notch</span>
+            </span>
+            <sc-for list="{{prepNotes}}" as="n" hint-placeholder-count="3">
+              <span style="display: flex; align-items: center; gap: 9px; font-size: 13px; color: rgba(255,255,255,.9);">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.55)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/></svg>
+                {{n.name}}
+                <span style="font-size: 11.5px; color: rgba(255,255,255,.5);">{{n.why}}</span>
+              </span>
+            </sc-for>
+            <button onClick="{{addNote}}" class="tb" style="align-self: flex-start; color: #8CC4FF; margin-left: -10px;">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#8CC4FF" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+              Add something
+            </button>
+          </div>
+          <div style="display: flex; align-items: center; gap: 4px; flex-wrap: wrap;">
+            <button onClick="{{changeType}}" class="tb" style="margin-left: -10px;">
+              {{typeName}}
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.6)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
+            </button>
+            <span style="font-size: 11.5px; color: rgba(255,255,255,.5);">{{typeWhy}}</span>
+            <span style="flex-grow: 1;"></span>
+            <button onClick="{{notNow}}" class="tb">Not now</button>
+            <button onClick="{{joinNow}}" class="go">Join and listen</button>
+          </div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{isLiveFrame}}" hint-placeholder-val="{{ false }}">
+        <div style="display: flex; flex-direction: column; gap: 12px; position: relative;">
+          <div style="display: flex; flex-direction: {{dir}}; gap: 18px; height: {{cH}};">
+
+            <div style="flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 9px; overflow: hidden;">
+              <sc-if value="{{isListening}}" hint-placeholder-val="{{ true }}">
+                <div style="display: flex; flex-direction: column; gap: 9px;">
+                  <span class="caps">Where it stands</span>
+                  <sc-for list="{{summary}}" as="s" hint-placeholder-count="3">
+                    <span style="font-size: 14px; line-height: 1.4; color: rgba(255,255,255,.92);">{{s}}</span>
+                  </sc-for>
+                  <span style="font-size: 11.5px; color: rgba(255,255,255,.5); line-height: 1.4; margin-top: 6px;">When someone asks you something, the answer shows here.</span>
+                </div>
+              </sc-if>
+
+              <sc-if value="{{isAnswer}}" hint-placeholder-val="{{ false }}">
+                <div style="display: flex; flex-direction: column; gap: 8px;">
+                  <span class="caps">{{ans.label}}</span>
+                  <span style="font-size: 12.5px; color: rgba(255,255,255,.7); line-height: 1.35;">{{ans.q}}</span>
+                  <span style="font-size: 19px; font-weight: 600; line-height: 1.28; letter-spacing: -.015em; margin-top: 4px;">{{ans.say}}</span>
+                  <sc-for list="{{ans.support}}" as="p" hint-placeholder-count="1">
+                    <span style="font-size: 12.5px; line-height: 1.4; color: rgba(255,255,255,.7);">{{p}}</span>
+                  </sc-for>
+                  <span style="display: flex; flex-wrap: wrap; gap: 4px 12px; align-items: baseline; margin-top: 2px;">
+                    <span style="font-size: 11px; color: rgba(255,255,255,.5);">From</span>
+                    <sc-for list="{{ans.sources}}" as="src" hint-placeholder-count="2">
+                      <span class="src">{{src}}</span>
+                    </sc-for>
+                  </span>
+                </div>
+              </sc-if>
+
+              <sc-if value="{{isAsk}}" hint-placeholder-val="{{ false }}">
+                <div style="display: flex; flex-direction: column; gap: 8px;">
+                  <label style="display: flex; align-items: center; gap: 9px; height: 40px; border-bottom: 1.5px solid #0A84FF;">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#30D158" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3a3 3 0 0 1 3 3v6a3 3 0 0 1-6 0V6a3 3 0 0 1 3-3z"/><path d="M5 11a7 7 0 0 0 14 0"/></svg>
+                    <input type="text" aria-label="Your question" placeholder="Ask about this call. Type, or just speak." style="flex-grow: 1; min-width: 0; background: none; border: 0; outline: none; color: #fff; font: 15px system-ui, -apple-system, sans-serif;">
+                    <span class="kbd">↩</span>
+                  </label>
+                  <sc-for list="{{suggestions}}" as="sg" hint-placeholder-count="3">
+                    <button onClick="{{sg.pick}}" class="tb" style="margin-left: -10px; font-size: 13px; color: rgba(255,255,255,.85);">
+                      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#409CFF" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+                      {{sg.text}}
+                    </button>
+                  </sc-for>
+                </div>
+              </sc-if>
+            </div>
+
+            <sc-if value="{{transcript}}" hint-placeholder-val="{{ true }}">
+              <div style="width: {{tW}}; flex: none; border-left: {{tBL}}; border-top: {{tBT}}; padding: {{tPad}}; display: flex; flex-direction: column; gap: 10px; overflow: hidden; box-sizing: border-box;">
+                <span class="caps">Said just now</span>
+                <sc-for list="{{turns}}" as="t" hint-placeholder-count="3">
+                  <span style="display: flex; flex-direction: column; gap: 3px;">
+                    <span class="caps" style="color: {{t.whoColor}};">{{t.who}}</span>
+                    <span style="font-size: 12px; line-height: 1.38; color: {{t.textColor}};">{{t.text}}</span>
+                  </span>
+                </sc-for>
+              </div>
+            </sc-if>
+          </div>
+
+          <div style="display: flex; align-items: center; gap: 2px; position: relative; flex-wrap: wrap; margin-left: -10px;">
+            <button onClick="{{openAsk}}" class="tb" style="color: {{askColor}};">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3a3 3 0 0 1 3 3v6a3 3 0 0 1-6 0V6a3 3 0 0 1 3-3z"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>
+              Ask <span class="kbd">⌥Space</span>
+            </button>
+            <button onClick="{{toggleTranscript}}" class="tb">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M20 6H9M20 12H9M20 18H9M5 6v.01M5 12v.01M5 18v.01"/></svg>
+              {{transcriptVerb}}
+            </button>
+            <sc-if value="{{showBack}}" hint-placeholder-val="{{ false }}">
+              <button onClick="{{backToListening}}" class="tb">{{backLabel}}</button>
+            </sc-if>
+            <span style="flex-grow: 1;"></span>
+            <button onClick="{{toggleMenu}}" class="ico" aria-label="More options" style="width: 32px; height: 32px;">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="rgba(255,255,255,.75)" aria-hidden="true"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg>
+            </button>
+            <button onClick="{{end}}" class="tb end">End call</button>
+
+            <sc-if value="{{menu}}" hint-placeholder-val="{{ false }}">
+              <div style="position: absolute; right: 70px; bottom: 40px; width: 260px; background: #1C1D21; border: 1px solid rgba(255,255,255,.12); border-radius: 12px; padding: 5px; box-shadow: 0 18px 40px rgba(0,0,0,.6); display: flex; flex-direction: column; z-index: 6;">
+                <button onClick="{{toggleMenu}}" class="mi">Show Calla the shared screen</button>
+                <button onClick="{{toggleMenu}}" class="mi">Add a note or file</button>
+                <button onClick="{{floatFromMenu}}" class="mi">{{floatLabel}} <span class="kbd" style="margin-left: auto;">⌥⌘F</span></button>
+                <div style="height: 1px; background: rgba(255,255,255,.10); margin: 4px 6px;"></div>
+                <span style="padding: 7px 12px 6px; font-size: 11.5px; line-height: 1.4; color: rgba(255,255,255,.6);">Hidden from screen sharing and recordings, always.</span>
+              </div>
+            </sc-if>
+          </div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{isRecap}}" hint-placeholder-val="{{ false }}">
+        <div style="display: flex; flex-direction: column; gap: 14px; position: relative;">
+          <div style="display: flex; flex-direction: column; gap: 6px;">
+            <span style="font-size: 20px; font-weight: 650; letter-spacing: -.015em;">Acme renewal sync</span>
+            <span style="font-size: 12.5px; color: rgba(255,255,255,.72); line-height: 1.4;">They will sign for two years at 8% with the onboarding credit, once security clears.</span>
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 9px;">
+            <span class="caps">To do</span>
+            <sc-for list="{{todos}}" as="td" hint-placeholder-count="3">
+              <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                <input type="checkbox" checked="{{td.done}}" onChange="{{td.toggle}}" style="width: 15px; height: 15px; accent-color: #30D158; margin: 0; flex: none;">
+                <span style="font-size: 13px; color: {{td.color}};">{{td.text}}</span>
+                <span style="font-size: 11.5px; color: rgba(255,255,255,.5);">{{td.who}}</span>
+              </label>
+            </sc-for>
+          </div>
+          <div style="display: flex; align-items: center; gap: 2px; margin-left: -10px; flex-wrap: wrap;">
+            <button onClick="{{copy}}" class="tb">{{copyLabel}}</button>
+            <button onClick="{{done}}" class="tb">Open in Past calls</button>
+            <span style="flex-grow: 1;"></span>
+            <button onClick="{{done}}" class="go">Done</button>
+          </div>
+        </div>
+      </sc-if>
+    </div>
+  </sc-if>
+
+  <div style="position: absolute; left: 18px; bottom: 18px; display: flex; align-items: center; gap: 10px; padding: 7px 7px 7px 14px; border-radius: 14px; background: rgba(28,29,33,.96); border: 1px solid rgba(255,255,255,.14); box-shadow: 0 12px 30px rgba(0,0,0,.5); z-index: 8;">
+    <span class="caps">Demo</span>
+    <span class="rounded" style="font-size: 12px; color: rgba(255,255,255,.75); max-width: 300px;">{{stepText}}</span>
+    <button onClick="{{next}}" class="go" style="height: 30px; font-size: 12.5px; padding: 0 14px;">{{nextLabel}}</button>
+    <button onClick="{{restart}}" class="tb" style="height: 30px;">Restart</button>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":800}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = this.initial();
+    this.drag = null;
+  }
+  initial() {
+    return { stage: 'soon', open: false, hover: false, floating: false, fx: 860, fy: 150, transcript: true, extraNote: false, typeIdx: 0, menu: false, askIdx: 0, copied: false, todos: [false, false, false] };
+  }
+  renderVals() {
+    const s = this.state;
+    const set = (o) => this.setState(o);
+    const liveFamily = ['live', 'answer', 'ask', 'asked'].indexOf(s.stage) >= 0;
+    const panelStage = liveFamily || s.stage === 'prep' || s.stage === 'recap';
+    const showPanel = panelStage && (s.open || s.floating);
+    const fl = s.floating && showPanel;
+
+    const answers = {
+      they: { label: 'They asked · 06:41', q: '“Can you get us to 12% if we sign for two years?”', say: 'Yes to two years. Hold at 8% and offer the onboarding credit instead.', support: ['Your pricing sheet caps two-year deals at 10% without VP sign-off.'], sources: ['Pricing sheet.xlsx', 'Last sync · Oct 16', 'Dana at 06:38'] },
+      asked: [
+        { label: 'You asked', q: 'What have they agreed to so far?', say: 'A two-year term in principle. Security review first, then Dana signs.', support: ['Seat count is still open: they said 40 to 60.'], sources: ['This call · 02:10–06:41'] },
+        { label: 'You asked', q: 'Summarise the last five minutes', say: 'They will sign for two years if the price moves and onboarding is faster.', support: ['They suggested a call with their IT lead next.'], sources: ['This call · 01:41–06:41'] },
+        { label: 'You asked', q: 'What should I ask next?', say: 'Ask who else has to approve before Dana signs.', support: ['Nobody has mentioned procurement yet.'], sources: ['Renewal terms.pdf · p.2', 'This call · 03:58'] }
+      ]
+    };
+    const ans = s.stage === 'asked' ? answers.asked[s.askIdx] : answers.they;
+    const types = [['Sales call', 'from the invite'], ['One-on-one', 'you chose this'], ['General', 'you chose this']];
+    const notes = [
+      { name: 'Renewal terms.pdf', why: 'this call' },
+      { name: 'Recap of the last sync', why: 'every Acme sync' },
+      { name: 'How we sell', why: 'every call' }
+    ];
+    if (s.extraNote) notes.push({ name: 'Pricing sheet.xlsx', why: 'this call' });
+
+    const turns = [
+      { who: 'Dana', text: 'It has to clear finance before anything gets signed.' },
+      { who: 'You', text: 'Understood. What does finance need from us?' },
+      { who: 'Dana · now', text: s.stage === 'live' ? 'The security letter first, then it comes back to me.' : 'Can you get us to 12% if we sign for two years?' }
+    ].map((t, i) => ({ ...t, whoColor: i === 2 ? '#30D158' : 'rgba(255,255,255,.5)', textColor: i === 2 ? '#FFFFFF' : 'rgba(255,255,255,.55)' }));
+
+    const B = '#409CFF', G = '#30D158', O = '#FF9F0A', N = '#8E8E93', W = 'rgba(255,255,255,.72)';
+    const pills = {
+      soon: [N, 'none', 'Acme sync', 'rgba(255,255,255,.6)', '10:00', 'rgba(255,255,255,.6)', 'Acme renewal sync at 10:00', 'Starts in 15 min · 4 people · 3 notes ready'],
+      upcoming: [B, B, 'Acme sync · 2 min', '#fff', 'Get ready', '#8CC4FF', 'Ready to listen · 3 notes ready', 'Click to see them or add more'],
+      prep: [B, B, 'Acme sync · 2 min', '#fff', 'Get ready', '#8CC4FF', '', ''],
+      now: [B, B, 'Acme sync · now', '#fff', 'Join', '#8CC4FF', 'Dana and Marco are waiting', 'Click to join. Calla starts listening as you do.'],
+      live: [G, G, 'Listening', '#fff', '06:12', W, 'Finance needs the security letter before signing.', 'Where it stands · click to open'],
+      answer: [O, O, 'Answer ready', '#fff', 'They asked', '#FFC266', 'Yes to two years. Hold at 8%, offer the credit.', 'Click for the full answer'],
+      ask: [G, G, 'Listening', '#fff', '06:52', W, '', ''],
+      asked: [O, O, 'Answer ready', '#fff', 'You asked', '#FFC266', ans.say, 'Click for the full answer'],
+      recap: [N, 'none', 'Recap ready', '#fff', '3 to-dos', W, '2 decisions, 3 to-dos, 1 still open', 'Click to review'],
+      done: [N, 'none', 'Recap saved', 'rgba(255,255,255,.75)', 'Mon 14:00', 'rgba(255,255,255,.6)', 'Next: Design review, Monday 14:00', 'Nothing to do until then']
+    };
+    const p = pills[s.stage];
+    const pillRight = fl ? 'Floating' : p[4];
+    const peek = s.hover && !fl && !!p[6];
+
+    const head = {
+      prep: [B, 'Get ready · starts 10:00', '4 people'],
+      live: [G, 'Listening · both sides', '06:12'],
+      answer: [O, 'Answer ready', '06:41'],
+      ask: [G, 'Listening · both sides', '06:52'],
+      asked: [O, 'Answer ready', '06:55'],
+      recap: [N, 'Call ended', '32 min']
+    }[s.stage] || [N, '', ''];
+
+    const order = ['soon', 'upcoming', 'prep', 'now', 'live', 'answer', 'ask', 'asked', 'recap', 'done'];
+    const idx = order.indexOf(s.stage);
+    const nextMap = {
+      soon: ['Fast-forward to 9:58', () => set({ stage: 'upcoming' })],
+      upcoming: ['Open the notch', () => set({ stage: 'prep', open: true })],
+      prep: ['It is 10:00', () => set({ stage: 'now', open: false })],
+      now: ['Join', () => set({ stage: 'live', open: true })],
+      live: ['They ask a question', () => set({ stage: 'answer', open: true, menu: false })],
+      answer: ['Ask Calla yourself', () => set({ stage: 'ask', open: true, menu: false })],
+      ask: ['Pick a suggestion', () => set({ stage: 'asked', askIdx: 0 })],
+      asked: ['End the call', () => set({ stage: 'recap', open: true, menu: false, floating: false })],
+      recap: ['Close the recap', () => set({ stage: 'done', open: false })],
+      done: ['Start again', () => set(this.initial())]
+    };
+    const hints = {
+      soon: 'Meeting in 15 min. Hover the notch.',
+      upcoming: 'Two minutes to go. Hover, then click.',
+      prep: 'Everything is prepared from the invite',
+      now: 'It is time. The notch offers to join.',
+      live: 'Listening. Try ⧉ to float it, or hover after folding.',
+      answer: 'Someone asked you something',
+      ask: 'Ask anything about the call',
+      asked: 'Your answer, with its sources',
+      recap: 'The call is over',
+      done: 'Quiet until the next meeting'
+    };
+    const todoItems = [['Send the security letter to Dana', 'You · Fri'], ['Book a call with their IT lead', 'Dana · next week'], ['Confirm the seat count', 'Marco · Tue']];
+
+    return {
+      showPill: !showPanel || fl,
+      showPanel,
+      pillW: peek ? 540 : 470,
+      pillH: peek ? 92 : 34,
+      peek, peekLine: p[6], peekHint: p[7],
+      pillDot: p[0], pillGlow: p[1] === 'none' ? 'transparent' : p[1],
+      pillLeft: p[2], pillLeftColor: p[3], pillRight, pillRightColor: fl ? W : p[5],
+      pillLabel: p[2] + ', ' + pillRight + '. ' + (fl ? 'Put the panel back in the notch.' : 'Open the notch.'),
+      hoverIn: () => set({ hover: true }),
+      hoverOut: () => set({ hover: false }),
+      pillClick: () => {
+        if (fl) return set({ floating: false, open: true, hover: false });
+        if (s.stage === 'soon' || s.stage === 'upcoming') return set({ stage: 'prep', open: true, hover: false });
+        if (s.stage === 'now') return set({ stage: 'live', open: true, hover: false });
+        if (s.stage === 'done') return set({ hover: false });
+        set({ open: true, hover: false });
+      },
+
+      floating: fl, notFloating: !fl,
+      canFloat: liveFamily,
+      floatLabel: fl ? 'Put back in the notch' : 'Float on top of everything',
+      toggleFloat: () => set({ floating: !s.floating, open: true, menu: false }),
+      floatFromMenu: () => set({ floating: !s.floating, open: true, menu: false }),
+      px: fl ? s.fx : 340, py: fl ? s.fy : 0, pw: fl ? 380 : 600,
+      pr: fl ? '22px' : '0 0 28px 28px',
+      pb: fl ? '1px solid rgba(255,255,255,.14)' : '0',
+      pp: fl ? '24px 18px 14px' : '10px 20px 14px',
+      dir: fl ? 'column' : 'row',
+      cH: fl ? 'auto' : '236px',
+      tW: fl ? 'auto' : '200px',
+      tBL: fl ? '0' : '1px solid rgba(255,255,255,.10)',
+      tBT: fl ? '1px solid rgba(255,255,255,.10)' : '0',
+      tPad: fl ? '14px 0 0' : '2px 0 0 18px',
+      bloom: (s.stage === 'answer' || s.stage === 'asked') ? 'rgba(10,132,255,.26)' : 'rgba(0,0,0,0)',
+      dragStart: (e) => {
+        const r = e.currentTarget.getBoundingClientRect();
+        const scale = r.width / 380 || 1;
+        this.drag = { x: e.clientX, y: e.clientY, fx: s.fx, fy: s.fy, scale };
+        try { e.currentTarget.setPointerCapture(e.pointerId); } catch (err) {}
+      },
+      dragMove: (e) => {
+        if (!this.drag) return;
+        const d = this.drag;
+        const fx = Math.max(0, Math.min(1280 - 380, d.fx + (e.clientX - d.x) / d.scale));
+        const fy = Math.max(0, Math.min(800 - 120, d.fy + (e.clientY - d.y) / d.scale));
+        set({ fx, fy });
+      },
+      dragEnd: () => {
+        if (!this.drag) return;
+        this.drag = null;
+        if (this.state.fy < 24) set({ floating: false, open: true, fx: 860, fy: 150 });
+      },
+
+      headDot: head[0], headState: head[1], headFigure: head[2],
+      isPrep: s.stage === 'prep',
+      isLiveFrame: liveFamily,
+      isListening: s.stage === 'live',
+      isAnswer: s.stage === 'answer' || s.stage === 'asked',
+      isAsk: s.stage === 'ask',
+      isRecap: s.stage === 'recap',
+      ans,
+      summary: ['They want a two-year deal.', 'Finance needs the security letter before signing.', 'Dana signs. Seat count still open, 40 to 60.'],
+      turns,
+      transcript: s.transcript,
+      transcriptVerb: s.transcript ? 'Hide transcript' : 'Show transcript',
+      showBack: s.stage === 'answer' || s.stage === 'asked' || s.stage === 'ask',
+      backLabel: s.stage === 'ask' ? 'Cancel' : 'Got it',
+      askColor: s.stage === 'ask' ? '#409CFF' : 'rgba(255,255,255,.78)',
+      prepNotes: notes,
+      typeName: types[s.typeIdx][0], typeWhy: types[s.typeIdx][1],
+      suggestions: ['What have they agreed to so far?', 'Summarise the last five minutes', 'What should I ask next?'].map((text, i) => ({ text, pick: () => set({ stage: 'asked', askIdx: i }) })),
+      todos: todoItems.map((t, i) => ({ text: t[0], who: t[1], done: s.todos[i], color: s.todos[i] ? 'rgba(255,255,255,.45)' : 'rgba(255,255,255,.92)', toggle: () => { const n = s.todos.slice(); n[i] = !n[i]; set({ todos: n }); } })),
+      copyLabel: s.copied ? 'Copied. Paste it in your email.' : 'Copy follow-up email',
+      menu: s.menu,
+      stepText: (idx + 1) + ' of 10 · ' + hints[s.stage],
+      nextLabel: nextMap[s.stage][0],
+      next: nextMap[s.stage][1],
+      restart: () => { this.drag = null; set(this.initial()); },
+      collapse: () => set({ open: false, menu: false, hover: false }),
+      notNow: () => set({ stage: 'upcoming', open: false }),
+      joinNow: () => set({ stage: 'live', open: true }),
+      addNote: () => set({ extraNote: true }),
+      changeType: () => set({ typeIdx: (s.typeIdx + 1) % 3 }),
+      toggleTranscript: () => set({ transcript: !s.transcript }),
+      openAsk: () => set({ stage: 'ask', menu: false }),
+      backToListening: () => set({ stage: 'live' }),
+      toggleMenu: () => set({ menu: !s.menu }),
+      end: () => set({ stage: 'recap', open: true, menu: false, floating: false }),
+      copy: () => set({ copied: true }),
+      done: () => set({ stage: 'done', open: false })
+    };
+  }
+}
+</script>
+</body>
+</html>

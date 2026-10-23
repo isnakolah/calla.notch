@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Zen levels</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+body{margin:0;background:#1A1B1E;font-family:system-ui,-apple-system,"SF Pro Text",sans-serif;color:#fff}
+a{color:#6CB8FF}a:hover{color:#9ACFFF}
+.caps{font:700 9.5px/1 system-ui,-apple-system,sans-serif;letter-spacing:.09em;text-transform:uppercase;color:rgba(255,255,255,.55)}
+.mono{font-family:ui-monospace,"SF Mono",Menlo,monospace;font-variant-numeric:tabular-nums}
+.col{flex:1 1 0;min-width:0;display:flex;flex-direction:column;gap:14px}
+.isl{background:#000;border-radius:0 0 22px 22px;padding:0 18px 14px;box-sizing:border-box;display:flex;flex-direction:column;gap:7px;border-top:3px solid #000}
+.band{height:34px;display:flex;align-items:center;gap:8px}
+.dot{width:7px;height:7px;border-radius:50%;background:#5BE49B;box-shadow:0 0 0 3px rgba(91,228,155,.22);flex:none}
+.word{font-size:12px;font-weight:600;color:#5BE49B}
+.cam{width:150px;height:30px;flex:none}
+.main{font-size:14.5px;font-weight:500;line-height:1.4;color:rgba(255,255,255,.96)}
+.said{font-size:12.5px;line-height:1.4;color:rgba(255,255,255,.6);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.who{font-weight:600;color:#5BE49B}
+.pt{font-size:12.5px;line-height:1.4;color:rgba(255,255,255,.72)}
+.t{font-size:15px;font-weight:600}
+.d{font-size:12.5px;line-height:1.5;color:rgba(255,255,255,.72)}
+</style>
+</helmet>
+
+<div style="width: 1360px; height: 440px; background: #1A1B1E; box-sizing: border-box; padding: 30px 34px; display: flex; gap: 30px;">
+
+  <div class="col">
+    <span class="caps">Just the dot</span>
+    <div class="isl" style="border-radius: 0 0 14px 14px; padding-bottom: 0;">
+      <div class="band"><span class="dot"></span><span class="word">Listening</span><span class="cam"></span><span style="flex-grow: 1;"></span><span class="mono" style="font-size: 12px; color: rgba(255,255,255,.86);">11:30</span></div>
+    </div>
+    <span class="t">For calls you lead</span>
+    <span class="d">Only the band beside the camera: is it hearing both sides, and for how long. Nothing under the notch unless something needs you.</span>
+  </div>
+
+  <div class="col">
+    <span class="caps">Brief · the default</span>
+    <div class="isl">
+      <div class="band"><span class="dot"></span><span class="word">Listening</span><span class="cam"></span><span style="flex-grow: 1;"></span><span class="mono" style="font-size: 12px; color: rgba(255,255,255,.86);">11:30</span></div>
+      <div style="display: flex; flex-direction: column; gap: 6px; padding: 0 6px;">
+        <span class="main">They want a two-year deal. Finance needs the security letter first.</span>
+        <span class="said"><span class="who">Before</span>  two-year term in principle · Dana signs.</span>
+      </div>
+    </div>
+    <span class="t">For most calls</span>
+    <span class="d">No labels: the word beside the dot says what is happening. Under it, the newest point and the ones before it on one line. Never the transcript.</span>
+  </div>
+
+  <div class="col">
+    <span class="caps">More</span>
+    <div class="isl">
+      <div class="band"><span class="dot"></span><span class="word">Listening</span><span class="cam"></span><span style="flex-grow: 1;"></span><span class="mono" style="font-size: 12px; color: rgba(255,255,255,.86);">11:30</span></div>
+      <div style="display: flex; flex-direction: column; gap: 6px; padding: 0 6px;">
+        <span class="main" style="font-size: 15px;">They want a two-year deal. Finance needs the security letter first.</span>
+        <span class="pt">Earlier: two-year term in principle · Dana signs</span>
+        <span class="pt" style="color: #FFD15C;">Still open: seat count, who approves after Dana</span>
+      </div>
+    </div>
+    <span class="t">For long calls you follow</span>
+    <span class="d">Adds what was settled and what is still open. Five lines at most, so it stays above the faces on a laptop screen.</span>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1360,"height":440}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

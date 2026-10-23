@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Closed notch states</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+body{margin:0;background:#1A1B1E;font-family:system-ui,-apple-system,"SF Pro Text",sans-serif;color:#fff}
+a{color:#409CFF}a:hover{color:#6BB2FF}
+.rounded{font-family:ui-rounded,"SF Pro Rounded",system-ui,sans-serif;font-variant-numeric:tabular-nums}
+.pill{width:460px;height:34px;background:#0A0A0C;border-radius:0 0 15px 15px;display:flex;align-items:center;padding:0 14px;box-sizing:border-box;position:relative}
+.hw{position:absolute;left:50%;top:0;transform:translateX(-50%);width:186px;height:30px;border-radius:0 0 10px 10px;background:#000;border:1px dashed rgba(255,255,255,.14);border-top:0;box-sizing:border-box}
+</style>
+</helmet>
+
+<div style="width: 640px; height: 420px; background: #1A1B1E; box-sizing: border-box; padding: 26px 32px; display: flex; flex-direction: column; gap: 18px;">
+
+  <div style="display: flex; flex-direction: column; gap: 6px;">
+    <div class="pill">
+      <span class="hw"></span>
+      <span style="width: 7px; height: 7px; border-radius: 50%; background: #409CFF; box-shadow: 0 0 9px #409CFF; margin-right: 7px;"></span>
+      <span style="font-size: 11.5px; font-weight: 600;">Acme sync · 2 min</span>
+      <span style="flex-grow: 1;"></span>
+      <span style="font-size: 11.5px; font-weight: 500; color: #8CC4FF;">Get ready</span>
+    </div>
+    <span style="font-size: 11.5px; color: rgba(255,255,255,.6);">A meeting with a call link is coming up. Click to see what Calla prepared.</span>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 6px;">
+    <div class="pill">
+      <span class="hw"></span>
+      <span style="width: 7px; height: 7px; border-radius: 50%; background: #30D158; box-shadow: 0 0 9px #30D158; margin-right: 7px;"></span>
+      <span style="font-size: 11.5px; font-weight: 600;">Listening</span>
+      <span style="flex-grow: 1;"></span>
+      <svg width="34" height="14" viewBox="0 0 34 14" aria-hidden="true" style="margin-right: 8px;"><g fill="#30D158"><rect x="0" y="5" width="2.4" height="4" rx="1.2"/><rect x="5" y="2" width="2.4" height="10" rx="1.2"/><rect x="10" y="4" width="2.4" height="6" rx="1.2"/><rect x="15" y="0" width="2.4" height="14" rx="1.2"/><rect x="20" y="3" width="2.4" height="8" rx="1.2"/><rect x="25" y="5" width="2.4" height="4" rx="1.2"/><rect x="30" y="6" width="2.4" height="2" rx="1.2"/></g></svg>
+      <span class="rounded" style="font-size: 11.5px; color: rgba(255,255,255,.72);">06:12</span>
+    </div>
+    <span style="font-size: 11.5px; color: rgba(255,255,255,.6);">Calla is hearing both sides. Nothing to do.</span>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 6px;">
+    <div class="pill">
+      <span class="hw"></span>
+      <span style="width: 7px; height: 7px; border-radius: 50%; background: #FF9F0A; box-shadow: 0 0 9px #FF9F0A; margin-right: 7px;"></span>
+      <span style="font-size: 11.5px; font-weight: 600;">Answer ready</span>
+      <span style="flex-grow: 1;"></span>
+      <span style="font-size: 11.5px; font-weight: 500; color: #FFC266;">They asked</span>
+    </div>
+    <span style="font-size: 11.5px; color: rgba(255,255,255,.6);">Someone asked you something. Hover the notch to read the answer.</span>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 6px;">
+    <div class="pill">
+      <span class="hw"></span>
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#FF9F0A" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="margin-right: 6px;"><path d="M12 3l10 18H2z"/><path d="M12 10v4M12 17.5v.01"/></svg>
+      <span style="font-size: 11.5px; font-weight: 600;">Only hearing you</span>
+      <span style="flex-grow: 1;"></span>
+      <span style="font-size: 11.5px; font-weight: 600; color: #FFC266;">Fix</span>
+    </div>
+    <span style="font-size: 11.5px; color: rgba(255,255,255,.6);">Something needs you. The sentence names it, the right side fixes it.</span>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 6px;">
+    <div class="pill">
+      <span class="hw"></span>
+      <span style="width: 7px; height: 7px; border-radius: 50%; background: #8E8E93; margin-right: 7px;"></span>
+      <span style="font-size: 11.5px; font-weight: 600;">Recap ready</span>
+      <span style="flex-grow: 1;"></span>
+      <span style="font-size: 11.5px; font-weight: 500; color: rgba(255,255,255,.72);">3 to-dos</span>
+    </div>
+    <span style="font-size: 11.5px; color: rgba(255,255,255,.6);">The call ended. The recap waits here until you look at it once.</span>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":640,"height":420}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

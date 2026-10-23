@@ -1,0 +1,81 @@
+{
+  "v": 3,
+  "createdOnFiles": {"v": 1, "at": "2026-10-23T12:00:00Z"},
+  "title": "Calla Reimagined",
+  "launch": {"view": "canvas", "page": "prototype"},
+  "pages": [
+    {"id": "prototype", "name": "Try it"},
+    {"id": "moments", "name": "Approach, hover, real call"},
+    {"id": "call", "name": "The call"},
+    {"id": "float", "name": "Spin out"},
+    {"id": "knowledge", "name": "Notes for Calla"},
+    {"id": "settings", "name": "Settings"}
+  ],
+  "boards": {
+    "Main.dc.html": {"x": 0, "y": 0, "w": 1280, "h": 800, "title": "Prototype · one whole call, start to finish", "page": "prototype", "is_interactive": true},
+
+    "Approach.dc.html": {"x": 0, "y": 0, "w": 1440, "h": 620, "title": "As the meeting gets close · T−15 to T+3", "page": "moments"},
+    "Hover.dc.html": {"x": 0, "y": 1000, "w": 1360, "h": 440, "title": "Hover · rest, peek, open, leave", "page": "moments"},
+    "InCall.dc.html": {"x": 0, "y": 1820, "w": 1440, "h": 900, "title": "In a real call · full-screen video, answer peeking", "page": "moments"},
+    "InCallShare.dc.html": {"x": 1540, "y": 1820, "w": 1440, "h": 560, "title": "Sharing your screen · what you see vs what they see", "page": "moments"},
+
+    "ClosedStates.dc.html": {"x": 0, "y": 0, "w": 640, "h": 420, "title": "Closed notch · always one plain sentence", "page": "call"},
+    "Prep.dc.html": {"x": 720, "y": 0, "w": 600, "h": 340, "title": "Before · Get ready (nothing to set)", "page": "call"},
+    "PrepBlocked.dc.html": {"x": 1400, "y": 0, "w": 600, "h": 340, "title": "Before · one thing to fix, one button", "page": "call"},
+
+    "LiveListening.dc.html": {"x": 0, "y": 800, "w": 600, "h": 340, "title": "During · Listening", "page": "call"},
+    "LiveAnswer.dc.html": {"x": 680, "y": 800, "w": 600, "h": 340, "title": "During · An answer, with where it came from", "page": "call"},
+    "LiveAsk.dc.html": {"x": 1360, "y": 800, "w": 600, "h": 340, "title": "During · Ask (⌥Space)", "page": "call"},
+    "LiveTrouble.dc.html": {"x": 2040, "y": 800, "w": 600, "h": 340, "title": "During · When something breaks", "page": "call"},
+
+    "Recap.dc.html": {"x": 0, "y": 1600, "w": 600, "h": 420, "title": "After · Recap, ready before you close the tab", "page": "call"},
+
+    "SpinOut.dc.html": {"x": 0, "y": 0, "w": 1280, "h": 560, "title": "Spin out · notch → floating → back", "page": "float"},
+    "FloatingLive.dc.html": {"x": 0, "y": 960, "w": 400, "h": 580, "title": "Floating · listening", "page": "float"},
+    "FloatingAnswer.dc.html": {"x": 480, "y": 960, "w": 400, "h": 580, "title": "Floating · answer ready", "page": "float"},
+    "FloatingMini.dc.html": {"x": 960, "y": 960, "w": 440, "h": 260, "title": "Floating · shrunk to a strip", "page": "float"},
+
+    "KnowledgeDrop.dc.html": {"x": 0, "y": 0, "w": 600, "h": 340, "title": "Drop anything on the notch · one question", "page": "knowledge"},
+    "KnowledgeInCall.dc.html": {"x": 680, "y": 0, "w": 600, "h": 340, "title": "During · What Calla is using right now", "page": "knowledge"},
+    "SettingsNotes.dc.html": {"x": 0, "y": 720, "w": 1280, "h": 860, "title": "Settings › Notes for Calla", "page": "knowledge", "expand": "fill"},
+
+    "SettingsCalls.dc.html": {"x": 0, "y": 0, "w": 1280, "h": 1240, "title": "Settings › Calls · before, during, after", "page": "settings", "expand": "fill"}
+  },
+  "order": [
+    "Main.dc.html",
+    "Approach.dc.html", "Hover.dc.html", "InCall.dc.html", "InCallShare.dc.html",
+    "ClosedStates.dc.html", "Prep.dc.html", "PrepBlocked.dc.html",
+    "LiveListening.dc.html", "LiveAnswer.dc.html", "LiveAsk.dc.html", "LiveTrouble.dc.html",
+    "Recap.dc.html",
+    "SpinOut.dc.html", "FloatingLive.dc.html", "FloatingAnswer.dc.html", "FloatingMini.dc.html",
+    "KnowledgeDrop.dc.html", "KnowledgeInCall.dc.html", "SettingsNotes.dc.html",
+    "SettingsCalls.dc.html"
+  ],
+  "notes": {
+    "t-proto": {"x": 0, "y": -300, "text": "Try a whole call: click the notch, then use the demo bar", "kind": "title1", "maxW": 1280, "page": "prototype"},
+    "s-proto": {"x": -380, "y": 0, "w": 300, "text": "Three moments, one surface.\n\nBefore → Get ready\nDuring → Listening, Answer, Ask\nAfter → Recap\n\nDuring the call, click the float button (top right of the notch) to spin it out. Drag the window by its handle, and drag it to the top edge to dock it back.", "page": "prototype", "fill": "blue"},
+
+    "t-approach": {"x": 0, "y": -300, "text": "As a meeting gets close, the notch gets louder, one step at a time", "kind": "title1", "maxW": 1440, "page": "moments"},
+    "t-hover": {"x": 0, "y": 700, "text": "Hover peeks, click opens, leaving closes", "kind": "title1", "maxW": 1360, "page": "moments"},
+    "t-real": {"x": 0, "y": 1520, "text": "In a real call", "kind": "title1", "maxW": 2980, "page": "moments"},
+    "s-hover": {"x": -380, "y": 1000, "w": 300, "text": "Hover never steals focus and never covers the call: it only grows the black notch by one line.\n\nPeek after 0.15 s, close 0.4 s after the pointer leaves.\nClick or ⌥Space opens.\nWhile you type in the panel it stays open.\nA pinned or floating panel ignores hover.", "page": "moments", "fill": "blue"},
+    "s-approach": {"x": -380, "y": 0, "w": 300, "text": "Calm until it matters:\nT−15 a dim time beside the camera.\nT−2 \"Get ready\" in blue.\nT−0 \"Join\", one click opens the link and starts listening.\nJoined: green, listening.\n\nCalls without a link never escalate past the dim time.", "page": "moments", "fill": "green"},
+
+    "s-real": {"x": -380, "y": 1820, "w": 300, "text": "In a call, the peek is the main surface: one line, 96 px tall, never over faces. The full panel is for when you choose to look. Spin it out if you want it beside the video.", "page": "moments", "fill": "orange"},
+
+    "t-before": {"x": 0, "y": -300, "text": "Before — Calla gets ready from the invite", "kind": "title1", "maxW": 2000, "page": "call"},
+    "t-during": {"x": 0, "y": 500, "text": "During — same frame, same three buttons, always", "kind": "title1", "maxW": 2640, "page": "call"},
+    "t-after": {"x": 0, "y": 1300, "text": "After — the recap is the product", "kind": "title1", "maxW": 2000, "page": "call"},
+    "s-during": {"x": -380, "y": 800, "w": 300, "text": "No boxes inside the notch. The black notch is the only container; type, space and one hairline do the rest.\n\nAsk · Transcript · End sit in the same place in every live state. Screenshot, pin and add-a-note live under •••.", "page": "call", "fill": "orange"},
+    "s-after": {"x": 680, "y": 1600, "w": 320, "text": "To-dos come out with an owner and a date. One click copies a follow-up email in your own words. The full recap, transcript and audio live in Past calls.", "page": "call", "fill": "green"},
+
+    "t-float": {"x": 0, "y": -300, "text": "Spin out — the notch becomes a window that floats on top", "kind": "title1", "maxW": 1400, "page": "float"},
+    "t-float2": {"x": 0, "y": 700, "text": "The floating window — same content, stacked tall", "kind": "title1", "maxW": 1400, "page": "float"},
+    "s-float": {"x": -380, "y": 960, "w": 300, "text": "Floats above every app, full-screen calls too. Hidden from screen sharing like the notch.\n\nThree ways out of the notch: the float button, dragging the panel down, or ⌥⌘F.\nOne way back: drag it to the top edge, or click the notch button.\n\nIt remembers where you left it, per display.", "page": "float", "fill": "teal"},
+
+    "t-know": {"x": 0, "y": -300, "text": "Notes for Calla — one question, three plain answers", "kind": "title1", "maxW": 1280, "page": "knowledge"},
+    "s-know": {"x": -380, "y": 0, "w": 300, "text": "\"Scope: always / event / series / persona\" becomes one question asked in words:\n\nWhen should Calla use this?\n· Just this call\n· Every Acme renewal sync\n· Every call\n\nThe same three answers everywhere: notch, prep, settings.", "page": "knowledge", "fill": "purple"},
+    "t-settings": {"x": 0, "y": -300, "text": "Settings — six call pages become one, in the order a call happens", "kind": "title1", "maxW": 1280, "page": "settings"}
+  },
+  "designSystems": []
+}

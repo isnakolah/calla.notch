@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>What Calla is using</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+body{margin:0;background:#000;font-family:system-ui,-apple-system,"SF Pro Text",sans-serif;color:#fff}
+a{color:#409CFF}a:hover{color:#6BB2FF}
+button{font:inherit;color:inherit;border:0;background:none;padding:0;cursor:pointer}
+.caps{font:700 9.5px/1 system-ui,-apple-system,sans-serif;letter-spacing:.09em;text-transform:uppercase;color:rgba(255,255,255,.55)}
+.rounded{font-family:ui-rounded,"SF Pro Rounded",system-ui,sans-serif;font-variant-numeric:tabular-nums}
+.tb{height:32px;padding:0 10px;border-radius:9px;display:inline-flex;align-items:center;gap:7px;font-size:12.5px;font-weight:500;color:rgba(255,255,255,.78);flex:none}
+.tb:hover{background:rgba(255,255,255,.08);color:#fff}
+.row{display:flex;align-items:center;gap:10px;height:32px}
+.g{width:118px;flex:none}
+.n{font-size:13px;flex-grow:1}
+.u{font-size:11.5px;color:#8CC4FF}
+.sw{appearance:none;-webkit-appearance:none;width:32px;height:19px;border-radius:10px;background:rgba(255,255,255,.2);position:relative;margin:0;cursor:pointer;flex:none}
+.sw::after{content:"";position:absolute;left:2px;top:2px;width:15px;height:15px;border-radius:50%;background:#fff;transition:left .15s}
+.sw:checked{background:#30D158}.sw:checked::after{left:15px}
+</style>
+</helmet>
+
+<div style="width: 600px; height: 340px; background: #000; border-radius: 0 0 28px 28px; box-sizing: border-box; padding: 10px 20px 14px; display: flex; flex-direction: column; gap: 10px; position: relative; overflow: hidden;">
+  <div style="position: absolute; left: 0; right: 0; top: 0; height: 46px; background: linear-gradient(180deg, rgba(255,255,255,.07), rgba(255,255,255,0)); pointer-events: none;"></div>
+
+  <div style="display: flex; align-items: center; gap: 8px; height: 26px; position: relative;">
+    <span style="width: 7px; height: 7px; border-radius: 50%; background: #30D158; box-shadow: 0 0 10px #30D158;"></span>
+    <span class="caps" style="color: rgba(255,255,255,.78);">Listening · what Calla is using</span>
+    <span style="flex-grow: 1;"></span>
+    <span class="rounded" style="font-size: 11.5px; color: rgba(255,255,255,.72);">07:20</span>
+  </div>
+
+  <div style="display: flex; flex-direction: column; position: relative;">
+    <div class="row"><span class="caps g">This call</span><span class="n">Renewal terms.pdf</span><span class="u">used in 2 answers</span><input type="checkbox" class="sw" checked aria-label="Use Renewal terms.pdf"></div>
+    <div class="row"><span class="g"></span><span class="n">Pricing sheet.xlsx</span><span class="u">used once</span><input type="checkbox" class="sw" checked aria-label="Use Pricing sheet.xlsx"></div>
+    <div class="row"><span class="g"></span><span class="n">2 screenshots of the shared screen</span><input type="checkbox" class="sw" checked aria-label="Use screenshots"></div>
+    <div class="row" style="margin-top: 6px;"><span class="caps g">Every Acme sync</span><span class="n">Recap of the last sync</span><input type="checkbox" class="sw" checked aria-label="Use last sync recap"></div>
+    <div class="row" style="margin-top: 6px;"><span class="caps g">Every call</span><span class="n" style="color: rgba(255,255,255,.5);">How we sell</span><span style="font-size: 11.5px; color: rgba(255,255,255,.5);">off for this call</span><input type="checkbox" class="sw" aria-label="Use How we sell"></div>
+  </div>
+
+  <div style="display: flex; align-items: center; gap: 10px; padding-top: 10px; border-top: 1px solid rgba(255,255,255,.10); position: relative;">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.6)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 15V4M7 9l5-5 5 5"/><path d="M4 15v4a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-4"/></svg>
+    <span style="font-size: 12.5px; color: rgba(255,255,255,.72);">Drop a file on the notch, paste text, or type a quick note</span>
+    <span style="flex-grow: 1;"></span>
+    <span class="rounded" style="font-size: 11px; color: rgba(255,255,255,.5);">⌘V</span>
+  </div>
+
+  <div style="display: flex; align-items: center; gap: 8px; margin-top: auto; position: relative;">
+    <span style="font-size: 11.5px; color: rgba(255,255,255,.5);">Switching something off only affects this call.</span>
+    <span style="flex-grow: 1;"></span>
+    <button class="tb" style="margin-right: -10px;">Back to the call</button>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":600,"height":340}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

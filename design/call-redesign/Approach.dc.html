@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>As the meeting gets close</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+body{margin:0;background:#1A1B1E;font-family:system-ui,-apple-system,"SF Pro Text",sans-serif;color:#fff}
+a{color:#409CFF}a:hover{color:#6BB2FF}
+.rounded{font-family:ui-rounded,"SF Pro Rounded",system-ui,sans-serif;font-variant-numeric:tabular-nums}
+.caps{font:700 9.5px/1 system-ui,-apple-system,sans-serif;letter-spacing:.09em;text-transform:uppercase;color:rgba(255,255,255,.55)}
+.edge{border-top:3px solid #000;display:flex;justify-content:center;flex:none}
+.pill{width:470px;height:34px;background:#000;border-radius:0 0 18px 18px;display:flex;align-items:center;padding:0 16px;box-sizing:border-box;position:relative}
+.peek{width:540px;height:92px;background:#000;border-radius:0 0 18px 18px;display:flex;flex-direction:column;padding:0 16px;box-sizing:border-box;position:relative}
+.hw{position:absolute;left:50%;top:0;transform:translateX(-50%);width:186px;height:30px;border-radius:0 0 10px 10px;border:1px dashed rgba(255,255,255,.12);border-top:0;box-sizing:border-box}
+.row{display:flex;align-items:flex-start;gap:24px}
+.l{font-size:11.5px;font-weight:600}
+.r{font-size:11.5px;font-weight:600}
+.dot{width:7px;height:7px;border-radius:50%;margin-right:7px;flex:none}
+.why{font-size:12px;line-height:1.45;color:rgba(255,255,255,.7);width:214px;flex:none;padding-top:4px}
+.t{width:80px;flex:none;display:flex;flex-direction:column;gap:5px;padding-top:4px}
+</style>
+</helmet>
+
+<div style="width: 1440px; height: 620px; background: #1A1B1E; box-sizing: border-box; padding: 26px 32px; display: flex; flex-direction: column; gap: 22px;">
+
+  <div class="row" style="align-items: flex-end;">
+    <span class="t"><span class="caps">When</span></span>
+    <span class="caps" style="width: 470px; flex: none;">At rest</span>
+    <span class="caps" style="width: 540px; flex: none;">On hover</span>
+    <span class="caps" style="width: 214px;">Why</span>
+  </div>
+
+  <div class="row">
+    <span class="t"><span class="rounded" style="font-size: 15px; font-weight: 700;">T−15</span><span style="font-size: 11px; color: rgba(255,255,255,.55);">9:45</span></span>
+    <span class="edge"><span class="pill"><span class="hw"></span><span class="dot" style="background: #8E8E93;"></span><span class="l" style="color: rgba(255,255,255,.6);">Acme sync</span><span style="flex-grow: 1;"></span><span class="r rounded" style="color: rgba(255,255,255,.6);">10:00</span></span></span>
+    <span class="edge"><span class="peek"><span class="hw"></span><span style="height: 34px; display: flex; align-items: center;"><span class="dot" style="background: #8E8E93;"></span><span class="l" style="color: rgba(255,255,255,.6);">Acme sync</span><span style="flex-grow: 1;"></span><span class="r rounded" style="color: rgba(255,255,255,.6);">10:00</span></span><span style="font-size: 13px; font-weight: 600; padding-top: 6px;">Acme renewal sync at 10:00</span><span style="font-size: 11px; color: rgba(255,255,255,.55); padding-top: 4px;">Starts in 15 min · 4 people · 3 notes ready</span></span></span>
+    <span class="why">Quiet. Grey, no glow, no motion. You can tell a meeting is coming without being nagged.</span>
+  </div>
+
+  <div class="row">
+    <span class="t"><span class="rounded" style="font-size: 15px; font-weight: 700; color: #8CC4FF;">T−2</span><span style="font-size: 11px; color: rgba(255,255,255,.55);">9:58</span></span>
+    <span class="edge"><span class="pill"><span class="hw"></span><span class="dot" style="background: #409CFF; box-shadow: 0 0 9px #409CFF;"></span><span class="l">Acme sync · 2 min</span><span style="flex-grow: 1;"></span><span class="r" style="color: #8CC4FF;">Get ready</span></span></span>
+    <span class="edge"><span class="peek"><span class="hw"></span><span style="height: 34px; display: flex; align-items: center;"><span class="dot" style="background: #409CFF; box-shadow: 0 0 9px #409CFF;"></span><span class="l">Acme sync · 2 min</span><span style="flex-grow: 1;"></span><span class="r" style="color: #8CC4FF;">Get ready</span></span><span style="font-size: 13px; font-weight: 600; padding-top: 6px;">Ready to listen · 3 notes ready</span><span style="font-size: 11px; color: rgba(255,255,255,.55); padding-top: 4px;">Click to see them or add more</span></span></span>
+    <span class="why">Turns blue with one soft pulse, then holds still. Click to check notes. Ignoring it is fine.</span>
+  </div>
+
+  <div class="row">
+    <span class="t"><span class="rounded" style="font-size: 15px; font-weight: 700; color: #8CC4FF;">T−0</span><span style="font-size: 11px; color: rgba(255,255,255,.55);">10:00</span></span>
+    <span class="edge"><span class="pill" style="box-shadow: 0 6px 22px rgba(10,132,255,.35);"><span class="hw"></span><span class="dot" style="background: #409CFF; box-shadow: 0 0 9px #409CFF;"></span><span class="l">Acme sync · now</span><span style="flex-grow: 1;"></span><span style="height: 22px; padding: 0 11px; border-radius: 11px; background: #0A84FF; font-size: 11.5px; font-weight: 600; display: inline-flex; align-items: center;">Join</span></span></span>
+    <span class="edge"><span class="peek" style="box-shadow: 0 6px 22px rgba(10,132,255,.35);"><span class="hw"></span><span style="height: 34px; display: flex; align-items: center;"><span class="dot" style="background: #409CFF; box-shadow: 0 0 9px #409CFF;"></span><span class="l">Acme sync · now</span><span style="flex-grow: 1;"></span><span style="height: 22px; padding: 0 11px; border-radius: 11px; background: #0A84FF; font-size: 11.5px; font-weight: 600; display: inline-flex; align-items: center;">Join</span></span><span style="font-size: 13px; font-weight: 600; padding-top: 6px;">Dana and Marco are waiting</span><span style="font-size: 11px; color: rgba(255,255,255,.55); padding-top: 4px;">Join opens the link in your call app and starts listening</span></span></span>
+    <span class="why">The only moment the notch offers a button at rest. One click joins and starts Calla together.</span>
+  </div>
+
+  <div class="row">
+    <span class="t"><span class="rounded" style="font-size: 15px; font-weight: 700; color: #30D158;">Joined</span><span style="font-size: 11px; color: rgba(255,255,255,.55);">10:01</span></span>
+    <span class="edge"><span class="pill"><span class="hw"></span><span class="dot" style="background: #30D158; box-shadow: 0 0 9px #30D158;"></span><span class="l">Listening</span><span style="flex-grow: 1;"></span><svg width="30" height="12" viewBox="0 0 30 12" aria-hidden="true" style="margin-right: 8px;"><g fill="#30D158"><rect x="0" y="4" width="2.4" height="4" rx="1.2"/><rect x="5" y="1" width="2.4" height="10" rx="1.2"/><rect x="10" y="3" width="2.4" height="6" rx="1.2"/><rect x="15" y="0" width="2.4" height="12" rx="1.2"/><rect x="20" y="3" width="2.4" height="6" rx="1.2"/><rect x="25" y="5" width="2.4" height="2" rx="1.2"/></g></svg><span class="r rounded" style="color: rgba(255,255,255,.72);">00:48</span></span></span>
+    <span class="edge"><span class="peek"><span class="hw"></span><span style="height: 34px; display: flex; align-items: center;"><span class="dot" style="background: #30D158; box-shadow: 0 0 9px #30D158;"></span><span class="l">Listening</span><span style="flex-grow: 1;"></span><span class="r rounded" style="color: rgba(255,255,255,.72);">00:48</span></span><span style="font-size: 13px; font-weight: 600; padding-top: 6px;">Hearing you and them. Nothing to do.</span><span style="font-size: 11px; color: rgba(255,255,255,.55); padding-top: 4px;">The summary starts after the first minute</span></span></span>
+    <span class="why">Joined from your call app instead? Calla notices and starts on its own, if you allowed it.</span>
+  </div>
+
+  <div class="row">
+    <span class="t"><span class="rounded" style="font-size: 15px; font-weight: 700; color: #FFC266;">T+3</span><span style="font-size: 11px; color: rgba(255,255,255,.55);">not joined</span></span>
+    <span class="edge"><span class="pill"><span class="hw"></span><span class="dot" style="background: #FF9F0A; box-shadow: 0 0 9px #FF9F0A;"></span><span class="l">Started 3 min ago</span><span style="flex-grow: 1;"></span><span class="r" style="color: #FFC266;">Join</span></span></span>
+    <span class="edge"><span class="peek"><span class="hw"></span><span style="height: 34px; display: flex; align-items: center;"><span class="dot" style="background: #FF9F0A; box-shadow: 0 0 9px #FF9F0A;"></span><span class="l">Started 3 min ago</span><span style="flex-grow: 1;"></span><span class="r" style="color: #FFC266;">Join</span></span><span style="font-size: 13px; font-weight: 600; padding-top: 6px;">Acme renewal sync is running without you</span><span style="font-size: 11px; color: rgba(255,255,255,.55); padding-top: 4px;">Click to join, or right-click to skip this one</span></span></span>
+    <span class="why">After ten minutes it goes back to quiet. You probably skipped it on purpose.</span>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":620}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

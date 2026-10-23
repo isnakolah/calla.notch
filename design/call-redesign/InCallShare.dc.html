@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Sharing your screen</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+body{margin:0;background:#1A1B1E;font-family:system-ui,-apple-system,"SF Pro Text",sans-serif;color:#fff}
+a{color:#409CFF}a:hover{color:#6BB2FF}
+.caps{font:700 9.5px/1 system-ui,-apple-system,sans-serif;letter-spacing:.09em;text-transform:uppercase;color:rgba(255,255,255,.55)}
+.rounded{font-family:ui-rounded,"SF Pro Rounded",system-ui,sans-serif;font-variant-numeric:tabular-nums}
+.screen{width:672px;height:420px;border-radius:12px;background:#3B4452;position:relative;overflow:hidden;flex:none}
+.win{position:absolute;left:40px;top:58px;width:592px;height:330px;border-radius:10px;background:#F4F4F6;box-shadow:0 18px 40px rgba(0,0,0,.35);overflow:hidden;display:flex;flex-direction:column}
+.bar{height:26px;background:#E4E4E8;display:flex;align-items:center;gap:6px;padding:0 10px;flex:none}
+.tl{width:9px;height:9px;border-radius:50%}
+.dot{width:6px;height:6px;border-radius:50%;flex:none}
+</style>
+</helmet>
+
+<div style="width: 1440px; height: 560px; background: #1A1B1E; box-sizing: border-box; padding: 28px 32px; display: flex; gap: 32px;">
+
+  <div style="display: flex; flex-direction: column; gap: 12px;">
+    <span class="caps">What you see</span>
+    <div class="screen">
+      <div style="position: absolute; left: 0; right: 0; top: 0; height: 22px; background: #000;"></div>
+      <div class="win">
+        <span class="bar"><span class="tl" style="background: #FF5F57;"></span><span class="tl" style="background: #FEBC2E;"></span><span class="tl" style="background: #28C840;"></span><span style="flex-grow: 1; text-align: center; font-size: 10.5px; color: #555;">Renewal proposal</span></span>
+        <span style="flex-grow: 1; padding: 34px 40px; display: flex; flex-direction: column; gap: 12px; color: #1B1D22;">
+          <span style="font-size: 26px; font-weight: 700;">Two-year renewal</span>
+          <span style="font-size: 14px; color: #4A4F59;">Seats · Onboarding · Security review</span>
+          <span style="display: flex; gap: 10px; margin-top: 14px;"><span style="width: 150px; height: 90px; border-radius: 8px; background: #DCE3EE;"></span><span style="width: 150px; height: 90px; border-radius: 8px; background: #E6DDEE;"></span><span style="width: 150px; height: 90px; border-radius: 8px; background: #DDEEE3;"></span></span>
+        </span>
+      </div>
+      <div style="position: absolute; left: 50%; top: 0; transform: translateX(-50%); width: 300px; height: 54px; background: #000; border-radius: 0 0 12px 12px; padding: 0 11px; box-sizing: border-box; display: flex; flex-direction: column;">
+        <span style="height: 22px; display: flex; align-items: center; gap: 5px;"><span class="dot" style="background: #FF9F0A;"></span><span style="font-size: 8.5px; font-weight: 600;">Answer ready</span><span style="flex-grow: 1;"></span><span style="font-size: 8.5px; font-weight: 600; color: #FFC266;">They asked</span></span>
+        <span style="font-size: 9.5px; font-weight: 600; padding-top: 3px;">Yes to two years. Hold at 8%, offer the credit.</span>
+      </div>
+      <span style="position: absolute; left: 0; right: 0; bottom: 12px; display: flex; justify-content: center;"><span style="height: 24px; padding: 0 11px; border-radius: 12px; background: rgba(229,72,77,.9); font-size: 10.5px; font-weight: 600; display: inline-flex; align-items: center; gap: 6px;"><span class="dot" style="background: #fff;"></span>You are sharing your screen</span></span>
+    </div>
+    <span style="font-size: 12px; color: rgba(255,255,255,.7); line-height: 1.45; max-width: 672px;">Calla keeps working while you present. Peeks stay one line, so they do not cover your slides.</span>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 12px;">
+    <span class="caps">What they see</span>
+    <div class="screen">
+      <div style="position: absolute; left: 0; right: 0; top: 0; height: 22px; background: #000;"></div>
+      <div class="win">
+        <span class="bar"><span class="tl" style="background: #FF5F57;"></span><span class="tl" style="background: #FEBC2E;"></span><span class="tl" style="background: #28C840;"></span><span style="flex-grow: 1; text-align: center; font-size: 10.5px; color: #555;">Renewal proposal</span></span>
+        <span style="flex-grow: 1; padding: 34px 40px; display: flex; flex-direction: column; gap: 12px; color: #1B1D22;">
+          <span style="font-size: 26px; font-weight: 700;">Two-year renewal</span>
+          <span style="font-size: 14px; color: #4A4F59;">Seats · Onboarding · Security review</span>
+          <span style="display: flex; gap: 10px; margin-top: 14px;"><span style="width: 150px; height: 90px; border-radius: 8px; background: #DCE3EE;"></span><span style="width: 150px; height: 90px; border-radius: 8px; background: #E6DDEE;"></span><span style="width: 150px; height: 90px; border-radius: 8px; background: #DDEEE3;"></span></span>
+        </span>
+      </div>
+    </div>
+    <span style="font-size: 12px; color: rgba(255,255,255,.7); line-height: 1.45; max-width: 672px;">No notch panel, no floating window, no dot. Calla is left out of every share and recording, always, with no setting to forget.</span>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":560}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

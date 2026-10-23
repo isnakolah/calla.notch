@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Call panel, only hearing you</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+body{margin:0;background:#000;font-family:system-ui,-apple-system,"SF Pro Text",sans-serif;color:#fff}
+a{color:#6CB8FF}a:hover{color:#9ACFFF}
+button{font:inherit;color:inherit;border:0;background:none;padding:0;cursor:pointer}
+.caps{font:700 9.5px/1 system-ui,-apple-system,sans-serif;letter-spacing:.09em;text-transform:uppercase;color:rgba(255,255,255,.55)}
+.mono{font-family:ui-monospace,"SF Mono",Menlo,monospace;font-variant-numeric:tabular-nums}
+.ico{width:28px;height:28px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;flex:none}
+.end{height:26px;padding:0 12px 0 10px;border-radius:13px;background:rgba(255,107,107,.16);color:#FF8A8A;font-size:11px;font-weight:700;display:inline-flex;align-items:center;gap:6px;flex:none}
+.fix{height:30px;padding:0 15px;border-radius:15px;background:#FFA94D;color:rgba(0,0,0,.86);font-size:12.5px;font-weight:600;display:inline-flex;align-items:center;flex:none}
+.tb{height:30px;padding:0 10px;border-radius:9px;font-size:12.5px;color:rgba(255,255,255,.78);display:inline-flex;align-items:center}
+.tb:hover{background:rgba(255,255,255,.08)}
+</style>
+</helmet>
+
+<div style="width: 600px; height: 280px; background: #000; border-radius: 0 0 28px 28px; box-sizing: border-box; padding: 0 20px 14px; display: flex; flex-direction: column; gap: 10px; overflow: hidden; position: relative;">
+  <div style="position: absolute; left: 10px; top: 30px; width: 340px; height: 170px; border-radius: 50%; background: radial-gradient(closest-side, rgba(255,169,77,.18), rgba(0,0,0,0)); filter: blur(28px); pointer-events: none;"></div>
+  <div style="height: 34px; display: flex; align-items: center; position: relative;">
+    <span style="width: 180px; display: flex; align-items: center; gap: 8px;">
+      <span style="width: 7px; height: 7px; border-radius: 50%; background: #FFA94D; box-shadow: 0 0 0 3px rgba(255,169,77,.22);"></span>
+      <span style="font-size: 12px; font-weight: 600; color: #FFA94D;">Only you</span>
+    </span>
+    <span style="flex-grow: 1;"></span>
+    <span style="width: 180px; display: flex; align-items: center; justify-content: flex-end;">
+      <span class="mono" style="font-size: 12px; color: rgba(255,255,255,.8);">08:47</span>
+    </span>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 8px; padding: 4px 8px 0; position: relative;">
+    <span style="font-size: 19px; font-weight: 600; letter-spacing: -.01em;">Their side isn’t coming through</span>
+    <span style="font-size: 13px; line-height: 1.45; color: rgba(255,255,255,.72); max-width: 470px;">Nothing they said since 08:10 was heard, probably because your headphones changed. You are still being written down, and the call is safe.</span>
+    <span style="display: flex; gap: 6px; align-items: center; padding-top: 6px;"><button class="fix">Reconnect their audio</button><button class="tb">Keep going with only me</button></span>
+  </div>
+
+  <div style="display: flex; align-items: center; gap: 10px; margin-top: auto; padding: 0 8px; position: relative;">
+    <span style="font-size: 11px; color: rgba(255,255,255,.5);">Where it stands, up to 08:10: two-year deal, security letter first.</span>
+    <span style="flex-grow: 1;"></span>
+    <button class="end"><svg width="9" height="9" viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="5" width="14" height="14" rx="2" fill="#FF8A8A"/></svg>End call</button>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":600,"height":280}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,180 @@
+{
+  "v": 3,
+  "createdOnFiles": {
+    "v": 1,
+    "at": "2026-10-23T13:40:00Z"
+  },
+  "title": "Calla Zen Mode",
+  "launch": {
+    "view": "canvas"
+  },
+  "pages": [],
+  "boards": {
+    "Main.dc.html": {
+      "x": 0,
+      "y": 0,
+      "w": 1280,
+      "h": 800,
+      "title": "Prototype · zen, hover, click, through a whole call",
+      "is_interactive": true
+    },
+    "ZenStates.dc.html": {
+      "x": 0,
+      "y": 1180,
+      "w": 1360,
+      "h": 760,
+      "title": "Zen · what the one line says, in priority order"
+    },
+    "ZenLevels.dc.html": {
+      "x": 0,
+      "y": 2320,
+      "w": 1360,
+      "h": 440,
+      "title": "Zen · how much it shows"
+    },
+    "ZenSettings.dc.html": {
+      "x": 1440,
+      "y": 2320,
+      "w": 640,
+      "h": 560,
+      "title": "Settings › Calls › Zen"
+    },
+    "PanelCompact.dc.html": {
+      "x": 0,
+      "y": 3260,
+      "w": 600,
+      "h": 280,
+      "title": "Click · compact: content first, controls in the band"
+    },
+    "PanelFull.dc.html": {
+      "x": 680,
+      "y": 3260,
+      "w": 600,
+      "h": 360,
+      "title": "Click · full: the account beside the transcript"
+    },
+    "PanelTrouble.dc.html": {
+      "x": 1360,
+      "y": 3260,
+      "w": 600,
+      "h": 280,
+      "title": "Click · only hearing you: one fix, call carries on"
+    },
+    "PanelToday.dc.html": {
+      "x": 2040,
+      "y": 3260,
+      "w": 600,
+      "h": 280,
+      "title": "For comparison · the compact panel today"
+    },
+    "FloatContext.dc.html": {
+      "x": 0,
+      "y": 4220,
+      "w": 1280,
+      "h": 800,
+      "title": "Floating · beside the video (click its buttons)",
+      "is_interactive": true
+    },
+    "FloatFull.dc.html": {
+      "x": 1360,
+      "y": 4220,
+      "w": 440,
+      "h": 700,
+      "title": "Floating · the window, up close"
+    },
+    "FloatStrip.dc.html": {
+      "x": 1880,
+      "y": 4220,
+      "w": 440,
+      "h": 240,
+      "title": "Floating · shrunk to a strip"
+    },
+    "FloatTrouble.dc.html": {
+      "x": 2400,
+      "y": 4220,
+      "w": 440,
+      "h": 420,
+      "title": "Floating · only hearing you"
+    }
+  },
+  "order": [
+    "Main.dc.html",
+    "ZenStates.dc.html",
+    "ZenLevels.dc.html",
+    "ZenSettings.dc.html",
+    "PanelCompact.dc.html",
+    "PanelFull.dc.html",
+    "PanelTrouble.dc.html",
+    "PanelToday.dc.html",
+    "FloatContext.dc.html",
+    "FloatFull.dc.html",
+    "FloatStrip.dc.html",
+    "FloatTrouble.dc.html"
+  ],
+  "notes": {
+    "t-proto": {
+      "x": 0,
+      "y": -300,
+      "text": "Zen keeps you company; a click shows the call",
+      "kind": "title1",
+      "maxW": 1280
+    },
+    "s-proto": {
+      "x": -380,
+      "y": 0,
+      "w": 300,
+      "text": "Zen is the call's resting state, on whenever the pointer is away from the notch.\n\nWhy it felt missing: today zen draws nothing under the notch until the first summary, minutes in. Now it always says something true from the first second.\n\nThe transcript only appears when the panel is fully open. Zen and compact show Calla's points.\n\nHover: compact. Leave: back to zen after 2 s. Expand for the full panel.",
+      "fill": "blue"
+    },
+    "t-states": {
+      "x": 0,
+      "y": 880,
+      "text": "One line, always true, never more than it needs",
+      "kind": "title1",
+      "maxW": 1360
+    },
+    "s-states": {
+      "x": -380,
+      "y": 1180,
+      "w": 300,
+      "text": "Priority, highest first:\n1. Something needs you\n2. A new point (\"New\" for 6 s)\n3. The newest point, and the ones before\n4. Before the first point: the meeting and who is in it\n5. Nothing said yet\n\nNo transcript in zen. Motion only marks a change.",
+      "fill": "green"
+    },
+    "t-levels": {
+      "x": 0,
+      "y": 2020,
+      "text": "Three levels, one setting",
+      "kind": "title1",
+      "maxW": 2080
+    },
+    "t-panel": {
+      "x": 0,
+      "y": 2960,
+      "text": "When you click: the call, not a status page",
+      "kind": "title1",
+      "maxW": 2640
+    },
+    "s-panel": {
+      "x": -380,
+      "y": 3260,
+      "w": 300,
+      "text": "Today's compact panel spends its biggest type on \"Listening to both sides\", four large buttons, and pushes where the call stands into one grey line.\n\nNow: status shrinks to the band (dot, one word, clock), controls become quiet icons beside it, and the content takes the panel.",
+      "fill": "orange"
+    },
+    "t-float": {
+      "x": 0,
+      "y": 3920,
+      "text": "The floating window: a small, calm instrument beside the faces",
+      "kind": "title1",
+      "maxW": 2840
+    },
+    "s-float": {
+      "x": -380,
+      "y": 4220,
+      "w": 300,
+      "text": "What changes from today's window:\n\n· The meeting has a name and the state has a word, up top where you drag it.\n· Where it stands is the hero, not one block among many.\n· People are faces (initials, the same colours as the call) and the one speaking is marked.\n· Ask lives at the bottom, where you type.\n· Glass that blurs what is behind it, one hairline, one soft shadow.\n· Shrinks to a strip; never covers more than it must.",
+      "fill": "teal"
+    }
+  },
+  "designSystems": []
+}

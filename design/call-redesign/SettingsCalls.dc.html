@@ -1,0 +1,194 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Settings, Calls</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+body{margin:0;background:#141416;font-family:system-ui,-apple-system,"SF Pro Text",sans-serif;color:#fff}
+a{color:#409CFF}a:hover{color:#6BB2FF}
+button{font:inherit;color:inherit;border:0;background:none;padding:0;cursor:pointer}
+.side{display:flex;align-items:center;gap:9px;height:30px;padding:0 10px;border-radius:7px;font-size:13px;color:rgba(255,255,255,.86);text-decoration:none}
+.side:hover{background:rgba(255,255,255,.06);color:#fff}
+.grp{font-size:11px;font-weight:600;color:rgba(255,255,255,.5);padding:14px 10px 4px}
+.card{background:#232326;border:1px solid rgba(255,255,255,.08);border-radius:12px}
+.row{display:flex;align-items:center;gap:12px;min-height:52px;padding:9px 14px;box-sizing:border-box;flex-wrap:wrap}
+.row + .row{border-top:1px solid rgba(255,255,255,.07)}
+.txt{display:flex;flex-direction:column;gap:2px;flex:1 1 280px;min-width:0}
+.ttl{font-size:13px;color:#fff}
+.det{font-size:11.5px;color:rgba(255,255,255,.6);line-height:1.35}
+.btn{height:28px;padding:0 12px;border-radius:7px;background:rgba(255,255,255,.10);font-size:12.5px;color:#fff;display:inline-flex;align-items:center;gap:6px;flex:none}
+.btn:hover{background:rgba(255,255,255,.16)}
+.h2{font-size:13px;font-weight:600;color:#fff;margin:24px 0 8px 4px;display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
+.sw{appearance:none;-webkit-appearance:none;width:34px;height:20px;border-radius:10px;background:rgba(255,255,255,.18);position:relative;margin:0;cursor:pointer;flex:none}
+.sw::after{content:"";position:absolute;left:2px;top:2px;width:16px;height:16px;border-radius:50%;background:#fff;transition:left .15s}
+.sw:checked{background:#30D158}.sw:checked::after{left:16px}
+.seg{display:inline-flex;padding:2px;border-radius:8px;background:rgba(255,255,255,.08);flex:none}
+.seg label{height:24px;padding:0 11px;border-radius:6px;font-size:12px;color:rgba(255,255,255,.78);display:inline-flex;align-items:center;cursor:pointer}
+.seg input{position:absolute;opacity:0;width:1px;height:1px}
+.on{background:rgba(255,255,255,.18);color:#fff !important}
+.pop{height:28px;padding:0 10px;border-radius:7px;background:rgba(255,255,255,.10);font:12.5px system-ui,sans-serif;color:#fff;border:0;flex:none}
+.brain{flex:1 1 220px;min-width:0;display:flex;flex-direction:column;gap:6px;padding:13px 14px;border-radius:12px;background:#232326;border:1px solid rgba(255,255,255,.08);cursor:pointer}
+.ok{display:flex;align-items:center;gap:7px;font-size:12.5px;color:rgba(255,255,255,.86)}
+</style>
+</helmet>
+
+<div style="width: 100%; min-height: 1240px; background: #141416; box-sizing: border-box; padding: 24px 16px;">
+  <div style="max-width: 1200px; margin: 0 auto; border-radius: 14px; overflow: hidden; border: 1px solid rgba(255,255,255,.10); background: #1C1C1F; box-shadow: 0 30px 70px rgba(0,0,0,.45);">
+    <div style="display: flex; flex-wrap: wrap;">
+
+      <nav aria-label="Settings" style="flex: 1 1 220px; max-width: 100%; background: #19191B; border-right: 1px solid rgba(255,255,255,.06); padding: 14px 10px 20px; box-sizing: border-box; display: flex; flex-direction: column; gap: 2px;">
+        <div style="display: flex; gap: 8px; padding: 0 6px 10px;">
+          <span style="width: 12px; height: 12px; border-radius: 50%; background: #FF5F57;"></span>
+          <span style="width: 12px; height: 12px; border-radius: 50%; background: #FEBC2E;"></span>
+          <span style="width: 12px; height: 12px; border-radius: 50%; background: #28C840;"></span>
+        </div>
+        <label style="display: flex; align-items: center; gap: 7px; height: 30px; border-radius: 8px; background: rgba(255,255,255,.07); padding: 0 9px; margin-bottom: 6px;">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.55)" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+          <input type="search" aria-label="Search settings" placeholder="Search" style="flex-grow: 1; min-width: 0; background: none; border: 0; outline: none; color: #fff; font: 13px system-ui, sans-serif;">
+        </label>
+        <a class="side" href="#">Home</a>
+        <span class="grp">Notch</span>
+        <a class="side" href="#">Appearance</a>
+        <a class="side" href="#">Music</a>
+        <a class="side" href="#">Calendar</a>
+        <a class="side" href="#">Shelf</a>
+        <a class="side" href="#">Focus Timer</a>
+        <span class="grp">Calls</span>
+        <a class="side" href="#" aria-current="page" style="background: #0A84FF; color: #fff;">Calls</a>
+        <a class="side" href="SettingsNotes.dc.html">Notes for Calla</a>
+        <a class="side" href="#">Past calls</a>
+        <a class="side" href="#">Screen Quiz</a>
+        <span class="grp">App</span>
+        <a class="side" href="#">General</a>
+        <a class="side" href="#">Permissions</a>
+        <a class="side" href="#">About &amp; Updates</a>
+      </nav>
+
+      <main style="flex: 999 1 560px; min-width: 0; padding: 26px 30px 34px; box-sizing: border-box;">
+        <h1 style="margin: 0; font-size: 22px; font-weight: 700;">Calls</h1>
+        <p style="margin: 5px 0 0; font-size: 13px; color: rgba(255,255,255,.68); line-height: 1.45;">How Calla helps before, during and after a call. The defaults work. Change only what you want different.</p>
+
+        <div class="card" style="margin-top: 18px; padding: 16px; display: flex; align-items: center; gap: 16px; flex-wrap: wrap;">
+          <span style="width: 40px; height: 40px; border-radius: 12px; background: rgba(48,209,88,.16); display: flex; align-items: center; justify-content: center; flex: none;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#30D158" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.2 4.2L19 7"/></svg></span>
+          <span style="display: flex; flex-direction: column; gap: 6px; flex: 1 1 300px; min-width: 0;">
+            <span style="font-size: 15px; font-weight: 600;">Ready for your next call</span>
+            <span style="display: flex; gap: 16px; flex-wrap: wrap;">
+              <span class="ok"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#30D158" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.2 4.2L19 7"/></svg>Hears you</span>
+              <span class="ok"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#30D158" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.2 4.2L19 7"/></svg>Hears them</span>
+              <span class="ok"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#30D158" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.2 4.2L19 7"/></svg>Answers on this Mac</span>
+              <span class="ok"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#30D158" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.2 4.2L19 7"/></svg>Watching 2 calendars</span>
+            </span>
+          </span>
+          <button class="btn">Try a 30-second test call</button>
+        </div>
+
+        <div class="h2">Before a call</div>
+        <div class="card">
+          <div class="row">
+            <span class="txt"><span class="ttl">Get ready when a meeting is near</span><span class="det">The notch shows what Calla prepared for meetings with a call link.</span></span>
+            <select class="pop" aria-label="When to get ready"><option>2 minutes before</option><option>5 minutes before</option><option>When I join</option><option>Never</option></select>
+          </div>
+          <div class="row">
+            <span class="txt"><span class="ttl">Start listening on its own when I join</span><span class="det">Otherwise Calla waits for you to click Start listening.</span></span>
+            <input type="checkbox" class="sw" checked aria-label="Start listening on its own">
+          </div>
+          <div class="row">
+            <span class="txt"><span class="ttl">Pause my VPN during calls</span><span class="det">Turns it back on when the call ends. Helps when calls stutter.</span></span>
+            <input type="checkbox" class="sw" aria-label="Pause VPN during calls">
+          </div>
+        </div>
+
+        <div class="h2">During a call</div>
+        <div class="card">
+          <div class="row">
+            <span class="txt"><span class="ttl">Show answers</span><span class="det">An answer is suggested whenever someone asks you something.</span></span>
+            <span class="seg" role="radiogroup" aria-label="Show answers"><label class="on"><input type="radio" name="show" checked>Right away</label><label><input type="radio" name="show">When I open the notch</label></span>
+          </div>
+          <div class="row">
+            <span class="txt"><span class="ttl">Where the call panel lives</span><span class="det">Floating stays on top of every app. You can always switch during a call with ⌥⌘F.</span></span>
+            <span class="seg" role="radiogroup" aria-label="Where the call panel lives"><label class="on"><input type="radio" name="where" checked>In the notch</label><label><input type="radio" name="where">Floating</label><label><input type="radio" name="where">Where I left it</label></span>
+          </div>
+          <div class="row">
+            <span class="txt"><span class="ttl">Answer length</span><span class="det">Short answers fit in a glance while you are talking.</span></span>
+            <span class="seg" role="radiogroup" aria-label="Answer length"><label class="on"><input type="radio" name="len" checked>Short</label><label><input type="radio" name="len">Detailed</label></span>
+          </div>
+          <div class="row">
+            <span class="txt"><span class="ttl">Ask Calla</span><span class="det">Press anywhere, even while another app is in front.</span></span>
+            <button class="btn" aria-label="Change shortcut, currently Option Space" style="font-family: ui-rounded, system-ui, sans-serif;">⌥ Space</button>
+          </div>
+          <div class="row">
+            <span class="txt"><span class="ttl">Running summary in the closed notch</span><span class="det">Shows the latest line of “where it stands” beside the camera.</span></span>
+            <input type="checkbox" class="sw" checked aria-label="Running summary">
+          </div>
+          <div class="row">
+            <span class="txt"><span class="ttl">Hidden from screen sharing and recordings</span><span class="det">Always on. Nobody you share your screen with can see Calla.</span></span>
+            <span style="display: flex; align-items: center; gap: 6px; font-size: 12px; color: #30D158;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#30D158" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>Always</span>
+          </div>
+        </div>
+
+        <div class="h2">After a call</div>
+        <div class="card">
+          <div class="row">
+            <span class="txt"><span class="ttl">Also save each call as a folder</span><span class="det">Documents › Calls, with the recap and transcript, for Finder and Spotlight.</span></span>
+            <input type="checkbox" class="sw" checked aria-label="Save calls as folders">
+          </div>
+          <div class="row">
+            <span class="txt"><span class="ttl">Keep the audio</span><span class="det">Both sides, about 30 MB an hour. Off means only text is kept.</span></span>
+            <input type="checkbox" class="sw" aria-label="Keep the audio">
+          </div>
+          <div class="row">
+            <span class="txt"><span class="ttl">Learn people’s voices</span><span class="det">Puts names on what was said in later calls. Stays on this Mac.</span></span>
+            <input type="checkbox" class="sw" checked aria-label="Learn voices">
+          </div>
+          <div class="row">
+            <span class="txt"><span class="ttl">Back up calls to my archive</span><span class="det">Last backed up 4 minutes ago.</span></span>
+            <input type="checkbox" class="sw" checked aria-label="Back up calls">
+          </div>
+        </div>
+
+        <div class="h2">Where answers come from</div>
+        <fieldset style="border: 0; margin: 0; padding: 0; display: flex; gap: 10px; flex-wrap: wrap;">
+          <legend style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0);">Where answers come from</legend>
+          <label class="brain" style="background: rgba(10,132,255,.12); border-color: rgba(10,132,255,.7);">
+            <span style="display: flex; align-items: center; gap: 7px;"><input type="radio" name="brain" checked style="accent-color: #0A84FF; margin: 0;"><span class="ttl" style="font-weight: 600;">This Mac</span></span>
+            <span class="det">Most private. Works offline. A little slower.</span>
+          </label>
+          <label class="brain">
+            <span style="display: flex; align-items: center; gap: 7px;"><input type="radio" name="brain" style="accent-color: #0A84FF; margin: 0;"><span class="ttl" style="font-weight: 600;">Calla cloud</span></span>
+            <span class="det">Fastest. Only the words are sent, never audio.</span>
+          </label>
+          <label class="brain">
+            <span style="display: flex; align-items: center; gap: 7px;"><input type="radio" name="brain" style="accent-color: #0A84FF; margin: 0;"><span class="ttl" style="font-weight: 600;">Your Google account</span></span>
+            <span class="det">Uses Gemini. Sign in once.</span>
+          </label>
+        </fieldset>
+
+        <div class="card" style="margin-top: 22px;">
+          <div class="row">
+            <span class="txt"><span class="ttl">Kinds of call</span><span class="det">Sales, one-on-one, standup and 9 more. Calla picks one from the invite and you can change it.</span></span>
+            <button class="btn">Edit kinds</button>
+          </div>
+          <div class="row">
+            <span class="txt"><span class="ttl">Advanced</span><span class="det">Speech model, custom instructions, diagnostics.</span></span>
+            <button class="btn" aria-expanded="false">Show
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
+            </button>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":1240}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Floating call window</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+body{margin:0;background:#202227;font-family:system-ui,-apple-system,"SF Pro Text",sans-serif;color:#fff}
+a{color:#6CB8FF}a:hover{color:#9ACFFF}
+button{font:inherit;color:inherit;border:0;background:none;padding:0;cursor:pointer}
+.caps{font:700 9.5px/1 system-ui,-apple-system,sans-serif;letter-spacing:.09em;text-transform:uppercase;color:rgba(255,255,255,.55)}
+.mono{font-family:ui-monospace,"SF Mono",Menlo,monospace;font-variant-numeric:tabular-nums}
+.glass{background:rgba(24,25,30,.74);-webkit-backdrop-filter:blur(30px) saturate(1.6);backdrop-filter:blur(30px) saturate(1.6);border:1px solid rgba(255,255,255,.13);box-shadow:0 34px 90px rgba(0,0,0,.55),0 2px 6px rgba(0,0,0,.3),inset 0 1px 0 rgba(255,255,255,.09)}
+.ico{width:30px;height:30px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;flex:none}
+.av{width:24px;height:24px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex:none}
+.end{height:32px;padding:0 14px 0 12px;border-radius:16px;background:rgba(255,107,107,.16);color:#FF8A8A;font-size:12px;font-weight:700;display:inline-flex;align-items:center;gap:7px;flex:none}
+.li{display:flex;gap:8px;align-items:baseline;font-size:12.5px;line-height:1.4}
+.turn{display:flex;gap:10px;align-items:flex-start}
+.tn{font-size:11.5px;font-weight:600;color:rgba(255,255,255,.85)}
+.tt{font-size:12.5px;line-height:1.42;color:rgba(255,255,255,.62)}
+</style>
+</helmet>
+
+<div style="width: 440px; height: 700px; position: relative; overflow: hidden; background: #202227;">
+  <div aria-hidden="true" style="position: absolute; left: -60px; top: 80px; width: 260px; height: 220px; border-radius: 16px; background: #3A4A5E;"></div>
+  <div aria-hidden="true" style="position: absolute; left: 230px; top: 300px; width: 280px; height: 240px; border-radius: 16px; background: #4E3F5C;"></div>
+  <div aria-hidden="true" style="position: absolute; left: -40px; top: 520px; width: 240px; height: 200px; border-radius: 16px; background: #3F5A4A;"></div>
+
+  <div class="glass" style="position: absolute; left: 10px; top: 10px; width: 420px; height: 680px; border-radius: 24px; display: flex; flex-direction: column; overflow: hidden; box-sizing: border-box;">
+    <div style="padding: 10px 12px 0 20px; display: flex; flex-direction: column;">
+      <span aria-hidden="true" style="align-self: center; width: 36px; height: 5px; border-radius: 3px; background: rgba(255,255,255,.24);"></span>
+      <div style="display: flex; align-items: center; gap: 12px; padding-top: 8px;">
+        <span style="width: 8px; height: 8px; border-radius: 50%; background: #5BE49B; box-shadow: 0 0 0 4px rgba(91,228,155,.18); flex: none;"></span>
+        <span style="display: flex; flex-direction: column; gap: 3px; flex-grow: 1; min-width: 0;">
+          <span style="font-size: 13.5px; font-weight: 600;">Acme renewal sync</span>
+          <span style="font-size: 11.5px; color: rgba(255,255,255,.6);">Listening to both sides · <span class="mono">14:02</span></span>
+        </span>
+        <button class="ico" aria-label="Shrink to a strip"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.8)" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M6 12h12"/></svg></button>
+        <button class="ico" aria-label="Put back in the notch"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.8)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 4h16"/><path d="M12 20V9M7 13l5-5 5 5"/></svg></button>
+      </div>
+    </div>
+
+    <div style="padding: 22px 20px 4px; display: flex; flex-direction: column; gap: 9px;">
+      <span class="caps" style="color: #5BE49B;">Where it stands</span>
+      <span style="font-size: 19px; font-weight: 500; line-height: 1.42; letter-spacing: -.012em;">They want a two-year deal. Finance needs the security letter before anything is signed.</span>
+      <div style="display: flex; gap: 18px; padding-top: 10px;">
+        <div style="flex: 1 1 0; display: flex; flex-direction: column; gap: 7px;">
+          <span class="caps">Settled</span>
+          <span class="li" style="color: rgba(255,255,255,.78);"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#5BE49B" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex: none;"><path d="M5 12.5l4.2 4.2L19 7"/></svg>Two-year term</span>
+          <span class="li" style="color: rgba(255,255,255,.78);"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#5BE49B" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex: none;"><path d="M5 12.5l4.2 4.2L19 7"/></svg>Dana signs</span>
+        </div>
+        <div style="flex: 1 1 0; display: flex; flex-direction: column; gap: 7px;">
+          <span class="caps" style="color: #FFD15C;">Still open</span>
+          <span class="li" style="color: rgba(255,255,255,.94);"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#FFD15C" stroke-width="3" aria-hidden="true" style="flex: none;"><circle cx="12" cy="12" r="8"/></svg>Seat count, 40 to 60</span>
+          <span class="li" style="color: rgba(255,255,255,.94);"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#FFD15C" stroke-width="3" aria-hidden="true" style="flex: none;"><circle cx="12" cy="12" r="8"/></svg>Who approves after Dana</span>
+        </div>
+      </div>
+    </div>
+
+    <div style="height: 1px; background: rgba(255,255,255,.09); margin: 16px 20px 0;"></div>
+
+    <div style="padding: 14px 20px 6px; display: flex; flex-direction: column; gap: 11px; flex-grow: 1; min-height: 0; overflow: hidden;">
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <span class="caps">Live transcript</span>
+        <span style="flex-grow: 1;"></span>
+        <svg width="18" height="10" viewBox="0 0 18 10" aria-hidden="true"><g fill="#5BE49B"><rect x="0" y="3" width="2.2" height="4" rx="1.1"/><rect x="4" y="1" width="2.2" height="8" rx="1.1"/><rect x="8" y="0" width="2.2" height="10" rx="1.1"/><rect x="12" y="2" width="2.2" height="6" rx="1.1"/><rect x="16" y="4" width="2" height="2" rx="1"/></g></svg>
+        <span style="font-size: 11px; color: rgba(255,255,255,.6);">Marco is speaking</span>
+      </div>
+      <div class="turn"><span class="av" style="background: #3A4A5E; color: #CFE2F7;">D</span><span style="display: flex; flex-direction: column; gap: 2px;"><span style="display: flex; gap: 7px; align-items: baseline;"><span class="tn">Dana</span><span class="mono" style="font-size: 10.5px; color: rgba(255,255,255,.42);">13:20</span></span><span class="tt">It has to clear finance before anything gets signed.</span></span></div>
+      <div class="turn"><span class="av" style="background: #5C4A36; color: #F5E3CC;">Y</span><span style="display: flex; flex-direction: column; gap: 2px;"><span style="display: flex; gap: 7px; align-items: baseline;"><span class="tn">You</span><span class="mono" style="font-size: 10.5px; color: rgba(255,255,255,.42);">13:31</span></span><span class="tt">Understood. How many seats are we talking about?</span></span></div>
+      <div class="turn"><span class="av" style="background: #4E3F5C; color: #E7D6F5; box-shadow: 0 0 0 2px #5BE49B;">M</span><span style="display: flex; flex-direction: column; gap: 2px;"><span style="display: flex; gap: 7px; align-items: baseline;"><span class="tn">Marco</span><span class="mono" style="font-size: 10.5px; color: rgba(255,255,255,.42);">13:48</span></span><span class="tt" style="color: #fff;">Probably 40, could be 60 by spring.</span></span></div>
+    </div>
+
+    <div style="display: flex; align-items: center; gap: 8px; padding: 12px 14px 14px;">
+      <label style="flex-grow: 1; height: 36px; border-radius: 18px; background: rgba(255,255,255,.07); border: 1px solid rgba(255,255,255,.08); display: flex; align-items: center; gap: 8px; padding: 0 14px;">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.55)" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+        <input type="text" aria-label="Ask about this call" placeholder="Ask about this call" style="flex-grow: 1; min-width: 0; background: none; border: 0; outline: none; color: #fff; font: 13px system-ui, -apple-system, sans-serif;">
+        <span class="mono" style="font-size: 10.5px; color: rgba(255,255,255,.45);">⌥⌘Q</span>
+      </label>
+      <button class="end"><svg width="9" height="9" viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="5" width="14" height="14" rx="2" fill="#FF8A8A"/></svg>End</button>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":440,"height":700}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>
