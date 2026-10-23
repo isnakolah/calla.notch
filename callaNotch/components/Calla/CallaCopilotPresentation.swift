@@ -215,6 +215,103 @@ extension CallaCopilotPresentation {
     }
 }
 
+// MARK: - Zen
+
+/// What the call says while it rests in zen: the island under the camera when
+/// the pointer is away.
+///
+/// Zen used to draw nothing under the notch until the first summary arrived,
+/// minutes into a call, so for the start of every call it looked as though it
+/// was not there at all. Now it always says something true, never shows the
+/// transcript (that is for the fully open panel), and carries no labels: the
+/// one word beside the dot says what is happening.
+enum CallaZen {
+    /// How much sits under the camera at rest.
+    enum Level: String, CaseIterable, Equatable {
+        /// The band beside the camera only.
+        case dot
+        /// The newest point, and the ones before it on one line.
+        case brief
+        /// Brief, plus what is still open.
+        case more
+
+        init(stored: String) {
+            self = Level(rawValue: stored) ?? .brief
+        }
+    }
+
+    /// A new point says "New" beside the dot for this long.
+    static let highlightSeconds: TimeInterval = 6
+
+    struct Content: Equatable {
+        /// The one word beside the dot.
+        let word: String
+        let tone: CallaCopilotPresentation.Tone
+        /// Up to two lines: the newest point, or before there is one, the meeting.
+        let main: String?
+        /// The main line is context rather than a point, so it is drawn quieter.
+        let mainIsQuiet: Bool
+        /// One line under it: the points before, or what is happening.
+        let before: String?
+        /// `more` only: what is still open.
+        let open: String?
+        /// Their side is missing; zen carries its one button.
+        let needsFix: Bool
+
+        var isEmpty: Bool { main == nil && before == nil && open == nil && !needsFix }
+    }
+
+    static func content(
+        level: Level,
+        halfDeaf: Bool,
+        catchingUp: Bool,
+        isNew: Bool,
+        points: [String],
+        openQuestions: [String],
+        meetingTitle: String?,
+        people: Int,
+        heardAnything: Bool
+    ) -> Content {
+        if halfDeaf {
+            // Shown at every level: a call that only hears you quietly produces
+            // nothing useful, so this is the one thing zen interrupts for.
+            return Content(word: "Only you", tone: .warning,
+                           main: "Their side isn’t coming through. You are still being written down.",
+                           mainIsQuiet: false, before: nil, open: nil, needsFix: true)
+        }
+        let points = points.map(flat).filter { !$0.isEmpty }
+        let word = isNew && !points.isEmpty ? "New" : (catchingUp ? "Catching up" : "Listening")
+        guard level != .dot else {
+            return Content(word: word, tone: .active, main: nil, mainIsQuiet: false,
+                           before: nil, open: nil, needsFix: false)
+        }
+        guard let newest = points.last else {
+            let title = meetingTitle.map(flat).flatMap { $0.isEmpty ? nil : $0 }
+            let crowd = people > 1 ? "\(people) people" : nil
+            let main = [title, crowd].compactMap { $0 }.joined(separator: " · ")
+            return Content(
+                word: word, tone: .active,
+                main: main.isEmpty ? nil : main, mainIsQuiet: true,
+                before: heardAnything
+                    ? "Hearing both sides. The first points come in about a minute."
+                    : "Listening started. Nothing said yet.",
+                open: nil, needsFix: false)
+        }
+        let earlier = points.dropLast().suffix(2)
+        let open = openQuestions.map(flat).filter { !$0.isEmpty }.prefix(2)
+        return Content(
+            word: word, tone: .active,
+            main: newest, mainIsQuiet: false,
+            before: earlier.isEmpty ? nil : earlier.joined(separator: " · "),
+            open: level == .more && !open.isEmpty ? open.joined(separator: ", ") : nil,
+            needsFix: false)
+    }
+
+    private static func flat(_ value: String) -> String {
+        value.split(whereSeparator: { $0.isWhitespace || $0.isNewline }).joined(separator: " ")
+    }
+}
+
 // MARK: - A meeting getting close
 
 /// How the closed notch treats a linked meeting as its start approaches.

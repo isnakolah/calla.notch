@@ -37,6 +37,7 @@ struct CallaCopilotLiveView: View {
     @State private var manualQuestion = ""
 
     @Default(.callaCopilotPanelSurface) private var surface
+    @ObservedObject private var zenState = CallaZenState.shared
 
     /// Answers as they arrive, newest last.
     ///
@@ -99,6 +100,7 @@ struct CallaCopilotLiveView: View {
                         .frame(height: 188)
                 }
             } else {
+                VStack(alignment: .leading, spacing: 10) {
                 HStack(alignment: .top, spacing: 0) {
                     VStack(alignment: .leading, spacing: 10) {
                         primary
@@ -119,6 +121,8 @@ struct CallaCopilotLiveView: View {
                         .frame(maxHeight: .infinity, alignment: .topLeading)
                         .transition(.opacity)
                 }
+                panelFooter(hint: nil)
+                }
             }
         }
         .foregroundStyle(NotchInk.primary)
@@ -138,6 +142,8 @@ struct CallaCopilotLiveView: View {
             if surface != "question" { session.markUnreadAnswer() }
         }
         .onReceive(transcriptTick) { _ in refresh() }
+        .onAppear { zenState.note(account.currentTopic) }
+        .onChange(of: account.currentTopic) { _, topic in zenState.note(topic) }
         .onReceive(NotificationCenter.default.publisher(for: .callaCallAskQuestion)) { _ in
             beginManualQuestion()
         }
@@ -521,14 +527,7 @@ struct CallaCopilotLiveView: View {
     }
 
     private var halfDeafBlock: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack(spacing: 8) {
-                CallaEyebrow("Only hearing you", tint: CallaCallInk.problem)
-                Spacer(minLength: 4)
-            }
-            .frame(height: 22)
-            halfDeafBanner
-        }
+        halfDeafPlain
     }
 
     /// Their side is missing, and the one press that fixes it.
@@ -579,11 +578,12 @@ struct CallaCopilotLiveView: View {
 
     // MARK: - Compact
 
-    /// Being in the call: what is being heard, the four things you might press,
-    /// and the words going by underneath.
+    /// Being in the call: the points Calla is writing as they come in — the
+    /// newest set large, the ones before it under it, what is still open —
+    /// and End. No transcript: that is for the full panel. The state, the
+    /// clock and the controls live in the band above.
     private var compactPanel: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            compactStatus
+        VStack(alignment: .leading, spacing: 10) {
             if let warning = callVPN.warning {
                 Text(warning)
                     .font(.system(size: 10, weight: .medium))
@@ -592,79 +592,167 @@ struct CallaCopilotLiveView: View {
                     .help(warning)
             }
             if mode == .halfDeaf {
-                VStack(alignment: .leading, spacing: 12) {
-                    halfDeafBanner
-                    HStack {
-                        Spacer(minLength: 0)
-                        CallaLargeButton(title: "End call", symbol: "stop.fill", role: .destructive,
-                                         height: 40) {
-                            engine.endCall(origin: "compactHalfDeafEnd")
-                        }
-                    }
-                }
-                .padding(.top, 18)
+                halfDeafPlain
             } else {
-                VStack(alignment: .leading, spacing: 12) {
-                    HStack(spacing: 10) {
-                        CallaScreenshotControl(compact: true, count: copilot.screenshotCount) { displayID in
-                            engine.takeScreenshot(displayID: displayID)
-                            NSHapticFeedbackManager.defaultPerformer.perform(.generic, performanceTime: .now)
-                        }
-                        CallaLargeButton(title: pinned ? "Unpin" : "Keep open",
-                                         symbol: pinned ? "pin.slash" : "pin",
-                                         selected: pinned) {
-                            AppDelegate.shared?.toggleUniversalNotchPin(for: vm)
-                        }
-                        CallaLargeButton(title: "Full view", symbol: "arrow.up.left.and.arrow.down.right") {
-                            session.toggleLayout()
-                        }
-                        Spacer(minLength: 0)
-                        CallaLargeButton(title: "End call", symbol: "stop.fill", role: .destructive) {
-                            engine.endCall(origin: "compactEnd")
-                        }
-                    }
-                    Spacer(minLength: 0)
-                    CallaTranscriptTicker(turns: turns)
-                }
-                .padding(.top, 18)
+                pointsFeed
             }
+            Spacer(minLength: 0)
+            panelFooter(hint: mode == .halfDeaf ? nil
+                        : "Points arrive as the call goes · the transcript is in full view")
         }
         .padding(.top, 4)
     }
 
     private var pinned: Bool { vm.isPinned || session.pinsNotchOpen }
 
-    private var compactStatus: some View {
-        HStack(spacing: 14) {
-            CallaWaveBars(tint: mode == .halfDeaf ? CallaCallInk.problem : CallaCallInk.summary,
-                          active: copilot.speaking != nil)
-                .scaleEffect(1.6)
-                .frame(width: 26, height: 22)
-            VStack(alignment: .leading, spacing: 3) {
-                Text(mode == .halfDeaf ? "Only hearing you" : "Listening to both sides")
-                    .font(.system(size: 20, weight: .semibold))
-                    .tracking(-0.2)
-                    .foregroundStyle(mode == .halfDeaf ? CallaCallInk.problem : NotchInk.primary)
-                Text(compactDetail)
-                    .font(.system(size: 13))
-                    .foregroundStyle(NotchInk.secondary)
-                    .lineLimit(1)
+    /// Every point so far, oldest first, as the account holds them.
+    private var allPoints: [String] {
+        (account.standing.isEmpty ? [] : [account.standing]) + account.points
+    }
+
+    private var pointsFeed: some View {
+        let points = allPoints
+        let earlier = Array(points.dropLast().suffix(3).reversed())
+        let open = Array(copilot.openQuestions.prefix(max(0, 4 - earlier.count)).prefix(2))
+        return VStack(alignment: .leading, spacing: 10) {
+            if let newest = points.last {
+                VStack(alignment: .leading, spacing: 5) {
+                    TimelineView(.periodic(from: .now, by: 1)) { context in
+                        HStack(spacing: 8) {
+                            if zenState.isNew(at: context.date) {
+                                Text("NEW")
+                                    .font(.system(size: 10, weight: .bold))
+                                    .tracking(notchCapsTracking)
+                                    .foregroundStyle(CallaCallInk.summary)
+                                    .transition(.opacity)
+                            }
+                            if catchingUp {
+                                CallaWaveBars(tint: CallaCallInk.summary)
+                                Text("catching up")
+                                    .font(.system(size: 11))
+                                    .foregroundStyle(NotchInk.tertiary)
+                            }
+                        }
+                        .frame(height: 12)
+                    }
+                    Text(newest)
+                        .font(.system(size: 16, weight: .semibold))
+                        .tracking(-0.15)
+                        .lineSpacing(2)
+                        .foregroundStyle(.white)
+                        .lineLimit(3)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .textSelection(.enabled)
+                        .help(newest)
+                        .id(newest)
+                        .transition(.opacity)
+                }
+                if !earlier.isEmpty || !open.isEmpty {
+                    Rectangle().fill(Color.white.opacity(0.10)).frame(height: 1)
+                    VStack(alignment: .leading, spacing: 7) {
+                        ForEach(Array(earlier.enumerated()), id: \.offset) { index, point in
+                            pointRow(point, mark: index == 0 ? .point : .settled)
+                        }
+                        ForEach(Array(open.enumerated()), id: \.offset) { _, question in
+                            pointRow(question, mark: .open)
+                        }
+                    }
+                }
+            } else {
+                // Before the first point: the meeting, and that both sides are
+                // heard — the same words zen uses, so the two never disagree.
+                let content = CallaZenReading.content(now: Date(), level: .brief)
+                VStack(alignment: .leading, spacing: 6) {
+                    if let main = content.main {
+                        Text(main)
+                            .font(.system(size: 16, weight: .semibold))
+                            .foregroundStyle(.white.opacity(0.85))
+                            .lineLimit(2)
+                    }
+                    if let before = content.before {
+                        Text(before)
+                            .font(.system(size: 13))
+                            .foregroundStyle(NotchInk.secondary)
+                            .lineLimit(2)
+                    }
+                }
             }
-            Spacer(minLength: 0)
+        }
+        .animation(.smooth(duration: 0.35), value: points)
+    }
+
+    private enum PointMark { case point, settled, open }
+
+    private func pointRow(_ text: String, mark: PointMark) -> some View {
+        HStack(alignment: .firstTextBaseline, spacing: 10) {
+            Group {
+                switch mark {
+                case .settled:
+                    Image(systemName: "checkmark")
+                        .font(.system(size: 8.5, weight: .heavy))
+                        .foregroundStyle(CallaCallInk.summary)
+                case .point:
+                    Circle().fill(Color.white.opacity(0.6)).frame(width: 5, height: 5)
+                case .open:
+                    Circle().strokeBorder(CallaCallInk.answer, lineWidth: 1.6).frame(width: 8, height: 8)
+                }
+            }
+            .frame(width: 10)
+            Text(mark == .open ? "Still open: \(text)" : text)
+                .font(.system(size: 12.5))
+                .foregroundStyle(.white.opacity(mark == .open ? 0.9 : 0.78))
+                .lineLimit(1)
+                .truncationMode(.tail)
+                .help(text)
         }
     }
 
-    private var compactDetail: String {
-        if mode == .halfDeaf { return "Screen Recording is off for the call host." }
-        if let topic = account.currentTopic { return "Where it stands · \(topic)" }
-        var parts: [String] = []
-        switch copilot.speaking {
-        case "me": parts.append("You are speaking")
-        case "them": parts.append("They are speaking")
-        default: break
+    /// Their side is missing: what happened, the one press that fixes it,
+    /// and the reassurance that the call is still being written down. Plain
+    /// type on the panel, not a box inside it.
+    private var halfDeafPlain: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Their side isn’t coming through")
+                .font(.system(size: 17, weight: .semibold))
+                .foregroundStyle(NotchInk.primary)
+            Text("Only your microphone is being captured, so you are still being written down. Allow call audio so the other side is heard too.")
+                .font(.system(size: 12.5))
+                .lineSpacing(1.5)
+                .foregroundStyle(NotchInk.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+            Button {
+                if let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenCapture") {
+                    NSWorkspace.shared.open(url)
+                }
+            } label: {
+                Text("Allow call audio")
+                    .font(.system(size: 12.5, weight: .semibold))
+                    .foregroundStyle(NotchAccent.onAccent)
+                    .padding(.horizontal, 15)
+                    .frame(height: 30)
+                    .background(Capsule().fill(CallaCallInk.problem))
+                    .contentShape(Capsule())
+            }
+            .buttonStyle(.plain)
+            .help("Open Screen Recording settings")
+            .padding(.top, 2)
         }
-        parts.append("\(copilot.turnCount) turn\(copilot.turnCount == 1 ? "" : "s") so far")
-        return parts.joined(separator: " · ")
+    }
+
+    /// One quiet line and End, at the foot of both layouts.
+    private func panelFooter(hint: String?) -> some View {
+        HStack(spacing: 10) {
+            if let hint {
+                Text(hint)
+                    .font(.system(size: 11))
+                    .foregroundStyle(NotchInk.tertiary)
+                    .lineLimit(1)
+            }
+            Spacer(minLength: 0)
+            CallaEndPill(title: "End call") { engine.endCall(origin: compact ? "compactEnd" : "fullEnd") }
+                .help("End the call")
+                .accessibilityLabel("End call")
+        }
     }
 
     // MARK: - Transcript
@@ -1128,14 +1216,13 @@ struct CallaCopilotLiveHeader: View {
         .animation(.smooth(duration: 0.2), value: selected)
     }
 
-    /// Screenshot, the two capture states, pin, layout and End, in that order.
-    /// Compact draws Screenshot and End as large buttons in the panel, so the
-    /// band leaves them out there.
+    /// Screenshot, the two capture states, float, pin and layout, in that
+    /// order, in both layouts. End sits at the foot of the panel, away from the
+    /// controls you press mid-sentence.
     private var trailing: some View {
         let pinned = vm.isPinned || session.pinsNotchOpen
         let full = session.layout == .full
         return HStack(spacing: 2) {
-            if full {
                 // What is being shared becomes context: the words on it go to
                 // the copilot, and the picture is filed with the call.
                 CallaScreenshotControl(compact: false, count: copilot.screenshotCount,
@@ -1152,7 +1239,6 @@ struct CallaCopilotLiveHeader: View {
                 .accessibilityLabel(copilot.screenshotCount > 0
                                     ? "Take a screenshot for context, \(copilot.screenshotCount) taken"
                                     : "Take a screenshot for context")
-            }
 
             CallaWingIndicator(symbol: copilot.micActive ? "mic" : "mic.slash",
                                tint: copilot.micActive ? Color.white.opacity(0.70) : NotchAccent.attention)
@@ -1209,12 +1295,6 @@ struct CallaCopilotLiveHeader: View {
                                        : "arrow.up.left.and.arrow.down.right",
                           shortcut: shortcutKeys(.copilotToggleLayout))
             .accessibilityLabel(full ? "Compact view" : "Full view")
-
-            if full {
-                CallaEndPill { engine.endCall(origin: "fullEnd") }
-                    .notchTooltip("End the call", symbol: "stop.fill", shortcut: shortcutKeys(.copilotToggleCall))
-                    .accessibilityLabel("End call")
-            }
         }
     }
 
@@ -1238,43 +1318,88 @@ struct CallaCopilotLiveHeader: View {
 
 // MARK: - Ambient (zen)
 
-/// The band beside the notch while a call rests in zen mode: the clock on the
-/// left, what the copilot is doing on the right. The hardware cutout sits
-/// between them, so the band reads as the notch itself carrying status.
+/// Zen's shared clock for "New": when the newest point arrived, so the band
+/// beside the camera and the island under it agree on it.
+@MainActor
+final class CallaZenState: ObservableObject {
+    static let shared = CallaZenState()
+    @Published private(set) var newUntil: Date?
+    private var lastPoint: String?
+
+    /// Called whenever the newest point may have changed. The first point of a
+    /// call is news too; the same point seen again is not.
+    func note(_ point: String?) {
+        guard let point, !point.isEmpty, point != lastPoint else { return }
+        let first = lastPoint == nil
+        lastPoint = point
+        // A panel opened mid-call has not "just" heard anything.
+        guard !first || CallaEngineClient.shared.status.copilot.turnCount > 0 else { return }
+        guard Defaults[.callaZenHighlight] else { return }
+        newUntil = Date().addingTimeInterval(CallaZen.highlightSeconds)
+    }
+
+    func isNew(at now: Date) -> Bool { newUntil.map { now < $0 } ?? false }
+
+    func reset() {
+        lastPoint = nil
+        newUntil = nil
+    }
+}
+
+/// The zen rules, read from the live call. One place, so the band and the
+/// island cannot disagree about what is happening.
+@MainActor
+enum CallaZenReading {
+    static func content(now: Date, level: CallaZen.Level) -> CallaZen.Content {
+        let copilot = CallaEngineClient.shared.status.copilot
+        let account = CallaCallAccount(copilot.summary)
+        let points = (account.standing.isEmpty ? [] : [account.standing]) + account.points
+        let meeting = CalendarManager.shared.selectedCallMeeting
+        let people = meeting.flatMap { event -> Int? in
+            guard let title = copilot.meetingTitle, title == event.title else { return nil }
+            return event.participants.count
+        } ?? 0
+        return CallaZen.content(
+            level: level,
+            halfDeaf: copilot.running && !copilot.systemAudioActive,
+            catchingUp: copilot.summaryWorking || copilot.working == "summary",
+            isNew: CallaZenState.shared.isNew(at: now),
+            points: points,
+            openQuestions: copilot.openQuestions,
+            meetingTitle: copilot.meetingTitle,
+            people: people,
+            heardAnything: copilot.turnCount > 0)
+    }
+}
+
+/// The band beside the notch while a call rests in zen: the dot and one word
+/// on the left — "Listening", "New", "Only you" — and the clock on the right,
+/// with the hardware cutout between them, so the band reads as the notch
+/// itself carrying status. The word replaces the labels zen used to print.
 struct CallaAmbientWings: View {
     @ObservedObject private var engine = CallaEngineClient.shared
+    @ObservedObject private var zenState = CallaZenState.shared
     @EnvironmentObject private var vm: CallaViewModel
+    @Default(.callaZenLevel) private var levelValue
     @State private var now = Date()
     private let clockTick = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
 
     private var copilot: CallaCopilotStatus { engine.status.copilot }
 
-    /// What is happening, in the colour of what it will produce.
-    private var status: (text: String, tint: Color, moving: Bool) {
-        if copilot.running && !copilot.systemAudioActive { return ("Only you", CallaCallInk.problem, false) }
-        if !CallaCopilotLiveView.answersRetired, copilot.questionWorking || copilot.working == "answer" {
-            return ("Drafting", CallaCallInk.answer, true)
-        }
-        if copilot.summaryWorking || copilot.working == "summary" { return ("Catching up", CallaCallInk.summary, true) }
-        if !CallaCopilotLiveView.answersRetired, copilot.hasSuggestion {
-            return ("Answer", CallaCallInk.answer, copilot.speaking != nil)
-        }
-        return ("Listening", CallaCallInk.summary, copilot.speaking != nil)
-    }
-
     var body: some View {
-        let status = status
+        let content = CallaZenReading.content(now: now, level: CallaZen.Level(stored: levelValue))
+        let warning = content.tone == .warning
+        let tint = warning ? CallaCallInk.problem : CallaCallInk.summary
         HStack(spacing: 0) {
             HStack(spacing: 8) {
                 Circle()
-                    .fill(status.tint)
+                    .fill(tint)
                     .frame(width: 7, height: 7)
-                    .background(Circle().fill(status.tint.opacity(0.22)).padding(-4))
-                if let elapsed = CallaCopilotPresentation.elapsed(since: copilot.startedAt, now: now) {
-                    Text(elapsed)
-                        .font(.system(size: 12, design: .monospaced).monospacedDigit())
-                        .foregroundStyle(.white.opacity(0.86))
-                }
+                    .background(Circle().fill(tint.opacity(0.22)).padding(-3))
+                Text(content.word)
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundStyle(tint)
+                    .contentTransition(.opacity)
                 Spacer(minLength: 0)
             }
             .lineLimit(1)
@@ -1284,7 +1409,7 @@ struct CallaAmbientWings: View {
             // The camera housing. Nothing may be drawn here.
             Color.clear.frame(width: vm.closedNotchSize.width)
 
-            HStack(spacing: 7) {
+            HStack(spacing: 8) {
                 Spacer(minLength: 0)
                 if copilot.screenshotCount > 0 {
                     Image(systemName: "camera.fill")
@@ -1297,32 +1422,39 @@ struct CallaAmbientWings: View {
                         .padding(.trailing, 6)
                         .accessibilityLabel("\(copilot.screenshotCount) screenshots")
                 }
-                CallaWaveBars(tint: status.tint, active: status.moving)
-                Text(status.text)
-                    .font(.system(size: 12, weight: .semibold))
-                    .foregroundStyle(status.tint)
-                    .contentTransition(.opacity)
+                CallaWaveBars(tint: tint, active: copilot.speaking != nil)
+                if let elapsed = CallaCopilotPresentation.elapsed(since: copilot.startedAt, now: now) {
+                    Text(elapsed)
+                        .font(.system(size: 12, design: .monospaced).monospacedDigit())
+                        .foregroundStyle(.white.opacity(0.86))
+                }
             }
             .lineLimit(1)
             .padding(.trailing, 20)
             .frame(maxWidth: .infinity)
         }
-        .animation(.smooth(duration: 0.3), value: status.text)
+        .animation(.smooth(duration: 0.3), value: content.word)
         .onReceive(clockTick) { now = $0 }
     }
 }
 
-/// The call at rest: the notch grown into an island showing where the
-/// conversation has got to. The current topic stays short here; the full
-/// running account is in the expanded panel. A fresh answer takes the
-/// island for a while — the line to say, large — then the account returns.
-/// Hovering opens the compact panel.
+/// The call at rest: the notch grown into an island under the camera.
+///
+/// It always says something true — the newest point Calla has written and the
+/// ones before it, or before there are any, the meeting and that both sides are
+/// heard — and never the transcript, which belongs to the fully open panel.
+/// No labels: the band's one word carries the state. A fresh answer, when
+/// answers are on, takes the island for a while. Hovering opens the panel.
 struct CallaCopilotAmbientView: View {
     @ObservedObject private var engine = CallaEngineClient.shared
     @ObservedObject private var session = CopilotLiveSession.shared
+    @ObservedObject private var zenState = CallaZenState.shared
     @EnvironmentObject private var vm: CallaViewModel
+    @Default(.callaZenLevel) private var levelValue
     @State private var answer: HeldAnswer?
     @State private var answerTask: Task<Void, Never>?
+    @State private var now = Date()
+    private let tick = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
 
     struct HeldAnswer: Equatable {
         let question: String?
@@ -1333,11 +1465,15 @@ struct CallaCopilotAmbientView: View {
 
     /// How long a fresh answer holds the island before the account returns.
     static let answerSeconds: Double = 25
-    /// Upper bound for the brief resting topic and the optional answer view.
+    /// Upper bound for the island: five lines and the band, so on a laptop it
+    /// stays above the faces in the call.
     static let maximumHeight: CGFloat = 300
 
     private var copilot: CallaCopilotStatus { engine.status.copilot }
     private var account: CallaCallAccount { CallaCallAccount(copilot.summary) }
+    private var content: CallaZen.Content {
+        CallaZenReading.content(now: now, level: CallaZen.Level(stored: levelValue))
+    }
 
     var body: some View {
         Group {
@@ -1349,18 +1485,17 @@ struct CallaCopilotAmbientView: View {
                       let question = copilot.detectedQuestion, !question.isEmpty {
                 heardView(question)
                     .transition(.opacity)
-            } else if let lead = account.currentTopic {
-                accountView(lead)
+            } else if !content.isEmpty {
+                zenView(content)
                     .transition(.opacity)
             }
-            // Nothing yet: nothing below the notch. "Listening" is already
-            // said in the band beside the camera.
+            // Just the dot: nothing below the notch.
         }
         .fixedSize(horizontal: false, vertical: true)
         .textSelection(.enabled)
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.horizontal, 28)
-        .padding(.top, 10)
+        .padding(.top, 8)
         .background {
             GeometryReader { proxy in
                 Color.clear.preference(key: AmbientHeightKey.self, value: proxy.size.height)
@@ -1376,15 +1511,17 @@ struct CallaCopilotAmbientView: View {
             let band = vm.effectiveClosedNotchHeight
             let wanted = content < 8
                 ? band + 12
-                : min(Self.maximumHeight, max(96, band + content + 28))
+                : min(Self.maximumHeight, max(84, band + content + 24))
             guard abs(wanted - session.ambientHeight) > 1 else { return }
             session.ambientHeight = wanted
             NotificationCenter.default.post(name: .copilotLiveDidChange, object: nil)
         }
         // Movement only to mark an update.
-        .animation(.smooth(duration: 0.45), value: account)
+        .animation(.smooth(duration: 0.45), value: content)
         .animation(.smooth(duration: 0.45), value: answer)
-        .animation(.smooth(duration: 0.45), value: copilot.questionWorking)
+        .onReceive(tick) { now = $0 }
+        .onAppear { zenState.note(account.currentTopic) }
+        .onChange(of: account.currentTopic) { _, topic in zenState.note(topic) }
         .onChange(of: copilot.suggestionAfterSeq) { _, _ in
             guard !CallaCopilotLiveView.answersRetired else { return }
             showLatestAnswer()
@@ -1392,16 +1529,55 @@ struct CallaCopilotAmbientView: View {
         .onDisappear { answerTask?.cancel() }
     }
 
-    /// Only the latest point appears at rest, with a firm two-line cap.
-    private func accountView(_ lead: String) -> some View {
-        VStack(alignment: .leading, spacing: 5) {
-            CallaEyebrow("Where it stands", tint: CallaCallInk.summary)
-            Text(lead)
-                .font(.system(size: 16, weight: .medium))
-                .lineSpacing(2.5)
-                .foregroundStyle(.white.opacity(0.96))
-                .lineLimit(2)
-                .help(lead)
+    /// The newest point at full ink, up to two lines; what came before on one
+    /// line; at More, what is still open. Before the first point, the meeting
+    /// in quieter ink.
+    private func zenView(_ content: CallaZen.Content) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            if let main = content.main {
+                Text(main)
+                    .font(.system(size: 15, weight: .medium))
+                    .lineSpacing(2.5)
+                    .foregroundStyle(.white.opacity(content.mainIsQuiet ? 0.78 : 0.96))
+                    .lineLimit(2)
+                    .help(main)
+                    .id(main)
+                    .transition(.opacity)
+            }
+            if content.needsFix {
+                Button {
+                    if let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenCapture") {
+                        NSWorkspace.shared.open(url)
+                    }
+                } label: {
+                    Text("Allow call audio")
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundStyle(NotchAccent.onAccent)
+                        .padding(.horizontal, 14)
+                        .frame(height: 28)
+                        .background(Capsule().fill(CallaCallInk.problem))
+                        .contentShape(Capsule())
+                }
+                .buttonStyle(.plain)
+                .help("Open Screen Recording settings so Calla can hear the other side")
+                .padding(.top, 2)
+            }
+            if let before = content.before {
+                Text(before)
+                    .font(.system(size: 12.5))
+                    .foregroundStyle(.white.opacity(0.6))
+                    .lineLimit(1)
+                    .truncationMode(.tail)
+                    .help(before)
+            }
+            if let open = content.open {
+                Text("Still open: \(open)")
+                    .font(.system(size: 12.5))
+                    .foregroundStyle(CallaCallInk.answer.opacity(0.9))
+                    .lineLimit(1)
+                    .truncationMode(.tail)
+                    .help(open)
+            }
         }
     }
 

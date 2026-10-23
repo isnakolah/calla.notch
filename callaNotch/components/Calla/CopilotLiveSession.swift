@@ -440,6 +440,7 @@ final class CopilotLiveSession: ObservableObject {
         } else {
             pinned = false
             floating = false
+            CallaZenState.shared.reset()
             layout = .full
             NotificationCenter.default.post(name: .copilotLiveDidChange, object: nil)
         }

@@ -197,6 +197,13 @@ extension Defaults.Keys {
     /// During a call, rest as a borderless frosted summary that blends into
     /// the screen; hovering brings the collapsed panel back.
     static let callaCopilotAmbient = Key<Bool>("callaCopilotAmbient", default: true)
+    /// How much zen shows under the camera: `dot`, `brief` or `more`.
+    static let callaZenLevel = Key<String>("callaZenLevel", default: "brief")
+    /// Seconds the open panel waits, once the pointer leaves, before resting
+    /// back into zen.
+    static let callaZenReturnDelay = Key<Double>("callaZenReturnDelay", default: 2)
+    /// A new point says "New" beside the dot for a few seconds.
+    static let callaZenHighlight = Key<Bool>("callaZenHighlight", default: true)
     /// Where a live call's panel opens: `notch`, `floating`, or `remembered`
     /// (wherever the last call ended). See `CallPanelHome`.
     static let callaCallPanelHome = Key<String>("callaCallPanelHome", default: "notch")

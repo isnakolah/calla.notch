@@ -29,6 +29,9 @@ struct CopilotPane: View {
     @Default(.callaCopilotLiveModel) private var speechModel
     @Default(.callaCopilotAutoReveal) private var autoReveal
     @Default(.callaCopilotAmbient) private var ambient
+    @Default(.callaZenLevel) private var zenLevel
+    @Default(.callaZenReturnDelay) private var zenReturnDelay
+    @Default(.callaZenHighlight) private var zenHighlight
     @Default(.callaCallPanelHome) private var panelHome
     @Default(.callaMeetingOpensNotch) private var meetingOpensNotch
     @Default(.callaCopilotGlassLevel) private var glassLevel
@@ -274,9 +277,32 @@ struct CopilotPane: View {
                     }
                     .labelsHidden().pickerStyle(.segmented).fixedSize()
                 }
-                SettingsToggleRow("Running summary",
-                                  detail: "The notch rests as a small island with the latest lines of the summary.",
+                SettingsToggleRow("Rest in zen",
+                                  detail: "When you are not pointing at the notch, the call rests as a small island under the camera.",
                                   isOn: $ambient)
+                if ambient {
+                    SettingsListRow("Zen shows",
+                                    detail: "Brief: the newest point and the ones before it. More adds what is still open.") {
+                        Picker("", selection: $zenLevel) {
+                            Text("Just the dot").tag(CallaZen.Level.dot.rawValue)
+                            Text("Brief").tag(CallaZen.Level.brief.rawValue)
+                            Text("More").tag(CallaZen.Level.more.rawValue)
+                        }
+                        .labelsHidden().fixedSize()
+                    }
+                    SettingsListRow("Back to zen after",
+                                    detail: "How long the panel waits once the pointer leaves.") {
+                        Picker("", selection: $zenReturnDelay) {
+                            Text("1 second").tag(1.0)
+                            Text("2 seconds").tag(2.0)
+                            Text("5 seconds").tag(5.0)
+                        }
+                        .labelsHidden().fixedSize()
+                    }
+                    SettingsToggleRow("Highlight new points",
+                                      detail: "The word beside the dot says \u{201C}New\u{201D} for six seconds.",
+                                      isOn: $zenHighlight)
+                }
                 VStack(alignment: .leading, spacing: 6) {
                     NotchSlider(value: $glassLevel,
                                 range: 0...0.8,

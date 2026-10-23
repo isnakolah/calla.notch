@@ -128,7 +128,7 @@ struct ContentView: View {
             withAnimation(.smooth(duration: 0.3)) { ambientResting = false }
         } else {
             ambientTask = Task { @MainActor in
-                try? await Task.sleep(for: .seconds(2))
+                try? await Task.sleep(for: .seconds(max(0.5, Defaults[.callaZenReturnDelay])))
                 guard !Task.isCancelled else { return }
                 withAnimation(.smooth(duration: 0.45)) { ambientResting = true }
             }

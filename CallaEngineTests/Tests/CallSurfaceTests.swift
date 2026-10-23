@@ -189,3 +189,58 @@ final class FloatingPanelTests: XCTestCase {
         XCTAssertEqual(CallPanelHome(stored: "nonsense"), .notch)
     }
 }
+
+final class ZenContentTests: XCTestCase {
+    private func zen(level: CallaZen.Level = .brief, halfDeaf: Bool = false, isNew: Bool = false,
+                     points: [String] = [], open: [String] = [], title: String? = nil,
+                     people: Int = 0, heard: Bool = false) -> CallaZen.Content {
+        CallaZen.content(level: level, halfDeaf: halfDeaf, catchingUp: false, isNew: isNew,
+                         points: points, openQuestions: open, meetingTitle: title,
+                         people: people, heardAnything: heard)
+    }
+
+    /// The bug this replaces: nothing under the notch before the first summary.
+    func testZenSaysSomethingBeforeTheFirstPoint() {
+        let quiet = zen(title: "Acme renewal sync", people: 4, heard: true)
+        XCTAssertEqual(quiet.main, "Acme renewal sync · 4 people")
+        XCTAssertTrue(quiet.mainIsQuiet)
+        XCTAssertEqual(quiet.before, "Hearing both sides. The first points come in about a minute.")
+        XCTAssertFalse(zen().isEmpty)
+        XCTAssertEqual(zen().before, "Listening started. Nothing said yet.")
+    }
+
+    func testBriefShowsTheNewestPointAndTheTwoBefore() {
+        let content = zen(points: ["Two-year term", "Dana signs", "Security letter first", "Seat count open"])
+        XCTAssertEqual(content.main, "Seat count open")
+        XCTAssertEqual(content.before, "Dana signs · Security letter first")
+        XCTAssertNil(content.open)
+        XCTAssertEqual(content.word, "Listening")
+    }
+
+    func testMoreAddsWhatIsStillOpen() {
+        let content = zen(level: .more, points: ["A", "B"], open: ["Seat count", "Approver", "Third"])
+        XCTAssertEqual(content.open, "Seat count, Approver")
+    }
+
+    func testANewPointSaysNewOnlyWhenThereIsOne() {
+        XCTAssertEqual(zen(isNew: true, points: ["A"]).word, "New")
+        XCTAssertEqual(zen(isNew: true).word, "Listening")
+    }
+
+    func testJustTheDotDrawsNothingUnderTheCamera() {
+        XCTAssertTrue(zen(level: .dot, points: ["A"]).isEmpty)
+    }
+
+    /// Needing the reader beats every level, the dot included.
+    func testOnlyHearingYouAlwaysShowsItsFix() {
+        let content = zen(level: .dot, halfDeaf: true, points: ["A"])
+        XCTAssertEqual(content.word, "Only you")
+        XCTAssertTrue(content.needsFix)
+        XCTAssertEqual(content.tone, .warning)
+    }
+
+    func testLevelsParseWithBriefAsTheDefault() {
+        XCTAssertEqual(CallaZen.Level(stored: "more"), .more)
+        XCTAssertEqual(CallaZen.Level(stored: "line"), .brief)
+    }
+}
