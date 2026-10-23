@@ -21,12 +21,16 @@ struct CopilotCallDetailPane: View {
     let callID: String
 
     @ObservedObject private var engine = CallaEngineClient.shared
+    @ObservedObject private var categories = MeetingCategoryStore.shared
+    @Default(.callaCopilotCustomPersonas) private var customPersonas
     @Environment(\.settingsRouter) private var router
 
     @State private var call: CallaCallSummary?
     @State private var turns: [CallaCallTurn] = []
     @State private var suggestions: [CallaCopilotArchivedSuggestion] = []
     @State private var recap: CallaRecapDraft?
+    @State private var regeneratingRecap = false
+    @State private var categoryScope = "series"
     @State private var speakers: CallaCallSpeakers?
     @State private var renaming: CallaCallSpeakers.Speaker?
     @State private var renameText = ""
@@ -220,7 +224,29 @@ struct CopilotCallDetailPane: View {
     private func overviewCard(for call: CallaCallSummary) -> some View {
         SettingCard(call.startedAt?.formatted(date: .abbreviated, time: .shortened) ?? call.id) {
             VStack(alignment: .leading, spacing: 10) {
-                SettingFact(title: "Persona", value: CallaCopilotPersona.title(call.persona))
+                SettingFact(title: "Call type", value: CallaCopilotPersona.title(
+                    categories.confirmed(eventID: call.eventID, seriesID: call.seriesID) ?? call.persona))
+                if let eventID = call.eventID {
+                    if call.seriesID != nil {
+                        Picker("Change type for", selection: $categoryScope) {
+                            Text("Every repeat").tag("series")
+                            Text("This occurrence").tag("event")
+                        }
+                        .frame(maxWidth: 330)
+                    }
+                    Menu("Change call type") {
+                        ForEach(CallaCopilotPersona.grouped(including: Array(customPersonas.keys)), id: \.title) { group in
+                            Section(group.title) {
+                                ForEach(group.ids, id: \.self) { value in
+                                    Button(CallaCopilotPersona.title(value)) {
+                                        categories.save(value, eventID: eventID, seriesID: call.seriesID,
+                                                        occurrenceOnly: categoryScope == "event")
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
                 SettingFact(
                     title: "Ended",
                     value: call.wasInterrupted ? "Interrupted" : "Completed",
@@ -290,11 +316,20 @@ struct CopilotCallDetailPane: View {
                     }
                     if let failure = recap.failure, !failure.isEmpty {
                         Text(failure).font(NotchType.rowDetail).foregroundStyle(NotchTint.attention)
+                        Button(regeneratingRecap ? "Regenerating…" : "Retry regeneration") {
+                            regeneratingRecap = true
+                            engine.regenerateCallRecap(callID) {
+                                regeneratingRecap = false
+                                engine.fetchRecapDraft(callID: callID) { self.recap = $0 }
+                            }
+                        }
+                        .disabled(regeneratingRecap)
                     }
                     HStack {
                         if recap.reviewState == "pending" {
                             Button("Approve recap") { controlRecap("approve") }
                                 .buttonStyle(.borderedProminent)
+                                .disabled(recap.failure != nil)
                             Button("Reject") { controlRecap("reject") }
                         } else {
                             Text(recap.reviewState == "approved" ? "Approved knowledge" : "Rejected — kept in history")

@@ -12,6 +12,8 @@ import UniformTypeIdentifiers
 /// editing happens somewhere with room for it.
 struct CopilotKnowledgePane: View {
     @StateObject private var library = CallaKnowledgeLibrary.shared
+    @ObservedObject private var calendarManager = CalendarManager.shared
+    @ObservedObject private var categories = MeetingCategoryStore.shared
     /// Observed so a project attached on a meeting's page shows up in this list
     /// the moment it is saved, rather than on the next navigation.
     @ObservedObject private var focus = CallaKnowledgeFocus.shared
@@ -28,6 +30,7 @@ struct CopilotKnowledgePane: View {
                 guard !loaded else { return }
                 loaded = true
                 await library.load()
+                await calendarManager.refreshCallMeetings()
                 // Arriving from the calendar's right-click: open that meeting
                 // rather than making someone find it again in a month of events.
                 if let eventID = focus.eventID {
@@ -43,6 +46,7 @@ struct CopilotKnowledgePane: View {
     private var root: some View {
         SettingsPane(.knowledge) {
             overview
+            upcomingCallsCard
             everywhereCard
             meetingsCard
             if !library.orphanedNotes.isEmpty { orphanCard }
@@ -50,6 +54,40 @@ struct CopilotKnowledgePane: View {
     }
 
     // MARK: - Overview
+
+    private var upcomingCallsCard: some View {
+        SettingCard("Upcoming calls", detail: "Linked meetings on enabled calendar accounts. Choose one to prepare its type and context.") {
+            if calendarManager.upcomingCallMeetings.isEmpty {
+                Text("No upcoming linked meetings")
+                    .font(NotchType.rowDetail).foregroundStyle(.secondary)
+            } else {
+                VStack(spacing: 0) {
+                    ForEach(calendarManager.upcomingCallMeetings) { event in
+                        Button {
+                            router?.push(.copilotKnowledgeDetail(.event(id: event.id)))
+                        } label: {
+                            HStack {
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text(event.title).font(NotchType.rowTitle)
+                                    Text(event.start.formatted(date: .abbreviated, time: .shortened))
+                                        .font(NotchType.rowDetail).foregroundStyle(.secondary)
+                                }
+                                Spacer()
+                                Text(CallaCopilotPersona.title(categories.confirmed(for: event)
+                                    ?? categories.suggestion(for: event) ?? "generic"))
+                                    .font(NotchType.rowDetail)
+                                Image(systemName: "chevron.right").font(.caption)
+                            }
+                            .contentShape(Rectangle())
+                        }
+                        .buttonStyle(.plain)
+                        .padding(.vertical, 7)
+                        Divider()
+                    }
+                }
+            }
+        }
+    }
 
     private var overview: some View {
         SettingCard {

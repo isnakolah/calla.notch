@@ -19,6 +19,7 @@ import SwiftUI
 /// tile on a landing page.
 struct CopilotPane: View {
     @ObservedObject private var engine = CallaEngineClient.shared
+    @ObservedObject private var diagnostics = CallaDiagnostics.shared
     @ObservedObject private var attention = SettingsAttention.shared
     @Environment(\.settingsRouter) private var router
 
@@ -33,6 +34,9 @@ struct CopilotPane: View {
     @Default(.callaCallFoldersAudio) private var callFoldersAudio
     @Default(.callaRememberVoices) private var rememberVoices
     @Default(.callaBackendSync) private var backendSync
+    @Default(.callVPNDisconnectEnabled) private var disconnectVPNForCalls
+    @Default(.callVPNSelectedServiceIDs) private var selectedVPNServiceIDs
+    @ObservedObject private var callVPN = CallVPNManager.shared
 
     @State private var rememberedVoices: [CallaCallSpeakers.Voice] = []
 
@@ -55,6 +59,7 @@ struct CopilotPane: View {
             }
         }
         .task {
+            callVPN.refreshServices()
             engine.refresh()
             engine.setCallPersona(Defaults[.callaCopilotPersona])
             engine.controlSpeakers(CallaSpeakerCommand(action: "list")) { rememberedVoices = $0?.voices ?? [] }
@@ -141,7 +146,7 @@ struct CopilotPane: View {
                         SettingsLevelMeter(label: "Them",
                                            level: copilot.systemAudioActive ? (copilot.speaking == "them" ? 1 : 0.4) : 0)
                     }
-                    Button("End call", role: .destructive) { engine.endCall() }
+                    Button("End call", role: .destructive) { engine.endCall(origin: "settingsEnd") }
                         .buttonStyle(.borderedProminent)
                         .tint(.red)
                 } else if readiness == .blocked || readiness == .ready {
@@ -150,8 +155,10 @@ struct CopilotPane: View {
                             router?.go(fix)
                         }
                     }
-                    Button("Start call") {
-                        engine.startCall(persona: Defaults[.callaCopilotPersona], model: speechModel)
+                    Button("Open call controls") {
+                        Defaults[.callaCopilotMode] = "call"
+                        CallaViewCoordinator.shared.currentView = .copilot
+                        NotificationCenter.default.post(name: .callaCallWantsNotch, object: nil)
                     }
                     .buttonStyle(.borderedProminent)
                     .disabled(!enabled)
@@ -220,6 +227,32 @@ struct CopilotPane: View {
     private var duringCall: some View {
         VStack(alignment: .leading, spacing: SettingsMetrics.groupGap) {
             SettingsList("During a call") {
+                SettingsToggleRow("Disconnect VPN for calls",
+                                  detail: "Reconnects only VPNs Calla disconnected when the call ends.",
+                                  isOn: $disconnectVPNForCalls)
+                if disconnectVPNForCalls {
+                    SettingsListRow("VPNs to disconnect",
+                                    detail: "Switch on each VPN Calla should disconnect if connected.") {
+                        Button("Refresh list") { callVPN.refreshServices() }
+                    }
+                    if callVPN.services.isEmpty {
+                        SettingsListRow("No macOS VPN services found") { EmptyView() }
+                    }
+                    ForEach(callVPN.services) { service in
+                        SettingsToggleRow(service.name, isOn: vpnSelection(for: service.id))
+                    }
+                    ForEach(selectedVPNServiceIDs.filter { id in !callVPN.services.contains(where: { $0.id == id }) },
+                            id: \.self) { id in
+                        SettingsToggleRow("Unavailable VPN", detail: "Service \(id) is no longer installed.",
+                                          isOn: vpnSelection(for: id))
+                    }
+                }
+                if callVPN.hasPendingRestore {
+                    SettingsListRow("VPN restoration", detail: callVPN.warning ?? "A VPN was disconnected for a call.") {
+                        Button("Restore VPN") { Task { await callVPN.restorePending() } }
+                            .disabled(callVPN.busy)
+                    }
+                }
                 SettingsListRow("Show new suggestions") {
                     Picker("", selection: $autoReveal) {
                         Text("Right away").tag(true)
@@ -244,6 +277,16 @@ struct CopilotPane: View {
             }
         }
         .settingsAnchor("copilot.during")
+    }
+
+    private func vpnSelection(for id: String) -> Binding<Bool> {
+        Binding(
+            get: { selectedVPNServiceIDs.contains(id) },
+            set: { selected in
+                var ids = Set(selectedVPNServiceIDs)
+                if selected { ids.insert(id) } else { ids.remove(id) }
+                selectedVPNServiceIDs = ids.sorted()
+            })
     }
 
     /// One line: who this Mac is signed in as, and where the archive is up to.
@@ -304,6 +347,11 @@ struct CopilotPane: View {
             SettingsListRow("Calls from before folders", detail: "Write a folder for every call already in History.") {
                 Button("Save past calls") { engine.exportPastCalls() }
                     .disabled(!callFoldersEnabled)
+            }
+            SettingsListRow("Diagnostics",
+                            detail: diagnostics.message ?? "Save the last two hours of Calla activity to Downloads.") {
+                Button(diagnostics.saving ? "Saving…" : "Save timeline") { diagnostics.save() }
+                    .disabled(diagnostics.saving)
             }
             SettingsListRow("Call archive", detail: archiveDetail) {
                 HStack(spacing: 8) {

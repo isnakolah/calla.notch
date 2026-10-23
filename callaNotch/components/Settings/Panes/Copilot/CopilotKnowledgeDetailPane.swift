@@ -13,7 +13,9 @@ struct CopilotKnowledgeDetailPane: View {
 
     @StateObject private var library = CallaKnowledgeLibrary.shared
     @ObservedObject private var attach = CallaKnowledgeAttach.shared
+    @ObservedObject private var categories = MeetingCategoryStore.shared
     @Default(.callaCopilotPersona) private var persona
+    @Default(.callaCopilotCustomPersonas) private var customPersonas
 
     @State private var scope: String = "series"
     @State private var isTargeted = false
@@ -78,6 +80,7 @@ struct CopilotKnowledgeDetailPane: View {
                         .foregroundStyle(.secondary)
                 }
             }
+            if let event, event.videoCallURL != nil { categoryCard(event) }
             if canAdd { addCard }
             contentsCard
             if let viewing { viewerCard(viewing) }
@@ -130,6 +133,43 @@ struct CopilotKnowledgeDetailPane: View {
     }
 
     // MARK: - Adding
+
+    private func categoryCard(_ event: EventModel) -> some View {
+        SettingCard("Call type", detail: "Shapes the call and decides where its history and context go.") {
+            VStack(alignment: .leading, spacing: 10) {
+                if let saved = categories.confirmed(for: event) {
+                    Text("Saved: \(CallaCopilotPersona.title(saved))")
+                        .font(NotchType.rowTitle)
+                } else if let suggestion = categories.suggestion(for: event) {
+                    Text("Suggested: \(CallaCopilotPersona.title(suggestion)) · choose to confirm")
+                        .font(NotchType.rowDetail)
+                } else {
+                    Text("Choose a type before starting this call")
+                        .font(NotchType.rowDetail)
+                }
+                if event.hasRecurrenceRules, event.seriesID != nil {
+                    Picker("Apply to", selection: $scope) {
+                        Text("Every repeat").tag("series")
+                        Text("Just this one").tag("event")
+                    }
+                    .frame(maxWidth: 280)
+                }
+                Menu("Set call type") {
+                    ForEach(CallaCopilotPersona.grouped(including: Array(customPersonas.keys)), id: \.title) { group in
+                        Section(group.title) {
+                            ForEach(group.ids, id: \.self) { value in
+                                Button(CallaCopilotPersona.title(value)) {
+                                    categories.save(value, for: event, occurrenceOnly: scope == "event")
+                                }
+                            }
+                        }
+                    }
+                }
+                Text("Meeting notes and files stay attached if you change its type.")
+                    .font(NotchType.rowDetail).foregroundStyle(.secondary)
+            }
+        }
+    }
 
     private var addCard: some View {
         SettingCard("Add something") {
