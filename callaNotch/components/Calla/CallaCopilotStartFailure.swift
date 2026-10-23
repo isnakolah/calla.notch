@@ -97,7 +97,7 @@ enum CopilotStartFailure: Equatable {
         case .promptsRejected:
             return "The call was not started. Fix the persona or guidance and press start again."
         case .meetingRejected:
-            return "The call was not started. Starting without the meeting attached will work; the copilot just will not have its notes."
+            return "The calendar invite could not be attached. Start without its details to capture the call."
         case .gatewayRouteInvalid:
             return "This build's gateway address cannot be parsed, so no remote brain can be reached. Switching answers to this Mac avoids it."
         case .hostStopped:
@@ -123,7 +123,7 @@ enum CopilotStartFailure: Equatable {
         case .alreadyRunning: .endAndRetry
         case .hostNotInstalled: nil
         case .promptsRejected: .openSettings(.copilotPrompts, "Open Prompts")
-        case .meetingRejected: .retry
+        case .meetingRejected: .retryWithoutMeeting
         case .gatewayRouteInvalid: .openSettings(.copilotModels, "Open Models")
         case .hostStopped: .retry
         case .couldNotSpawn: .retry
@@ -158,6 +158,7 @@ enum CopilotStartFailure: Equatable {
     enum Remedy: Equatable {
         /// Press start again, unchanged.
         case retry
+        case retryWithoutMeeting
         /// Bring down whatever is holding the host, then start again.
         case endAndRetry
         /// The fix is a setting, so go to the page that holds it.
@@ -166,6 +167,7 @@ enum CopilotStartFailure: Equatable {
         var title: String {
             switch self {
             case .retry: "Try again"
+            case .retryWithoutMeeting: "Start without meeting details"
             case .endAndRetry: "End it and start over"
             case let .openSettings(_, title): title
             }

@@ -29,6 +29,7 @@ import SwiftUI
 struct CallaCopilotLiveView: View {
     @ObservedObject private var engine = CallaEngineClient.shared
     @ObservedObject private var session = CopilotLiveSession.shared
+    @ObservedObject private var callVPN = CallVPNManager.shared
     @EnvironmentObject private var vm: CallaViewModel
 
     @State private var turns: [CallaCallTurn] = []
@@ -85,7 +86,7 @@ struct CallaCopilotLiveView: View {
                     VStack(alignment: .leading, spacing: 10) {
                         primary
                             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-                        if content == .answer, let lead = account.lead {
+                        if content == .answer, let lead = account.currentTopic {
                             standingStrip(lead)
                         }
                     }
@@ -197,13 +198,24 @@ struct CallaCopilotLiveView: View {
         return answers[max(0, answers.count - 1 - min(answerHistoryOffset, answers.count - 1))]
     }
 
-    @ViewBuilder private var primary: some View {
-        switch content {
-        case .answer: answerBlock
-        case .recap: accountBlock
-        case .noAnswer: pendingBlock
-        case .halfDeaf: halfDeafBlock
-        case .listening: listeningBlock
+    private var primary: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            if let warning = callVPN.warning {
+                Text(warning)
+                    .font(.system(size: 10, weight: .medium))
+                    .foregroundStyle(NotchAccent.attention)
+                    .lineLimit(2)
+                    .help(warning)
+            }
+            Group {
+                switch content {
+                case .answer: answerBlock
+                case .recap: accountBlock
+                case .noAnswer: pendingBlock
+                case .halfDeaf: halfDeafBlock
+                case .listening: listeningBlock
+                }
+            }
         }
     }
 
@@ -332,14 +344,14 @@ struct CallaCopilotLiveView: View {
 
     // MARK: - Account
 
-    /// Where the call stands in one sentence, then what has settled and what is
-    /// still open — the two questions a reader actually has mid-call.
+    /// The latest point stays prominent; the full running account scrolls here.
     private var accountBlock: some View {
         let account = account
-        let lately = account.trail(compact ? 2 : 3)
+        let earlier = account.earlier
         let open = Array(copilot.openQuestions.prefix(2))
 
-        return VStack(alignment: .leading, spacing: compact ? 8 : 10) {
+        return ScrollView(.vertical, showsIndicators: true) {
+          VStack(alignment: .leading, spacing: 10) {
             HStack(spacing: 8) {
                 CallaEyebrow(surface == "question" ? "No answer yet · where it stands" : "Where it stands",
                              tint: CallaCallInk.summary)
@@ -356,13 +368,12 @@ struct CallaCopilotLiveView: View {
             }
             .frame(height: 22)
 
-            if let lead = account.lead {
+            if let lead = account.currentTopic {
                 Text(lead)
                     .font(.system(size: compact ? 16 : 18, weight: .medium))
                     .tracking(-0.15)
                     .lineSpacing(3)
                     .foregroundStyle(.white.opacity(0.96))
-                    .lineLimit(compact ? 3 : 4)
                     .fixedSize(horizontal: false, vertical: true)
                     .textSelection(.enabled)
                     .help(lead)
@@ -370,14 +381,14 @@ struct CallaCopilotLiveView: View {
                     .transition(.opacity)
             }
 
-            if !lately.isEmpty || !open.isEmpty {
+            if !earlier.isEmpty || !open.isEmpty {
                 VStack(alignment: .leading, spacing: 0) {
                     Rectangle().fill(Color.white.opacity(0.10)).frame(height: 1)
                         .padding(.bottom, 12)
                     HStack(alignment: .top, spacing: 18) {
-                        if !lately.isEmpty {
-                            accountColumn("Lately", symbol: "checkmark", tint: CallaCallInk.summary,
-                                          lines: lately, ink: .white.opacity(0.75))
+                        if !earlier.isEmpty {
+                            accountColumn("Earlier", symbol: "checkmark", tint: CallaCallInk.summary,
+                                          lines: earlier, ink: .white.opacity(0.75))
                         }
                         if !open.isEmpty {
                             accountColumn("Still open", symbol: "circle", tint: CallaCallInk.answer,
@@ -386,7 +397,10 @@ struct CallaCopilotLiveView: View {
                     }
                 }
             }
+          }
+          .frame(maxWidth: .infinity, alignment: .topLeading)
         }
+        .frame(maxHeight: .infinity)
     }
 
     private func accountColumn(_ title: String, symbol: String, tint: Color,
@@ -406,7 +420,6 @@ struct CallaCopilotLiveView: View {
                     .font(.system(size: 12))
                     .lineSpacing(1.5)
                     .foregroundStyle(ink)
-                    .lineLimit(2)
                     .fixedSize(horizontal: false, vertical: true)
                     .help(line)
                     .textSelection(.enabled)
@@ -554,6 +567,13 @@ struct CallaCopilotLiveView: View {
     private var compactPanel: some View {
         VStack(alignment: .leading, spacing: 0) {
             compactStatus
+            if let warning = callVPN.warning {
+                Text(warning)
+                    .font(.system(size: 10, weight: .medium))
+                    .foregroundStyle(NotchAccent.attention)
+                    .lineLimit(2)
+                    .help(warning)
+            }
             if mode == .halfDeaf {
                 VStack(alignment: .leading, spacing: 12) {
                     halfDeafBanner
@@ -561,7 +581,7 @@ struct CallaCopilotLiveView: View {
                         Spacer(minLength: 0)
                         CallaLargeButton(title: "End call", symbol: "stop.fill", role: .destructive,
                                          height: 40) {
-                            engine.endCall()
+                            engine.endCall(origin: "compactHalfDeafEnd")
                         }
                     }
                 }
@@ -569,9 +589,8 @@ struct CallaCopilotLiveView: View {
             } else {
                 VStack(alignment: .leading, spacing: 12) {
                     HStack(spacing: 10) {
-                        CallaLargeButton(title: "Screenshot", symbol: "camera",
-                                         count: copilot.screenshotCount) {
-                            engine.takeScreenshot()
+                        CallaScreenshotControl(compact: true, count: copilot.screenshotCount) { displayID in
+                            engine.takeScreenshot(displayID: displayID)
                             NSHapticFeedbackManager.defaultPerformer.perform(.generic, performanceTime: .now)
                         }
                         CallaLargeButton(title: pinned ? "Unpin" : "Keep open",
@@ -584,7 +603,7 @@ struct CallaCopilotLiveView: View {
                         }
                         Spacer(minLength: 0)
                         CallaLargeButton(title: "End call", symbol: "stop.fill", role: .destructive) {
-                            engine.endCall()
+                            engine.endCall(origin: "compactEnd")
                         }
                     }
                     Spacer(minLength: 0)
@@ -620,6 +639,7 @@ struct CallaCopilotLiveView: View {
 
     private var compactDetail: String {
         if mode == .halfDeaf { return "Screen Recording is off for the call host." }
+        if let topic = account.currentTopic { return "Where it stands · \(topic)" }
         var parts: [String] = []
         switch copilot.speaking {
         case "me": parts.append("You are speaking")
@@ -869,8 +889,8 @@ struct CallaCopilotLiveHeader: View {
         }
     }
 
-    private func takeScreenshot() {
-        engine.takeScreenshot()
+    private func takeScreenshot(displayID: UInt32?) {
+        engine.takeScreenshot(displayID: displayID)
         // The shutter: a quick blink of the glyph, then the note.
         withAnimation(.easeOut(duration: 0.08)) { shutter = true }
         withAnimation(.easeIn(duration: 0.3).delay(0.12)) { shutter = false }
@@ -1101,10 +1121,9 @@ struct CallaCopilotLiveHeader: View {
             if full {
                 // What is being shared becomes context: the words on it go to
                 // the copilot, and the picture is filed with the call.
-                CallaWingButton(symbol: "camera",
-                                tint: shotNote == nil ? Color.white.opacity(0.70) : CallaCallInk.summary,
-                                badge: copilot.screenshotCount) {
-                    takeScreenshot()
+                CallaScreenshotControl(compact: false, count: copilot.screenshotCount,
+                                       tint: shotNote == nil ? Color.white.opacity(0.70) : CallaCallInk.summary) { displayID in
+                    takeScreenshot(displayID: displayID)
                 }
                 .scaleEffect(shutter ? 0.78 : 1)
                 .opacity(shutter ? 0.4 : 1)
@@ -1166,7 +1185,7 @@ struct CallaCopilotLiveHeader: View {
             .accessibilityLabel(full ? "Compact view" : "Full view")
 
             if full {
-                CallaEndPill { engine.endCall() }
+                CallaEndPill { engine.endCall(origin: "fullEnd") }
                     .notchTooltip("End the call", symbol: "stop.fill", shortcut: shortcutKeys(.copilotToggleCall))
                     .accessibilityLabel("End call")
             }
@@ -1268,8 +1287,8 @@ struct CallaAmbientWings: View {
 }
 
 /// The call at rest: the notch grown into an island showing where the
-/// conversation has got to. One sentence set large, the newest points under
-/// it, and anything still waiting on you tagged open. A fresh answer takes the
+/// conversation has got to. The current topic stays short here; the full
+/// running account is in the expanded panel. A fresh answer takes the
 /// island for a while — the line to say, large — then the account returns.
 /// Hovering opens the compact panel.
 struct CallaCopilotAmbientView: View {
@@ -1288,7 +1307,7 @@ struct CallaCopilotAmbientView: View {
 
     /// How long a fresh answer holds the island before the account returns.
     static let answerSeconds: Double = 25
-    /// The island grows with its text up to this, then the oldest lines give way.
+    /// Upper bound for the brief resting topic and the optional answer view.
     static let maximumHeight: CGFloat = 300
 
     private var copilot: CallaCopilotStatus { engine.status.copilot }
@@ -1304,14 +1323,13 @@ struct CallaCopilotAmbientView: View {
                       let question = copilot.detectedQuestion, !question.isEmpty {
                 heardView(question)
                     .transition(.opacity)
-            } else if let lead = account.lead {
+            } else if let lead = account.currentTopic {
                 accountView(lead)
                     .transition(.opacity)
             }
             // Nothing yet: nothing below the notch. "Listening" is already
             // said in the band beside the camera.
         }
-        // Every line in full: wrapping, never an ellipsis.
         .fixedSize(horizontal: false, vertical: true)
         .textSelection(.enabled)
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -1348,48 +1366,17 @@ struct CallaCopilotAmbientView: View {
         .onDisappear { answerTask?.cancel() }
     }
 
-    /// The lead sentence, then two points: the newest settled one, and the
-    /// first thing still open, tagged so.
+    /// Only the latest point appears at rest, with a firm two-line cap.
     private func accountView(_ lead: String) -> some View {
-        let open = copilot.openQuestions.first
-        let trail = account.trail(open == nil ? 2 : 1)
-        return VStack(alignment: .leading, spacing: 9) {
+        VStack(alignment: .leading, spacing: 5) {
+            CallaEyebrow("Where it stands", tint: CallaCallInk.summary)
             Text(lead)
                 .font(.system(size: 16, weight: .medium))
                 .lineSpacing(2.5)
                 .foregroundStyle(.white.opacity(0.96))
-            if !trail.isEmpty || open != nil {
-                VStack(alignment: .leading, spacing: 5) {
-                    ForEach(Array(trail.enumerated()), id: \.element) { _, point in
-                        pointRow(point, ink: .white.opacity(0.72))
-                    }
-                    if let open {
-                        HStack(alignment: .firstTextBaseline, spacing: 9) {
-                            marker(CallaCallInk.answer)
-                            Text(open)
-                                .font(.system(size: 12))
-                                .foregroundStyle(.white.opacity(0.92))
-                            CallaTag(text: "open", tint: CallaCallInk.answer)
-                        }
-                    }
-                }
-            }
+                .lineLimit(2)
+                .help(lead)
         }
-    }
-
-    private func pointRow(_ point: String, ink: Color) -> some View {
-        HStack(alignment: .firstTextBaseline, spacing: 9) {
-            marker(.white.opacity(0.45))
-            Text(point)
-                .font(.system(size: 12))
-                .foregroundStyle(ink)
-        }
-        .transition(.opacity.combined(with: .move(edge: .bottom)))
-    }
-
-    private func marker(_ tint: Color) -> some View {
-        Circle().fill(tint).frame(width: 5, height: 5)
-            .alignmentGuide(.firstTextBaseline) { $0[VerticalAlignment.center] + 4 }
     }
 
     private func heardView(_ question: String) -> some View {
@@ -1649,13 +1636,13 @@ struct CallaCallAccount: Equatable {
 
     var isEmpty: Bool { standing.isEmpty && points.isEmpty }
 
-    /// The sentence set large: the standing paragraph, or the newest point when
-    /// the writer gave none.
-    var lead: String? { standing.isEmpty ? points.last : standing }
+    /// The newest point reflects the current topic; standing is older context.
+    var currentTopic: String? { points.last ?? (standing.isEmpty ? nil : standing) }
 
-    /// The points under the lead, newest last, never repeating it.
-    func trail(_ count: Int) -> [String] {
-        Array((standing.isEmpty ? points.dropLast() : points[...]).suffix(count))
+    /// Everything before the current point, in reading order.
+    var earlier: [String] {
+        guard !points.isEmpty else { return [] }
+        return (standing.isEmpty ? [] : [standing]) + Array(points.dropLast())
     }
 }
 
@@ -1799,6 +1786,88 @@ struct CallaLargeButton: View {
         if destructive { return NotchAccent.stop.opacity(hovering ? 0.26 : 0.16) }
         if selected { return NotchAccent.call.opacity(hovering ? 0.26 : NotchAccent.fill) }
         return Color.white.opacity(hovering ? 0.14 : 0.08)
+    }
+}
+
+/// A direct shot on one display; with multiple displays, each menu button
+/// captures the named display immediately.
+struct CallaScreenshotControl: View {
+    let compact: Bool
+    let count: Int
+    var tint: Color = Color.white.opacity(0.70)
+    let action: (UInt32?) -> Void
+
+    private struct Display: Identifiable {
+        let id: UInt32
+        let title: String
+    }
+
+    private var displays: [Display] {
+        NSScreen.screens.enumerated().compactMap { index, screen in
+            guard let number = screen.deviceDescription[NSDeviceDescriptionKey("NSScreenNumber")] as? NSNumber
+            else { return nil }
+            return Display(id: number.uint32Value,
+                           title: "Display \(index + 1) · \(screen.localizedName)")
+        }
+    }
+
+    var body: some View {
+        let choices = displays
+        Group {
+            if choices.count > 1 {
+                Menu {
+                    ForEach(choices) { display in
+                        Button(display.title, systemImage: "display") { action(display.id) }
+                    }
+                } label: {
+                    label(showsChoice: true)
+                }
+                .menuStyle(.borderlessButton)
+                .menuIndicator(.hidden)
+            } else {
+                Button { action(choices.first?.id) } label: {
+                    label(showsChoice: false)
+                }
+                .buttonStyle(.plain)
+            }
+        }
+        .accessibilityLabel(choices.count > 1 ? "Choose display for screenshot" : "Take screenshot")
+    }
+
+    @ViewBuilder private func label(showsChoice: Bool) -> some View {
+        if compact {
+            HStack(spacing: 9) {
+                Image(systemName: "camera")
+                    .font(.system(size: 13, weight: .semibold))
+                Text("Screenshot")
+                    .font(.system(size: 13, weight: .semibold))
+                if showsChoice {
+                    Image(systemName: "chevron.down")
+                        .font(.system(size: 9, weight: .bold))
+                }
+                if count > 0 {
+                    Text("\(count)")
+                        .font(.system(size: 11, weight: .bold).monospacedDigit())
+                        .foregroundStyle(NotchAccent.call)
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 1)
+                        .background(Capsule().fill(NotchAccent.call.opacity(0.20)))
+                }
+            }
+            .foregroundStyle(NotchInk.primary)
+            .padding(.horizontal, 15)
+            .frame(height: 46)
+            .background(RoundedRectangle(cornerRadius: 14).fill(Color.white.opacity(0.08)))
+        } else {
+            Image(systemName: showsChoice ? "camera.badge.ellipsis" : "camera")
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundStyle(tint)
+                .frame(width: 28, height: 28)
+                .contentShape(Circle())
+                .overlay(alignment: .topTrailing) {
+                    if count > 0 { CallaSuperscript(count: count) }
+                }
+        }
     }
 }
 

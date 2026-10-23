@@ -24,6 +24,7 @@ struct ContentView: View {
     @ObservedObject var volumeManager = VolumeManager.shared
     @ObservedObject var pomodoro = PomodoroManager.shared
     @ObservedObject var copilotSession = CopilotLiveSession.shared
+    @ObservedObject var calendarManager = CalendarManager.shared
     @ObservedObject var resizeSession = NotchResizeSession.shared
     /// Through the wrapper, not `Defaults[...]` inline: a bare subscript read
     /// inside a computed property registers no dependency, so the slider moved and
@@ -889,6 +890,31 @@ struct ContentView: View {
             guard !isResizing else { return }
             coordinator.currentView = .copilot
             withAnimation(.spring(response: 0.42, dampingFraction: 0.85)) { vm.open() }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .callaCallWantsNotch)) { _ in
+            guard !isResizing else { return }
+            Defaults[.callaCopilotMode] = "call"
+            coordinator.currentView = .copilot
+            withAnimation(.spring(response: 0.42, dampingFraction: 0.85)) { vm.open() }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .callaMeetingWantsNotch)) { _ in
+            guard !isResizing, !CallaEngineClient.shared.callPresentationProtected,
+                  !CallaEngineClient.shared.callIsComingUp,
+                  !CallaEngineClient.shared.callIsFinishing,
+                  !copilotSession.isLive, !copilotSession.starting,
+                  !copilotSession.ending, !copilotSession.startupFailed,
+                  !copilotSession.signInActive else { return }
+            CalendarManager.shared.markCallMeetingPresented()
+            vm.holdMeetingOpen()
+            Defaults[.callaCopilotMode] = "call"
+            coordinator.currentView = .copilot
+            withAnimation(.spring(response: 0.42, dampingFraction: 0.85)) { vm.open() }
+        }
+        .onChange(of: calendarManager.selectedCallMeeting?.id) { _, meetingID in
+            if meetingID == nil { vm.releaseMeetingPin() }
+        }
+        .onChange(of: copilotSession.isLive) { _, live in
+            if live { vm.releaseMeetingPin() }
         }
         .onReceive(NotificationCenter.default.publisher(for: .copilotLiveDidChange)) { _ in
             guard !isResizing else { return }

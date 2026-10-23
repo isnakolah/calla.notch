@@ -131,7 +131,7 @@ struct CallaCopilotEndingView: View {
                 // gets a host that never answered to shut down.
                 if stalled && !saved {
                     CallaLifecycleButton(title: "Stop it again", weight: .primary,
-                                         tint: NotchAccent.attention) { engine.endCall() }
+                                         tint: NotchAccent.attention) { engine.endCall(origin: "recapRetry") }
                 }
             })
         .animation(.smooth(duration: 0.2), value: completedSteps)

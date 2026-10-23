@@ -256,6 +256,7 @@ struct CallaCheckGrid: View {
 struct CallaPrimaryButton: View {
     let title: String
     let symbol: String
+    var badge: String? = nil
     var tint: Color = NotchAccent.call
     /// The label's colour. Every accent in the notch palette is light, so the
     /// label on it is near-black.
@@ -270,6 +271,14 @@ struct CallaPrimaryButton: View {
             HStack(spacing: 7) {
                 Image(systemName: symbol).font(.system(size: 12, weight: .bold))
                 Text(title).font(.system(size: 12, weight: .bold)).lineLimit(1).fixedSize()
+                if let badge {
+                    Rectangle().fill(ink.opacity(0.25)).frame(width: 1, height: 16)
+                    Text(badge)
+                        .font(.system(size: 11, weight: .bold, design: .monospaced))
+                        .monospacedDigit()
+                        .lineLimit(1)
+                        .fixedSize()
+                }
             }
             .foregroundStyle(ink.opacity(enabled ? 1 : 0.6))
             .padding(.leading, 13)
@@ -288,7 +297,7 @@ struct CallaPrimaryButton: View {
         .onHover { hovering = $0 }
         .animation(.easeOut(duration: 0.12), value: hovering)
         .help(title)
-        .accessibilityLabel(title)
+        .accessibilityLabel(badge.map { "\(title), \($0)" } ?? title)
     }
 }
 

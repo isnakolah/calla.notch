@@ -33,6 +33,7 @@ import UserNotifications
     func revealCallFolder(_ callID: String, with reply: @escaping (Data) -> Void)
     /// Writes the app's settings snapshot to Downloads, for carrying to another Mac.
     func saveSettingsSnapshot(_ data: Data, with reply: @escaping (Data) -> Void)
+    func exportDiagnostics(with reply: @escaping (Data) -> Void)
     /// Writes a folder for every past call that lacks one.
     func exportPastCalls(with reply: @escaping (Data) -> Void)
     /// Call archive backend: sync now, sign in again, restore, dismiss a notice.
@@ -45,6 +46,9 @@ import UserNotifications
     func copilotCallSuggestions(_ callID: String, with reply: @escaping (Data) -> Void)
     func copilotRecapDraft(_ callID: String, with reply: @escaping (Data) -> Void)
     func copilotRecapControl(_ command: Data, with reply: @escaping (Data) -> Void)
+    func recategorizeMeeting(_ command: Data, with reply: @escaping (Data) -> Void)
+    func regenerateCallRecap(_ callID: String, with reply: @escaping (Data) -> Void)
+    func suggestMeetingCategory(_ details: String, with reply: @escaping (Data) -> Void)
     func copilotSpeakerControl(_ command: Data, with reply: @escaping (Data) -> Void)
     /// The prompts the copilot would actually send, as `[path: text]`.
     func copilotPrompts(with reply: @escaping (Data) -> Void)
@@ -450,6 +454,7 @@ struct CallaCopilotCommand: Codable {
     let model: String?
     let callID: String?
     let question: String?
+    let displayID: UInt32?
     /// Prompt text the user edited. Never reaches a process argument — the
     /// engine hands it to the capture host on stdin.
     let profile: CallaCopilotProfile?
@@ -474,6 +479,7 @@ struct CallaCopilotCommand: Codable {
 
     enum CodingKeys: String, CodingKey {
         case action, persona, model, profile, provider, tier, fallback, meeting, question
+        case displayID = "display_id"
         case selectedKnowledgeNoteIDs = "selected_knowledge_note_ids"
         case summaryModel = "summary_model"
         case gatewayStandby = "gateway_standby"
@@ -485,6 +491,7 @@ struct CallaCopilotCommand: Codable {
          model: String? = nil,
          callID: String? = nil,
          question: String? = nil,
+         displayID: UInt32? = nil,
          profile: CallaCopilotProfile? = nil,
          provider: String? = nil,
          tier: String? = nil,
@@ -498,6 +505,7 @@ struct CallaCopilotCommand: Codable {
         self.model = model
         self.callID = callID
         self.question = question
+        self.displayID = displayID
         self.profile = profile
         self.provider = provider
         self.tier = tier
@@ -588,14 +596,14 @@ struct CallaMeeting: Codable, Equatable {
     /// that is not. Attendee names rather than addresses where the calendar has
     /// them: a first name is what gets said out loud on the call.
     init(_ event: EventModel) {
-        eventID = event.id
-        seriesID = event.seriesID
-        title = event.title
+        eventID = CalendarMeetingInput.identifier(event.id)
+        seriesID = CalendarMeetingInput.identifier(event.seriesID)
+        title = CalendarMeetingInput.text(event.title, limit: CalendarMeetingInput.titleLimit) ?? "Calendar meeting"
         startsAt = event.start.timeIntervalSince1970
         endsAt = event.end.timeIntervalSince1970
-        location = event.location
-        attendees = event.participants.map(\.name).filter { !$0.isEmpty }
-        notes = event.notes
+        location = CalendarMeetingInput.text(event.location, limit: CalendarMeetingInput.titleLimit)
+        attendees = CalendarMeetingInput.attendees(event.participants.map(\.name))
+        notes = CalendarMeetingInput.text(event.notes, limit: CalendarMeetingInput.notesLimit)
     }
 }
 
@@ -1046,6 +1054,9 @@ final class CallaEngineClient: ObservableObject {
         let outgoingQuiz = status.quiz
         let heldQuiz = quizPollIsStale(result.quiz) ? status.quiz : nil
         status = result
+        CallVPNManager.shared.noteCallStatus(running: result.copilot.running,
+                                             finishing: result.copilot.isFinishing,
+                                             starting: result.copilot.starting)
         if let heldQuiz { status.quiz = heldQuiz }
         if let notice = result.backend?.notice, notice.id != previousNotice {
             postBackendNotice(notice)
@@ -1092,6 +1103,8 @@ final class CallaEngineClient: ObservableObject {
             endLaunch()
         }
 
+        updateCallPresentationProtection(for: result.copilot)
+
         // A new pointer is the one copilot event worth interrupting for. Keyed
         // on the turn it answers, so a poll that re-reads the same suggestion
         // does not re-open the notch every two seconds.
@@ -1108,6 +1121,7 @@ final class CallaEngineClient: ObservableObject {
     func startCall(persona: String, model: String, meeting: CallaMeeting? = nil,
                    callID: String? = nil,
                    selectedKnowledgeNoteIDs: [String]? = nil) {
+        lastCallStart = (persona, model, meeting, selectedKnowledgeNoteIDs)
         CopilotLiveSession.shared.prepareForSessionStart()
         // Starting a call on the local brain without credentials used to mean a
         // browser popping open mid-meeting with nowhere to put the code. Sign in
@@ -1137,18 +1151,71 @@ final class CallaEngineClient: ObservableObject {
         send(command)
     }
 
+    func recategorizeMeeting(eventID: String, seriesID: String?, persona: String,
+                             occurrenceOnly: Bool, excluding eventIDs: [String] = []) {
+        let payload: [String: Any] = ["eventID": eventID, "seriesID": seriesID as Any? ?? NSNull(),
+                                      "persona": persona, "occurrenceOnly": occurrenceOnly,
+                                      "excludedEventIDs": eventIDs]
+        guard let data = try? JSONSerialization.data(withJSONObject: payload) else { return }
+        let connection = connection ?? makeConnection()
+        guard let proxy = connection.remoteObjectProxyWithErrorHandler({ error in
+            NSLog("[CallaEngine] recategorization unavailable: %@", error.localizedDescription)
+        }) as? CallaEngineProtocol else { return }
+        proxy.recategorizeMeeting(data) { _ in }
+    }
+
+    func regenerateCallRecap(_ callID: String, completion: @escaping () -> Void) {
+        let connection = connection ?? makeConnection()
+        guard let proxy = connection.remoteObjectProxyWithErrorHandler({ _ in
+            Task { @MainActor in completion() }
+        }) as? CallaEngineProtocol else { completion(); return }
+        proxy.regenerateCallRecap(callID) { _ in
+            Task { @MainActor in completion() }
+        }
+    }
+
+    func suggestMeetingCategory(details: String, completion: @escaping (String?) -> Void) {
+        let connection = connection ?? makeConnection()
+        guard let proxy = connection.remoteObjectProxyWithErrorHandler({ _ in
+            Task { @MainActor in completion(nil) }
+        }) as? CallaEngineProtocol else { completion(nil); return }
+        proxy.suggestMeetingCategory(details) { data in
+            let answer = String(data: data, encoding: .utf8)
+            Task { @MainActor in completion(answer?.isEmpty == false ? answer : nil) }
+        }
+    }
+
+    private var lastCallStart: (persona: String, model: String, meeting: CallaMeeting?, noteIDs: [String]?)?
+
+    func retryLastCall() {
+        guard let lastCallStart else { return }
+        startCall(persona: lastCallStart.persona, model: lastCallStart.model,
+                  meeting: lastCallStart.meeting, selectedKnowledgeNoteIDs: lastCallStart.noteIDs)
+    }
+
+    func retryLastCallWithoutMeeting() {
+        guard let lastCallStart else { return }
+        startCall(persona: lastCallStart.persona, model: lastCallStart.model,
+                  meeting: nil, selectedKnowledgeNoteIDs: lastCallStart.noteIDs)
+    }
+
     /// A call this app has asked for and not yet seen come up.
     ///
     /// Cleared by the host reporting for itself — either `starting`, which means
     /// the process is alive and the claim is now the host's rather than ours, or
     /// `running`, which means it beat us to it.
     @Published private(set) var launchingCall = false
+    /// A local claim that survives brief gaps in the engine's status stream.
+    /// Calendar polling must not replace a call while its host is coming up.
+    @Published private(set) var callPresentationProtected = false
+    private var releaseCallPresentationTask: Task<Void, Never>?
     private var launchDeadline: Date?
     /// Long enough to cover a cold model load and a TCC prompt, short enough that
     /// a host that died on launch does not leave the notch waiting forever.
     private static let launchTimeout: TimeInterval = 30
 
     private func beginLaunch() {
+        protectCallPresentation()
         launchingCall = true
         launchDeadline = Date().addingTimeInterval(Self.launchTimeout)
     }
@@ -1161,6 +1228,28 @@ final class CallaEngineClient: ObservableObject {
     /// True while the user should be looking at a starting call — ours by claim,
     /// or the host's by report.
     var callIsComingUp: Bool { launchingCall || status.copilot.starting }
+
+    private func protectCallPresentation() {
+        releaseCallPresentationTask?.cancel()
+        releaseCallPresentationTask = nil
+        callPresentationProtected = true
+    }
+
+    private func updateCallPresentationProtection(for copilot: CallaCopilotStatus) {
+        if launchingCall || endingCall || copilot.starting || copilot.running || copilot.isFinishing {
+            protectCallPresentation()
+        } else if callPresentationProtected, releaseCallPresentationTask == nil {
+            releaseCallPresentationTask = Task { @MainActor [weak self] in
+                try? await Task.sleep(for: .seconds(10))
+                guard !Task.isCancelled, let self else { return }
+                self.releaseCallPresentationTask = nil
+                guard !self.launchingCall, !self.endingCall,
+                      !self.status.copilot.starting, !self.status.copilot.running,
+                      !self.status.copilot.isFinishing else { return }
+                self.callPresentationProtected = false
+            }
+        }
+    }
 
     private func callCommand(
         _ action: String, persona: String, model: String, meeting: CallaMeeting?
@@ -1199,7 +1288,11 @@ final class CallaEngineClient: ObservableObject {
             gatewayStandby: gatewayStandby))
     }
 
-    func endCall() {
+    func endCall(origin: String) {
+        NSLog("[CallaCallControl] stop requested origin=%@ callID=%@ state=%@",
+              origin, status.copilot.callID ?? "none", status.copilot.lifecycleState ?? "none")
+        protectCallPresentation()
+        Task { await CallVPNManager.shared.restoreAfterCall() }
         CopilotLiveSession.shared.releaseEndedCall()
         // Claimed locally, for the same reason `startCall` claims its launch:
         // the host cannot report a stop it has not been told about yet, and the
@@ -1240,8 +1333,8 @@ final class CallaEngineClient: ObservableObject {
 
     /// Screenshot of what is being shared, saved with the call and read into
     /// the copilot's context.
-    func takeScreenshot() {
-        send(CallaCopilotCommand(action: "screenshot"))
+    func takeScreenshot(displayID: UInt32? = nil) {
+        send(CallaCopilotCommand(action: "screenshot", displayID: displayID))
     }
 
     /// Opens a call's folder in Documents/Calls, or the Calls folder itself.
@@ -1273,6 +1366,21 @@ final class CallaEngineClient: ObservableObject {
     /// Hands the settings snapshot to the engine, which writes it to Downloads.
     func saveSettingsSnapshot(_ data: Data) {
         invoke { $0.saveSettingsSnapshot(data, with: $1) }
+    }
+
+    func exportDiagnostics(completion: @escaping (String) -> Void) {
+        let connection = connection ?? makeConnection()
+        guard let proxy = connection.remoteObjectProxyWithErrorHandler({ error in
+            Task { @MainActor in completion("ERROR: \(error.localizedDescription)") }
+        }) as? CallaEngineProtocol else {
+            completion("ERROR: Calla engine is unavailable")
+            return
+        }
+        proxy.exportDiagnostics { data in
+            Task { @MainActor in
+                completion(String(data: data, encoding: .utf8) ?? "ERROR: Invalid engine reply")
+            }
+        }
     }
 
     func setCallPersona(_ persona: String) {
@@ -1748,3 +1856,27 @@ private final class StatusObserver: NSObject, CallaEngineObserver {
 }
 
 private typealias Preferences = CallaEnginePreferences
+
+@MainActor
+final class CallaDiagnostics: ObservableObject {
+    static let shared = CallaDiagnostics()
+
+    @Published private(set) var saving = false
+    @Published private(set) var message: String?
+
+    func save() {
+        guard !saving else { return }
+        saving = true
+        message = nil
+        CallaEngineClient.shared.exportDiagnostics { [weak self] result in
+            guard let self else { return }
+            self.saving = false
+            if result.hasPrefix("ERROR:") {
+                self.message = result
+            } else {
+                self.message = "Saved \((result as NSString).lastPathComponent) to Downloads"
+                NSWorkspace.shared.activateFileViewerSelecting([URL(fileURLWithPath: result)])
+            }
+        }
+    }
+}

@@ -183,6 +183,7 @@ struct CallaNotchApp: App {
 
 private struct ReadyMenuContents: View {
     @ObservedObject private var pomodoro = PomodoroManager.shared
+    @ObservedObject private var diagnostics = CallaDiagnostics.shared
     var body: some View {
         if pomodoro.isActive {
             Button(pomodoro.isRunning ? "Pause timer" : "Resume timer") {
@@ -203,6 +204,13 @@ private struct ReadyMenuContents: View {
             }
         }
         .keyboardShortcut(KeyEquivalent(","), modifiers: .command)
+        Button(diagnostics.saving ? "Saving diagnostics…" : "Save diagnostics…") {
+            diagnostics.save()
+        }
+        .disabled(diagnostics.saving)
+        if let message = diagnostics.message {
+            Text(message)
+        }
         CheckForUpdatesView(updater: CallaApplicationRuntime.shared.updaterController.updater)
         Divider()
         Button("Restart calla.notch") {
@@ -544,6 +552,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         if CommandLine.arguments.contains("--export-settings") { SettingsTransfer.export() }
 
         configureLaunchAtLoginIfNeeded()
+        CalendarManager.shared.startCallWatch()
         if Defaults[.callaCopilotEnabled] {
             // Touching the session here builds its status bridge before the first
             // poll. Starting capture remains an explicit user action. One XPC
@@ -722,7 +731,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                 default:
                     guard engine.status.copilot.available else { return }
                     if engine.status.copilot.running {
-                        engine.endCall()
+                        engine.endCall(origin: "shortcut")
+                    } else if CalendarManager.shared.selectedCallMeeting != nil {
+                        NotificationCenter.default.post(name: .callaCallWantsNotch, object: nil)
                     } else {
                         engine.startCall(persona: Defaults[.callaCopilotPersona], model: Defaults[.callaCopilotLiveModel])
                     }

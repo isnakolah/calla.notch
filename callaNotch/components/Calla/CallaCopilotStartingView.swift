@@ -33,6 +33,7 @@ import SwiftUI
 struct CallaCopilotStartingView: View {
     @ObservedObject private var engine = CallaEngineClient.shared
     @ObservedObject private var session = CopilotLiveSession.shared
+    @ObservedObject private var callVPN = CallVPNManager.shared
 
     @Default(.callaCopilotLiveModel) private var model
 
@@ -96,7 +97,7 @@ struct CallaCopilotStartingView: View {
                     .frame(height: 22)
                     .background(Capsule().fill(Color.white.opacity(0.08)))
                 if !failed {
-                    CallaHeaderGlyphButton(symbol: "stop.fill", help: "Cancel") { engine.endCall() }
+                    CallaHeaderGlyphButton(symbol: "stop.fill", help: "Cancel") { engine.endCall(origin: "startupCancel") }
                 }
             },
             actions: {
@@ -125,6 +126,7 @@ struct CallaCopilotStartingView: View {
     /// Says the one thing a person waiting actually wants to know: whether
     /// anything is being missed yet.
     private var footnote: String {
+        if let warning = callVPN.warning { return warning }
         if reachedListening || completedSteps == Step.allCases.count {
             return copilot.brainWarm
                 ? "Recording. Everything said from here is captured."
@@ -151,17 +153,20 @@ struct CallaCopilotStartingView: View {
         switch remedy {
         case .retry:
             session.clearStartupFailure()
-            engine.startCall(persona: Defaults[.callaCopilotPersona], model: model)
+            engine.retryLastCall()
+        case .retryWithoutMeeting:
+            session.clearStartupFailure()
+            engine.retryLastCallWithoutMeeting()
         case .endAndRetry:
             // Bring the invisible host down first, then start clean. The engine
             // refuses a second host outright, so starting without ending would
             // fail identically — which is what made the first version's Try
             // again button a dead end.
             session.clearStartupFailure()
-            engine.endCall()
+            engine.endCall(origin: "startupRetry")
             Task { @MainActor in
                 try? await Task.sleep(for: .milliseconds(600))
-                engine.startCall(persona: Defaults[.callaCopilotPersona], model: model)
+                engine.retryLastCall()
             }
         case let .openSettings(page, _):
             session.dismissStartupFailure()

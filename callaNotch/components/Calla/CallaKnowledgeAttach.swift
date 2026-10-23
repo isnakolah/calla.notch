@@ -345,4 +345,6 @@ extension Notification.Name {
     static let callaKnowledgeWantsNotch = Notification.Name("callaKnowledgeWantsNotch")
     /// Calendar selected event for Quiz preflight. Capture never starts here.
     static let callaQuizWantsNotch = Notification.Name("callaQuizWantsNotch")
+    static let callaCallWantsNotch = Notification.Name("callaCallWantsNotch")
+    static let callaMeetingWantsNotch = Notification.Name("callaMeetingWantsNotch")
 }
