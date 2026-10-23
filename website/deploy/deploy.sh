@@ -113,39 +113,27 @@ fi
 REMOTE
 
 echo '==> verifying public HTTPS and dashboard login'
-cf_ip=
-curl_public() {
-  if [ -n "$cf_ip" ]; then
-    curl --resolve "calla.nomonlab.com:443:$cf_ip" "$@"
-  else
-    curl "$@"
-  fi
-}
 ready=false
 for attempt in $(seq 1 40); do
-  if curl_public -fsS --max-time 8 "$url/healthz" >/dev/null 2>&1 && \
-     curl_public -fsS --max-time 8 "$url/" | grep -qi 'calla'; then
+  if curl -fsS --max-time 8 "$url/healthz" >/dev/null 2>&1 && \
+     page_html=$(curl -fsS --max-time 8 "$url/" 2>/dev/null) && \
+     printf '%s' "$page_html" | grep -qi 'calla'; then
     ready=true
     break
-  fi
-  if [ -z "$cf_ip" ]; then
-    # A local resolver can cache the pre-publication NXDOMAIN result. Keep the
-    # hostname for TLS while checking through Cloudflare's public DNS answer.
-    cf_ip=$(dig +short @1.1.1.1 A calla.nomonlab.com 2>/dev/null | grep -E '^[0-9.]+$' | head -1 || true)
   fi
   sleep 3
 done
 if [ "$ready" != true ]; then
-  echo "Public landing page did not become healthy at $url" >&2
+  echo "Public landing page did not become healthy through the system resolver at $url" >&2
   exit 1
 fi
 
 cookie_file=$(mktemp)
 chmod 600 "$cookie_file"
-session_json=$(curl_public -fsS --max-time 15 -c "$cookie_file" -b "$cookie_file" "$url/api/admin/session")
+session_json=$(curl -fsS --max-time 15 -c "$cookie_file" -b "$cookie_file" "$url/api/admin/session")
 csrf=$(printf '%s' "$session_json" | python3 -c 'import json, sys; data=json.load(sys.stdin); assert not data["authenticated"] and not data["setup"], "dashboard must require a password"; print(data["csrf"])')
 if [ -s "$password_file" ]; then
-  login_json=$(python3 - "$password_file" "$csrf" <<'PY' | curl_public -fsS --max-time 15 -c "$cookie_file" -b "$cookie_file" -H 'Content-Type: application/json' -H "Origin: $url" --data-binary @- "$url/api/admin/login"
+  login_json=$(python3 - "$password_file" "$csrf" <<'PY' | curl -fsS --max-time 15 -c "$cookie_file" -b "$cookie_file" -H 'Content-Type: application/json' -H "Origin: $url" --data-binary @- "$url/api/admin/login"
 import json
 import pathlib
 import sys
@@ -154,7 +142,7 @@ print(json.dumps({'password': pathlib.Path(sys.argv[1]).read_text().strip(), 'cs
 PY
   )
   printf '%s' "$login_json" | python3 -c 'import json, sys; assert json.load(sys.stdin).get("ok"), "dashboard login did not succeed"'
-  curl_public -fsS --max-time 15 -b "$cookie_file" "$url/api/admin/report" >/dev/null
+  curl -fsS --max-time 15 -b "$cookie_file" "$url/api/admin/report" >/dev/null
   echo 'Dashboard login verified'
 else
   echo 'Dashboard password is configured on the server; local credential file is absent'
@@ -162,7 +150,7 @@ fi
 rm -f "$cookie_file"
 cookie_file=
 
-invalid_status=$(curl_public -sS --max-time 15 -o /dev/null -w '%{http_code}' -H 'Content-Type: application/json' -H "Origin: $url" --data-binary '{"email":"invalid","consent":"launch-notification-v1"}' "$url/api/waitlist")
+invalid_status=$(curl -sS --max-time 15 -o /dev/null -w '%{http_code}' -H 'Content-Type: application/json' -H "Origin: $url" --data-binary '{"email":"invalid","consent":"launch-notification-v1"}' "$url/api/waitlist")
 if [ "$invalid_status" != 400 ]; then
   echo "Expected waitlist validation to return 400, got $invalid_status" >&2
   exit 1
