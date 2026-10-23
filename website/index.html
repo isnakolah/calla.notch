@@ -64,7 +64,12 @@
             "@id": "https://calla.nomonlab.com/#organization",
             "name": "Calla",
             "url": "https://calla.nomonlab.com/",
-            "logo": "https://calla.nomonlab.com/apple-touch-icon.png",
+            "logo": {
+              "@type": "ImageObject",
+              "url": "https://calla.nomonlab.com/icon-512.png",
+              "width": 512,
+              "height": 512
+            },
             "sameAs": ["https://github.com/isnakolah/calla.notch"]
           },
           {
@@ -149,7 +154,7 @@
     <header class="site-header">
       <div class="wrap header-row">
         <a class="brand-notch" href="/" aria-label="Calla home">
-          <span class="glow-dot" aria-hidden="true"></span><span class="brand-word">calla</span>
+          <svg class="logo-mark" viewBox="0 0 120 100" aria-hidden="true"><path class="logo-body" d="M2 8H118C110 8 108 12 108 20V52C108 76 90 94 66 94H54C30 94 12 76 12 52V20C12 12 10 8 2 8Z" /><g class="logo-folds"><path d="M60 12V28" /><path d="M24 25C29 18 39 19 42 27" /><path d="M96 25C91 18 81 19 78 27" /></g><g class="logo-eyes"><ellipse cx="47" cy="53" rx="5.6" ry="6.2" /><ellipse cx="73" cy="53" rx="5.6" ry="6.2" /></g><path class="logo-smile" d="M44 67C52 77 68 77 76 67" /></svg><span class="brand-word">calla</span>
         </a>
         <nav class="site-nav" aria-label="Main navigation">
           <a href="#watch">See it work</a>
@@ -474,13 +479,13 @@
             <span>This page never uses your microphone.</span>
           </nav>
         </div>
-        <p class="footer-word" aria-hidden="true">calla<span>.</span></p>
+        <p class="footer-word" aria-hidden="true"><img src="/logo.svg" alt="" width="120" height="100" />calla<span>.</span></p>
       </div>
     </footer>
 
     <div class="sticky-cta" id="sticky-cta">
       <div>
-        <span><span class="glow-dot" aria-hidden="true"></span>Start your company’s brain</span>
+        <span><img class="logo-small" src="/logo.svg" alt="" width="26" height="22" />Start your company’s brain</span>
         <a class="pill pill-accent" href="#join" data-signup>Get early access</a>
       </div>
     </div>

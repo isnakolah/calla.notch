@@ -263,6 +263,49 @@ button:active {
   border-radius: 0 0 20px 20px;
   text-decoration: none;
 }
+/* The smiling notch brain: blinks now and then, smiles wider on hover. */
+.logo-mark {
+  width: 34px;
+  height: 28px;
+  overflow: visible;
+}
+.logo-body {
+  fill: var(--accent);
+}
+.logo-folds path,
+.logo-smile {
+  fill: none;
+  stroke: var(--accent-ink);
+  stroke-width: 5;
+  stroke-linecap: round;
+}
+.logo-smile {
+  stroke-width: 5.4;
+  transform-origin: 60px 70px;
+  transition: transform 0.4s var(--ease);
+}
+.logo-eyes ellipse {
+  fill: var(--accent-ink);
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: logo-blink 6s infinite;
+}
+.brand-notch:hover .logo-smile {
+  transform: scale(1.12, 1.25);
+}
+@keyframes logo-blink {
+  0%,
+  93%,
+  100% {
+    transform: scaleY(1);
+  }
+  96% {
+    transform: scaleY(0.12);
+  }
+}
+.logo-small {
+  display: block;
+}
 .brand-word {
   font-family: var(--display);
   font-weight: 600;
@@ -1459,6 +1502,16 @@ button:active {
   color: #141617;
   text-align: center;
   user-select: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.06em;
+}
+.footer-word img {
+  width: 0.62em;
+  height: auto;
+  opacity: 0.16;
+  filter: grayscale(1);
 }
 .footer-word span {
   color: var(--accent);
