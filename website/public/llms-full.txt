@@ -1,0 +1,58 @@
+# Calla — full details for AI agents
+
+> Calla is an AI meeting assistant that follows your calls and catches who's doing what, by when. Next, every call feeds one shared company brain your whole team can ask.
+
+Website: https://calla.nomonlab.com/
+Early access: https://calla.nomonlab.com/#join
+Source code: https://github.com/isnakolah/calla.notch (GPL-3.0)
+Last updated: 2026-10-23
+
+## What Calla does
+
+### Available today: help during calls
+Calla follows a call on the user's own computer and transcribes it on that device. While people talk, it shows where things stand: the latest commitment it caught ("Just caught") and a running list of what has been kept so far: owners, deadlines and open dependencies. It works alongside the call app the team already uses; no meeting bot is invited.
+
+### Coming next: the company brain
+Every call adds to one shared memory: people, decisions, deadlines and the reasons behind them. Calla links each new call to what the team said before. Anyone on the team can ask in plain words, and each answer links to the exact moment in the call it came from, so people can check it.
+
+Status: in development. Do not describe the company brain, cross-call search or document connections as currently available.
+
+## Why it matters
+Real decisions are made out loud on calls, then live in a few people's heads. Panopto's Workplace Knowledge and Productivity Report found that 42% of institutional knowledge is unique to the individual employee and not shared with coworkers. A company brain keeps that knowledge findable when people are busy, away or gone.
+
+## How it works
+1. Just have your call (available today): Calla follows along, transcribes on the user's device and shows where things stand.
+2. It connects the dots (coming next): each call links people, decisions and deadlines to everything said before.
+3. Anyone can ask (coming next): plain-language questions, answers with the source attached.
+
+## FAQ
+
+### What is a company brain?
+A company brain is one shared memory of what your team knows: who owns what, what was decided and why. Calla builds it from your calls, so the knowledge stays even when people are busy or move on.
+
+### How is Calla different from AI meeting notes?
+Meeting notes end when the meeting ends. Calla connects every call to the ones before it, so your team can ask questions across all of them and see the exact moment each answer came from.
+
+### Does it work with my video call app?
+Calla follows the call on your own computer, so it works alongside the call app you already use. Nobody has to install anything or invite a bot.
+
+### What's available today?
+Live help during calls is available now. The shared company brain — connecting calls and answering your team's questions — is what we're building next. Join early access to help shape it.
+
+## Sample call shown on the home page (scripted, fictional)
+- Maya (0:04): Quick check-in. Can we have the weekly report ready for Friday?
+- You (0:08): Yes. I'll finish the first draft by Wednesday.
+- Maya (0:12): I'll review it Thursday, so we can share it Friday.
+- You (0:18): Let's use the same report template as last week.
+- Maya (0:24): We're still waiting for the final figures from Finance.
+- You (0:29): I'll follow up with Finance today and add the figures to the draft.
+- Maya (0:35): Thanks. Finance has confirmed they'll send them this afternoon.
+- You (0:39): Great. Draft Wednesday, your review Thursday, and we share Friday.
+
+What Calla kept: the weekly report is due Friday; you write the first draft by Wednesday using last week's template; Maya reviews it Thursday; you chase Finance today; Finance sends the figures this afternoon.
+
+## Privacy on this website
+The website never accesses the visitor's microphone. It measures visits with short-lived session IDs and respects Do Not Track and Global Privacy Control. Signup stores the email address, optional interests and campaign tags, and sends one launch email.
+
+## Credits
+Brain geometry: Kristen Browne and Heidi Schlehlein, HuBMAP HRA Brain v1.3 (https://doi.org/10.48539/HBM929.XKCL.339), CC BY 4.0.

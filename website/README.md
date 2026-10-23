@@ -1,10 +1,9 @@
-# Calla: a shared brain for your team’s work
+# Calla: give your company a brain
 
-Help visitors understand the company-brain vision through one ordinary conversation.
-The landing page gives a recognizable anatomical brain the main stage: fine neural
-threads follow its wrinkles, a signal travels to a related piece of knowledge, and
-the brain turns gently to reveal that connection. A smaller captioned call shows
-how Calla’s actual Mac app supplies the context.
+The landing page sells the company brain through one ordinary 45-second call. A
+video call plays with captions; each commitment lifts out of the caption, lands in
+Calla’s notch, then travels into a living brain built from the real cortex assets,
+where neurons fire, cascade along baked neural paths and keep the memory lit.
 
 ## Local review
 
@@ -31,32 +30,42 @@ The built preview and deployed site use `/admin`.
 
 ## What visitors see
 
-- A dark, spacious introduction with a large folded neural brain, direct product
-  copy, and an invitation to explore. Company memory is visibly labelled a vision.
-- A native compact notch by default. Expand/collapse switches between matching
-  native recordings; the compact video remains the single playback clock.
-- Speaker-labelled closed captions inside the call. The expanded view preserves
-  the recording position and play/pause state; a failed load retains the compact
-  view and offers a retry.
-- A surface-based brain: a faint continuous cortex, curvature contours, fine
-  cells, and 59 baked paths anchored to 40 unique pieces of fictional knowledge.
-  Pulses follow the surface rather than cutting through the brain.
-- A searchable 3D explorer with type filters, source excerpts, orbit and zoom.
-  Opening pauses the call. Closing restores its previous state. A cited moment
-  scrolls to the call, seeks to the source, and remains paused.
-- A short explanation of capture, connection and recall, followed by the launch
-  signup. Mobile uses normal document flow: introduction, brain, call, controls,
-  explanation and signup.
-- Reduced motion uses a stationary brain and discrete highlights. A matching
-  static brain appears while loading and when WebGL is unavailable; the explorer
-  retains searchable knowledge and source details.
+- A hero (“Give your company a brain.”) with an inline early-access form.
+- The stage (`src/stage.js`): a video-call window with active-speaker outlines and
+  captions, the notch (“Just caught” plus what was kept so far) and the living
+  brain. One clock drives all three; Pause and Replay control it, and a
+  transcript of the call sits underneath as plain HTML.
+- The living brain is plain WebGL on `cortex.bin`, `neural-folds.bin` and
+  `neural-paths.json`. The cortex writes depth so the far side hides; activity
+  waves light the folds; the 40 anchors are neurons that charge, fire and send
+  action potentials along the 59 surface paths. Each caught fact fires its
+  neuron, keeps it lit and strengthens its links. The camera turns to meet each
+  arriving memory, turns through both hemispheres between them, and can be
+  dragged. Slow devices drop to 1× pixels; reduced motion opens on the finished
+  call, paused. Without WebGL the static brain image stays.
+- The problem, the company brain (marked “coming next”), how it works, an FAQ,
+  the closing signup and a sticky call to action shown after the stage.
+- The 3D explorer loads Three.js only when opened. A cited moment seeks the call
+  to that source and leaves it paused.
 
-`src/graph-data.js` supplies the existing fictional knowledge graph and native
-recording timeline. `src/brain-motion.js` selects one emphasized relationship per
-capture and derives travel progress and bounded rotation from absolute video time.
-Travel begins 450ms after knowledge arrives, lasts up to 2.6 seconds, and finishes
-before the next arrival. Pause, replay and backwards seeking reproduce the same
-state. The final second returns the brain to its opening pose.
+The company brain is presented as a planned capability; live help during calls
+is the shipped one. This page does not access the microphone or record the visitor.
+
+## Search and AI agents
+
+- `index.html` carries the title, description, canonical URL, Open Graph and
+  Twitter cards (`public/og-image.png`) and one JSON-LD graph: Organization,
+  WebSite, WebPage, SoftwareApplication and an FAQPage matching the visible FAQ.
+- `public/robots.txt` allows everything except `/admin` and `/api/`, names the
+  main AI crawlers explicitly and points to `public/sitemap.xml`.
+- `public/llms.txt` (summary), `public/llms-full.txt` (facts, status, FAQ,
+  transcript) and `public/index.md` (the page as Markdown) serve agents. Every
+  response links to `/llms.txt` with a `Link` header, and the page links to it.
+- nginx serves them with UTF-8 types and open CORS, and sends
+  `X-Robots-Tag: noindex` for `/admin` and `/api/`.
+- Fonts are self-hosted (Bricolage Grotesque, Geist, Geist Mono; OFL in
+  `public/fonts`). Update `lastmod` in the sitemap and “Last updated” in
+  `llms-full.txt` when the copy changes.
 
 The visual demonstrates a **future company knowledge graph**. It does not claim
 that document integrations or company-wide recall are currently implemented. This

@@ -1,0 +1,26 @@
+# Calla
+
+> Calla is an AI meeting assistant that follows your calls and catches who's doing what, by when. Next, every call feeds one shared company brain: a memory of people, decisions and deadlines that your whole team can ask in plain words, with every answer linked to the moment it came from.
+
+Calla is in early access. Live help during calls is available today. The shared company brain (connecting calls and answering questions across them) is being built next. This site never uses the visitor's microphone; the sample call on the home page is scripted and silent.
+
+## Key pages
+
+- [Home](https://calla.nomonlab.com/): what Calla is, a 45-second sample call, how the company brain works, FAQ and early-access signup
+- [Home page as Markdown](https://calla.nomonlab.com/index.md): the same content in plain Markdown
+- [Full details for AI agents](https://calla.nomonlab.com/llms-full.txt): product facts, status of each capability, FAQ and the sample call transcript
+
+## Facts
+
+- Name: Calla
+- Category: AI meeting assistant; company knowledge base / team memory ("company brain")
+- Available today: live help during calls, transcribed on the user's own device; shows commitments, owners and deadlines as the call happens
+- Coming next: a shared company brain across calls; plain-language questions with answers that cite the call and timestamp
+- Works alongside the call app the user already uses; nobody has to invite a bot to the meeting
+- Get access: join the early-access list at https://calla.nomonlab.com/#join
+- Source code: https://github.com/isnakolah/calla.notch (GPL-3.0)
+
+## Optional
+
+- [FAQ](https://calla.nomonlab.com/#faq)
+- [Sample call](https://calla.nomonlab.com/#watch)

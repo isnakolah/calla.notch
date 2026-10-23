@@ -1,0 +1,34 @@
+# Calla — https://calla.nomonlab.com
+# Search engines and AI assistants are welcome to read and cite this site.
+# A plain-language summary for AI agents lives at /llms.txt.
+
+User-agent: *
+Allow: /
+Disallow: /admin
+Disallow: /admin.html
+Disallow: /api/
+
+# AI search and assistant crawlers: explicitly allowed.
+User-agent: GPTBot
+User-agent: OAI-SearchBot
+User-agent: ChatGPT-User
+User-agent: ClaudeBot
+User-agent: Claude-SearchBot
+User-agent: Claude-User
+User-agent: anthropic-ai
+User-agent: PerplexityBot
+User-agent: Perplexity-User
+User-agent: Google-Extended
+User-agent: Applebot
+User-agent: Applebot-Extended
+User-agent: Bingbot
+User-agent: DuckAssistBot
+User-agent: CCBot
+User-agent: meta-externalagent
+User-agent: MistralAI-User
+Allow: /
+Disallow: /admin
+Disallow: /admin.html
+Disallow: /api/
+
+Sitemap: https://calla.nomonlab.com/sitemap.xml

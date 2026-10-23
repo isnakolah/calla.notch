@@ -1,0 +1,14 @@
+{
+  "name": "Calla — AI meeting notes that build your company brain",
+  "short_name": "Calla",
+  "description": "An AI meeting assistant that turns every call into a shared company brain.",
+  "start_url": "/",
+  "display": "browser",
+  "background_color": "#08090a",
+  "theme_color": "#08090a",
+  "icons": [
+    { "src": "/favicon.svg", "type": "image/svg+xml", "sizes": "any" },
+    { "src": "/icon-192.png", "type": "image/png", "sizes": "192x192" },
+    { "src": "/icon-512.png", "type": "image/png", "sizes": "512x512" }
+  ]
+}

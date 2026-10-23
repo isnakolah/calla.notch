@@ -6,532 +6,512 @@
       name="viewport"
       content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content"
     />
-    <meta name="theme-color" content="#070d11" />
-    <meta name="darkreader-lock" />
+    <title>Calla — AI meeting notes that build your company brain</title>
     <meta
       name="description"
-      content="Meet Calla. Live meeting help for your Mac, and a vision for a shared brain that connects your team’s people, decisions, and work."
+      content="Calla is an AI meeting assistant that catches who’s doing what, by when, on every call — and builds a shared company brain your whole team can search and ask."
     />
-    <title>Calla — A shared brain for your team’s work.</title>
+    <meta
+      name="robots"
+      content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1"
+    />
+    <link rel="canonical" href="https://calla.nomonlab.com/" />
+    <meta name="theme-color" content="#08090a" />
+    <meta name="color-scheme" content="dark" />
+    <meta name="darkreader-lock" />
+    <meta name="application-name" content="Calla" />
+    <meta name="author" content="Calla" />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Calla" />
+    <meta property="og:locale" content="en_US" />
+    <meta property="og:url" content="https://calla.nomonlab.com/" />
+    <meta property="og:title" content="Calla — Give your company a brain" />
+    <meta
+      property="og:description"
+      content="An AI meeting assistant that catches who’s doing what, by when — and turns every call into a shared company brain your team can ask."
+    />
+    <meta property="og:image" content="https://calla.nomonlab.com/og-image.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta
+      property="og:image:alt"
+      content="Calla: Give your company a brain. A glowing brain connected to a live call."
+    />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Calla — Give your company a brain" />
+    <meta
+      name="twitter:description"
+      content="AI meeting notes that don’t end when the call does. Every call feeds one shared memory your whole team can ask."
+    />
+    <meta name="twitter:image" content="https://calla.nomonlab.com/og-image.png" />
+
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/site.webmanifest" />
+    <link rel="sitemap" type="application/xml" href="/sitemap.xml" />
+    <link rel="alternate" type="text/plain" href="/llms.txt" title="Calla for AI agents (llms.txt)" />
+    <link rel="alternate" type="text/markdown" href="/index.md" title="This page as Markdown" />
+    <link rel="preload" href="/fonts/bricolage-latin.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href="/fonts/geist-latin.woff2" as="font" type="font/woff2" crossorigin />
+
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@graph": [
+          {
+            "@type": "Organization",
+            "@id": "https://calla.nomonlab.com/#organization",
+            "name": "Calla",
+            "url": "https://calla.nomonlab.com/",
+            "logo": "https://calla.nomonlab.com/apple-touch-icon.png",
+            "sameAs": ["https://github.com/isnakolah/calla.notch"]
+          },
+          {
+            "@type": "WebSite",
+            "@id": "https://calla.nomonlab.com/#website",
+            "url": "https://calla.nomonlab.com/",
+            "name": "Calla",
+            "description": "AI meeting notes that build your company brain.",
+            "publisher": { "@id": "https://calla.nomonlab.com/#organization" },
+            "inLanguage": "en"
+          },
+          {
+            "@type": "WebPage",
+            "@id": "https://calla.nomonlab.com/#webpage",
+            "url": "https://calla.nomonlab.com/",
+            "name": "Calla — AI meeting notes that build your company brain",
+            "isPartOf": { "@id": "https://calla.nomonlab.com/#website" },
+            "about": { "@id": "https://calla.nomonlab.com/#software" },
+            "primaryImageOfPage": "https://calla.nomonlab.com/og-image.png",
+            "inLanguage": "en"
+          },
+          {
+            "@type": "SoftwareApplication",
+            "@id": "https://calla.nomonlab.com/#software",
+            "name": "Calla",
+            "applicationCategory": "BusinessApplication",
+            "description": "An AI meeting assistant that follows your calls, catches commitments, owners and deadlines, and builds a shared company brain your team can ask.",
+            "url": "https://calla.nomonlab.com/",
+            "publisher": { "@id": "https://calla.nomonlab.com/#organization" },
+            "featureList": [
+              "Live help during calls: who is doing what, by when",
+              "On-device transcription",
+              "Shared company memory across calls (coming next)",
+              "Plain-language answers with links to the moment they came from (coming next)"
+            ]
+          },
+          {
+            "@type": "FAQPage",
+            "@id": "https://calla.nomonlab.com/#faq",
+            "mainEntity": [
+              {
+                "@type": "Question",
+                "name": "What is a company brain?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "A company brain is one shared memory of what your team knows: who owns what, what was decided and why. Calla builds it from your calls, so the knowledge stays even when people are busy or move on."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "How is Calla different from AI meeting notes?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "Meeting notes end when the meeting ends. Calla connects every call to the ones before it, so your team can ask questions across all of them and see the exact moment each answer came from."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "Does it work with my video call app?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "Calla follows the call on your own computer, so it works alongside the call app you already use. Nobody has to install anything or invite a bot."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "What’s available today?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "Live help during calls is available now. The shared company brain — connecting calls and answering your team’s questions — is what we’re building next. Join early access to help shape it."
+                }
+              }
+            ]
+          }
+        ]
+      }
+    </script>
   </head>
   <body>
     <a class="skip-link" href="#main">Skip to content</a>
-    <header class="desktop-bar">
-      <a class="wordmark" href="#meeting" aria-label="Calla home"
-        ><svg viewBox="0 0 32 30" aria-hidden="true">
-          <path
-            d="M1 2h30c-4 0-4 4-4 4v12c0 6-3 10-9 10h-4C8 28 5 24 5 18V6S5 2 1 2Z"
-            fill="currentColor"
-          />
-          <circle cx="12" cy="12" r="1.8" fill="#071019" />
-          <circle cx="21" cy="12" r="1.8" fill="#071019" />
-          <path
-            d="M12 19q4 4 9 0"
-            fill="none"
-            stroke="#071019"
-            stroke-width="1.5"
-          /></svg
-        ><span>calla<span class="wordmark-sub">.notch</span></span></a
-      >
-      <nav aria-label="Main navigation">
-        <a href="#connected">How it works</a
-        ><a class="nav-cta" href="#company" data-signup
-          >Get early access <span>↗</span></a
-        >
-      </nav>
+
+    <header class="site-header">
+      <div class="wrap header-row">
+        <a class="brand-notch" href="/" aria-label="Calla home">
+          <span class="glow-dot" aria-hidden="true"></span><span class="brand-word">calla</span>
+        </a>
+        <nav class="site-nav" aria-label="Main navigation">
+          <a href="#watch">See it work</a>
+          <a href="#company-brain">The company brain</a>
+          <a href="#how">How it works</a>
+          <a href="#faq">FAQ</a>
+          <a class="pill pill-light" href="#join" data-signup>Get early access <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M3 7h8M7.5 3.5 11 7l-3.5 3.5" /></svg></a>
+        </nav>
+      </div>
     </header>
+
     <main id="main">
-      <section
-        class="hero"
-        id="meeting"
-        data-chapter="meeting"
-        aria-labelledby="hero-title"
-      >
-        <div class="intro-copy">
-          <p class="eyebrow">
-            <span class="live-dot"></span> YOUR CALL. A LITTLE MORE CLARITY.
+      <section class="hero" aria-labelledby="hero-title">
+        <div class="wrap hero-inner">
+          <p class="badge"><span class="dot" aria-hidden="true"></span>The company brain starts with one call</p>
+          <h1 id="hero-title">Give your company <span class="accent">a brain.</span></h1>
+          <p class="lede">
+            Calla is the AI meeting assistant that follows your calls and
+            catches who’s doing what, by when. Then every call feeds one shared
+            company brain your whole team can ask.
           </p>
-          <h1 id="hero-title">
-            Stay in the conversation.<br /><em>Calla keeps the thread.</em>
-          </h1>
-          <p class="hero-description">
-            A clear view of what’s been said,<br />what matters, and what comes
-            next.<br /><span>Right in your Mac’s notch.</span>
-          </p>
-          <div class="hero-actions">
-            <button class="primary-button" id="hero-play">
-              Watch Calla in action <span>↗</span></button
-            ><button class="quiet-link" data-explore>
-              Explore the brain <span>↗</span>
-            </button>
-          </div>
-          <p class="vision-note">
-            Real Mac app. Sample conversation. A glimpse of what’s next.
-          </p>
-        </div>
-        <div class="brain-showcase">
-          <div class="brain-heading">
-            <span class="eyebrow">BEHIND THE SCENES</span
-            ><span class="concept-tag">THE VISION</span>
-          </div>
-          <div
-            id="brain"
-            class="brain-canvas"
-            role="group"
-            aria-label="An anatomical brain formed by neural folds. Signals travel between connected pieces of team knowledge."
-          >
-            <div id="brain-fallback">
-              <img
-                src="/models/brain-neural-fallback.jpg"
-                alt="An anatomical brain with folded neural pathways connecting knowledge."
-              />
+          <form class="signup-form hero-form" id="hero-signup" novalidate>
+            <label class="sr-only" for="hero-email">Work email</label>
+            <input id="hero-email" name="email" type="email" placeholder="you@company.com" autocomplete="email" maxlength="254" required />
+            <div class="honeypot" aria-hidden="true">
+              <label for="hero-website">Leave this empty</label><input id="hero-website" name="website" tabindex="-1" autocomplete="off" />
             </div>
-            <div id="brain-labels" class="brain-labels"></div>
-          </div>
-          <div class="brain-context" id="brain-context">
-            <span id="brain-kicker">YOUR WORK, CONNECTED</span>
-            <p id="brain-explanation">
-              Every conversation adds a little more context.
-            </p>
-          </div>
-          <div class="brain-bottom">
-            <span class="brain-key"
-              ><i></i> One conversation. Many connections.</span
-            ><button class="text-cta" data-explore>
-              Explore <span>↗</span>
-            </button>
-          </div>
-        </div>
-        <div class="meeting-scene" id="meeting-scene">
-          <div class="scene-heading">
-            <span>CALLA, IN THE CONVERSATION</span
-            ><small>ZEN VIEW · 45-SECOND DEMO</small>
-          </div>
-          <div class="meeting-display">
-            <div class="desktop-menubar" aria-hidden="true">
-              <span>● &nbsp; Finder &nbsp; File &nbsp; Edit &nbsp; View</span
-              ><span>Wed 9:41</span>
-            </div>
-            <div class="notch-anchor" id="notch-anchor">
-              <div class="hardware-notch" aria-hidden="true">
-                <i class="camera-dot"></i>
-              </div>
-              <div class="native-stage" id="native-stage">
-                <video
-                  id="call-video"
-                  playsinline
-                  muted
-                  autoplay
-                  preload="auto"
-                  aria-label="Scripted weekly check-in playing in the actual Calla Mac app"
-                >
-                  <track
-                    kind="captions"
-                    src="/demo/weekly-check-in.vtt"
-                    srclang="en"
-                    label="English"
-                  />
-                </video>
-                <video
-                  id="call-video-full"
-                  playsinline
-                  muted
-                  preload="none"
-                  aria-label="Expanded native Calla view"
-                  hidden
-                ></video>
-                <span
-                  id="notch-loading"
-                  class="notch-loading"
-                  role="status"
-                  hidden
-                  >Opening Calla…</span
-                >
-              </div>
-              <button
-                id="notch-toggle"
-                class="notch-toggle"
-                aria-expanded="false"
-                aria-label="Expand Calla"
-                aria-controls="native-stage"
-              >
-                <span>Expand Calla</span><b aria-hidden="true">↗</b>
-              </button>
-            </div>
-
-            <div class="meeting-window" id="meeting-surround">
-              <div class="meeting-window-bar">
-                <span class="window-dots" aria-hidden="true">● ● ●</span
-                ><span>Weekly check-in</span
-                ><span class="meeting-tag">SAMPLE</span>
-              </div>
-              <div class="participant-grid">
-                <div class="participant participant-maya" id="maya-tile">
-                  <div class="avatar-portrait maya-portrait">
-                    <svg viewBox="0 0 160 150" aria-hidden="true">
-                      <path
-                        d="M33 150v-22q3-34 47-35 44 0 49 35v22"
-                        fill="#525f71"
-                      />
-                      <path d="M65 81h30v25q-15 14-30 0" fill="#b78069" />
-                      <ellipse cx="80" cy="56" rx="31" ry="38" fill="#d49c80" />
-                      <path
-                        d="M48 65Q26 12 77 8q49-4 36 67l-9-35Q72 53 57 32l-4 40Z"
-                        fill="#28232b"
-                      />
-                      <path
-                        d="M51 50q-16 31-5 60l-12-6q-10-21-3-45m76-13q20 37 5 64l14-7q5-26-7-50"
-                        fill="#28232b"
-                      />
-                      <path
-                        d="M69 73q12 9 23-1"
-                        fill="none"
-                        stroke="#995b53"
-                        stroke-width="2"
-                      />
-                      <circle cx="68" cy="57" r="2" fill="#30272a" />
-                      <circle cx="93" cy="57" r="2" fill="#30272a" />
-                    </svg>
-                  </div>
-                  <span class="participant-name"
-                    >Maya <i class="speaking-bars"><b></b><b></b><b></b></i
-                  ></span>
-                </div>
-                <div class="participant participant-you" id="you-tile">
-                  <div class="avatar-portrait you-portrait">
-                    <svg viewBox="0 0 160 150" aria-hidden="true">
-                      <path
-                        d="M29 150v-19q5-34 51-37 44 1 51 37v19"
-                        fill="#476c66"
-                      />
-                      <path d="M65 80h30v24q-14 14-30 0" fill="#925e43" />
-                      <ellipse cx="80" cy="57" rx="30" ry="37" fill="#ad7957" />
-                      <path
-                        d="M50 55Q33 12 75 9q48-8 38 47l-13-24Q80 43 55 34Z"
-                        fill="#242829"
-                      />
-                      <path
-                        d="M54 67q7 30 26 29 19 0 26-30-7 22-26 22-20 0-26-21"
-                        fill="#4a3a30"
-                      />
-                      <circle cx="68" cy="57" r="2" fill="#2b2827" />
-                      <circle cx="93" cy="57" r="2" fill="#2b2827" />
-                      <path
-                        d="M70 74q10 6 21 0"
-                        fill="none"
-                        stroke="#754332"
-                        stroke-width="2"
-                      />
-                    </svg>
-                  </div>
-                  <span class="participant-name"
-                    >You <i class="speaking-bars"><b></b><b></b><b></b></i
-                  ></span>
-                </div>
-              </div>
-              <div
-                class="call-toolbar"
-                aria-label="Illustrative meeting controls"
-              >
-                <span class="call-icon" aria-hidden="true"
-                  ><svg viewBox="0 0 20 20">
-                    <rect x="7" y="2" width="6" height="10" rx="3" />
-                    <path
-                      d="M4 9v1a6 6 0 0 0 12 0V9M10 16v3M7 19h6"
-                    /></svg></span
-                ><span class="call-icon" aria-hidden="true"
-                  ><svg viewBox="0 0 20 20">
-                    <rect x="2" y="5" width="11" height="10" rx="2" />
-                    <path d="m13 8 5-3v10l-5-3" /></svg></span
-                ><span class="call-status"
-                  ><i class="live-dot"></i> You and Maya</span
-                ><span class="end-call">End call</span>
-              </div>
-            </div>
-            <div class="speech-stage" id="speech-stage">
-              <div>
-                <i class="live-dot"></i
-                ><strong id="speech-name">Your weekly check-in</strong
-                ><span>A SAMPLE CALL</span>
-              </div>
-              <p id="speech-text">
-                A report, a deadline, and the people making it happen.
-              </p>
-            </div>
-
-            <div class="display-dock" aria-hidden="true">
-              <i></i><i></i><i></i><i></i><i></i>
-            </div>
-          </div>
-          <p id="notch-error" role="status" hidden>
-            Expanded view couldn’t load. The Zen demo is still available. Select
-            Expand Calla to retry.
-          </p>
-          <div class="demo-footnote">
-            <span><i class="live-dot"></i> Calla for Mac</span
-            ><span>Real app · sample conversation</span>
-          </div>
-        </div>
-
-        <div class="demo-playback">
-          <div class="flow-status" id="flow-status">
-            <span data-flow="call">Conversation</span><i>→</i
-            ><span data-flow="notch">Calla</span><i>→</i
-            ><span data-flow="brain">Connection</span>
-          </div>
-          <div class="meeting-player" id="meeting-player">
-            <div class="player-controls">
-              <button id="play" aria-label="Play sample meeting">
-                <svg viewBox="0 0 20 20" aria-hidden="true">
-                  <path
-                    id="play-icon"
-                    d="m6 3 11 7-11 7Z"
-                    fill="currentColor"
-                  /></svg
-                ><span id="play-label">Play meeting</span></button
-              ><label class="sr-only" for="progress"
-                >Meeting playback position</label
-              ><input
-                id="progress"
-                type="range"
-                min="0"
-                max="45"
-                step="0.1"
-                value="0"
-              /><span id="clock">0:00 / 0:45</span
-              ><button
-                class="replay-control"
-                id="replay"
-                aria-label="Replay meeting"
-              >
-                ↺
-              </button>
-            </div>
-          </div>
-          <p class="playback-note">
-            Follow one conversation as its details become connected.
+            <button type="submit" class="pill pill-accent">Get early access</button>
+            <p class="form-status" role="status"></p>
+          </form>
+          <p class="hero-note">
+            Works alongside the call app you already use ·
+            <a href="#watch">Watch a 45-second call ↓</a>
           </p>
         </div>
       </section>
-      <section
-        id="connected"
-        class="how-section"
-        data-chapter="connected"
-        aria-labelledby="how-title"
-      >
-        <div class="section-intro">
-          <p class="eyebrow">FROM A MOMENT TO A MEMORY</p>
-          <h2 id="how-title">Good work builds<br />on what came before.</h2>
-          <p>
-            Start with a conversation. Keep the useful details.<br />Connect
-            them to the bigger picture.
-          </p>
-        </div>
-        <div class="steps">
-          <article>
-            <span class="step-number">01 / CAPTURE</span>
-            <h3>Be in the conversation.</h3>
-            <p>
-              Calla sits in your Mac’s notch, keeping the transcript and a
-              running account close by.
-            </p>
-            <span class="step-status">IN THE MAC APP</span>
-          </article>
-          <article>
-            <span class="step-number">02 / CONNECT</span>
-            <h3>Keep the thread.</h3>
-            <p>
-              The vision: connect a decision to its owner, its deadline, and the
-              conversation behind it.
-            </p>
-            <span class="step-status planned">PLANNED</span>
-          </article>
-          <article>
-            <span class="step-number">03 / REMEMBER</span>
-            <h3>Find the why.</h3>
-            <p>
-              Build toward shared memory your team can explore, with sources to
-              check and context to return to.
-            </p>
-            <span class="step-status planned">PLANNED</span>
-          </article>
-        </div>
-        <div class="example-thread">
-          <span class="example-label">ONE SMALL CONNECTION</span
-          ><span class="thread-node">Maya</span
-          ><span class="thread-edge">reviews</span
-          ><span class="thread-node">Weekly report</span
-          ><span class="thread-edge">before</span
-          ><span class="thread-node">Friday</span
-          ><button data-explore class="quiet-link">Follow the source ↗</button>
-        </div>
-      </section>
-      <section
-        id="company"
-        class="signup-section"
-        data-chapter="company"
-        aria-labelledby="signup-title"
-      >
-        <div>
-          <p class="eyebrow">
-            <span class="live-dot"></span> HELP SHAPE WHAT COMES NEXT
-          </p>
-          <h2 id="signup-title">
-            Less lost context.<br /><em>More shared understanding.</em>
-          </h2>
-          <p>
-            We’re starting with calls. Join the launch list<br />and follow the
-            journey to a company brain.
-          </p>
-        </div>
-        <form id="signup" class="signup-inline">
-          <label for="email">Get a note when Calla is ready.</label>
-          <div class="inline-signup-row">
-            <input
-              id="email"
-              aria-label="Your email address"
-              name="email"
-              type="email"
-              placeholder="Your email address"
-              autocomplete="email"
-              maxlength="254"
-              required
-            /><button type="submit" class="submit-signup">
-              Join the launch list <span>↗</span>
-            </button>
+
+      <section id="watch" class="watch" data-chapter="meeting" aria-labelledby="watch-title">
+        <div class="wrap">
+          <div class="section-bar">
+            <h2 id="watch-title">Watch one call turn into memory.</h2>
+            <div class="stage-controls">
+              <button type="button" class="pill pill-ghost" id="stage-play" aria-pressed="false">Pause</button>
+              <button type="button" class="pill pill-ghost" id="stage-replay">Replay</button>
+            </div>
           </div>
-          <details class="inline-interests">
-            <summary>
-              What would help your working day? <span>Optional +</span>
-            </summary>
-            <fieldset>
-              <legend>I’m interested in <span>(optional)</span></legend>
-              <label
-                ><input
-                  type="checkbox"
-                  name="interests"
-                  value="live-calls"
-                /><span>Live meeting help</span></label
-              ><label
-                ><input
-                  type="checkbox"
-                  name="interests"
-                  value="company-memory"
-                /><span>Shared company memory</span></label
-              ><label
-                ><input
-                  type="checkbox"
-                  name="interests"
-                  value="team-pilot"
-                /><span>A pilot for my team</span></label
-              >
-            </fieldset>
+
+          <div class="stage" id="stage" role="region" aria-label="Animation: a sample video call between You and Maya. Calla catches each commitment and sends it into the team’s brain, where neurons fire and connect.">
+            <div class="notch-row">
+              <div class="notch" id="notch">
+                <div class="notch-glow" data-a="notchGlow" aria-hidden="true"></div>
+                <div class="notch-top">
+                  <span class="notch-clock"><span class="glow-dot" aria-hidden="true"></span><span data-a="clock">0:00</span></span>
+                  <span class="notch-listening"><span class="bars" aria-hidden="true"><i></i><i></i><i></i><i></i></span>Calla is listening</span>
+                </div>
+                <p class="notch-label">Just caught</p>
+                <p class="notch-fact" data-a="notchIn"><span data-a="standing">Listening for what matters…</span></p>
+                <ul class="notch-kept" data-a="kept" aria-label="Kept so far"></ul>
+                <span class="notch-out" data-a="notchOut" aria-hidden="true"></span>
+              </div>
+            </div>
+
+            <div class="stage-row">
+              <div class="call-window">
+                <div class="call-titlebar">
+                  <span class="traffic" aria-hidden="true"><i></i><i></i><i></i></span>
+                  <span class="call-title">Weekly check-in</span>
+                  <span class="call-title-right">
+                    <svg width="14" height="14" viewBox="0 0 16 16" class="shield" aria-hidden="true"><path d="M8 1.5 2.5 3.5v4c0 3.3 2.4 5.9 5.5 7 3.1-1.1 5.5-3.7 5.5-7v-4z" /><path d="m5.5 8 1.8 1.8L10.7 6.4" /></svg>
+                    <span class="view-label"><svg width="13" height="13" viewBox="0 0 16 16" aria-hidden="true"><rect x="1.5" y="1.5" width="5.5" height="5.5" rx="1" /><rect x="9" y="1.5" width="5.5" height="5.5" rx="1" /><rect x="1.5" y="9" width="5.5" height="5.5" rx="1" /><rect x="9" y="9" width="5.5" height="5.5" rx="1" /></svg>View</span>
+                  </span>
+                </div>
+                <div class="call-body">
+                  <div class="call-gallery">
+                    <div class="tile tile-maya">
+                      <svg viewBox="0 0 160 150" aria-hidden="true"><path d="M33 150v-22q3-34 47-35 44 0 49 35v22" fill="#525f71" /><path d="M65 81h30v25q-15 14-30 0" fill="#b78069" /><ellipse cx="80" cy="56" rx="31" ry="38" fill="#d49c80" /><path d="M48 65Q26 12 77 8q49-4 36 67l-9-35Q72 53 57 32l-4 40Z" fill="#28232b" /><path d="M51 50q-16 31-5 60l-12-6q-10-21-3-45m76-13q20 37 5 64l14-7q5-26-7-50" fill="#28232b" /><path d="M69 73q12 9 23-1" fill="none" stroke="#995b53" stroke-width="2" /><circle cx="68" cy="57" r="2" fill="#30272a" /><circle cx="93" cy="57" r="2" fill="#30272a" /></svg>
+                      <span class="speaker-ring" data-a="ring-Maya" aria-hidden="true"></span>
+                      <span class="tile-name"><svg width="10" height="12" viewBox="0 0 10 14" aria-hidden="true"><rect x="3" y="1" width="4" height="7" rx="2" /><path d="M1 6.5a4 4 0 0 0 8 0M5 10.5V13" /></svg>Maya</span>
+                    </div>
+                    <div class="tile tile-you">
+                      <svg viewBox="0 0 160 150" aria-hidden="true"><path d="M29 150v-19q5-34 51-37 44 1 51 37v19" fill="#476c66" /><path d="M65 80h30v24q-14 14-30 0" fill="#925e43" /><ellipse cx="80" cy="57" rx="30" ry="37" fill="#ad7957" /><path d="M50 55Q33 12 75 9q48-8 38 47l-13-24Q80 43 55 34Z" fill="#242829" /><path d="M54 67q7 30 26 29 19 0 26-30-7 22-26 22-20 0-26-21" fill="#4a3a30" /><circle cx="68" cy="57" r="2" fill="#2b2827" /><circle cx="93" cy="57" r="2" fill="#2b2827" /><path d="M70 74q10 6 21 0" fill="none" stroke="#754332" stroke-width="2" /></svg>
+                      <span class="speaker-ring" data-a="ring-You" aria-hidden="true"></span>
+                      <span class="tile-name"><svg width="10" height="12" viewBox="0 0 10 14" aria-hidden="true"><rect x="3" y="1" width="4" height="7" rx="2" /><path d="M1 6.5a4 4 0 0 0 8 0M5 10.5V13" /></svg>You</span>
+                    </div>
+                  </div>
+                  <div class="caption-strip">
+                    <p class="caption" data-a="caption"><span class="caption-who" data-a="capWho"></span> <span data-a="capPre"></span><span class="caption-key" data-key data-a="capKey"></span><span data-a="capPost"></span></p>
+                  </div>
+                </div>
+                <div class="call-toolbar" aria-hidden="true">
+                  <div class="tool-group">
+                    <span><svg viewBox="0 0 20 20"><rect x="7" y="2" width="6" height="10" rx="3" /><path d="M4 9v1a6 6 0 0 0 12 0V9M10 16v2" /></svg>Mute</span>
+                    <span><svg viewBox="0 0 20 20"><rect x="2" y="5" width="11" height="10" rx="2" /><path d="m13 8.5 5-3v9l-5-3" /></svg>Stop Video</span>
+                  </div>
+                  <div class="tool-group tool-middle">
+                    <span><svg viewBox="0 0 20 20"><circle cx="7.5" cy="7" r="3" /><path d="M2 17c0-3 2.5-5 5.5-5s5.5 2 5.5 5M13 4.5a3 3 0 0 1 0 5.5M15 12.5c1.8.6 3 2.2 3 4.5" /></svg>Participants</span>
+                    <span><svg viewBox="0 0 20 20"><path d="M3 4h14v9H8l-4 3v-3H3z" /></svg>Chat</span>
+                    <span class="tool-share"><svg viewBox="0 0 20 20"><rect x="2" y="3.5" width="16" height="11" rx="2" /><path d="M10 12V7M7.5 9 10 6.5 12.5 9" /></svg>Share</span>
+                    <span><svg viewBox="0 0 20 20"><circle cx="10" cy="10" r="7" /><circle cx="10" cy="10" r="2.5" class="fill" /></svg>Record</span>
+                  </div>
+                  <span class="tool-end">End</span>
+                </div>
+              </div>
+
+              <div class="brain-panel" data-a="brainWrap">
+                <img class="brain-fallback" data-a="brainImg" src="/models/brain-neural-fallback.jpg" alt="" width="736" height="503" />
+                <canvas class="brain-canvas" data-a="brainCanvas" aria-hidden="true"></canvas>
+                <div class="brain-labels" aria-hidden="true">
+                  <span data-blabel="report">Weekly report</span>
+                  <span data-blabel="friday">Due Friday</span>
+                  <span data-blabel="you">You</span>
+                  <span data-blabel="draft">First draft · Wed</span>
+                  <span data-blabel="maya">Maya</span>
+                  <span data-blabel="review">Review · Thu</span>
+                  <span data-blabel="template">Last week’s template</span>
+                  <span data-blabel="finance">Finance figures</span>
+                  <span data-blabel="followup">Chase Finance today</span>
+                </div>
+                <div class="brain-head" aria-hidden="true"><span><span class="glow-dot"></span>Your team’s brain</span><span>Drag to turn</span></div>
+                <p class="brain-saved" data-a="saved" aria-hidden="true">Saved to your team’s brain.</p>
+              </div>
+            </div>
+
+            <div class="stage-progress">
+              <div class="progress-track"><div class="progress-fill" data-a="progress"></div></div>
+              <ol class="stage-steps">
+                <li data-step="1"><span>1</span>People talk on a call</li>
+                <li data-step="2"><span>2</span>Calla catches what matters</li>
+                <li data-step="3"><span>3</span>Your team’s brain remembers</li>
+              </ol>
+            </div>
+
+            <div class="fly-layer" data-a="layer" aria-hidden="true">
+              <div class="fly-chip" data-a="chip"><span data-a="chipKey"></span><span data-a="chipFact"></span></div>
+              <span class="fly-dot hot" data-a="pk0"></span><span class="fly-dot" data-a="pk1"></span><span class="fly-dot" data-a="pk2"></span><span class="fly-dot" data-a="pk3"></span>
+            </div>
+          </div>
+
+          <details class="transcript">
+            <summary>Read the sample call transcript</summary>
+            <ol>
+              <li><b>Maya (0:04):</b> Quick check-in. Can we have the weekly report ready for Friday?</li>
+              <li><b>You (0:08):</b> Yes. I’ll finish the first draft by Wednesday.</li>
+              <li><b>Maya (0:12):</b> I’ll review it Thursday, so we can share it Friday.</li>
+              <li><b>You (0:18):</b> Let’s use the same report template as last week.</li>
+              <li><b>Maya (0:24):</b> We’re still waiting for the final figures from Finance.</li>
+              <li><b>You (0:29):</b> I’ll follow up with Finance today and add the figures to the draft.</li>
+              <li><b>Maya (0:35):</b> Thanks. Finance has confirmed they’ll send them this afternoon.</li>
+              <li><b>You (0:39):</b> Great. Draft Wednesday, your review Thursday, and we share Friday.</li>
+            </ol>
+            <p><b>What Calla kept:</b> the weekly report is due Friday; you write the first draft by Wednesday using last week’s template; Maya reviews it Thursday; you chase Finance today; Finance sends the figures this afternoon.</p>
           </details>
-          <div class="honeypot" aria-hidden="true">
-            <label for="website">Leave this empty</label
-            ><input
-              id="website"
-              name="website"
-              tabindex="-1"
-              autocomplete="off"
-            />
-          </div>
-          <p id="signup-status" class="signup-note" role="status">
-            Launch updates and your selected interests. Nothing else.
+          <p class="fine-print">
+            Sample call, scripted and silent. The live view is from the real
+            Calla app; the team brain is what we’re building next.
+            <button type="button" class="link-button" id="about-open">About this demo</button>
           </p>
-        </form>
+        </div>
+      </section>
+
+      <section class="problem" aria-labelledby="problem-title">
+        <div class="wrap split">
+          <div class="split-main">
+            <p class="kicker">The problem</p>
+            <h2 id="problem-title" class="display">Your team already knows the answer. <span class="muted">Nobody can find it.</span></h2>
+            <p class="body-lg">
+              The real decisions happen out loud, on calls. Then the call ends,
+              and they live in a few people’s heads — until those people are
+              busy, on holiday or gone.
+            </p>
+          </div>
+          <figure class="stat">
+            <p class="stat-number">42%</p>
+            <figcaption>
+              <p>of what people know at work is known only to them — not shared with anyone else.</p>
+              <cite>Source: Panopto, Workplace Knowledge and Productivity Report</cite>
+            </figcaption>
+          </figure>
+        </div>
+        <ul class="wrap quotes" aria-label="Questions teams ask every day">
+          <li>“Who said they’d do that?”</li>
+          <li>“Why did we decide this?”</li>
+          <li>“What did I miss on that call?”</li>
+        </ul>
+      </section>
+
+      <section id="company-brain" class="ask" data-chapter="connected" aria-labelledby="ask-title">
+        <div class="wrap">
+          <p class="kicker">The company brain <span class="tag tag-soon">Coming next</span></p>
+          <h2 id="ask-title" class="display narrow">Ask it anything your team has ever said.</h2>
+          <p class="body-lg narrow">
+            Every call adds to one shared memory: people, decisions, deadlines
+            and the reasons behind them. Ask in plain words. Every answer shows
+            the moment it came from.
+          </p>
+          <div class="ask-grid">
+            <div class="ask-demo">
+              <div class="ask-query">
+                <svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true"><circle cx="9" cy="9" r="6" /><path d="m14 14 4 4" /></svg>
+                <p>Why is the weekly report waiting on Finance?<span class="caret" aria-hidden="true"></span></p>
+              </div>
+              <div class="ask-answer">
+                <span class="answer-orb" aria-hidden="true"></span>
+                <div>
+                  <p class="answer-text">Finance still owed the final figures. You said you’d chase them that day, and Finance promised them by the afternoon.</p>
+                  <ul class="sources" aria-label="Sources">
+                    <li><span>0:24</span>Weekly check-in · Maya</li>
+                    <li><span>0:29</span>Weekly check-in · You</li>
+                    <li><span>0:35</span>Weekly check-in · Maya</li>
+                  </ul>
+                </div>
+              </div>
+              <div class="try-row">
+                <span>Try asking</span>
+                <button type="button" data-explore>Who owns the onboarding guide?</button>
+                <button type="button" data-explore>When does the customer portal launch?</button>
+                <button type="button" data-explore>What did we agree about the pilot budget?</button>
+              </div>
+            </div>
+            <ul class="benefits">
+              <li><h3>Answers with receipts</h3><p>Each answer links to the exact moment in the call, so you can check it yourself.</p></li>
+              <li><h3>New people catch up fast</h3><p>Instead of “ask Maya”, they ask the brain — and see why things are the way they are.</p></li>
+              <li><h3>Nothing slips</h3><p>Promises made on calls become owners and dates, not things someone hopes to remember.</p></li>
+            </ul>
+          </div>
+          <div class="explore-row">
+            <button type="button" class="pill pill-ghost pill-lg" data-explore>Explore a sample brain <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M3 7h8M7.5 3.5 11 7l-3.5 3.5" /></svg></button>
+            <span>Uses a made-up company, so you can poke around freely.</span>
+          </div>
+        </div>
+      </section>
+
+      <section id="how" class="how" aria-labelledby="how-title">
+        <div class="wrap">
+          <p class="kicker">How it works</p>
+          <h2 id="how-title" class="display">Three steps. Zero extra work.</h2>
+          <ol class="steps">
+            <li>
+              <div class="step-top"><span class="step-n">1</span><span class="tag tag-now">Available today</span></div>
+              <h3>Just have your call</h3>
+              <p>Calla follows along, transcribes on your own device and shows where things stand at a glance.</p>
+            </li>
+            <li>
+              <div class="step-top"><span class="step-n soon">2</span><span class="tag tag-soon">Coming next</span></div>
+              <h3>It connects the dots</h3>
+              <p>Each call links people, decisions and deadlines to everything your team said before.</p>
+            </li>
+            <li>
+              <div class="step-top"><span class="step-n soon">3</span><span class="tag tag-soon">Coming next</span></div>
+              <h3>Anyone can ask</h3>
+              <p>Your whole team asks in plain words and gets answers with the source attached.</p>
+            </li>
+          </ol>
+        </div>
+      </section>
+
+      <section id="faq" class="faq" aria-labelledby="faq-title">
+        <div class="wrap split">
+          <div class="faq-head">
+            <p class="kicker">Questions</p>
+            <h2 id="faq-title" class="display">The company brain, explained.</h2>
+          </div>
+          <div class="faq-list">
+            <details open>
+              <summary><h3>What is a company brain?</h3></summary>
+              <p>A company brain is one shared memory of what your team knows: who owns what, what was decided and why. Calla builds it from your calls, so the knowledge stays even when people are busy or move on.</p>
+            </details>
+            <details>
+              <summary><h3>How is Calla different from AI meeting notes?</h3></summary>
+              <p>Meeting notes end when the meeting ends. Calla connects every call to the ones before it, so your team can ask questions across all of them and see the exact moment each answer came from.</p>
+            </details>
+            <details>
+              <summary><h3>Does it work with my video call app?</h3></summary>
+              <p>Calla follows the call on your own computer, so it works alongside the call app you already use. Nobody has to install anything or invite a bot.</p>
+            </details>
+            <details>
+              <summary><h3>What’s available today?</h3></summary>
+              <p>Live help during calls is available now. The shared company brain — connecting calls and answering your team’s questions — is what we’re building next. Join early access to help shape it.</p>
+            </details>
+          </div>
+        </div>
+      </section>
+
+      <section id="join" class="join" data-chapter="company" aria-labelledby="join-title">
+        <div class="wrap">
+          <div class="join-card">
+            <div class="join-copy">
+              <p class="kicker dark">Early access</p>
+              <h2 id="join-title">Start your company’s brain on your next call.</h2>
+              <p>Be among the first teams in. Early teams help decide what the brain learns to do first.</p>
+            </div>
+            <form class="signup-form join-form" id="signup" novalidate>
+              <label for="email">Your work email</label>
+              <div class="join-input">
+                <input id="email" name="email" type="email" placeholder="you@company.com" autocomplete="email" maxlength="254" required />
+                <button type="submit" class="pill pill-light">Get early access</button>
+              </div>
+              <fieldset class="interests">
+                <legend>I’m most excited about (optional)</legend>
+                <label><input type="checkbox" name="interests" value="live-calls" />Help during calls</label>
+                <label><input type="checkbox" name="interests" value="company-memory" />A company brain</label>
+                <label><input type="checkbox" name="interests" value="team-pilot" />A pilot for my team</label>
+              </fieldset>
+              <div class="honeypot" aria-hidden="true">
+                <label for="website">Leave this empty</label><input id="website" name="website" tabindex="-1" autocomplete="off" />
+              </div>
+              <p class="form-status" role="status">One email when it’s ready, plus the things you picked. Nothing else.</p>
+            </form>
+          </div>
+        </div>
       </section>
     </main>
-    <footer class="scene-footer">
-      <a class="footer-brand" href="#meeting">calla<span>.notch</span></a
-      ><span>A little more memory for work.</span
-      ><button id="about-open">About this demo ↗</button>
+
+    <footer class="site-footer">
+      <div class="wrap">
+        <div class="footer-row">
+          <p>Calla. A memory for everything your team says.</p>
+          <nav aria-label="Footer">
+            <a href="#faq">FAQ</a>
+            <a href="/llms.txt">For AI agents</a>
+            <a href="https://github.com/isnakolah/calla.notch">Source</a>
+            <span>This page never uses your microphone.</span>
+          </nav>
+        </div>
+        <p class="footer-word" aria-hidden="true">calla<span>.</span></p>
+      </div>
     </footer>
-    <svg class="capture-overlay" id="capture-overlay" aria-hidden="true">
-      <defs>
-        <filter id="packet-glow"><feGaussianBlur stdDeviation="3" /></filter>
-      </defs>
-      <path
-        id="capture-path"
-        fill="none"
-        stroke="#62dcff"
-        stroke-width="1"
-        stroke-opacity=".2"
-      />
-      <circle
-        id="capture-halo"
-        r="9"
-        fill="#8ae7ff"
-        opacity=".35"
-        filter="url(#packet-glow)"
-      />
-      <circle id="capture-dot" r="3" fill="#d2f8ff" />
-      <circle id="capture-tail" r="2" fill="#8ceaff" opacity=".5" />
-    </svg>
+
+    <div class="sticky-cta" id="sticky-cta">
+      <div>
+        <span><span class="glow-dot" aria-hidden="true"></span>Start your company’s brain</span>
+        <a class="pill pill-accent" href="#join" data-signup>Get early access</a>
+      </div>
+    </div>
+
     <dialog id="about-dialog" class="about-dialog">
-      <button class="dialog-close" data-close aria-label="Close details">
-        ×
-      </button>
-      <p class="eyebrow">A LOOK INSIDE</p>
-      <h2>Real app. <br /><em>A growing vision.</em></h2>
-      <p>
-        The notch playback comes from Calla’s native Mac demo mode. The
-        conversation is scripted, silent and captioned. This page never accesses
-        your microphone.
-      </p>
-      <p>
-        The animated knowledge graph explains a future company-brain concept.
-        The document connections and company-wide answers are planned
-        capabilities.
-      </p>
-      <p>
-        We use short-lived browser session IDs to measure visits and
-        interactions. Campaign tags can be saved with your signup. Your details
-        stay private, and browser Do Not Track and Global Privacy Control
-        signals are respected.
-      </p>
+      <button class="dialog-close" data-close aria-label="Close details">×</button>
+      <p class="eyebrow">About this demo</p>
+      <h2>Real app.<br /><em>A growing vision.</em></h2>
+      <p>The live view in the sample call comes from Calla’s real app in demo mode. The call is scripted, silent and captioned. This page never accesses your microphone.</p>
+      <p>The brain explains the company-brain concept we’re building next. Document connections and company-wide answers are not shipped yet.</p>
+      <p>We use short-lived browser session IDs to measure visits and interactions. Campaign tags can be saved with your signup. Your details stay private, and browser Do Not Track and Global Privacy Control signals are respected.</p>
       <p class="asset-credit">
         Brain geometry: Kristen Browne and Heidi Schlehlein, HuBMAP HRA,
-        <a
-          href="https://doi.org/10.48539/HBM929.XKCL.339"
-          target="_blank"
-          rel="noreferrer"
-          >Brain v1.3</a
-        >,
-        <a
-          href="https://creativecommons.org/licenses/by/4.0/"
-          target="_blank"
-          rel="noreferrer"
-          >CC BY 4.0</a
-        >. Simplified and restyled for this scene.
+        <a href="https://doi.org/10.48539/HBM929.XKCL.339" target="_blank" rel="noreferrer">Brain v1.3</a>,
+        <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noreferrer">CC BY 4.0</a>.
+        Simplified and restyled for this scene.
       </p>
     </dialog>
-    <dialog
-      id="graph-dialog"
-      class="graph-dialog"
-      aria-labelledby="graph-title"
-    >
+
+    <dialog id="graph-dialog" class="graph-dialog" aria-labelledby="graph-title">
       <header class="explorer-header">
         <div>
-          <p class="eyebrow">A LITTLE MEMORY. A BIGGER PICTURE.</p>
+          <p class="eyebrow">A sample company brain</p>
           <h2 id="graph-title">Everything is <em>connected.</em></h2>
         </div>
-        <button id="graph-close" aria-label="Close knowledge graph">
-          Close <span>×</span>
-        </button>
+        <button id="graph-close" aria-label="Close knowledge graph">Close <span>×</span></button>
       </header>
       <div class="graph-legend">
-        <span style="--node-color: #83e9ff">Weekly reporting</span
-        ><span style="--node-color: #b5a1ff">Customer launch</span
-        ><span style="--node-color: #efc48f">Quarterly planning</span>
+        <span style="--node-color: #83e9ff">Weekly reporting</span><span style="--node-color: #b5a1ff">Customer launch</span><span style="--node-color: #efc48f">Quarterly planning</span>
       </div>
-      <div
-        class="explorer-stage"
-        id="explorer-stage"
-        role="group"
-        aria-label="Interactive three dimensional company knowledge graph. Use search and the connection list to explore with a keyboard."
-      >
+      <div class="explorer-stage" id="explorer-stage" role="group" aria-label="Interactive three dimensional company knowledge graph. Use search and the connection list to explore with a keyboard.">
         <div id="explorer-labels" class="explorer-labels"></div>
         <div id="explorer-fallback" hidden>
           <p>The connections are still here.</p>
@@ -540,15 +520,7 @@
       </div>
       <aside class="graph-sidebar" aria-label="Explore connections">
         <div class="graph-search">
-          <label class="sr-only" for="graph-search"
-            >Search the knowledge graph</label
-          ><input
-            id="graph-search"
-            type="search"
-            placeholder="Find a person, project, idea…"
-            autocomplete="off"
-          /><label class="sr-only" for="graph-type">Filter by type</label
-          ><select id="graph-type">
+          <label class="sr-only" for="graph-search">Search the knowledge graph</label><input id="graph-search" type="search" placeholder="Find a person, project, idea…" autocomplete="off" /><label class="sr-only" for="graph-type">Filter by type</label><select id="graph-type">
             <option value="">All types</option>
           </select>
           <p id="graph-result-count" role="status"></p>
@@ -557,26 +529,16 @@
         <div id="graph-detail" class="graph-detail"></div>
       </aside>
       <div class="graph-controls">
-        <button data-zoom="out" aria-label="Zoom out">−</button
-        ><button data-zoom="in" aria-label="Zoom in">+</button
-        ><button id="graph-reset">Reset view ↺</button
-        ><span>Drag to orbit · scroll to zoom</span>
+        <button data-zoom="out" aria-label="Zoom out">−</button><button data-zoom="in" aria-label="Zoom in">+</button><button id="graph-reset">Reset view ↺</button><span>Drag to orbit · scroll to zoom</span>
       </div>
       <footer class="graph-footer">
         <span class="live-dot"></span> FICTIONAL COMPANY · CONCEPT DEMO
-        <span class="graph-count"
-          >40 points of knowledge. One shared thread.</span
-        >
+        <span class="graph-count">40 points of knowledge. One shared thread.</span>
       </footer>
       <p id="graph-selection-status" class="sr-only" role="status"></p>
     </dialog>
-    <noscript
-      ><div class="no-script">
-        Calla helps you keep the thread of your calls. Enable JavaScript to
-        explore the brain and join the launch list.
-        <a href="/demo/weekly-check-in.mp4">Watch the sample meeting.</a>
-      </div></noscript
-    >
+
+    <noscript><div class="no-script">Turn on JavaScript to watch the sample call and explore the brain. <a href="/demo/weekly-check-in.mp4">Watch the sample call video.</a></div></noscript>
     <script type="module" src="/src/main.js"></script>
   </body>
 </html>
