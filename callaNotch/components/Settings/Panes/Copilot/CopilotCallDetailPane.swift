@@ -229,7 +229,7 @@ struct CopilotCallDetailPane: View {
                 if let eventID = call.eventID {
                     if call.seriesID != nil {
                         Picker("Change type for", selection: $categoryScope) {
-                            Text("Every repeat").tag("series")
+                            Text("Every time it repeats").tag("series")
                             Text("This occurrence").tag("event")
                         }
                         .frame(maxWidth: 330)

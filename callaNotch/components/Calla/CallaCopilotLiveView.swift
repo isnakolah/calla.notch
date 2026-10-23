@@ -71,7 +71,12 @@ struct CallaCopilotLiveView: View {
         )
     }
 
-    private var compact: Bool { session.layout == .compact }
+    /// Drawn in the floating window: one column, the transcript under the
+    /// account, because a window narrow enough to sit beside the video has no
+    /// room for the two side by side.
+    @Environment(\.callaPanelStacked) private var stacked
+
+    private var compact: Bool { !stacked && session.layout == .compact }
 
     /// Answers are off until they can be trusted to answer the right question.
     static let answersRetired = true
@@ -81,6 +86,18 @@ struct CallaCopilotLiveView: View {
             if compact {
                 compactPanel
                     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+            } else if stacked {
+                VStack(alignment: .leading, spacing: 12) {
+                    primary
+                        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+                        .layoutPriority(1)
+                    Rectangle()
+                        .fill(Color.white.opacity(0.10))
+                        .frame(height: 1)
+                    transcriptColumn
+                        .frame(maxWidth: .infinity, alignment: .topLeading)
+                        .frame(height: 188)
+                }
             } else {
                 HStack(alignment: .top, spacing: 0) {
                     VStack(alignment: .leading, spacing: 10) {
@@ -1163,6 +1180,15 @@ struct CallaCopilotLiveHeader: View {
                 .accessibilityLabel("Ask about what was just said")
             }
 
+            // Out of the notch into a window that floats over every app —
+            // beside the video, on another display, over a full-screen call.
+            CallaWingButton(symbol: "pip.exit") {
+                session.spinOut()
+            }
+            .notchTooltip("Float on top of everything", symbol: "pip.exit",
+                          shortcut: shortcutKeys(.copilotToggleFloat))
+            .accessibilityLabel("Float the call panel on top of everything")
+
             // Pin belongs to the notch, while Call contributes a temporary
             // automatic hold. The same action is available system-wide.
             CallaWingButton(symbol: pinned ? "pin.fill" : "pin",
@@ -2060,4 +2086,18 @@ struct CallaTranscriptTicker: View {
 private struct TickerWidthKey: PreferenceKey {
     static let defaultValue: CGFloat = 0
     static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) { value = nextValue() }
+}
+
+// MARK: - Stacked
+
+private struct CallaPanelStackedKey: EnvironmentKey {
+    static let defaultValue = false
+}
+
+extension EnvironmentValues {
+    /// The live panel is in the floating window, so it stacks into one column.
+    var callaPanelStacked: Bool {
+        get { self[CallaPanelStackedKey.self] }
+        set { self[CallaPanelStackedKey.self] = newValue }
+    }
 }

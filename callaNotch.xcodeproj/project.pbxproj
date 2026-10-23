@@ -199,6 +199,7 @@
 		CA11KB020000000000000001 /* CallaKnowledge.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA11KB020000000000000002 /* CallaKnowledge.swift */; };
 		CA11KB030000000000000001 /* CallaKnowledgeFocus.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA11KB030000000000000002 /* CallaKnowledgeFocus.swift */; };
 		CA11KB050000000000000001 /* CopilotNotchBadge.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA11KB050000000000000002 /* CopilotNotchBadge.swift */; };
+		CA11FW010000000000000001 /* CallaFloatingCallWindow.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA11FW010000000000000002 /* CallaFloatingCallWindow.swift */; };
 		CA11KD010000000000000001 /* KnowledgeDocumentReader.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA11KD010000000000000002 /* KnowledgeDocumentReader.swift */; };
 		CA11KD020000000000000001 /* CallaKnowledgeAttach.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA11KD020000000000000002 /* CallaKnowledgeAttach.swift */; };
 		CA11KD030000000000000001 /* CallaKnowledgeDropView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA11KD030000000000000002 /* CallaKnowledgeDropView.swift */; };
@@ -468,6 +469,7 @@
 		CA11KB020000000000000002 /* CallaKnowledge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = components/Calla/CallaKnowledge.swift; sourceTree = "<group>"; };
 		CA11KB030000000000000002 /* CallaKnowledgeFocus.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = components/Calla/CallaKnowledgeFocus.swift; sourceTree = "<group>"; };
 		CA11KB050000000000000002 /* CopilotNotchBadge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = components/Calla/CopilotNotchBadge.swift; sourceTree = "<group>"; };
+		CA11FW010000000000000002 /* CallaFloatingCallWindow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = components/Calla/CallaFloatingCallWindow.swift; sourceTree = "<group>"; };
 		CA11KD010000000000000002 /* KnowledgeDocumentReader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = components/Calla/KnowledgeDocumentReader.swift; sourceTree = "<group>"; };
 		CA11KD020000000000000002 /* CallaKnowledgeAttach.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = components/Calla/CallaKnowledgeAttach.swift; sourceTree = "<group>"; };
 		CA11KD030000000000000002 /* CallaKnowledgeDropView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = components/Calla/CallaKnowledgeDropView.swift; sourceTree = "<group>"; };
@@ -907,6 +909,7 @@
 				CA11KB020000000000000002 /* CallaKnowledge.swift */,
 				CA11KB030000000000000002 /* CallaKnowledgeFocus.swift */,
 				CA11KB050000000000000002 /* CopilotNotchBadge.swift */,
+				CA11FW010000000000000002 /* CallaFloatingCallWindow.swift */,
 				CA11KD010000000000000002 /* KnowledgeDocumentReader.swift */,
 				CA11KD020000000000000002 /* CallaKnowledgeAttach.swift */,
 				CA11KD030000000000000002 /* CallaKnowledgeDropView.swift */,
@@ -1533,6 +1536,7 @@
 				CA11KB020000000000000001 /* CallaKnowledge.swift in Sources */,
 				CA11KB030000000000000001 /* CallaKnowledgeFocus.swift in Sources */,
 				CA11KB050000000000000001 /* CopilotNotchBadge.swift in Sources */,
+				CA11FW010000000000000001 /* CallaFloatingCallWindow.swift in Sources */,
 				CA11KD010000000000000001 /* KnowledgeDocumentReader.swift in Sources */,
 				CA11KD020000000000000001 /* CallaKnowledgeAttach.swift in Sources */,
 				CA11KD030000000000000001 /* CallaKnowledgeDropView.swift in Sources */,

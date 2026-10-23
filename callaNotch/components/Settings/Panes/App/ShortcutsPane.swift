@@ -46,6 +46,9 @@ struct ShortcutsPane: View {
                     Divider().opacity(0.35)
                     row("Expanded or compact", .copilotToggleLayout)
                     Divider().opacity(0.35)
+                    row("Float the call or put it back", .copilotToggleFloat,
+                        detail: "Moves the live call into a window that stays on top of every app.")
+                    Divider().opacity(0.35)
                     row("Close the notch", .copilotDismiss,
                         detail: "The session keeps running; new guidance can reveal it again.")
                 }
@@ -102,7 +105,7 @@ struct ShortcutsPane: View {
                 let names: [KeyboardShortcuts.Name] = [
                     .toggleNotchOpen, .toggleSneakPeek, .pomodoroStartPause,
                     .pomodoroSkipPhase, .pomodoroStopTimer, .copilotToggleCall,
-                    .copilotToggleLayout, .copilotTogglePin, .copilotDismiss,
+                    .copilotToggleLayout, .copilotToggleFloat, .copilotTogglePin, .copilotDismiss,
                     .sessionPrevious, .sessionNext, .sessionScrollUp, .sessionScrollDown,
                     .sessionHold, .sessionAsk, .sessionCopy, .sessionSurface, .quizToggleWrap,
                 ]

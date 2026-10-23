@@ -29,6 +29,8 @@ struct CopilotPane: View {
     @Default(.callaCopilotLiveModel) private var speechModel
     @Default(.callaCopilotAutoReveal) private var autoReveal
     @Default(.callaCopilotAmbient) private var ambient
+    @Default(.callaCallPanelHome) private var panelHome
+    @Default(.callaMeetingOpensNotch) private var meetingOpensNotch
     @Default(.callaCopilotGlassLevel) private var glassLevel
     @Default(.callaCallFoldersEnabled) private var callFoldersEnabled
     @Default(.callaCallFoldersAudio) private var callFoldersAudio
@@ -227,6 +229,18 @@ struct CopilotPane: View {
     private var duringCall: some View {
         VStack(alignment: .leading, spacing: SettingsMetrics.groupGap) {
             SettingsList("During a call") {
+                SettingsListRow("Where the call panel lives",
+                                detail: "Floating stays on top of every app, full-screen calls too. Switch any time with \u{2325}\u{2318}F.") {
+                    Picker("", selection: $panelHome) {
+                        Text("In the notch").tag(CallPanelHome.notch.rawValue)
+                        Text("Floating").tag(CallPanelHome.floating.rawValue)
+                        Text("Where I left it").tag(CallPanelHome.remembered.rawValue)
+                    }
+                    .labelsHidden().fixedSize()
+                }
+                SettingsToggleRow("Open the notch when a meeting is about to start",
+                                  detail: "Off: the closed notch says \u{201C}Get ready\u{201D} two minutes before, and \u{201C}Join\u{201D} when it starts.",
+                                  isOn: $meetingOpensNotch)
                 SettingsToggleRow("Disconnect VPN for calls",
                                   detail: "Reconnects only VPNs Calla disconnected when the call ends.",
                                   isOn: $disconnectVPNForCalls)

@@ -84,9 +84,9 @@ enum SettingsPage: Hashable {
         case .copilotQuiz: return "Screen Quiz"
         case .copilotModels: return "Models"
         case .copilotPrompts: return "Persona & Prompts"
-        case .copilotKnowledge: return "Knowledge"
+        case .copilotKnowledge: return "Notes for Calla"
         case .copilotBackup: return "Backup"
-        case .copilotHistory: return "History"
+        case .copilotHistory: return "Past calls"
         case .copilotKnowledgeDetail: return "Details"
         case .copilotCallDetail: return "Call"
         }
@@ -149,9 +149,9 @@ enum SettingsPage: Hashable {
         case .copilotQuiz: return ["quiz", "exam"]
         case .copilotModels: return ["model", "whisper", "gemini"]
         case .copilotPrompts: return ["persona", "prompt"]
-        case .copilotKnowledge: return ["notes", "documents"]
+        case .copilotKnowledge: return ["knowledge", "notes", "documents"]
         case .copilotBackup: return ["export", "import", "reset", "json"]
-        case .copilotHistory: return ["archive", "past calls"]
+        case .copilotHistory: return ["archive", "history"]
         case .copilotKnowledgeDetail, .copilotCallDetail: return []
         }
     }

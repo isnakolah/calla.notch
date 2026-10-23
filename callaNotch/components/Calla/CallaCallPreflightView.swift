@@ -27,6 +27,7 @@ struct CallaCallPreflightView: View {
     @ObservedObject private var calendarManager = CalendarManager.shared
     @ObservedObject private var categories = MeetingCategoryStore.shared
     @ObservedObject private var callVPN = CallVPNManager.shared
+    @ObservedObject private var meetingWatch = MeetingApproachWatch.shared
     @Default(.callaCopilotPersona) private var persona
     @Default(.callaCopilotLiveModel) private var liveModel
     @Default(.callaIntelligenceProvider) private var provider
@@ -66,6 +67,15 @@ struct CallaCallPreflightView: View {
             }
             .onReceive(tick) { value in
                 now = value
+            }
+            // "Join" pressed in the closed notch. Carried out here because this
+            // panel owns starting a call: the call type, the VPN and the notes.
+            // `onReceive` sees the current value on appearing, so a Join that
+            // opened this panel is not missed.
+            .onReceive(meetingWatch.$joinRequest) { id in
+                guard let id, id == meeting?.id, !copilot.running, !vpnStarting else { return }
+                meetingWatch.consumeJoin()
+                start()
             }
             .onChange(of: calendarManager.selectedCallMeeting?.id) { _, _ in
                 selectedPersona = nil

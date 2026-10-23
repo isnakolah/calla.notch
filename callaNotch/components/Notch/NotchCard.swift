@@ -134,7 +134,7 @@ enum NotchGlassSpace {
 
 /// The closed notch's wings, either side of the camera housing.
 ///
-/// One fact a side: icons and glyphs, never words, set hard against the
+/// One fact a side, set hard against the
 /// housing so the notch reads as one shape that grew, not a strip with things
 /// parked at its far ends. Each wing is only as wide as what it carries, and
 /// both sides of one activity share a width so the gap stays centred.
@@ -143,8 +143,13 @@ enum NotchWing {
     static let music: CGFloat = 26
     /// The ring and clock one side, the block dots the other.
     static let focus: CGFloat = 70
-    /// The state dot and clock one side, the activity glyph the other.
+    /// The state dot and count one side, the activity glyph the other (Quiz).
     static let call: CGFloat = 62
+    /// A call or an approaching meeting: a few words one side ("Listening",
+    /// "Standup · 2 min"), the clock or "Join" the other. The one place the
+    /// wings carry words — they are the two states a glyph could not say well
+    /// enough to act on mid-call.
+    static let callSentence: CGFloat = 118
     /// The glyph one side, the 64pt meter the other.
     static let hud: CGFloat = 66
     /// An inline song change: the title and artist ride beside the art and

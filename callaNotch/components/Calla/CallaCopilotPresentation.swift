@@ -163,6 +163,145 @@ enum CallaCopilotPresentation {
     }
 }
 
+// MARK: - The closed notch, in words
+
+extension CallaCopilotPresentation {
+    /// What the closed notch says during a call: a few words left of the
+    /// camera, one figure right of it, and the one line a hover adds below.
+    ///
+    /// The wings used to carry only a glyph and a clock. A glyph has to be
+    /// learnt; "Listening" and "Only you" do not, and they are the two facts a
+    /// reader in a call actually needs from a glance.
+    struct ClosedLine: Equatable {
+        let lead: String
+        let trail: String
+        let tone: Tone
+        /// The peek: the line worth reading, and what a click will do.
+        let peek: String
+        let peekHint: String
+    }
+
+    static func closedLine(
+        mode: Mode,
+        floating: Bool,
+        elapsed: String?,
+        latestStanding: String?,
+        answerHeadline: String?,
+        catchingUp: Bool
+    ) -> ClosedLine {
+        let trail = floating ? "Floating" : (elapsed ?? "0:00")
+        let hint = floating ? "Click to bring it back into the notch" : "Click to open"
+        switch mode {
+        case .suggesting:
+            let answer = headlineLine(answerHeadline, limit: 70)
+            return ClosedLine(lead: "Answer ready", trail: trail, tone: .warning,
+                              peek: answer ?? "An answer is ready",
+                              peekHint: floating ? hint : "Click for the full answer")
+        case .halfDeaf:
+            return ClosedLine(lead: "Only you", trail: trail, tone: .warning,
+                              peek: "Their side isn’t coming through",
+                              peekHint: "Click to fix it")
+        case .listening:
+            let standing = headlineLine(latestStanding, limit: 70)
+            return ClosedLine(lead: catchingUp ? "Catching up" : "Listening", trail: trail, tone: .active,
+                              peek: standing ?? "Hearing you and them. Nothing to do.",
+                              peekHint: standing == nil ? "A summary starts after the first minute" : hint)
+        case .ready:
+            return ClosedLine(lead: "Ready", trail: trail, tone: .ready, peek: "Ready to listen", peekHint: hint)
+        case .unavailable:
+            return ClosedLine(lead: "Not installed", trail: trail, tone: .warning,
+                              peek: "The call host is missing", peekHint: "Click to see how to fix it")
+        }
+    }
+}
+
+// MARK: - A meeting getting close
+
+/// How the closed notch treats a linked meeting as its start approaches.
+///
+/// Calm until it matters, louder one step at a time: a grey time a quarter of
+/// an hour out, "Get ready" in blue for the last two minutes, a Join button at
+/// the start, an orange reminder if the reader has not joined three minutes
+/// in, and quiet again after ten — by then they skipped it on purpose.
+enum MeetingApproach {
+    enum Phase: String, Equatable {
+        case quiet
+        case getReady
+        case starting
+        case late
+    }
+
+    /// The grey time appears this far ahead.
+    static let quietLead: TimeInterval = 15 * 60
+    /// "Get ready". The same two minutes the calendar watch already uses.
+    static let readyLead: TimeInterval = 120
+    /// Past the start, "Join" turns into a reminder after this…
+    static let lateAfter: TimeInterval = 3 * 60
+    /// …and the notch lets it go after this.
+    static let giveUpAfter: TimeInterval = 10 * 60
+
+    /// The phase, or nil when the notch should say nothing about it.
+    static func phase(start: Date, end: Date, now: Date, joined: Bool) -> Phase? {
+        guard !joined, now < end else { return nil }
+        let lead = start.timeIntervalSince(now)
+        if lead > quietLead { return nil }
+        if lead > readyLead { return .quiet }
+        if lead > 0 { return .getReady }
+        let since = -lead
+        if since < lateAfter { return .starting }
+        if since < giveUpAfter { return .late }
+        return nil
+    }
+
+    struct Line: Equatable {
+        let lead: String
+        let trail: String
+        let phase: Phase
+        let peek: String
+        let peekHint: String
+        /// The trailing word is a button: clicking the notch joins.
+        var joins: Bool { phase == .starting || phase == .late }
+    }
+
+    /// The words for a phase. `startTime` arrives formatted for the reader's
+    /// locale, so this stays a plain function of its inputs.
+    static func line(phase: Phase, title: String, start: Date, now: Date,
+                     startTime: String, people: Int, notes: Int) -> Line {
+        let short = shortTitle(title)
+        let minutesAway = max(1, Int((start.timeIntervalSince(now) / 60).rounded(.up)))
+        let minutesIn = max(1, Int((now.timeIntervalSince(start) / 60).rounded(.down)))
+        let context = [people > 0 ? "\(people) \(people == 1 ? "person" : "people")" : nil,
+                       notes > 0 ? "\(notes) \(notes == 1 ? "note" : "notes") ready" : nil]
+            .compactMap { $0 }
+        switch phase {
+        case .quiet:
+            return Line(lead: short, trail: startTime, phase: phase,
+                        peek: "\(title) at \(startTime)",
+                        peekHint: (["Starts in \(minutesAway) min"] + context).joined(separator: " · "))
+        case .getReady:
+            return Line(lead: "\(short) · \(minutesAway) min", trail: "Get ready", phase: phase,
+                        peek: notes > 0 ? "Ready to listen · \(notes) \(notes == 1 ? "note" : "notes") ready"
+                                        : "Ready to listen",
+                        peekHint: "Click to see what Calla prepared")
+        case .starting:
+            return Line(lead: "\(short) · now", trail: "Join", phase: phase,
+                        peek: "\(title) is starting",
+                        peekHint: "Join opens the link and starts listening")
+        case .late:
+            return Line(lead: "Started \(minutesIn) min ago", trail: "Join", phase: phase,
+                        peek: "\(title) is running without you",
+                        peekHint: "Click to join, or wait and it goes quiet")
+        }
+    }
+
+    /// Short enough for a wing beside the camera.
+    static func shortTitle(_ title: String, limit: Int = 16) -> String {
+        let flat = title.split(whereSeparator: { $0.isWhitespace || $0.isNewline }).joined(separator: " ")
+        guard flat.count > limit else { return flat.isEmpty ? "Meeting" : flat }
+        return String(flat.prefix(limit - 1)).trimmingCharacters(in: .whitespaces) + "…"
+    }
+}
+
 /// Turns strict worker output into content shaped for the Quiz answer card.
 ///
 /// Workers occasionally wrap their answer in a second JSON envelope even

@@ -158,6 +158,11 @@ class CalendarManager: ObservableObject {
         selectedCallMeeting = event
     }
 
+    /// Whether the reader waved this occurrence away in the get-ready panel.
+    func callMeetingDismissed(_ id: String) -> Bool {
+        dismissedCallOccurrences.contains(id)
+    }
+
     func dismissCallMeeting() {
         guard let event = selectedCallMeeting else { return }
         explicitlySelectedCallMeetingID = nil

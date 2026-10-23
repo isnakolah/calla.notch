@@ -103,8 +103,8 @@ struct CallaKnowledgeDropView: View {
     private func label(for target: KnowledgeTarget) -> String {
         switch target.kind {
         case .always: "Every call"
-        case .series: "Every repeat"
-        case .event: "Just this one"
+        case .series: "Every time it repeats"
+        case .event: "Just this call"
         case let .persona(id): "Every \(CallaCopilotPersona.title(id)) call"
         }
     }
@@ -228,7 +228,7 @@ struct CallaKnowledgeDropView: View {
                     HStack(spacing: 6) {
                         NotchCaps("Attached")
                         Spacer(minLength: 0)
-                        // "Every repeat" versus "just this one", when the
+                        // "Every time it repeats" versus "just this one", when the
                         // meeting recurs.
                         if attach.targets.count > 1 { scopeMenu }
                     }

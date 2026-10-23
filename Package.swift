@@ -29,7 +29,8 @@ let package = Package(
                 "CallaCopilotTabView.swift", "CallaEngineClient.swift", "CallaKnowledge.swift",
                 "CallaKnowledgeAttach.swift", "CallaKnowledgeDropView.swift", "CallaKnowledgeFocus.swift",
                 "CallaKnowledgeLibrary.swift", "CopilotLiveSession.swift",
-                "CopilotNotchBadge.swift", "KnowledgeDocumentReader.swift", "NotchDropChooserView.swift",
+                "CopilotNotchBadge.swift", "CallaFloatingCallWindow.swift",
+                "KnowledgeDocumentReader.swift", "NotchDropChooserView.swift",
                 "NotchDropRouter.swift"
             ],
             sources: ["CallaCopilotPresentation.swift",

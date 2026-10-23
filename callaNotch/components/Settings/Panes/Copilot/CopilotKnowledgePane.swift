@@ -113,13 +113,13 @@ struct CopilotKnowledgePane: View {
     // MARK: - Not tied to a meeting
 
     private var everywhereCard: some View {
-        SettingCard("Everywhere", detail: "Background that is not tied to one meeting.") {
+        SettingCard("Every call", detail: "Background Calla always has, whatever the meeting.") {
             VStack(spacing: 0) {
                 navigationRow(
                     route: .everyCall,
                     symbol: "globe",
                     title: "Every call",
-                    detail: "In front of the copilot whatever the meeting",
+                    detail: "Calla has these on every call",
                     count: library.notes(scope: "always").count)
                 Divider().padding(.leading, 32)
                 navigationRow(

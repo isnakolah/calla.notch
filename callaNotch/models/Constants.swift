@@ -197,6 +197,17 @@ extension Defaults.Keys {
     /// During a call, rest as a borderless frosted summary that blends into
     /// the screen; hovering brings the collapsed panel back.
     static let callaCopilotAmbient = Key<Bool>("callaCopilotAmbient", default: true)
+    /// Where a live call's panel opens: `notch`, `floating`, or `remembered`
+    /// (wherever the last call ended). See `CallPanelHome`.
+    static let callaCallPanelHome = Key<String>("callaCallPanelHome", default: "notch")
+    /// Whether the last call ended in the floating window, for `remembered`.
+    static let callaLastCallFloated = Key<Bool>("callaLastCallFloated", default: false)
+    /// The floating window's frame on each display, keyed by display UUID, as
+    /// `NSStringFromRect`. A display it has never been on gets the top right.
+    static let callaFloatingFrames = Key<[String: String]>("callaFloatingFrames", default: [:])
+    /// Pop the notch open on the get-ready panel two minutes before a linked
+    /// meeting. Off: the closed notch says "Get ready" and waits to be clicked.
+    static let callaMeetingOpensNotch = Key<Bool>("callaMeetingOpensNotch", default: false)
     static let callaCallFoldersEnabled = Key<Bool>("callaCallFoldersEnabled", default: true)
     /// Include both sides' audio, compressed, in each call folder.
     static let callaCallFoldersAudio = Key<Bool>("callaCallFoldersAudio", default: true)

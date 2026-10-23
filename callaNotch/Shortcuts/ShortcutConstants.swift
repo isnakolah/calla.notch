@@ -56,6 +56,9 @@ extension KeyboardShortcuts.Name {
     /// Holds the notch open, or lets it go. Shared by Call and Quiz, because the
     /// pin is a decision about the notch rather than about either session.
     static let copilotTogglePin = Self("copilotTogglePin", default: .init(.p, modifiers: [.option, .command]))
+    /// Spins the live call out of the notch into a window that floats above
+    /// every app, or puts it back.
+    static let copilotToggleFloat = Self("copilotToggleFloat", default: .init(.f, modifiers: [.option, .command]))
 }
 
 /// Carries a reader's customised per-surface bindings onto the unified names.

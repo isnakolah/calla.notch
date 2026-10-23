@@ -148,9 +148,9 @@ struct CopilotKnowledgeDetailPane: View {
                         .font(NotchType.rowDetail)
                 }
                 if event.hasRecurrenceRules, event.seriesID != nil {
-                    Picker("Apply to", selection: $scope) {
-                        Text("Every repeat").tag("series")
-                        Text("Just this one").tag("event")
+                    Picker("Use it for", selection: $scope) {
+                        Text("Every time it repeats").tag("series")
+                        Text("Just this call").tag("event")
                     }
                     .frame(maxWidth: 280)
                 }
@@ -176,8 +176,8 @@ struct CopilotKnowledgeDetailPane: View {
             VStack(alignment: .leading, spacing: 12) {
                 if case .event = route, let event, event.hasRecurrenceRules, event.seriesID != nil {
                     Picker("", selection: $scope) {
-                        Text("Every repeat").tag("series")
-                        Text("Just this one").tag("event")
+                        Text("Every time it repeats").tag("series")
+                        Text("Just this call").tag("event")
                     }
                     .labelsHidden()
                     .pickerStyle(.segmented)

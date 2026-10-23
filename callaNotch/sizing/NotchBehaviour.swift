@@ -17,6 +17,8 @@ public enum ClosedNotchActivity: String, CaseIterable, Sendable {
     case inlineHUD
     /// A live Copilot call or coding interview.
     case call
+    /// A linked meeting is close: its time, then "Get ready", then "Join".
+    case meeting
     /// A running Pomodoro block.
     case pomodoro
     /// The usage badges beside the notch.
@@ -52,6 +54,8 @@ public struct ClosedNotchInputs: Equatable, Sendable {
     public var inlineHUDEnabled: Bool
 
     public var callLive: Bool
+    /// A calendar meeting with a call link is inside its approach window.
+    public var meetingApproaching: Bool
     public var pomodoroActive: Bool
     public var usageBadgesEnabled: Bool
 
@@ -70,6 +74,7 @@ public struct ClosedNotchInputs: Equatable, Sendable {
         sneakPeekIsMusic: Bool = false,
         inlineHUDEnabled: Bool = false,
         callLive: Bool = false,
+        meetingApproaching: Bool = false,
         pomodoroActive: Bool = false,
         usageBadgesEnabled: Bool = false,
         musicPlaying: Bool = false,
@@ -85,6 +90,7 @@ public struct ClosedNotchInputs: Equatable, Sendable {
         self.sneakPeekIsMusic = sneakPeekIsMusic
         self.inlineHUDEnabled = inlineHUDEnabled
         self.callLive = callLive
+        self.meetingApproaching = meetingApproaching
         self.pomodoroActive = pomodoroActive
         self.usageBadgesEnabled = usageBadgesEnabled
         self.musicPlaying = musicPlaying
@@ -104,7 +110,8 @@ public enum ClosedNotchArbiter {
     /// Why this order:
     /// 1. The HUD is a direct response to a key the reader just pressed. It
     ///    outranks anything ambient because the reader is waiting for it.
-    /// 2. A conversation cannot wait. A Pomodoro can.
+    /// 2. A conversation cannot wait. A Pomodoro can. A meeting about to start
+    ///    is the conversation arriving, so it sits right behind a live one.
     /// 3. A song change announced inline takes the notch for its few seconds,
     ///    over whatever was there — it is news, and it hands the slot back.
     /// 4. Usage and music are ambient. They lose to everything.
@@ -112,6 +119,7 @@ public enum ClosedNotchArbiter {
         (.inlineHUD, { $0.sneakPeekShowing && $0.inlineHUDEnabled && !$0.sneakPeekIsMusic }),
         (.music, { $0.inlineSongChange && $0.musicLiveActivityEnabled && !$0.hideOnClosed }),
         (.call, { $0.callLive && !$0.hideOnClosed }),
+        (.meeting, { $0.meetingApproaching && !$0.callLive && !$0.hideOnClosed }),
         (.pomodoro, { $0.pomodoroActive && !$0.hideOnClosed }),
         (.usage, { $0.usageBadgesEnabled && !$0.hideOnClosed }),
         (.music, {
@@ -221,4 +229,101 @@ public struct NotchHoverPolicy: Equatable, Sendable {
     /// How long to wait after the fade before closing, for a caller that has
     /// already slept `fadeDelay` in the same task.
     public var delayFromFadeToClose: TimeInterval { max(0, closeDelay - fadeDelay) }
+}
+
+// MARK: - Peeking
+
+/// How a closed notch that is carrying a call or a meeting answers the pointer.
+///
+/// Hovering those two never opens the panel. It grows the closed notch by one
+/// line — the answer, or where the call stands — which is often all the reader
+/// wanted, and it never takes focus from the call app. A click opens the panel.
+public struct NotchPeekPolicy: Equatable, Sendable {
+    /// The dwell before the peek line appears. Short: it is only one line and
+    /// it covers nothing.
+    public var peekDelay: TimeInterval
+    /// How long the peek stays after the pointer leaves.
+    public var foldDelay: TimeInterval
+
+    public static let standard = NotchPeekPolicy(peekDelay: 0.15, foldDelay: 0.4)
+
+    public init(peekDelay: TimeInterval, foldDelay: TimeInterval) {
+        self.peekDelay = peekDelay
+        self.foldDelay = foldDelay
+    }
+
+    /// Whether hovering this activity peeks instead of opening the notch.
+    public static func peeks(_ activity: ClosedNotchActivity) -> Bool {
+        activity == .call || activity == .meeting
+    }
+}
+
+// MARK: - The floating call window
+
+/// Where the live call panel lives when a call starts.
+public enum CallPanelHome: String, CaseIterable, Sendable {
+    /// In the notch, as it always was.
+    case notch
+    /// In its own window, floating above every app.
+    case floating
+    /// Wherever the reader left it at the end of the last call.
+    case remembered
+
+    public init(stored: String) {
+        self = CallPanelHome(rawValue: stored) ?? .notch
+    }
+
+    /// Whether a new call should open in the floating window.
+    public func startsFloating(lastCallFloated: Bool) -> Bool {
+        switch self {
+        case .notch: return false
+        case .floating: return true
+        case .remembered: return lastCallFloated
+        }
+    }
+}
+
+/// Placement rules for the floating call window, in AppKit screen coordinates
+/// (origin bottom-left, so the top of a screen is its `maxY`).
+///
+/// Every rect named `visible` is the screen's visible frame. That matters for
+/// docking: AppKit will not let a window rise into the menu bar, so a dock zone
+/// measured from the top of the whole screen could never be reached on a
+/// display with a notch, whose menu bar is taller than the zone.
+public enum FloatingPanelGeometry {
+    /// The band under the top of the visible area that docks a window
+    /// dropped into it.
+    public static let dockZone: CGFloat = 28
+    /// How far either side of the screen's centre still counts as "the notch".
+    /// Wider than the notch itself: it is a drop target, aimed at with a whole
+    /// window, not a pointer.
+    public static let dockHalfWidth: CGFloat = 320
+    /// The gap kept between the window and a screen edge.
+    public static let margin: CGFloat = 16
+
+    /// A window released here goes back into the notch.
+    public static func shouldDock(window: CGRect, visible: CGRect) -> Bool {
+        window.maxY >= visible.maxY - dockZone
+            && abs(window.midX - visible.midX) <= dockHalfWidth
+    }
+
+    /// The window moved fully onto the visible part of the screen, without
+    /// changing its size unless it is bigger than the screen.
+    public static func clamped(_ window: CGRect, to visible: CGRect) -> CGRect {
+        let width = min(window.width, max(0, visible.width - 2 * margin))
+        let height = min(window.height, max(0, visible.height - 2 * margin))
+        let x = min(max(window.minX, visible.minX + margin), visible.maxX - margin - width)
+        let y = min(max(window.minY, visible.minY + margin), visible.maxY - margin - height)
+        return CGRect(x: x, y: y, width: width, height: height)
+    }
+
+    /// Where the window first appears: top right of the visible area, clear of
+    /// the notch and the video grid's usual centre — and below the dock zone,
+    /// so on a narrow display it does not dock the moment it appears.
+    public static func initialFrame(size: CGSize, in visible: CGRect) -> CGRect {
+        clamped(CGRect(x: visible.maxX - margin - size.width,
+                       y: visible.maxY - dockZone - margin - size.height,
+                       width: size.width, height: size.height),
+                to: visible)
+    }
 }

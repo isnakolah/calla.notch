@@ -46,7 +46,7 @@ struct CopilotHistoryPane: View {
     var body: some View {
         Group {
             if historyMode == "quiz" {
-                SettingsPane(title: "History") {
+                SettingsPane(title: "Past calls") {
                     modePicker
                     quizCard
                 }
@@ -115,7 +115,7 @@ struct CopilotHistoryPane: View {
     private var listColumn: some View {
         VStack(alignment: .leading, spacing: 0) {
             HStack(alignment: .firstTextBaseline) {
-                Text("History").font(NotchType.paneTitle)
+                Text("Past calls").font(NotchType.paneTitle)
                 Spacer()
                 modePicker.controlSize(.small)
             }

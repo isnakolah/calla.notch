@@ -61,8 +61,8 @@ enum SettingsSection: String, CaseIterable, Identifiable, Hashable, Codable {
         case .copilot: return "Copilot"
         case .models: return "Models"
         case .persona: return "Persona & Prompts"
-        case .knowledge: return "Knowledge"
-        case .history: return "History"
+        case .knowledge: return "Notes for Calla"
+        case .history: return "Past calls"
         case .quiz: return "Screen Quiz"
         case .general: return "General"
         case .permissions: return "Permissions"
@@ -138,7 +138,7 @@ enum SettingsSection: String, CaseIterable, Identifiable, Hashable, Codable {
         case .copilot: return "Listens to a call and suggests what to say next."
         case .models: return "Two jobs: one model turns the call into text, another writes the answers."
         case .persona: return "Who you are, and how each kind of call is handled."
-        case .knowledge: return "Files and notes the copilot reads per meeting."
+        case .knowledge: return "Files and notes Calla uses, and when it uses them."
         case .history: return nil
         case .quiz: return "Answers what is on one window."
         case .general: return "How the app starts, how the notch opens, and where it lives."
@@ -159,8 +159,8 @@ enum SettingsSection: String, CaseIterable, Identifiable, Hashable, Codable {
         case .copilot: return ["call", "meeting", "live", "suggestions"]
         case .models: return ["whisper", "speech", "gemini", "agy", "transcription"]
         case .persona: return ["prompt", "about me", "guidance", "backup", "export", "import"]
-        case .knowledge: return ["notes", "documents", "files", "context"]
-        case .history: return ["past calls", "transcripts", "recap", "quiz history"]
+        case .knowledge: return ["knowledge", "notes", "documents", "files", "context"]
+        case .history: return ["history", "transcripts", "recap", "quiz history"]
         case .quiz: return ["quiz", "exam", "question", "screen"]
         case .general: return ["launch", "login", "hover", "display", "gestures", "shortcuts", "window"]
         case .permissions: return ["privacy", "accessibility", "microphone", "screen recording", "calendar access"]

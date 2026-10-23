@@ -152,6 +152,35 @@ final class CopilotLiveSession: ObservableObject {
     /// changing under the reader.
     @Published private(set) var unreadAnswer = false
 
+    /// The panel has been spun out of the notch into its own window, which
+    /// floats above every app — full-screen calls included. The notch then
+    /// rests closed and says "Floating" so the reader knows where it went.
+    @Published private(set) var floating = false
+
+    /// Moves the live panel into the floating window.
+    func spinOut() {
+        // Calls only: Quiz watches a window and has its own panel.
+        guard isLive, !signInActive, !floating,
+              !CallaEngineClient.shared.status.quiz.active else { return }
+        floating = true
+        Defaults[.callaLastCallFloated] = true
+        NotificationCenter.default.post(name: .copilotLiveDidChange, object: nil)
+    }
+
+    /// Puts the floating panel back in the notch, pinned open like a fresh call.
+    func dock() {
+        guard floating else { return }
+        floating = false
+        Defaults[.callaLastCallFloated] = false
+        guard isLive else { return }
+        pin()
+        reveal()
+    }
+
+    func toggleFloating() {
+        floating ? dock() : spinOut()
+    }
+
     func markUnreadAnswer() { unreadAnswer = true }
     func clearUnreadAnswer() { unreadAnswer = false }
 
@@ -159,6 +188,8 @@ final class CopilotLiveSession: ObservableObject {
     /// type both ask.
     var pinsNotchOpen: Bool {
         if endedByReader { return false }
+        // The floating window holds the call instead; the notch stays closed.
+        if floating && isLive { return false }
         // A finished Quiz holds the notch so its answers can still be read — but
         // only until the reader lets it go, or the pin would be a control that
         // did nothing on that surface.
@@ -401,10 +432,14 @@ final class CopilotLiveSession: ObservableObject {
             clearStartupFailure()
             lastStartupStage = nil
             layout = .full
+            floating = CallPanelHome(stored: Defaults[.callaCallPanelHome])
+                .startsFloating(lastCallFloated: Defaults[.callaLastCallFloated])
+                && !CallaEngineClient.shared.status.quiz.active
             pin()
             reveal()
         } else {
             pinned = false
+            floating = false
             layout = .full
             NotificationCenter.default.post(name: .copilotLiveDidChange, object: nil)
         }

@@ -25,6 +25,7 @@ struct ContentView: View {
     @ObservedObject var pomodoro = PomodoroManager.shared
     @ObservedObject var copilotSession = CopilotLiveSession.shared
     @ObservedObject var calendarManager = CalendarManager.shared
+    @ObservedObject var meetingWatch = MeetingApproachWatch.shared
     @ObservedObject var resizeSession = NotchResizeSession.shared
     /// Through the wrapper, not `Defaults[...]` inline: a bare subscript read
     /// inside a computed property registers no dependency, so the slider moved and
@@ -206,8 +207,12 @@ struct ContentView: View {
         }
 
         if copilotSession.isLive && vm.notchState == .closed && !vm.hideOnClosed {
-            // Both wings: the state dot and clock, and the activity glyph.
-            chinWidth += NotchWing.chinGrowth(NotchWing.call)
+            // Both wings: what is being heard, and the clock.
+            chinWidth += NotchWing.chinGrowth(CallaEngineClient.shared.status.quiz.active
+                                              ? NotchWing.call : NotchWing.callSentence)
+        } else if closedNotchActivity == .meeting {
+            // Both wings: the meeting and its time, then "Join".
+            chinWidth += NotchWing.chinGrowth(NotchWing.callSentence)
         } else if pomodoro.isActive && vm.notchState == .closed && !vm.hideOnClosed {
             // Both wings: the ring and clock, and the block dots.
             chinWidth += NotchWing.chinGrowth(NotchWing.focus)
@@ -364,7 +369,7 @@ struct ContentView: View {
                     }
                     .onTapGesture {
                         guard !resizing else { return }
-                        doOpen()
+                        openFromClosed()
                     }
                     .conditionalModifier(Defaults[.enableGestures] && !resizing) { view in
                         view
@@ -563,6 +568,7 @@ struct ContentView: View {
             sneakPeekIsMusic: coordinator.sneakPeek.type == .music,
             inlineHUDEnabled: Defaults[.inlineHUD],
             callLive: copilotSession.isLive,
+            meetingApproaching: meetingWatch.current != nil && Defaults[.callaCopilotEnabled],
             pomodoroActive: pomodoro.isActive,
             usageBadgesEnabled: Defaults[.showUsageBesideNotch],
             musicPlaying: musicManager.isPlaying,
@@ -588,6 +594,43 @@ struct ContentView: View {
         doOpen()
     }
 
+    /// Whether hovering the closed notch should grow the peek line rather than
+    /// open the panel: a call (not Quiz) or a meeting about to start.
+    private var closedNotchPeeks: Bool {
+        vm.notchState == .closed
+            && NotchPeekPolicy.peeks(closedNotchActivity)
+            && !CallaEngineClient.shared.status.quiz.active
+    }
+
+    /// A click on the closed notch. A call opens onto its panel, or comes back
+    /// from the floating window; a meeting opens its get-ready panel, or joins
+    /// once it has started.
+    private func openFromClosed() {
+        guard vm.notchState == .closed else { doOpen(); return }
+        switch closedNotchActivity {
+        case .call where !CallaEngineClient.shared.status.quiz.active:
+            if copilotSession.floating {
+                copilotSession.dock()
+                return
+            }
+            openOnto(.copilot)
+        case .meeting:
+            Defaults[.callaCopilotMode] = "call"
+            switch meetingWatch.current?.phase {
+            case .some(.starting), .some(.late):
+                meetingWatch.requestJoin()
+                // Held like a calendar offer: the call type may still need
+                // choosing, and that dialog must not shut under the pointer.
+                vm.holdMeetingOpen()
+            default:
+                meetingWatch.select()
+            }
+            openOnto(.copilot)
+        default:
+            doOpen()
+        }
+    }
+
     @ViewBuilder
     private func closedActivitySlot(_ activity: ClosedNotchActivity) -> some View {
         switch activity {
@@ -598,10 +641,19 @@ struct ContentView: View {
                 .transition(.opacity)
 
         case .call:
+            // A call peeks on hover and opens on click (`openFromClosed`);
+            // only Quiz still opens on hover.
             CopilotNotchBadge(
                 notchWidth: vm.closedNotchSize.width - 20,
                 height: vm.effectiveClosedNotchHeight,
                 onBadgeHover: { openOnto(.copilot) }
+            )
+            .transition(.opacity)
+
+        case .meeting:
+            MeetingApproachBadge(
+                notchWidth: vm.closedNotchSize.width - 20,
+                height: vm.effectiveClosedNotchHeight
             )
             .transition(.opacity)
 
@@ -898,6 +950,9 @@ struct ContentView: View {
             withAnimation(.spring(response: 0.42, dampingFraction: 0.85)) { vm.open() }
         }
         .onReceive(NotificationCenter.default.publisher(for: .callaMeetingWantsNotch)) { _ in
+            // Off by default: the closed notch says "Get ready" and waits for a
+            // click instead of opening over whatever the reader is doing.
+            guard Defaults[.callaMeetingOpensNotch] else { return }
             guard !isResizing, !CallaEngineClient.shared.callPresentationProtected,
                   !CallaEngineClient.shared.callIsComingUp,
                   !CallaEngineClient.shared.callIsFinishing,
@@ -1063,6 +1118,17 @@ struct ContentView: View {
 
     private func syncCopilotLiveNotch() {
         copilotAutoCloseTask?.cancel()
+
+        // Spun out: the floating window holds the call, so the notch lets the
+        // panel go and rests closed, saying "Floating".
+        if copilotSession.floating && copilotSession.isLive {
+            guard vm.notchState == .open, coordinator.currentView == .copilot else { return }
+            withAnimation(.spring(response: 0.45, dampingFraction: 1.0)) {
+                coordinator.currentView = .home
+                vm.close()
+            }
+            return
+        }
 
         guard copilotSession.pinsNotchOpen else {
             if copilotSession.endedByReader {
@@ -1357,6 +1423,8 @@ struct ContentView: View {
             
             guard vm.notchState == .closed,
                   !coordinator.sneakPeek.show,
+                  // A call or a meeting peeks; it opens on a click.
+                  !closedNotchPeeks,
                   Defaults[.openNotchOnHover] else { return }
             
             hoverTask = Task {

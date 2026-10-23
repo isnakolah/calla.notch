@@ -558,6 +558,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             // poll. Starting capture remains an explicit user action. One XPC
             // connection is kept for the app's lifetime.
             _ = CopilotLiveSession.shared
+            // Follows the session: shown while a call floats, hidden otherwise.
+            CallaFloatingCallWindow.shared.start()
             CallaEngineClient.shared.start()
             CallaEngineClient.shared.applyCurrentPreferences()
             CallaEngineClient.shared.startMonitoring()
@@ -744,6 +746,12 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         KeyboardShortcuts.onKeyDown(for: .copilotToggleLayout) {
             Task { @MainActor in
                 CopilotLiveSession.shared.toggleLayout()
+            }
+        }
+
+        KeyboardShortcuts.onKeyDown(for: .copilotToggleFloat) {
+            Task { @MainActor in
+                CopilotLiveSession.shared.toggleFloating()
             }
         }
 
