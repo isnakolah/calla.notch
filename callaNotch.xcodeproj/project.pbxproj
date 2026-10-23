@@ -220,6 +220,7 @@
 		CA11ST030000000000000003 /* IntelligenceStore in Frameworks */ = {isa = PBXBuildFile; productRef = CA11ST020000000000000002 /* IntelligenceStore */; };
 		CA11WM300000000000000001 /* CallaWindowTargetMenu.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA11WM300000000000000002 /* CallaWindowTargetMenu.swift */; };
 		CA11WV200000000000000001 /* CallaCallPreflightView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA11WV200000000000000002 /* CallaCallPreflightView.swift */; };
+		CA11VP100000000000000001 /* CallVPNManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA11VP100000000000000002 /* CallVPNManager.swift */; };
 		CA1200010000000000B00101 /* NotchCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA1200010000000000B00102 /* NotchCard.swift */; };
 		CAV200030000000000000003 /* CallaContracts in Frameworks */ = {isa = PBXBuildFile; productRef = CAV200020000000000000002 /* CallaContracts */; };
 		CAV200040000000000000004 /* CallaContracts in Frameworks */ = {isa = PBXBuildFile; productRef = CAV200020000000000000002 /* CallaContracts */; };
@@ -485,6 +486,7 @@
 		CA11QZA00000000000000002 /* CallaQuizCodeBlock.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = components/Calla/CallaQuizCodeBlock.swift; sourceTree = "<group>"; };
 		CA11WM300000000000000002 /* CallaWindowTargetMenu.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = components/Calla/CallaWindowTargetMenu.swift; sourceTree = "<group>"; };
 		CA11WV200000000000000002 /* CallaCallPreflightView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = components/Calla/CallaCallPreflightView.swift; sourceTree = "<group>"; };
+		CA11VP100000000000000002 /* CallVPNManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = managers/CallVPNManager.swift; sourceTree = "<group>"; };
 		CA1200010000000000B00102 /* NotchCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotchCard.swift; sourceTree = "<group>"; };
 		CD09AC32501C35B4F19B5D6C /* SettingsSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = components/Settings/Navigation/SettingsSection.swift; sourceTree = "<group>"; };
 		CECEC9C72C4A5C58FA02249B /* CopilotModelsPane.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = components/Settings/Panes/Copilot/CopilotModelsPane.swift; sourceTree = "<group>"; };
@@ -892,6 +894,7 @@
 				CA11QZ300000000000000002 /* CallaQuizPreflightView.swift */,
 				CA11WM300000000000000002 /* CallaWindowTargetMenu.swift */,
 				CA11WV200000000000000002 /* CallaCallPreflightView.swift */,
+				CA11VP100000000000000002 /* CallVPNManager.swift */,
 				CA11MC100000000000000002 /* CallaModeChrome.swift */,
 				CA11QZ400000000000000002 /* CallaQuizLiveView.swift */,
 				CA11QZA00000000000000002 /* CallaQuizCodeBlock.swift */,
@@ -1517,6 +1520,7 @@
 				CA11QZ300000000000000001 /* CallaQuizPreflightView.swift in Sources */,
 				CA11WM300000000000000001 /* CallaWindowTargetMenu.swift in Sources */,
 				CA11WV200000000000000001 /* CallaCallPreflightView.swift in Sources */,
+				CA11VP100000000000000001 /* CallVPNManager.swift in Sources */,
 				CA11MC100000000000000001 /* CallaModeChrome.swift in Sources */,
 				CA11QZ400000000000000001 /* CallaQuizLiveView.swift in Sources */,
 				CA11QZA00000000000000001 /* CallaQuizCodeBlock.swift in Sources */,
