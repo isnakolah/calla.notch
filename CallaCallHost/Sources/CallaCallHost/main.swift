@@ -628,9 +628,13 @@ case "serve":
                 return CallHostEvent(callID: config.callID, generation: config.generation,
                                      kind: accepted ? .answer : .fatal, snapshot: snapshot)
             case .capture:
-                let read = await session.captureScreen()
                 var snapshot = await session.lifecycleSnapshot()
-                if read == nil { snapshot.actionableError = "Screenshot failed. Check Screen & System Audio Recording for calla.notch." }
+                do { _ = try await session.captureScreen(displayID: command.displayID) }
+                catch ScreenSnapshot.Failure.displayDisconnected {
+                    snapshot.actionableError = ScreenSnapshot.Failure.displayDisconnected.localizedDescription
+                } catch {
+                    snapshot.actionableError = "Screenshot failed. Check Screen & System Audio Recording for calla.notch."
+                }
                 return CallHostEvent(callID: config.callID, generation: config.generation,
                                      kind: .screenshot, snapshot: snapshot)
             case .stop:
@@ -956,13 +960,14 @@ case "archive", "retranscribe":
             store: callStore) { print($0) }
         print("wrote \(result.turns) turns in \(String(format: "%.1f", result.duration))s")
         print(directory.appendingPathComponent("transcript-archive.jsonl").path)
-        // The new transcript has new turns, so the voices are worked out again.
-        // No naming pass here: there is no call config to say which provider the
-        // user allows, and a rerun keeps any voiceprint matches.
+        // The new transcript has new turns, so identify voices again and use
+        // the same local naming pass as the normal end-of-call path. The engine
+        // invokes this command for the durable archive pass in practice.
         if let callStore {
             do {
-                if let speakers = try await SpeakerPass.run(callDirectory: directory, store: callStore) {
-                    print("speakers: \(speakers.remoteSpeakers) remote, \(speakers.recognised) recognised")
+                let namer = SpeakerNamer.local(runtimeRoot: CallHostPaths.root, exactModel: nil)
+                if let speakers = try await SpeakerPass.run(callDirectory: directory, store: callStore, namer: namer) {
+                    print("speakers: \(speakers.remoteSpeakers) remote, \(speakers.recognised) recognised, \(speakers.guessed) guessed")
                 }
             } catch {
                 print("speaker pass failed: \(error.localizedDescription)")

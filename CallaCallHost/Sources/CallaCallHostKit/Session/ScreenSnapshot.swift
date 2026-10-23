@@ -14,14 +14,17 @@ public enum ScreenSnapshot {
     public struct Result: Sendable {
         public let file: URL
         public let text: String
+        public let displayID: UInt32
     }
 
     public enum Failure: LocalizedError {
         case noDisplay
+        case displayDisconnected
         case unwritable
         public var errorDescription: String? {
             switch self {
             case .noDisplay: "No display is available to capture."
+            case .displayDisconnected: "The selected display is no longer connected. Choose another display."
             case .unwritable: "The screenshot could not be saved."
             }
         }
@@ -31,12 +34,20 @@ public enum ScreenSnapshot {
     /// a 6K display at full size would be several megabytes a shot.
     static let longEdge = 2560
 
-    public static func capture(into directory: URL, name: String) async throws -> Result {
+    public static func capture(into directory: URL, name: String, displayID: UInt32? = nil) async throws -> Result {
         let content = try await SCShareableContent.excludingDesktopWindows(false, onScreenWindowsOnly: true)
         // The display the reader is looking at is the one under the pointer.
         let pointer = CGEvent(source: nil)?.location ?? .zero
-        guard let display = content.displays.first(where: { CGDisplayBounds($0.displayID).contains(pointer) })
-                ?? content.displays.first else { throw Failure.noDisplay }
+        let display: SCDisplay
+        if let displayID {
+            guard let selected = content.displays.first(where: { $0.displayID == displayID })
+            else { throw Failure.displayDisconnected }
+            display = selected
+        } else {
+            guard let selected = content.displays.first(where: { CGDisplayBounds($0.displayID).contains(pointer) })
+                    ?? content.displays.first else { throw Failure.noDisplay }
+            display = selected
+        }
         let own = content.applications.filter { $0.bundleIdentifier.hasPrefix("org.calla.notch") }
         let filter = SCContentFilter(display: display, excludingApplications: own, exceptingWindows: [])
 
@@ -57,7 +68,7 @@ public enum ScreenSnapshot {
         CGImageDestinationAddImage(destination, image, [kCGImageDestinationLossyCompressionQuality: 0.82] as CFDictionary)
         guard CGImageDestinationFinalize(destination) else { throw Failure.unwritable }
         try? FileManager.default.setAttributes([.posixPermissions: 0o600], ofItemAtPath: file.path)
-        return Result(file: file, text: recognizeText(in: image))
+        return Result(file: file, text: recognizeText(in: image), displayID: display.displayID)
     }
 
     /// The words on screen, top to bottom. On-device; nothing leaves the Mac

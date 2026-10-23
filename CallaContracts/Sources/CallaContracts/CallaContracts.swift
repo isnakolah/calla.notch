@@ -130,12 +130,16 @@ public struct CallHostCommand: Codable, Sendable, Equatable {
     /// Optional identity for coordinated requests and safe retries.
     public var questionID: UUID?
     public var codingEvidence: CodingDialogueEvidence?
+    /// The display chosen for a screenshot. Nil keeps the pointer-display default.
+    public var displayID: UInt32?
 
     public init(callID: String, generation: Int, kind: CallHostCommandKind,
-                text: String? = nil, questionID: UUID? = nil, contractVersion: Int = CallaContract.version) {
+                text: String? = nil, questionID: UUID? = nil, displayID: UInt32? = nil,
+                contractVersion: Int = CallaContract.version) {
         self.contractVersion = contractVersion; self.callID = callID
         self.generation = generation; self.kind = kind; self.text = text
         self.questionID = questionID
+        self.displayID = displayID
     }
 }
 

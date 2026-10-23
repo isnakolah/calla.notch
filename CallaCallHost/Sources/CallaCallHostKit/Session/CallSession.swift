@@ -854,16 +854,18 @@ public actor CallSession {
     /// A screenshot of what is being shared, saved beside the call and read
     /// into the copilot's context. Returns the number of characters read, or
     /// nil when nothing could be captured.
-    public func captureScreen() async -> Int? {
-        guard lifecycleState != .finished else { return nil }
+    public func captureScreen(displayID: UInt32? = nil) async throws -> Int {
+        guard lifecycleState != .finished else { throw ScreenSnapshot.Failure.noDisplay }
         let offset = Date().timeIntervalSince(startedAt)
         let total = max(0, Int(offset))
-        let name = String(format: "%02d-%02d-%02d.jpg", total / 3600, total / 60 % 60, total % 60)
+        let name = String(format: "%02d-%02d-%02d-%@.jpg", total / 3600, total / 60 % 60,
+                          total % 60, String(UUID().uuidString.prefix(8)))
         let directory = CallHostPaths.callMetadataFile(for: config.callID)
             .deletingLastPathComponent().appendingPathComponent("captures", isDirectory: true)
         do {
-            let result = try await ScreenSnapshot.capture(into: directory, name: name)
+            let result = try await ScreenSnapshot.capture(into: directory, name: name, displayID: displayID)
             let record: [String: Any] = ["file": result.file.lastPathComponent, "offset": offset,
+                                         "display_id": result.displayID,
                                          "text": result.text,
                                          "taken_at": ISO8601DateFormatter().string(from: Date())]
             if var line = try? JSONSerialization.data(withJSONObject: record, options: [.sortedKeys]) {
@@ -881,7 +883,7 @@ public actor CallSession {
             return result.text.count
         } catch {
             sessionLog.error("screenshot failed: \(error.localizedDescription, privacy: .public)")
-            return nil
+            throw error
         }
     }
 
