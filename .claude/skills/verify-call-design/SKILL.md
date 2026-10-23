@@ -12,7 +12,7 @@ You are checking the macOS app against two design canvases in this repo:
 - `design/call-tab/`: newest. The call tab at rest and choosing a call type.
 
 `design/README.md` lists what is meant to be implemented and what is
-deliberately left out. Do not report a deliberately-left-out item as a failure.
+deliberately left out (the answer surfaces). Do not report a deliberately-left-out item as a failure.
 
 Work through the four stages in order and stop to report if a stage fails.
 
@@ -60,6 +60,13 @@ Read each file named below and confirm the rule. Note the line you checked.
 | `call-tab/PickerChange` | Typing narrows the list, Return picks the first, Esc goes back | `filteredEntries`, `onSubmit`, `onExitCommand`, `.cancelAction` |
 | `call-tab/Picker` | A repeating meeting has one single-line scope button: Every … / Just this one; no button wraps | `meetingRepeats`, `forEveryOccurrence`, `CallaHeaderTextButton` |
 | `call-tab/TodayCalls` | "N today" opens the upcoming calls in the notch, each with its type as a ranked menu; a ring marks Calla's guess | `todayList`, `meetingRow`, `MeetingTypeMenu` |
+| `call-redesign/Recap` | After the write-up the notch opens on the recap: Decided, Still open, To do (each can be left out), Add to Reminders, Copy follow-up email, Open in Past calls, Done; off with "Show the recap when a call ends" | `CopilotLiveSession.presentRecap`, `CallaRecapView`, `CallaRecapPresentation`, `CalendarService.addReminders` |
+| `call-redesign/KnowledgeDrop` | A dropped file is read first, then one question: Just the next call / Every <meeting> / Every call, plus Another meeting…; Cancel and Add | `CallaKnowledgeAttach.readPending`, `dropChoices`, `CallaKnowledgeDropView.pickerColumns` |
+| `call-redesign/KnowledgeInCall` | The paperclip in the live band lists the call's notes by scope with a switch each; switching off affects this call only | `CallaCallNotesView`, `CallaEngineClient.setCallNote`, engine `exclude_knowledge`, host `CallHostCommandKind.knowledge`, `CopilotAdvisor.excludedNoteIDs` |
+| `call-redesign/SettingsNotes` | Notes page: Every call, Meetings that repeat, Coming up, Carry recaps forward | `CopilotKnowledgePane`, key `callaCarryRecaps`, engine `carry_recaps` |
+| `call-redesign/SettingsCalls` | One Calls page: Before, During, After, Where answers come from, Advanced; Models and Prompts not in the sidebar, with a way back to Calls | `CopilotPane`, `SettingsSection.parent`, `SettingsPane.backSection` |
+| `zen-mode/ZenSettings` | "Stay in zen while I share my screen": while sharing, hover does not open zen, a click does | `ScreenShareWatch`, `CallaScreenShareHeuristic`, `ContentView.updateAmbientHover`, `openFromZen` |
+| `call-redesign/InCallShare` | Call surfaces are always out of shares and recordings | `CallaNotchSkyLightWindow.callSurfaceShowing`, `CallaFloatingCallWindow.applySharingType` |
 | `call-tab` purple note | The recommender ranks every type from: your past choice for the series, similar meetings, the model's top three, every title match, the meeting's shape, your history | `MeetingCategoryStore.ranking(for:)`, `similar(to:)`, `CallTypeHistory`, engine `suggestMeetingCategory` (returns up to three ids) |
 
 ## 3. It behaves like the design in the running app
@@ -101,6 +108,18 @@ and set it beside the artboard.
     Esc returns to the tab (`PickerChange`).
 13. With calendar calls enabled, press "N today": the list shows each meeting's type;
     change one from its menu and reopen: the change stuck (`TodayCalls`).
+14. End a call that said something: a few seconds after "Saved" the notch opens on the
+    recap (`Recap`). Untick a to-do, Add to Reminders, check Reminders. Copy the email
+    and paste it. Done closes the notch.
+15. Drop a PDF on the notch: it says how many pages it read, then asks one question
+    (`KnowledgeDrop`). Add it for the next call and check it in Settings › Notes for Calla.
+16. During a call, press the paperclip: the call's notes are listed with switches
+    (`KnowledgeInCall`). Switch one off; the next answers do not cite it.
+17. During a call, share your screen in Zoom or Meet: hovering the notch leaves it in
+    zen; clicking opens it (`ZenSettings`). Record the screen with QuickTime: the notch
+    is not in the recording, whatever "Hide from screen recording" says (`InCallShare`).
+18. Settings: the sidebar has Calls, Notes for Calla, Past calls, Screen Quiz. Calls ›
+    Advanced › Models opens Models with "‹ Calls" back (`SettingsCalls`).
 
 ## 4. Report
 

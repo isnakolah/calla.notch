@@ -560,6 +560,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             _ = CopilotLiveSession.shared
             // Follows the session: shown while a call floats, hidden otherwise.
             CallaFloatingCallWindow.shared.start()
+            ScreenShareWatch.shared.start()
             CallaEngineClient.shared.start()
             CallaEngineClient.shared.applyCurrentPreferences()
             CallaEngineClient.shared.startMonitoring()

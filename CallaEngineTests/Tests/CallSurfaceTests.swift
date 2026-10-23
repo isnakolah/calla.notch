@@ -244,3 +244,62 @@ final class ZenContentTests: XCTestCase {
         XCTAssertEqual(CallaZen.Level(stored: "line"), .brief)
     }
 }
+
+final class RecapPresentationTests: XCTestCase {
+    private typealias Item = CallaRecapPresentation.Item
+
+    func testItemsSortIntoDecidedOpenAndToDo() {
+        let sections = CallaRecapPresentation.sections([
+            Item(kind: "decision", text: "Two-year term", resolved: false),
+            Item(kind: "actionItem", text: "Send the security letter", resolved: false),
+            Item(kind: "commitment", text: "Dana books the IT call", resolved: false),
+            Item(kind: "open_question", text: "Seat count", resolved: false),
+            Item(kind: "openQuestion", text: "Answered later", resolved: true),
+            Item(kind: "decision", text: "   ", resolved: false),
+            Item(kind: "something-new", text: "Ignored", resolved: false)
+        ])
+        XCTAssertEqual(sections.decided, ["Two-year term"])
+        XCTAssertEqual(sections.todo, ["Send the security letter", "Dana books the IT call"])
+        XCTAssertEqual(sections.open, ["Seat count"])
+        XCTAssertFalse(sections.isEmpty)
+        XCTAssertTrue(CallaRecapPresentation.sections([]).isEmpty)
+    }
+
+    func testLength() {
+        XCTAssertEqual(CallaRecapPresentation.length(minutes: 32), "32 min")
+        XCTAssertEqual(CallaRecapPresentation.length(minutes: 75), "1 h 15 min")
+        XCTAssertNil(CallaRecapPresentation.length(minutes: nil))
+        XCTAssertNil(CallaRecapPresentation.length(minutes: 0))
+    }
+
+    func testFollowUpEmailUsesOnlyTheRecap() {
+        let sections = CallaRecapPresentation.Sections(decided: ["Two-year term"], open: [], todo: ["Send the letter"])
+        let email = CallaRecapPresentation.followUpEmail(title: "Acme renewal sync",
+                                                         overview: "They will sign.", sections: sections)
+        XCTAssertTrue(email.hasPrefix("Subject: Follow-up: Acme renewal sync"))
+        XCTAssertTrue(email.contains("They will sign."))
+        XCTAssertTrue(email.contains("What we decided\n- Two-year term"))
+        XCTAssertTrue(email.contains("Next steps\n- Send the letter"))
+        XCTAssertFalse(email.contains("Still open"))
+        XCTAssertTrue(CallaRecapPresentation.followUpEmail(title: nil, overview: "", sections: .init())
+            .hasPrefix("Subject: Follow-up: our call"))
+    }
+}
+
+final class ScreenShareHeuristicTests: XCTestCase {
+    private typealias Window = CallaScreenShareHeuristic.Window
+
+    func testCallAppSharingWindowsCount() {
+        XCTAssertTrue(CallaScreenShareHeuristic.isSharing([Window(owner: "zoom.us", name: "zoom share toolbar window")]))
+        XCTAssertTrue(CallaScreenShareHeuristic.isSharing([Window(owner: "Google Chrome", name: "meet.google.com is sharing your screen.")]))
+        XCTAssertTrue(CallaScreenShareHeuristic.isSharing([Window(owner: "Microsoft Teams", name: "Sharing control bar")]))
+    }
+
+    func testOrdinaryWindowsDoNot() {
+        XCTAssertFalse(CallaScreenShareHeuristic.isSharing([]))
+        XCTAssertFalse(CallaScreenShareHeuristic.isSharing([Window(owner: "zoom.us", name: "Zoom Meeting")]))
+        XCTAssertFalse(CallaScreenShareHeuristic.isSharing([Window(owner: "Google Chrome", name: "Renewal proposal - Google Slides")]))
+        XCTAssertFalse(CallaScreenShareHeuristic.isSharing([Window(owner: "System Settings", name: "Screen Sharing")]))
+        XCTAssertFalse(CallaScreenShareHeuristic.isSharing([Window(owner: "Finder", name: "")]))
+    }
+}

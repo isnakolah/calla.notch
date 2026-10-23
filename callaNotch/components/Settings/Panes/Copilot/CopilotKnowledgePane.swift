@@ -19,6 +19,7 @@ struct CopilotKnowledgePane: View {
     @ObservedObject private var focus = CallaKnowledgeFocus.shared
 
     @Environment(\.settingsRouter) private var router
+    @Default(.callaCarryRecaps) private var carryRecaps
     @State private var search = ""
     @State private var month = Calendar.current.startOfDay(for: Date())
     @State private var selectedDay: Date?
@@ -43,20 +44,96 @@ struct CopilotKnowledgePane: View {
             }
     }
 
+    /// In the order people reach for it: what Calla always has, the meetings
+    /// that repeat and carry their recaps forward, what is coming up, and then
+    /// every meeting, for the one that is none of those.
     private var root: some View {
         SettingsPane(.knowledge) {
             overview
-            upcomingCallsCard
             everywhereCard
+            repeatingCard
+            upcomingCallsCard
+            carryCard
             meetingsCard
             if !library.orphanedNotes.isEmpty { orphanCard }
         }
     }
 
+    // MARK: - Meetings that repeat
+
+    /// One card per repeating meeting in range, soonest first: each one's
+    /// recaps go into the next call when "Carry recaps forward" is on.
+    private var repeatingMeetings: [EventModel] {
+        var seen = Set<String>()
+        return library.events
+            .filter { $0.hasRecurrenceRules && ($0.seriesID?.isEmpty == false) && $0.end > Date() }
+            .sorted { $0.start < $1.start }
+            .filter { seen.insert($0.seriesID ?? $0.id).inserted }
+    }
+
+    @ViewBuilder
+    private var repeatingCard: some View {
+        let meetings = Array(repeatingMeetings.prefix(6))
+        if !meetings.isEmpty {
+            SettingCard("Meetings that repeat",
+                        detail: carryRecaps ? "Calla adds each call's recap to the next one." : "Each call starts without the last one's recap.") {
+                LazyVGrid(columns: [GridItem(.flexible(), spacing: 12), GridItem(.flexible(), spacing: 12)], spacing: 12) {
+                    ForEach(meetings) { event in
+                        Button {
+                            router?.push(.copilotKnowledgeDetail(.event(id: event.id)))
+                        } label: {
+                            VStack(alignment: .leading, spacing: 4) {
+                                HStack(spacing: 6) {
+                                    Image(systemName: "repeat").font(.system(size: 11)).foregroundStyle(.secondary)
+                                    Text(event.title).font(NotchType.rowTitle).lineLimit(1)
+                                }
+                                Text("Next \(event.start.formatted(.dateTime.weekday(.abbreviated).day().month(.abbreviated).hour().minute()))")
+                                    .font(NotchType.rowDetail).foregroundStyle(.secondary).lineLimit(1)
+                                HStack(spacing: 6) {
+                                    let calls = library.callCount(for: event)
+                                    if calls > 0 { tag("\(calls) recap\(calls == 1 ? "" : "s")") }
+                                    let notes = library.notes(for: event).count
+                                    if notes > 0 { tag("\(notes) note\(notes == 1 ? "" : "s")") }
+                                    if calls == 0 && notes == 0 { tag("Nothing yet") }
+                                }
+                            }
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .padding(12)
+                            .background(RoundedRectangle(cornerRadius: 10, style: .continuous)
+                                .fill(Color.primary.opacity(0.05)))
+                            .contentShape(Rectangle())
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+            }
+        }
+    }
+
+    private func tag(_ text: String) -> some View {
+        Text(text)
+            .font(.system(size: 11, weight: .medium))
+            .foregroundStyle(.secondary)
+            .padding(.horizontal, 7)
+            .padding(.vertical, 2)
+            .background(Capsule().fill(Color.primary.opacity(0.07)))
+    }
+
+    // MARK: - Carrying recaps
+
+    private var carryCard: some View {
+        SettingsList {
+            SettingsToggleRow("Carry recaps forward",
+                              detail: "When a meeting repeats, the last recaps are added to the next call automatically.",
+                              isOn: $carryRecaps)
+        }
+        .settingsAnchor("knowledge.carry")
+    }
+
     // MARK: - Overview
 
     private var upcomingCallsCard: some View {
-        SettingCard("Upcoming calls", detail: "Linked meetings on enabled calendar accounts. Choose one to prepare its type and context.") {
+        SettingCard("Coming up", detail: "Just for one call, then kept with it in Past calls.") {
             if calendarManager.upcomingCallMeetings.isEmpty {
                 Text("No upcoming linked meetings")
                     .font(NotchType.rowDetail).foregroundStyle(.secondary)
@@ -69,13 +146,28 @@ struct CopilotKnowledgePane: View {
                             HStack {
                                 VStack(alignment: .leading, spacing: 2) {
                                     Text(event.title).font(NotchType.rowTitle)
-                                    Text(event.start.formatted(date: .abbreviated, time: .shortened))
+                                    Text([event.start.formatted(date: .abbreviated, time: .shortened),
+                                          CallaCopilotPersona.title(categories.confirmed(for: event)
+                                              ?? categories.suggestion(for: event) ?? "generic")]
+                                        .joined(separator: " · "))
                                         .font(NotchType.rowDetail).foregroundStyle(.secondary)
+                                    let attached = library.notes(for: event)
+                                    if attached.isEmpty {
+                                        Text(event.hasRecurrenceRules && carryRecaps
+                                             ? "Nothing added. Calla will use the last recap."
+                                             : "Nothing added.")
+                                            .font(NotchType.rowDetail).foregroundStyle(.tertiary)
+                                    } else {
+                                        HStack(spacing: 6) {
+                                            ForEach(attached.prefix(3)) { note in
+                                                tag(note.title.isEmpty ? "Untitled" : note.title)
+                                            }
+                                            if attached.count > 3 { tag("+\(attached.count - 3)") }
+                                        }
+                                    }
                                 }
                                 Spacer()
-                                Text(CallaCopilotPersona.title(categories.confirmed(for: event)
-                                    ?? categories.suggestion(for: event) ?? "generic"))
-                                    .font(NotchType.rowDetail)
+                                Text("Add").font(NotchType.rowDetail).foregroundStyle(Color.accentColor)
                                 Image(systemName: "chevron.right").font(.caption)
                             }
                             .contentShape(Rectangle())
@@ -99,6 +191,9 @@ struct CopilotKnowledgePane: View {
                 TextField("Search meetings and files", text: $search)
                     .textFieldStyle(.roundedBorder)
                     .frame(width: 220)
+                Button("Add") { router?.push(.copilotKnowledgeDetail(.everyCall)) }
+                    .buttonStyle(.borderedProminent)
+                    .help("Add a file or a note for every call. To add one for a single meeting, choose it below or drop the file on the notch.")
             }
         }
     }
@@ -115,6 +210,23 @@ struct CopilotKnowledgePane: View {
     private var everywhereCard: some View {
         SettingCard("Every call", detail: "Background Calla always has, whatever the meeting.") {
             VStack(spacing: 0) {
+                ForEach(library.notes(scope: "always").prefix(5)) { note in
+                    HStack(spacing: 10) {
+                        Image(systemName: note.symbol)
+                            .font(.system(size: 13))
+                            .foregroundStyle(.secondary)
+                            .frame(width: 22)
+                        VStack(alignment: .leading, spacing: 1) {
+                            Text(note.title.isEmpty ? "Untitled note" : note.title).font(NotchType.rowTitle).lineLimit(1)
+                            Text(note.subtitle).font(NotchType.rowDetail).foregroundStyle(.tertiary).lineLimit(1)
+                        }
+                        Spacer(minLength: 8)
+                        Button("Edit") { router?.push(.copilotKnowledgeDetail(.everyCall)) }
+                            .controlSize(.small)
+                    }
+                    .padding(.vertical, 6)
+                    Divider().padding(.leading, 32)
+                }
                 navigationRow(
                     route: .everyCall,
                     symbol: "globe",
@@ -125,8 +237,8 @@ struct CopilotKnowledgePane: View {
                 navigationRow(
                     route: .byPersona,
                     symbol: "theatermasks",
-                    title: "By kind of call",
-                    detail: "Only when the copilot is set to that persona",
+                    title: "Notes for one kind of call",
+                    detail: "For example, a pitch deck only for sales calls",
                     count: library.notes(scope: "persona").count)
             }
         }

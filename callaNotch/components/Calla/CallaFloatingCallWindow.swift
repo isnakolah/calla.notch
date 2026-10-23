@@ -121,10 +121,10 @@ final class CallaFloatingCallWindow: NSObject, NSWindowDelegate {
         return panel
     }
 
-    /// One switch decides this for the notch and the window alike, so a call
-    /// is never hidden in one place and visible in the other.
+    /// Out of every share and recording, always: the window only exists while
+    /// a call does, and the notch is hidden for the length of a call too.
     private func applySharingType() {
-        panel?.sharingType = Defaults[.hideFromScreenRecording] ? .none : .readWrite
+        panel?.sharingType = .none
     }
 
     // MARK: - Where it goes

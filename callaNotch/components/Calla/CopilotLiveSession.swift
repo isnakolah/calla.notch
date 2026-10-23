@@ -74,7 +74,64 @@ final class CopilotLiveSession: ObservableObject {
     @Published private(set) var endedByReader = false
     @Published private(set) var callEndReleases = 0
 
-    func prepareForSessionStart() { endedByReader = false }
+    func prepareForSessionStart() {
+        endedByReader = false
+        recap = nil
+        showingCallNotes = false
+    }
+
+    /// The live panel is showing what Calla is using on this call.
+    @Published private(set) var showingCallNotes = false
+
+    func toggleCallNotes() {
+        guard isLive else { return }
+        withAnimation(.easeOut(duration: 0.16)) { showingCallNotes.toggle() }
+    }
+
+    // MARK: - The recap
+
+    /// The finished call's recap, held in the notch until the reader is done
+    /// with it. Nil the rest of the time.
+    @Published private(set) var recap: CallaRecapDraft?
+    /// What the recap is about, kept from the call because the host stops
+    /// reporting it the moment the write-up is done.
+    @Published private(set) var recapContext = CallaRecapContext()
+    private var watchedCall = CallaRecapContext()
+
+    /// Fetches the recap once the write-up is done, and shows it if it says
+    /// anything. A recap still being written is asked for once more.
+    private func presentRecap(after delay: Duration = .milliseconds(600), retries: Int = 2) {
+        guard Defaults[.callaShowRecap], Defaults[.callaCopilotEnabled],
+              let callID = watchedCall.callID else { return }
+        let context = watchedCall
+        Task { @MainActor [weak self] in
+            try? await Task.sleep(for: delay)
+            CallaEngineClient.shared.fetchRecapDraft(callID: callID) { draft in
+                guard let self, !self.isLive, !self.starting else { return }
+                guard let draft, draft.failure == nil,
+                      !(draft.overview.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && draft.items.isEmpty)
+                else {
+                    if retries > 0 { self.presentRecap(after: .seconds(3), retries: retries - 1) }
+                    return
+                }
+                self.recapContext = context
+                self.recap = draft
+                self.pin()
+                self.reveal()
+            }
+        }
+    }
+
+    /// "Done" on the recap. It stays in Past calls.
+    func dismissRecap() {
+        recap = nil
+        pinned = false
+        dismissedByReader = true
+        // The notch hands a reader-ended call back once per release; the recap
+        // took it again, so letting it go is a release of its own.
+        if endedByReader { callEndReleases &+= 1 }
+        NotificationCenter.default.post(name: .copilotLiveDidChange, object: nil)
+    }
 
     /// End releases presentation immediately; audio drain and recap stay host-owned.
     func releaseEndedCall() {
@@ -187,6 +244,9 @@ final class CopilotLiveSession: ObservableObject {
     /// The single question `CallaViewModel.close()` and the panel's sharing
     /// type both ask.
     var pinsNotchOpen: Bool {
+        // The recap arrives after End released the call, so it is checked
+        // before `endedByReader`: it is a new surface, not the call coming back.
+        if recap != nil, !isLive, !starting { return pinned }
         if endedByReader { return false }
         // The floating window holds the call instead; the notch stays closed.
         if floating && isLive { return false }
@@ -211,6 +271,8 @@ final class CopilotLiveSession: ObservableObject {
             // a line to type — a normal tab, like every other pane.
             return CallaKnowledgeAttach.shared.presetTarget == nil ? knowledgeNotchSize : openNotchSize
         }
+        // Two columns of decisions and to-dos: the full call size, not a tab's.
+        if recap != nil, pinned, !isLive, !starting { return CallaPanelSize.full }
         if endedByReader { return openNotchSize }
         if signInActive { return openNotchSize }
         // A starting call uses the full live size it is about to become, so the
@@ -310,6 +372,21 @@ final class CopilotLiveSession: ObservableObject {
             }
             .store(in: &cancellables)
 
+        // Remembered while the call runs: the recap needs the call's id and
+        // what it was, after the host has stopped saying either.
+        CallaEngineClient.shared.$status
+            .map(\.copilot)
+            .sink { [weak self] copilot in
+                guard let self, let id = copilot.callID, copilot.running || copilot.isFinishing else { return }
+                if self.watchedCall.callID != id {
+                    self.watchedCall = CallaRecapContext(callID: id, title: nil, startedAt: copilot.startedAt)
+                }
+                if let title = copilot.meetingTitle, !title.isEmpty { self.watchedCall.title = title }
+                if let started = copilot.startedAt { self.watchedCall.startedAt = started }
+                if copilot.running { self.watchedCall.endedAt = Date() }
+            }
+            .store(in: &cancellables)
+
         CallaEngineClient.shared.$status
             .map(\.copilot.isSigningIn)
             .removeDuplicates()
@@ -375,10 +452,11 @@ final class CopilotLiveSession: ObservableObject {
         guard ending != self.ending else { return }
         self.ending = ending
         guard ending, Defaults[.callaCopilotEnabled] else {
-            // The write-up is done. Nothing to hold the notch for any more, and
-            // nothing to say — History has the recap.
+            // The write-up is done. The progress has nothing more to say; the
+            // recap, once it can be read, takes the notch back on its own.
             if !isLive { pinned = false }
             NotificationCenter.default.post(name: .copilotLiveDidChange, object: nil)
+            if !ending { presentRecap() }
             return
         }
         // Recording has stopped, so the live panel's claim has stopped being
@@ -420,6 +498,7 @@ final class CopilotLiveSession: ObservableObject {
         if running, endedByReader { return }
         guard running != isLive else { return }
         isLive = running
+        showingCallNotes = false
         // A new session starts at its newest answer, and a finished one must not
         // leave a stale id pointing into the next session's history.
         quizAnswerCursor = .latest
@@ -580,4 +659,71 @@ final class CopilotLiveSession: ObservableObject {
 extension Notification.Name {
     /// Posted when the live session wants the notch opened or resized.
     static let copilotLiveDidChange = Notification.Name("copilotLiveDidChange")
+}
+
+/// What a finished call was, for its recap: the host stops reporting these
+/// once the write-up is done.
+struct CallaRecapContext: Equatable {
+    var callID: String?
+    var title: String?
+    var startedAt: Date?
+    var endedAt: Date?
+
+    var minutes: Int? {
+        guard let startedAt, let endedAt, endedAt > startedAt else { return nil }
+        return max(1, Int((endedAt.timeIntervalSince(startedAt) / 60).rounded()))
+    }
+}
+
+/// Whether the screen is being shared, watched only while a call runs.
+///
+/// Read from the windows on screen (`CallaScreenShareHeuristic`): every call
+/// app puts up a bar saying it is sharing, and with the Screen Recording
+/// permission Calla holds for the other side's audio, their names are readable.
+/// Polled every two seconds during a call and not at all otherwise.
+@MainActor
+final class ScreenShareWatch: ObservableObject {
+    static let shared = ScreenShareWatch()
+
+    @Published private(set) var sharing = false
+    private var timer: Timer?
+    private var cancellables = Set<AnyCancellable>()
+
+    private init() {
+        CallaEngineClient.shared.$status
+            .map(\.copilot.running)
+            .removeDuplicates()
+            .sink { [weak self] running in running ? self?.begin() : self?.end() }
+            .store(in: &cancellables)
+    }
+
+    /// Starts listening; called once at launch.
+    func start() {}
+
+    private func begin() {
+        guard timer == nil else { return }
+        check()
+        timer = Timer.scheduledTimer(withTimeInterval: 2, repeats: true) { [weak self] _ in
+            Task { @MainActor in self?.check() }
+        }
+    }
+
+    private func end() {
+        timer?.invalidate()
+        timer = nil
+        if sharing { sharing = false }
+    }
+
+    private func check() {
+        let own = ProcessInfo.processInfo.processIdentifier
+        let info = (CGWindowListCopyWindowInfo([.optionOnScreenOnly, .excludeDesktopElements], kCGNullWindowID)
+            as? [[String: Any]]) ?? []
+        let windows = info.compactMap { entry -> CallaScreenShareHeuristic.Window? in
+            guard (entry[kCGWindowOwnerPID as String] as? pid_t) != own else { return nil }
+            return .init(owner: entry[kCGWindowOwnerName as String] as? String ?? "",
+                         name: entry[kCGWindowName as String] as? String ?? "")
+        }
+        let now = CallaScreenShareHeuristic.isSharing(windows)
+        if now != sharing { sharing = now }
+    }
 }

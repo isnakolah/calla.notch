@@ -144,6 +144,31 @@ class CalendarService: CalendarServiceProviding {
         }
     }
     
+    /// Adds each title as a reminder in the default list, with `notes` on each.
+    /// Asks for access first; returns how many were saved.
+    @MainActor
+    func addReminders(_ titles: [String], notes: String?) async -> Int {
+        if !hasAccess(to: .reminder) {
+            guard (try? await requestAccess(to: .reminder)) == true else { return 0 }
+        }
+        guard let list = store.defaultCalendarForNewReminders() else { return 0 }
+        var saved = 0
+        for title in titles {
+            let reminder = EKReminder(eventStore: store)
+            reminder.title = title
+            reminder.notes = notes
+            reminder.calendar = list
+            do {
+                try store.save(reminder, commit: false)
+                saved += 1
+            } catch {
+                print("Failed to add reminder: \(error)")
+            }
+        }
+        if saved > 0 { try? store.commit() }
+        return saved
+    }
+
     func setReminderCompleted(reminderID: String, completed: Bool) async {
         guard let reminder = store.calendarItem(withIdentifier: reminderID) as? EKReminder else { return }
         reminder.isCompleted = completed

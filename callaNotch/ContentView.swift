@@ -120,10 +120,20 @@ struct ContentView: View {
     /// panel; leaving returns here.
     private var isAmbient: Bool { ambientEligible && ambientResting }
 
+    private func openFromZen() {
+        guard ambientResting, ambientEligible else { return }
+        ambientTask?.cancel()
+        copilotSession.collapseForHover()
+        withAnimation(.smooth(duration: 0.3)) { ambientResting = false }
+    }
+
     private func updateAmbientHover(_ hovering: Bool) {
         ambientTask?.cancel()
         if hovering {
             guard ambientResting else { return }
+            // Mid-presentation a pass of the pointer must not open the panel
+            // over the slides; a click on zen still does.
+            if ambientEligible, Defaults[.callaZenWhileSharing], ScreenShareWatch.shared.sharing { return }
             if ambientEligible { copilotSession.collapseForHover() }
             withAnimation(.smooth(duration: 0.3)) { ambientResting = false }
         } else {
@@ -856,12 +866,21 @@ struct ContentView: View {
                             // live call here is the same lie the startup panel
                             // exists to stop telling in the other direction.
                             CallaCopilotEndingView()
+                        } else if copilotSession.recap != nil,
+                                  !copilotSession.isLive, !copilotSession.starting {
+                            // The written-up call, until the reader is done
+                            // with it. A new call starting takes the panel back.
+                            CallaRecapView()
                         } else if copilotSession.isLive {
                             if CallaEngineClient.shared.status.quiz.active {
                                 CallaQuizLiveView()
                             } else if isAmbient {
                                 CallaCopilotAmbientView()
                                     .transition(.opacity)
+                                    // A click always opens zen, which is the
+                                    // only way in while the screen is shared.
+                                    .contentShape(Rectangle())
+                                    .onTapGesture { openFromZen() }
                             } else {
                                 CallaCopilotLiveView()
                                     .transition(.opacity)

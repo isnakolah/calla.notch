@@ -84,7 +84,10 @@ struct CallaCopilotLiveView: View {
 
     var body: some View {
         Group {
-            if compact {
+            if session.showingCallNotes {
+                CallaCallNotesView()
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+            } else if compact {
                 compactPanel
                     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
             } else if stacked {
@@ -968,7 +971,9 @@ struct CallaCopilotLiveHeader: View {
     @EnvironmentObject private var vm: CallaViewModel
 
     @State private var now = Date()
-    @Default(.hideFromScreenRecording) private var hiddenFromCapture
+    /// A live session is always out of shares and recordings (see
+    /// `CallaNotchSkyLightWindow.updateSharingType`), whatever the setting says.
+    private let hiddenFromCapture = true
     @Default(.callaIntelligenceProvider) private var preferredProvider
     private let clockTick = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
 
@@ -1240,6 +1245,16 @@ struct CallaCopilotLiveHeader: View {
                                     ? "Take a screenshot for context, \(copilot.screenshotCount) taken"
                                     : "Take a screenshot for context")
 
+            // What Calla is reading from, and a switch for each, for this call.
+            CallaWingButton(symbol: session.showingCallNotes ? "paperclip.circle.fill" : "paperclip",
+                            tint: session.showingCallNotes ? NotchAccent.call : Color.white.opacity(0.70)) {
+                session.toggleCallNotes()
+            }
+            .notchTooltip(engine.callNotes.isEmpty ? "What Calla is using"
+                          : "What Calla is using · \(engine.callNotes.count) note\(engine.callNotes.count == 1 ? "" : "s")",
+                          symbol: "paperclip")
+            .accessibilityLabel("What Calla is using on this call")
+
             CallaWingIndicator(symbol: copilot.micActive ? "mic" : "mic.slash",
                                tint: copilot.micActive ? Color.white.opacity(0.70) : NotchAccent.attention)
                 .notchTooltip(copilot.micActive ? "Your microphone is being captured"
@@ -1247,8 +1262,7 @@ struct CallaCopilotLiveHeader: View {
                               symbol: copilot.micActive ? "mic.fill" : "mic.slash.fill")
                 .accessibilityLabel(copilot.micActive ? "Your microphone is being captured"
                                                       : "Your microphone is not being captured")
-            // Reports the setting rather than asserting a guarantee: hidden from
-            // captures when "Hide from screen recording" is on, visible when off.
+            // A live call is always out of shares, so this only ever says so.
             CallaWingIndicator(symbol: hiddenFromCapture ? "eye.slash" : "eye",
                                tint: hiddenFromCapture ? Color.white.opacity(0.70) : NotchAccent.attention)
                 .notchTooltip(hiddenFromCapture ? "Hidden from screen shares"

@@ -30,6 +30,9 @@ struct SettingsPane<Content: View>: View {
     var isOn: Binding<Bool>?
     /// Set for a record pushed over its page — the header gains a way back.
     var backTitle: String?
+    /// Where the way back goes when the page was not pushed: Models and
+    /// Prompts are reached from Calls, not the sidebar.
+    var backSection: SettingsSection?
     @ViewBuilder var content: Content
 
     @Environment(\.settingsRouter) private var router
@@ -48,6 +51,10 @@ struct SettingsPane<Content: View>: View {
         self.title = String(localized: section.title)
         self.detail = section.detail.map { String(localized: $0) }
         self.isOn = isOn
+        if let parent = section.parent {
+            self.backTitle = String(localized: parent.title)
+            self.backSection = parent
+        }
         self.content = content()
     }
 
@@ -97,7 +104,9 @@ struct SettingsPane<Content: View>: View {
         HStack(alignment: .bottom, spacing: NotchSpace.stack) {
             VStack(alignment: .leading, spacing: 4) {
                 if let backTitle, let router {
-                    Button { router.pop() } label: {
+                    Button {
+                        if let backSection { router.go(SettingsRoute(backSection)) } else { router.pop() }
+                    } label: {
                         Label(backTitle, systemImage: "chevron.backward")
                             .font(.system(size: 12, weight: .medium))
                     }

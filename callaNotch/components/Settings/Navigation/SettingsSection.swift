@@ -20,8 +20,9 @@ enum SettingsGroup: String, CaseIterable, Identifiable {
         }
     }
 
+    /// The rows the sidebar shows. A section with a parent is reached from it.
     var sections: [SettingsSection] {
-        SettingsSection.allCases.filter { $0.group == self }
+        SettingsSection.allCases.filter { $0.group == self && $0.parent == nil }
     }
 }
 
@@ -39,6 +40,16 @@ enum SettingsSection: String, CaseIterable, Identifiable, Hashable, Codable {
     case general, permissions, about
 
     var id: String { rawValue }
+
+    /// The page this one is reached from, when it is not in the sidebar.
+    /// Models and Prompts are the call settings' Advanced, so they live under
+    /// Calls rather than as rows of their own.
+    var parent: SettingsSection? {
+        switch self {
+        case .models, .persona: return .copilot
+        default: return nil
+        }
+    }
 
     var group: SettingsGroup {
         switch self {
@@ -58,7 +69,7 @@ enum SettingsSection: String, CaseIterable, Identifiable, Hashable, Codable {
         case .shelf: return "Shelf"
         case .focus: return "Focus Timer"
         case .usage: return "AI Usage"
-        case .copilot: return "Copilot"
+        case .copilot: return "Calls"
         case .models: return "Models"
         case .persona: return "Persona & Prompts"
         case .knowledge: return "Notes for Calla"
@@ -135,7 +146,7 @@ enum SettingsSection: String, CaseIterable, Identifiable, Hashable, Codable {
         case .shelf: return "Drop files on the notch to keep them close, and send them on."
         case .focus: return "Focus blocks and breaks."
         case .usage: return "How much of your Claude and Codex allowance is left."
-        case .copilot: return "Listens to a call and suggests what to say next."
+        case .copilot: return "How Calla helps before, during and after a call. The defaults work; change only what you want different."
         case .models: return "Two jobs: one model turns the call into text, another writes the answers."
         case .persona: return "Who you are, and how each kind of call is handled."
         case .knowledge: return "Files and notes Calla uses, and when it uses them."

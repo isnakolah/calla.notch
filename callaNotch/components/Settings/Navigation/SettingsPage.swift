@@ -80,7 +80,7 @@ enum SettingsPage: Hashable {
         case .headerLayout: return "Either Side of the Notch"
         case .notchSize: return "Size"
         case .accent: return "Accent Colour"
-        case .copilotCall: return "Copilot"
+        case .copilotCall: return "Calls"
         case .copilotQuiz: return "Screen Quiz"
         case .copilotModels: return "Models"
         case .copilotPrompts: return "Persona & Prompts"

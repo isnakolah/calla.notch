@@ -25,7 +25,9 @@ struct CallaQuizLiveHeader: View {
 
     @State private var now = Date()
     @State private var targets: [QuizWindowTarget] = []
-    @Default(.hideFromScreenRecording) private var hiddenFromCapture
+    /// A live session is always out of shares and recordings (see
+    /// `CallaNotchSkyLightWindow.updateSharingType`), whatever the setting says.
+    private let hiddenFromCapture = true
     private let clockTick = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
 
     private var quiz: QuizSessionSnapshot { engine.status.quiz }

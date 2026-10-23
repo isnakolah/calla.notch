@@ -204,6 +204,13 @@ extension Defaults.Keys {
     static let callaZenReturnDelay = Key<Double>("callaZenReturnDelay", default: 2)
     /// A new point says "New" beside the dot for a few seconds.
     static let callaZenHighlight = Key<Bool>("callaZenHighlight", default: true)
+    /// While the screen is being shared, the notch stays in zen: a pass of the
+    /// pointer does not open the panel, a click does.
+    static let callaZenWhileSharing = Key<Bool>("callaZenWhileSharing", default: true)
+    /// Open the notch on the recap once a call has been written up.
+    static let callaShowRecap = Key<Bool>("callaShowRecap", default: true)
+    /// When a meeting repeats, the last recaps go into the next call.
+    static let callaCarryRecaps = Key<Bool>("callaCarryRecaps", default: true)
     /// Where a live call's panel opens: `notch`, `floating`, or `remembered`
     /// (wherever the last call ended). See `CallPanelHome`.
     static let callaCallPanelHome = Key<String>("callaCallPanelHome", default: "notch")

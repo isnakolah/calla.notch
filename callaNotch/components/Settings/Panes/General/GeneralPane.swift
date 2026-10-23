@@ -41,7 +41,7 @@ struct GeneralSettings: View {
 
                     SettingsList("Privacy") {
                         SettingsToggleRow("Hide from screen recording",
-                                          detail: "Keeps the notch, and a live call, out of captures and shared screens.",
+                                          detail: "Keeps the notch out of captures and shared screens. A call is always hidden.",
                                           isOn: $hideFromScreenRecording)
                     }
                     .settingsAnchor("general.privacy")

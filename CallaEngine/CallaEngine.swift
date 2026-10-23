@@ -450,11 +450,14 @@ private struct CopilotCommand: Codable {
     /// app is sandboxed and cannot open the store.
     var meeting: CopilotMeeting?
     var selectedKnowledgeNoteIDs: [String]?
+    /// False leaves the previous recaps of this kind of meeting out of the call.
+    var carryRecaps: Bool?
 
     enum CodingKeys: String, CodingKey {
         case action, persona, model, profile, provider, tier, fallback, meeting, question
         case displayID = "display_id"
         case selectedKnowledgeNoteIDs = "selected_knowledge_note_ids"
+        case carryRecaps = "carry_recaps"
         case summaryModel = "summary_model"
         case gatewayStandby = "gateway_standby"
         case callID = "call_id"
@@ -1438,6 +1441,11 @@ final class CallaEngine: NSObject, CallaEngineProtocol, @unchecked Sendable {
             case "stop": self.stopCopilot()
             case "answer": self.answerSelectedText(command.question)
             case "screenshot": self.captureScreenshot(displayID: command.displayID)
+            case "exclude_knowledge":
+                guard let ids = CallaCopilotCommandValidation.knowledgeNoteIDs(command.selectedKnowledgeNoteIDs ?? []) else {
+                    self.copilotResult = "Rejected note selection"; break
+                }
+                self.excludeCallKnowledge(ids)
             case "archive": self.retranscribeCall(command)
             case "fetch_model": self.fetchModel(command)
             case "set_provider":
@@ -1593,7 +1601,7 @@ final class CallaEngine: NSObject, CallaEngineProtocol, @unchecked Sendable {
 
         // A ceremony starts knowing where the last few of its kind left off —
         // a short, bounded digest. Everything older is reached by retrieval.
-        let previousMeetings = previousMeetingsDigest(
+        let previousMeetings = command.carryRecaps == false ? nil : previousMeetingsDigest(
             persona: copilotPersona,
             seriesID: meeting?.seriesID,
             eventID: meeting?.eventID)
@@ -2162,6 +2170,27 @@ final class CallaEngine: NSObject, CallaEngineProtocol, @unchecked Sendable {
                     self.copilotResult = event?.kind == .screenshot
                         ? "Screenshot added to the call" : "Screenshot unavailable; try again"
                 }
+            }
+        }
+    }
+
+    /// Leaves these notes out of the running call's answers from now on. The
+    /// call's frozen pack is untouched; the host filters what it retrieves.
+    private func excludeCallKnowledge(_ noteIDs: [String]) {
+        guard let callID = currentCopilotStatus().callID else {
+            copilotResult = "No call running"
+            return
+        }
+        let generation = copilotGeneration
+        DispatchQueue.global(qos: .userInitiated).async { [weak self] in
+            guard let self else { return }
+            let event = self.requestHostControl(.knowledge, callID: callID,
+                                                text: noteIDs.joined(separator: ","), generation: generation)
+            self.queue.async {
+                guard self.copilotGeneration == generation else { return }
+                self.copilotResult = event == nil
+                    ? "Could not change this call's notes; try again"
+                    : (noteIDs.isEmpty ? "Every note is back on for this call" : "Notes updated for this call")
             }
         }
     }

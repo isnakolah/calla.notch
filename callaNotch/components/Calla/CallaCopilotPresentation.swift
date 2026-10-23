@@ -483,3 +483,103 @@ struct QuizAnswerPresentation: Equatable {
         return (languageText.isEmpty ? nil : languageText, String(code))
     }
 }
+
+// MARK: - The recap
+
+/// What the recap panel shows after a call, sorted out of the host's items.
+///
+/// The host files every line as a decision, a commitment, an action item or an
+/// open question. The panel reads them as three things a person acts on: what
+/// was decided, what is still open, and what someone has to do.
+enum CallaRecapPresentation {
+    struct Item: Equatable {
+        let kind: String
+        let text: String
+        let resolved: Bool
+    }
+
+    struct Sections: Equatable {
+        var decided: [String] = []
+        var open: [String] = []
+        var todo: [String] = []
+
+        var isEmpty: Bool { decided.isEmpty && open.isEmpty && todo.isEmpty }
+    }
+
+    /// The kind as the host spells it, in either casing it has used.
+    private static func normalized(_ kind: String) -> String {
+        kind.lowercased().replacingOccurrences(of: "_", with: "")
+    }
+
+    static func sections(_ items: [Item]) -> Sections {
+        var sections = Sections()
+        for item in items {
+            let text = item.text.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !text.isEmpty else { continue }
+            switch normalized(item.kind) {
+            case "decision": sections.decided.append(text)
+            case "actionitem", "commitment": sections.todo.append(text)
+            case "openquestion" where !item.resolved: sections.open.append(text)
+            default: break
+            }
+        }
+        return sections
+    }
+
+    /// "32 min" beside the state word, when the length is known.
+    static func length(minutes: Int?) -> String? {
+        guard let minutes, minutes > 0 else { return nil }
+        return minutes < 60 ? "\(minutes) min" : "\(minutes / 60) h \(minutes % 60) min"
+    }
+
+    /// A follow-up the reader can paste into an email and edit. Only what the
+    /// recap says, in its words; nothing is added that the call did not hold.
+    static func followUpEmail(title: String?, overview: String, sections: Sections) -> String {
+        let name = title.flatMap { $0.isEmpty ? nil : $0 } ?? "our call"
+        var lines = ["Subject: Follow-up: \(name)", "", "Hi all,", "", "Thanks for the time today."]
+        let summary = overview.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !summary.isEmpty { lines += ["", summary] }
+        func list(_ heading: String, _ entries: [String]) {
+            guard !entries.isEmpty else { return }
+            lines += ["", heading] + entries.map { "- \($0)" }
+        }
+        list("What we decided", sections.decided)
+        list("Next steps", sections.todo)
+        list("Still open", sections.open)
+        lines += ["", "Thanks,"]
+        return lines.joined(separator: "\n")
+    }
+}
+
+// MARK: - Screen sharing
+
+/// Whether the screen looks like it is being shared, from the windows on it.
+///
+/// macOS has no API that says another app is sharing the screen, but every call
+/// app puts up a window that says so — Zoom's share toolbar, the browser's
+/// "is sharing your screen" bar under Meet, Teams' sharing control bar. Their
+/// names are readable with the Screen Recording permission Calla already has to
+/// hear the other side.
+enum CallaScreenShareHeuristic {
+    struct Window: Equatable {
+        let owner: String
+        let name: String
+    }
+
+    private static let phrases = [
+        "is sharing your screen", "is sharing a window", "is sharing your", "is sharing this tab",
+        "you are sharing", "you're sharing", "sharing control bar", "sharing toolbar",
+        "share toolbar", "stop sharing", "stop share", "screen share"
+    ]
+    /// Apps whose own windows are named after sharing without anything being shared.
+    private static let ignoredOwners = ["system settings", "system preferences", "screen sharing"]
+
+    static func isSharing(_ windows: [Window]) -> Bool {
+        windows.contains { window in
+            let name = window.name.lowercased()
+            guard !name.isEmpty, !ignoredOwners.contains(window.owner.lowercased()) else { return false }
+            if window.owner.lowercased().hasPrefix("zoom"), name.contains("share") { return true }
+            return phrases.contains { name.contains($0) }
+        }
+    }
+}

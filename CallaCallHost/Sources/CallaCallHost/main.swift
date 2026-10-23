@@ -637,6 +637,14 @@ case "serve":
                 }
                 return CallHostEvent(callID: config.callID, generation: config.generation,
                                      kind: .screenshot, snapshot: snapshot)
+            case .knowledge:
+                let ids = (command.text ?? "").split(separator: ",")
+                    .map { $0.trimmingCharacters(in: .whitespaces) }
+                    .filter { !$0.isEmpty }
+                await session.setExcludedKnowledge(Set(ids))
+                let snapshot = await session.lifecycleSnapshot()
+                return CallHostEvent(callID: config.callID, generation: config.generation,
+                                     kind: .captureState, snapshot: snapshot)
             case .stop:
                 await session.stop()
                 stopped.trigger()

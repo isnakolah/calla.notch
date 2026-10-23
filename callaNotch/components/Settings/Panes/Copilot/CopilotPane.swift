@@ -15,8 +15,11 @@ import SwiftUI
 /// instead of starting a call. The settings sit under it in two groups: what
 /// happens during a call, and what is kept after one.
 ///
-/// This absorbs the old Live Call page, which held the same switches behind a
-/// tile on a landing page.
+/// One page for calls. It used to be six — Copilot, Models, Persona & Prompts
+/// and the rest — and the question "how do I change what happens on a call"
+/// had a different answer on each. Now the page runs in the order a call does:
+/// before, during, after; then where answers come from and the kinds of call;
+/// and the models and prompts under Advanced, a click away.
 struct CopilotPane: View {
     @ObservedObject private var engine = CallaEngineClient.shared
     @ObservedObject private var diagnostics = CallaDiagnostics.shared
@@ -32,6 +35,12 @@ struct CopilotPane: View {
     @Default(.callaZenLevel) private var zenLevel
     @Default(.callaZenReturnDelay) private var zenReturnDelay
     @Default(.callaZenHighlight) private var zenHighlight
+    @Default(.callaZenWhileSharing) private var zenWhileSharing
+    @Default(.callaShowRecap) private var showRecap
+    @Default(.callaIntelligenceLiveTier) private var liveTier
+    @Default(.callaIntelligenceSummaryModel) private var summaryModel
+    @Default(.callaIntelligenceFallback) private var fallback
+    @Default(.callaCopilotCustomPersonas) private var customPersonas
     @Default(.callaCallPanelHome) private var panelHome
     @Default(.callaMeetingOpensNotch) private var meetingOpensNotch
     @Default(.callaCopilotGlassLevel) private var glassLevel
@@ -52,15 +61,17 @@ struct CopilotPane: View {
             preflight
 
             HStack(alignment: .top, spacing: 16) {
-                duringCall.frame(maxWidth: .infinity, alignment: .top)
-                afterCall.frame(maxWidth: .infinity, alignment: .top)
-            }
-
-            SettingsList {
-                SettingsListRow("Call panel size",
-                                detail: "Expanded and compact call layouts are sized with the notch.") {
-                    Button("Open in Appearance") { router?.go(page: .notchSize) }
+                VStack(alignment: .leading, spacing: SettingsMetrics.groupGap) {
+                    beforeCall
+                    duringCall
                 }
+                .frame(maxWidth: .infinity, alignment: .top)
+                VStack(alignment: .leading, spacing: SettingsMetrics.groupGap) {
+                    afterCall
+                    answersFrom
+                    advanced
+                }
+                .frame(maxWidth: .infinity, alignment: .top)
             }
         }
         .task {
@@ -229,18 +240,8 @@ struct CopilotPane: View {
 
     // MARK: - Groups
 
-    private var duringCall: some View {
-        VStack(alignment: .leading, spacing: SettingsMetrics.groupGap) {
-            SettingsList("During a call") {
-                SettingsListRow("Where the call panel lives",
-                                detail: "Floating stays on top of every app, full-screen calls too. Switch any time with \u{2325}\u{2318}F.") {
-                    Picker("", selection: $panelHome) {
-                        Text("In the notch").tag(CallPanelHome.notch.rawValue)
-                        Text("Floating").tag(CallPanelHome.floating.rawValue)
-                        Text("Where I left it").tag(CallPanelHome.remembered.rawValue)
-                    }
-                    .labelsHidden().fixedSize()
-                }
+    private var beforeCall: some View {
+        SettingsList("Before a call") {
                 SettingsToggleRow("Open the notch when a meeting is about to start",
                                   detail: "Off: the closed notch says \u{201C}Get ready\u{201D} two minutes before, and \u{201C}Join\u{201D} when it starts.",
                                   isOn: $meetingOpensNotch)
@@ -269,6 +270,26 @@ struct CopilotPane: View {
                         Button("Restore VPN") { Task { await callVPN.restorePending() } }
                             .disabled(callVPN.busy)
                     }
+                }
+                SettingsListRow("Kinds of call",
+                                detail: "\(CallaCopilotPersona.all(including: Array(customPersonas.keys)).count) kinds. Calla ranks them for each call and picks one when it is sure.") {
+                    Button("Edit kinds") { router?.go(page: .copilotPrompts) }
+                }
+        }
+        .settingsAnchor("copilot.before")
+    }
+
+    private var duringCall: some View {
+        VStack(alignment: .leading, spacing: SettingsMetrics.groupGap) {
+            SettingsList("During a call") {
+                SettingsListRow("Where the call panel lives",
+                                detail: "Floating stays on top of every app, full-screen calls too. Switch any time with \u{2325}\u{2318}F.") {
+                    Picker("", selection: $panelHome) {
+                        Text("In the notch").tag(CallPanelHome.notch.rawValue)
+                        Text("Floating").tag(CallPanelHome.floating.rawValue)
+                        Text("Where I left it").tag(CallPanelHome.remembered.rawValue)
+                    }
+                    .labelsHidden().fixedSize()
                 }
                 SettingsListRow("Show new suggestions") {
                     Picker("", selection: $autoReveal) {
@@ -302,6 +323,9 @@ struct CopilotPane: View {
                     SettingsToggleRow("Highlight new points",
                                       detail: "The word beside the dot says \u{201C}New\u{201D} for six seconds.",
                                       isOn: $zenHighlight)
+                    SettingsToggleRow("Stay in zen while I share my screen",
+                                      detail: "Hovering opens the panel only after a click, so a pass over the notch never opens it mid-demo.",
+                                      isOn: $zenWhileSharing)
                 }
                 VStack(alignment: .leading, spacing: 6) {
                     NotchSlider(value: $glassLevel,
@@ -310,7 +334,7 @@ struct CopilotPane: View {
                                 format: { "\(Int($0 / 0.8 * 100))%" },
                                 ends: ("Opaque", "See-through"),
                                 style: .glass)
-                    Text("Hidden from screen recordings and shares for the whole call either way.")
+                    Text("A call is always left out of screen recordings and shares.")
                         .font(NotchType.rowDetail).foregroundStyle(.secondary)
                 }
                 .padding(.vertical, 10)
@@ -346,6 +370,9 @@ struct CopilotPane: View {
 
     private var afterCall: some View {
         SettingsList("After a call") {
+            SettingsToggleRow("Show the recap when a call ends",
+                              detail: "What was decided, what is still open, and the to-dos, in the notch.",
+                              isOn: $showRecap)
             SettingsListRow("Save to a folder",
                             detail: "Documents › Calls, with the recap, transcript and answers.") {
                 HStack(spacing: 8) {
@@ -388,11 +415,6 @@ struct CopilotPane: View {
                 Button("Save past calls") { engine.exportPastCalls() }
                     .disabled(!callFoldersEnabled)
             }
-            SettingsListRow("Diagnostics",
-                            detail: diagnostics.message ?? "Save the last two hours of Calla activity to Downloads.") {
-                Button(diagnostics.saving ? "Saving…" : "Save timeline") { diagnostics.save() }
-                    .disabled(diagnostics.saving)
-            }
             SettingsListRow("Call archive", detail: archiveDetail) {
                 HStack(spacing: 8) {
                     if engine.status.backend?.signedIn == true {
@@ -410,5 +432,50 @@ struct CopilotPane: View {
             }
         }
         .settingsAnchor("copilot.after")
+    }
+
+    // MARK: - Where answers come from
+
+    private var answersFrom: some View {
+        SettingsList("Where answers come from") {
+            SettingsListRow("Answers",
+                            detail: provider == "local"
+                                ? "Gemini, signed in on this Mac. Audio never leaves it; only the words are sent."
+                                : "The Calla gateway. Only the words are sent, never audio.") {
+                Picker("", selection: $provider) {
+                    Text("Gemini").tag("local")
+                    Text("Calla gateway").tag("gateway")
+                }
+                .labelsHidden().pickerStyle(.segmented).fixedSize()
+                .onChange(of: provider) { _, new in
+                    engine.setIntelligence(provider: new, tier: liveTier,
+                                           summaryModel: summaryModel, fallback: fallback)
+                }
+            }
+        }
+        .settingsAnchor("copilot.answers")
+    }
+
+    // MARK: - Advanced
+
+    private var advanced: some View {
+        SettingsList("Advanced") {
+            SettingsListRow("Models", detail: "Which speech model hears the call, and which model writes.") {
+                Button("Show") { router?.go(page: .copilotModels) }
+            }
+            SettingsListRow("Prompts and kinds of call", detail: "About you, and how each kind of call is handled.") {
+                Button("Show") { router?.go(page: .copilotPrompts) }
+            }
+            SettingsListRow("Call panel size",
+                            detail: "Expanded and compact call layouts are sized with the notch.") {
+                Button("Open in Appearance") { router?.go(page: .notchSize) }
+            }
+            SettingsListRow("Diagnostics",
+                            detail: diagnostics.message ?? "Save the last two hours of Calla activity to Downloads.") {
+                Button(diagnostics.saving ? "Saving…" : "Save timeline") { diagnostics.save() }
+                    .disabled(diagnostics.saving)
+            }
+        }
+        .settingsAnchor("copilot.advanced")
     }
 }

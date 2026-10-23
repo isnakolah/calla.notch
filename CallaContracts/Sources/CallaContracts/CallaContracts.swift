@@ -118,6 +118,9 @@ public enum CallHostCommandKind: String, Codable, Sendable {
     case start, release, stop, snapshot, answer
     /// Take a screenshot for context while the call runs.
     case capture
+    /// Leave some of this call's notes out for the rest of it. `text` carries
+    /// the note ids, comma-separated; an empty text puts every note back.
+    case knowledge
 }
 
 public struct CallHostCommand: Codable, Sendable, Equatable {

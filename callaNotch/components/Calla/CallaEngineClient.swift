@@ -476,11 +476,15 @@ struct CallaCopilotCommand: Codable {
     let meeting: CallaMeeting?
     /// Nil uses automatic scope matching; empty freezes explicit empty pack.
     let selectedKnowledgeNoteIDs: [String]?
+    /// False leaves the last recaps of a repeating meeting out of the next call.
+    /// Nil keeps the engine's default, which carries them.
+    var carryRecaps: Bool?
 
     enum CodingKeys: String, CodingKey {
         case action, persona, model, profile, provider, tier, fallback, meeting, question
         case displayID = "display_id"
         case selectedKnowledgeNoteIDs = "selected_knowledge_note_ids"
+        case carryRecaps = "carry_recaps"
         case summaryModel = "summary_model"
         case gatewayStandby = "gateway_standby"
         case callID = "call_id"
@@ -1123,6 +1127,7 @@ final class CallaEngineClient: ObservableObject {
                    selectedKnowledgeNoteIDs: [String]? = nil) {
         lastCallStart = (persona, model, meeting, selectedKnowledgeNoteIDs)
         CallTypeHistory.shared.record(persona)
+        rememberCallNotes(persona: persona, meeting: meeting, selected: selectedKnowledgeNoteIDs)
         CopilotLiveSession.shared.prepareForSessionStart()
         // Starting a call on the local brain without credentials used to mean a
         // browser popping open mid-meeting with nowhere to put the code. Sign in
@@ -1260,7 +1265,7 @@ final class CallaEngineClient: ObservableObject {
         _ action: String, persona: String, model: String, meeting: CallaMeeting?
     ) -> CallaCopilotCommand {
         let settings = CallaCopilotSettings.current
-        return CallaCopilotCommand(
+        var command = CallaCopilotCommand(
             action: action,
             persona: persona,
             model: model,
@@ -1271,6 +1276,8 @@ final class CallaEngineClient: ObservableObject {
             fallback: settings.fallback,
             gatewayStandby: settings.gatewayStandby,
             meeting: meeting)
+        command.carryRecaps = Defaults[.callaCarryRecaps]
+        return command
     }
 
     /// Changes which brain answers. Takes effect on the next call: the capture
@@ -1338,6 +1345,38 @@ final class CallaEngineClient: ObservableObject {
 
     /// Screenshot of what is being shared, saved with the call and read into
     /// the copilot's context.
+    // MARK: - This call's notes
+
+    /// The notes this call was started with, as the host will have frozen them:
+    /// the reader's own pick, or every note whose scope matches the call.
+    @Published private(set) var callNotes: [CallaKnowledgeNote] = []
+    /// Notes switched off for the rest of this call. Cleared when the next starts.
+    @Published private(set) var excludedCallNoteIDs = Set<String>()
+
+    private func rememberCallNotes(persona: String, meeting: CallaMeeting?, selected: [String]?) {
+        excludedCallNoteIDs = []
+        let notes = CallaKnowledgeLibrary.shared.notes
+        if let selected {
+            let ids = Set(selected)
+            callNotes = notes.filter { ids.contains($0.id) }
+            return
+        }
+        callNotes = notes.filter { note in
+            note.scope == "always" || (note.scope == "persona" && note.scopeKey == persona)
+                || (note.scope == "event" && meeting?.eventID != nil && note.scopeKey == meeting?.eventID)
+                || (note.scope == "series" && meeting?.seriesID != nil && note.scopeKey == meeting?.seriesID)
+        }
+    }
+
+    /// Switches one of this call's notes off, or back on, for the rest of it.
+    /// The note itself is not changed; the next call uses it as before.
+    func setCallNote(_ id: String, included: Bool) {
+        guard status.copilot.running else { return }
+        if included { excludedCallNoteIDs.remove(id) } else { excludedCallNoteIDs.insert(id) }
+        send(CallaCopilotCommand(action: "exclude_knowledge",
+                                 selectedKnowledgeNoteIDs: excludedCallNoteIDs.sorted()))
+    }
+
     func takeScreenshot(displayID: UInt32? = nil) {
         send(CallaCopilotCommand(action: "screenshot", displayID: displayID))
     }

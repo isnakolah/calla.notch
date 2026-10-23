@@ -119,8 +119,34 @@ final class CallaKnowledgeAttach: ObservableObject {
     struct PendingFile: Identifiable, Equatable {
         let id = UUID()
         var url: URL
+        /// Filled once the file has been read, before anyone is asked where it goes.
+        var pages: Int?
+        var kind: String?
+        var problem: String?
         var name: String { url.lastPathComponent }
+        var isRead: Bool { pages != nil || problem != nil }
     }
+
+    /// What was read out of each pending file, by its id, so Add saves it
+    /// without reading it twice.
+    private var documents: [UUID: KnowledgeDocumentReader.Document] = [:]
+
+    /// The meeting a dropped file is most likely for: the next one in the
+    /// calendar. The drop asks one question about it rather than offering a list.
+    @Published private(set) var nextEvent: EventModel?
+
+    /// The three answers to "when should Calla use this?": the next call, every
+    /// one like it when it repeats, or every call.
+    var dropChoices: [KnowledgeTarget] {
+        guard let nextEvent else { return [.everyCall] }
+        let choices = KnowledgeTarget.choices(for: nextEvent)
+        let once = choices.first { $0.scope == "event" }
+        let every = choices.first { $0.scope == "series" }
+        return [once, every].compactMap { $0 } + [.everyCall]
+    }
+
+    /// Every pending file has been read, or has said why it cannot be.
+    var pendingRead: Bool { pending.allSatisfy(\.isRead) }
 
     private let calendarService: CalendarServiceProviding
 
@@ -141,15 +167,39 @@ final class CallaKnowledgeAttach: ObservableObject {
         guard !readable.isEmpty else { return false }
 
         pending = readable.map { PendingFile(url: $0) }
+        documents = [:]
         failure = nil
         status = nil
         isPresenting = true
+        Task { await readPending() }
         await refreshTargets()
         return true
     }
 
+    /// Reads what was dropped straight away, so the surface can say "read all
+    /// six pages" while the reader is still deciding where it goes.
+    private func readPending() async {
+        for file in pending where !file.isRead {
+            let url = file.url
+            let outcome = await Task.detached(priority: .userInitiated) {
+                Result { try KnowledgeDocumentReader.read(url) }
+            }.value
+            guard let index = pending.firstIndex(where: { $0.id == file.id }) else { continue }
+            switch outcome {
+            case let .success(document):
+                documents[file.id] = document
+                pending[index].pages = document.pageCount
+                pending[index].kind = document.kind
+            case let .failure(error):
+                pending[index].problem = (error as? LocalizedError)?.errorDescription
+                    ?? "\(file.name) could not be read."
+            }
+        }
+    }
+
     func cancelPending() {
         pending = []
+        documents = [:]
         presetTarget = nil
         attached = []
         status = nil
@@ -210,7 +260,9 @@ final class CallaKnowledgeAttach: ObservableObject {
         let events = await calendarService.upcoming(within: 36 * 60 * 60, calendars: calendars)
         var list: [KnowledgeTarget] = []
         var seen = Set(list.map(\.id))
-        for event in events where !event.isAllDay && !event.type.isReminder {
+        let timed = events.filter { !$0.isAllDay && !$0.type.isReminder && $0.end > Date() }
+        nextEvent = timed.min { $0.start < $1.start }
+        for event in timed {
             for target in KnowledgeTarget.choices(for: event) where !seen.contains(target.id) {
                 seen.insert(target.id)
                 list.append(target)
@@ -224,7 +276,25 @@ final class CallaKnowledgeAttach: ObservableObject {
         let files = pending
         guard !files.isEmpty else { return }
         pending = []
-        await attach(files.map(\.url), to: target)
+        let read = files.compactMap { file in documents[file.id] }
+        let unread = files.filter { documents[$0.id] == nil && $0.problem == nil }.map(\.url)
+        let problems = files.compactMap(\.problem)
+        documents = [:]
+        if !read.isEmpty {
+            isWorking = true
+            for document in read {
+                await save(CallaKnowledgeNote.document(
+                    name: document.name, kind: document.kind, text: document.text,
+                    byteSize: document.byteSize, pageCount: document.pageCount,
+                    scope: target.scope, scopeKey: target.scopeKey))
+            }
+            isWorking = false
+            CallaKnowledgeFocus.shared.refresh()
+            NotificationCenter.default.post(name: .callaKnowledgeDidChange, object: nil)
+            status = read.count == 1 ? "Added to \(target.title)." : "\(read.count) files added to \(target.title)."
+        }
+        if !unread.isEmpty { await attach(unread, to: target) }
+        if !problems.isEmpty { failure = problems.joined(separator: "\n") }
         // Land on the same surface, now showing the meeting that was picked and
         // everything filed against it — so "did that work" is answered on screen
         // rather than by going to look.

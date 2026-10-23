@@ -21,7 +21,7 @@ public enum CallaCallTerminationPolicy {
 public enum CallaCopilotCommandValidation {
     /// Commands the notch may send. Anything else is refused outright.
     public static let allowedActions: Set<String> = [
-        "start", "stop", "answer", "screenshot", "set_persona", "set_provider", "archive", "fetch_model", "login",
+        "start", "stop", "answer", "screenshot", "exclude_knowledge", "set_persona", "set_provider", "archive", "fetch_model", "login",
         // A rehearsal of the sign-in against a throwaway HOME, so the flow can be
         // watched without signing out.
         "test_login",

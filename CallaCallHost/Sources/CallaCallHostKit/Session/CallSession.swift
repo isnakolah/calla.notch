@@ -887,6 +887,12 @@ public actor CallSession {
         }
     }
 
+    /// Notes the reader switched off for the rest of this call. The frozen pack
+    /// is left as it was; retrieval skips these.
+    public func setExcludedKnowledge(_ noteIDs: Set<String>) async {
+        await advisor.setExcludedKnowledge(noteIDs)
+    }
+
     @discardableResult public func answerSelectedText(_ text: String, questionID: UUID? = nil, codingEvidence: CodingDialogueEvidence? = nil) async -> Bool {
         let accepted = await advisor.askManual(text, questionID: questionID, codingEvidence: codingEvidence)
         await writeStatus()

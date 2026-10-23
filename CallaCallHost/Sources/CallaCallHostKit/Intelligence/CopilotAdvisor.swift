@@ -20,6 +20,13 @@ private let advisorLog = Logger(
 /// exactly as before and its suggestions arrive unprompted. This class owns the
 /// one decision that connects them: whose suggestion the call should publish.
 public actor CopilotAdvisor {
+    /// Notes switched off for the rest of this call, from the notch.
+    private var excludedNoteIDs = Set<String>()
+
+    public func setExcludedKnowledge(_ noteIDs: Set<String>) {
+        excludedNoteIDs = noteIDs
+    }
+
     public enum Provider: String, Sendable {
         case local
         case gateway
@@ -905,7 +912,8 @@ public actor CopilotAdvisor {
         guard !query.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return RecallResult() }
 
         if (try? await store.knowledgeSnapshot(forCall: config.callID)) != nil {
-            let frozen = (try? await store.searchSnapshot(query: query, callID: config.callID)) ?? []
+            let frozen = ((try? await store.searchSnapshot(query: query, callID: config.callID)) ?? [])
+                .filter { !excludedNoteIDs.contains($0.citation.sourceID ?? "") }
             // A frozen pack holds what the user picked for this call. Earlier
             // calls of the same kind are not in it, and are searched beside it.
             let history = await store.search(query: query, scopes: retrievalScopes(), limit: 2,

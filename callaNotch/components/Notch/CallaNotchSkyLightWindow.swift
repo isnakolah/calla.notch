@@ -94,6 +94,18 @@ class CallaNotchSkyLightWindow: NSPanel {
             }
             .store(in: &observers)
 
+        // Re-decided whenever a call starts, ends or its recap goes.
+        CopilotLiveSession.shared.objectWillChange
+            .merge(with: CallaEngineClient.shared.objectWillChange)
+            .receive(on: RunLoop.main)
+            .sink { [weak self] _ in
+                guard let self else { return }
+                let wanted: NSWindow.SharingType =
+                    Defaults[.hideFromScreenRecording] || Self.callSurfaceShowing ? .none : .readWrite
+                if self.sharingType != wanted { self.sharingType = wanted }
+            }
+            .store(in: &observers)
+
         // Global mouse monitors may be unavailable without Accessibility
         // permission. Resize editor must still recover from click-through as
         // pointer enters its detached controls, so poll pointer only while
@@ -445,15 +457,24 @@ class CallaNotchSkyLightWindow: NSPanel {
     }
 
     private func updateSharingType() {
-        // One switch decides this, including during a live call. Hiding the
-        // panel from captures is exactly what someone on a call wants, but it
-        // also hides it from the user's own recordings and screenshots, so it
-        // stays theirs to set rather than being forced on for the call.
-        if Defaults[.hideFromScreenRecording] {
+        // The setting decides for the notch at rest. A call is never left to
+        // it: from the moment one starts until its recap is put away, the notch
+        // is out of every share and recording, so presenting can never put the
+        // copilot on someone else's screen because a switch was forgotten.
+        if Defaults[.hideFromScreenRecording] || Self.callSurfaceShowing {
             sharingType = .none
         } else {
             sharingType = .readWrite
         }
+    }
+
+    /// A call, a Quiz or anything of theirs is on the notch.
+    static var callSurfaceShowing: Bool {
+        let engine = CallaEngineClient.shared
+        let session = CopilotLiveSession.shared
+        return engine.status.copilot.running || engine.status.copilot.isFinishing
+            || engine.status.quiz.active || engine.launchingCall
+            || session.isLive || session.starting || session.ending || session.recap != nil
     }
     
     func enableSkyLight() {

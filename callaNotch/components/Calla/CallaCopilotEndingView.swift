@@ -3,6 +3,7 @@
 //  callaNotch
 //
 
+import AppKit
 import Defaults
 import SwiftUI
 
@@ -305,5 +306,205 @@ struct CallaLifecycleButton: View {
         .buttonStyle(.plain)
         .help(title)
         .accessibilityLabel(title)
+    }
+}
+
+// MARK: - The recap
+
+/// The call, written up: what was decided, what is still open, and what
+/// someone has to do, in the notch once the write-up is done.
+///
+/// It replaces the moment the call used to simply vanish into Past calls. The
+/// to-dos are the one part worth acting on before the next meeting starts, so
+/// they can go straight to Reminders; the rest can become a follow-up email.
+/// Everything here is the host's recap as written — nothing is inferred.
+struct CallaRecapView: View {
+    @ObservedObject private var session = CopilotLiveSession.shared
+
+    /// To-dos the reader has unticked, so "Add to Reminders" leaves them out.
+    @State private var skipped = Set<String>()
+    @State private var note: (text: String, failed: Bool)?
+    @State private var adding = false
+
+    var body: some View {
+        if let recap = session.recap {
+            content(recap)
+        }
+    }
+
+    private func content(_ recap: CallaRecapDraft) -> some View {
+        let sections = CallaRecapPresentation.sections(recap.items.map {
+            .init(kind: $0.kind, text: $0.text, resolved: $0.resolved)
+        })
+        let context = session.recapContext
+        return VStack(alignment: .leading, spacing: 0) {
+            HStack(spacing: 8) {
+                Circle().fill(NotchAccent.call).frame(width: 7, height: 7)
+                Text("CALL ENDED · RECAP READY")
+                    .font(.system(size: 10.5, weight: .bold))
+                    .tracking(0.7)
+                    .foregroundStyle(Color.white.opacity(0.84))
+                    .lineLimit(1)
+                Spacer(minLength: 8)
+                if let length = CallaRecapPresentation.length(minutes: context.minutes) {
+                    Text(length)
+                        .font(.system(size: 12, design: .rounded).monospacedDigit())
+                        .foregroundStyle(NotchInk.secondary)
+                }
+            }
+            .frame(height: 24)
+
+            VStack(alignment: .leading, spacing: 5) {
+                Text(context.title?.isEmpty == false ? context.title! : "Your call")
+                    .font(.system(size: 19, weight: .semibold))
+                    .tracking(-0.2)
+                    .foregroundStyle(NotchInk.primary)
+                    .lineLimit(1)
+                if !recap.overview.isEmpty {
+                    Text(recap.overview)
+                        .font(.system(size: 13))
+                        .foregroundStyle(NotchInk.reading)
+                        .lineLimit(2)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            }
+            .padding(.top, 6)
+
+            HStack(alignment: .top, spacing: 20) {
+                ScrollView(.vertical) {
+                    VStack(alignment: .leading, spacing: 6) {
+                        if !sections.decided.isEmpty {
+                            heading("Decided")
+                            ForEach(sections.decided, id: \.self) { line($0) }
+                        }
+                        if !sections.open.isEmpty {
+                            heading("Still open").padding(.top, sections.decided.isEmpty ? 0 : 8)
+                            ForEach(sections.open, id: \.self) { line($0) }
+                        }
+                        if sections.decided.isEmpty && sections.open.isEmpty {
+                            Text("Nothing was decided or left open.")
+                                .font(.system(size: 12.5))
+                                .foregroundStyle(NotchInk.secondary)
+                        }
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                }
+                .frame(maxWidth: .infinity)
+
+                VStack(alignment: .leading, spacing: 6) {
+                    heading("To do")
+                    if sections.todo.isEmpty {
+                        Text("No to-dos came out of this call.")
+                            .font(.system(size: 12.5))
+                            .foregroundStyle(NotchInk.secondary)
+                    } else {
+                        ScrollView(.vertical) {
+                            VStack(alignment: .leading, spacing: 6) {
+                                ForEach(sections.todo, id: \.self) { todo($0) }
+                            }
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                        }
+                        let chosen = sections.todo.filter { !skipped.contains($0) }
+                        Button {
+                            addToReminders(chosen, title: context.title)
+                        } label: {
+                            Text(adding ? "Adding…" : chosen.count == sections.todo.count
+                                 ? "Add all to Reminders" : "Add \(chosen.count) to Reminders")
+                                .font(.system(size: 12.5, weight: .semibold))
+                                .foregroundStyle(NotchAccent.call)
+                                .lineLimit(1)
+                        }
+                        .buttonStyle(.plain)
+                        .disabled(chosen.isEmpty || adding)
+                        .padding(.top, 2)
+                    }
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+            }
+            .padding(.top, 12)
+
+            Spacer(minLength: 8)
+
+            HStack(spacing: 8) {
+                CallaLifecycleButton(title: "Copy follow-up email", weight: .secondary) {
+                    let email = CallaRecapPresentation.followUpEmail(
+                        title: context.title, overview: recap.overview, sections: sections)
+                    NSPasteboard.general.clearContents()
+                    NSPasteboard.general.setString(email, forType: .string)
+                    note = ("Copied. Paste it into an email and edit it.", false)
+                }
+                CallaLifecycleButton(title: "Open in Past calls", weight: .plain) {
+                    SettingsWindowController.shared.show(route: SettingsRoute(page: .copilotCallDetail(id: recap.callID)))
+                    session.dismissRecap()
+                }
+                if let note {
+                    Text(note.text)
+                        .font(.system(size: 12))
+                        .foregroundStyle(note.failed ? NotchAccent.attention : NotchInk.secondary)
+                        .lineLimit(1)
+                        .truncationMode(.tail)
+                }
+                Spacer(minLength: 8)
+                CallaLifecycleButton(title: "Done", weight: .primary) { session.dismissRecap() }
+                    .keyboardShortcut(.defaultAction)
+            }
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        .padding(.horizontal, 18)
+        .padding(.top, 6)
+        .padding(.bottom, 6)
+        .onExitCommand { session.dismissRecap() }
+    }
+
+    private func heading(_ text: String) -> some View {
+        Text(text.uppercased())
+            .font(.system(size: 10.5, weight: .bold))
+            .tracking(0.7)
+            .foregroundStyle(NotchInk.secondary)
+    }
+
+    private func line(_ text: String) -> some View {
+        HStack(alignment: .firstTextBaseline, spacing: 8) {
+            Circle().fill(Color.white.opacity(0.45)).frame(width: 4, height: 4).offset(y: -2)
+            Text(text)
+                .font(.system(size: 13))
+                .foregroundStyle(NotchInk.reading)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+    }
+
+    private func todo(_ text: String) -> some View {
+        let on = !skipped.contains(text)
+        return Button {
+            if on { skipped.insert(text) } else { skipped.remove(text) }
+        } label: {
+            HStack(alignment: .firstTextBaseline, spacing: 8) {
+                Image(systemName: on ? "checkmark.square.fill" : "square")
+                    .font(.system(size: 13))
+                    .foregroundStyle(on ? NotchAccent.call : NotchInk.tertiary)
+                Text(text)
+                    .font(.system(size: 13))
+                    .foregroundStyle(on ? NotchInk.reading : NotchInk.secondary)
+                    .multilineTextAlignment(.leading)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityAddTraits(on ? .isSelected : [])
+        .help(on ? "Leave this out of Reminders" : "Include this in Reminders")
+    }
+
+    private func addToReminders(_ titles: [String], title: String?) {
+        guard !titles.isEmpty else { return }
+        adding = true
+        Task { @MainActor in
+            let saved = await CalendarService().addReminders(
+                titles, notes: title.map { "From \($0), noted by Calla." } ?? "Noted by Calla.")
+            adding = false
+            note = saved > 0
+                ? ("Added \(saved) to Reminders.", false)
+                : ("Calla can't reach Reminders. Allow it in System Settings › Privacy › Reminders.", true)
+        }
     }
 }
