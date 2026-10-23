@@ -381,6 +381,18 @@ public extension CallaStore {
             [.text(eventID)], row: Self.call)
     }
 
+    /// Reclassify a finished call before rebuilding its derived output. Removing
+    /// previously approved and indexed text prevents stale context being reused.
+    func reclassifyCall(id: String, persona: String) throws {
+        try run("UPDATE call SET persona = ? WHERE id = ? AND ended_at IS NOT NULL",
+                [.text(persona), .text(id)])
+        try run("DELETE FROM knowledge_note WHERE id IN (?, ?, ?)",
+                [.text("note-recap-\(id)"), .text(CallHistoryIndex.summaryID(id)),
+                 .text(CallHistoryIndex.transcriptID(id))])
+        try run("UPDATE call_recap_draft SET review_state = 'pending', reviewed_at = NULL, note_id = NULL WHERE call_id = ?",
+                [.text(id)])
+    }
+
     /// One revision of a call's transcript.
     ///
     /// Defaults to the best available: the archive pass when it has run, the live
@@ -473,21 +485,22 @@ public extension CallaStore {
             }.first
     }
 
-    /// The last finished calls of one kind, newest first, with their recaps.
-    ///
-    /// Any calendar series and any review state: a team's standups are context
-    /// for its next standup whether or not the meeting recurs in the calendar
-    /// and whether or not anyone approved last week's notes.
-    func recentRecaps(persona: String, limit: Int = 3, before: Date? = nil) throws -> [CallRecapHistoryEntry] {
+    /// Continuity belongs to the same meeting, not every call of this kind.
+    /// Only reviewed recaps can become background for a later call.
+    func recentRecaps(persona: String, seriesID: String?, eventID: String?,
+                      limit: Int = 3, before: Date? = nil) throws -> [CallRecapHistoryEntry] {
         let cutoff = (before ?? Date()).timeIntervalSince1970
+        guard let key = seriesID?.isEmpty == false ? seriesID : eventID, !key.isEmpty else { return [] }
+        let field = seriesID?.isEmpty == false ? "series_id" : "event_id"
         let calls = try query(
-            Self.callColumns + " WHERE persona = ? AND ended_at IS NOT NULL AND started_at < ? ORDER BY started_at DESC LIMIT ?",
-            [.text(persona), .double(cutoff), .int(limit * 3)], row: Self.call)
+            Self.callColumns + " WHERE persona = ? AND \(field) = ? AND ended_at IS NOT NULL AND started_at < ? ORDER BY started_at DESC LIMIT ?",
+            [.text(persona), .text(key), .double(cutoff), .int(limit * 3)], row: Self.call)
         var entries: [CallRecapHistoryEntry] = []
         for call in calls {
             guard let draft = try recapDraft(forCall: call.id),
-                  !draft.overview.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-                    || !draft.items.isEmpty else { continue }
+                  draft.reviewState == .approved,
+                  (!draft.overview.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+                    || !draft.items.isEmpty) else { continue }
             entries.append(CallRecapHistoryEntry(call: call, draft: draft))
             if entries.count == limit { break }
         }
