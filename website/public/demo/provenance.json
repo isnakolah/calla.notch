@@ -1,0 +1,233 @@
+{
+  "source_branch": "feat/landing-native-demo",
+  "source_revision": "a7174d2f4b00729e4e935095fa7ec0f6655ab530",
+  "upstream_demo_revision": "dbe4b5e566475073b3adcc0fac52b9dba10e5aff",
+  "scenario": "weekly-team-check-in",
+  "duration_seconds": 45,
+  "rendering": "Frames exported by the actual demo app from its own native NSHostingView, in real time. No HTML recreation. Outer empty canvas cropped during video encoding.",
+  "audio": false,
+  "graph": "Conceptual website animation; not a production knowledge-graph implementation.",
+  "source_sha256": {
+    "callaNotch/ContentView.swift": "866aaa7838a17e9a468db00d034889acde871282d7edc431919f385bf908b5d0",
+    "callaNotch/components/Calla/CallaCopilotLiveView.swift": "3aa99037b894cf7e41d36c636cc11162bab42c35f896e8ab5e497ef55d8647f3",
+    "Demo/Core/DemoTimeline.swift": "4e45b190512fc45a86fe8e56d9e1172c1f5ed8369d3a53dfccc0716ae62ad37c",
+    "Demo/App/DemoEngine.swift": "2da7615f1a7e80e15cd24ad4a8c74050589e0a95e9cfef0b1fb829e60822a1ed",
+    "Demo/App/DemoPresentation.swift": "0092f86eb7225a8a4831a5acd9a83a00a1aa5e3c5983df030c5adc2575969147"
+  },
+  "capture": "Only the demo app own view. No screen, microphone, real meeting, account, archive or network access. Export-only sandbox permits writes solely to two /private/tmp/calla-landing-*-frames directories.",
+  "full_layout": {
+    "source_revision": "a7174d2f4b00729e4e935095fa7ec0f6655ab530",
+    "source_patch": "website/native/weekly-demo.patch",
+    "patch_base_revision": "dbe4b5e566475073b3adcc0fac52b9dba10e5aff",
+    "source_sha256": {
+      "Demo/App/DemoPresentation.swift": "8cdd2968b5fb479b2b8e7e38f9c32287b008c4602b2f4727a9a2223ca29548db"
+    },
+    "layout": "Native full view throughout conversation; ambient presentation disabled.",
+    "export_arguments": [
+      "--demo-weekly",
+      "--demo-immediate",
+      "--demo-full",
+      "--demo-export",
+      "/private/tmp/calla-landing-frames"
+    ],
+    "encode_command": "python3 website/scripts/encode-demo.py --frames /private/tmp/calla-landing-frames --name weekly-check-in-full --stem notch-full",
+    "duration_seconds": 45,
+    "audio": false,
+    "native_frames": 80,
+    "frame_metadata_sha256": "bb37faf7c346e8616885bc2a3486daee91b6208c50814789f797a2ef51ca68ab",
+    "patch_sha256": "86c271f12ff2a032d30c59a19944b1cd5f3521d6b1793d6389f6f4314a18326b",
+    "build_command": "xcodebuild -project callaNotch.xcodeproj -scheme callaNotchDemo -configuration Release -derivedDataPath build-cache -destination 'generic/platform=macOS' ARCHS=arm64 ONLY_ACTIVE_ARCH=YES CODE_SIGN_STYLE=Manual 'CODE_SIGN_IDENTITY=Calla Local Signing' DEVELOPMENT_TEAM= PRODUCT_BUNDLE_IDENTIFIER=org.calla.notch.landingdemo build",
+    "export_entitlements": "website/native/Export.entitlements",
+    "timing": "Real-time native frames use measured timestamps; alpha encodes contain exactly 540 frames at 12 fps, including final-frame padding to 45 seconds.",
+    "alpha_dimensions": [
+      960,
+      546
+    ],
+    "fallback_dimensions": [
+      1600,
+      880
+    ],
+    "asset_sha256": {
+      "notch-full.webm": "dd15bae6c2c6cc7294030e6812cabfa854ff2275bb0bd6307e605dd69d7d02c4",
+      "notch-full.mov": "9d1beddf757fbb1299fdd15cb7cc9f1ddd0d3825d79f536b628e680d81ca65f2",
+      "weekly-check-in-full.mp4": "3d7b18094ef4c7e1a76cb97e7f89d46272d2a31c3b158b13abaf6788630e7f7c",
+      "notch-full-poster.png": "23dcb6607f047395f76ddb6fdbd286885282b510adf9ec5078300923847845de",
+      "notch-full-fallback-poster.jpg": "3d543b3860108f4827e580d801447740b2b4a71a806a1a3cea8e03fe5e23cac5"
+    },
+    "sign_command": "codesign --force --sign 'Calla Local Signing' --entitlements ../calla.notch/website/native/Export.entitlements 'build-cache/Build/Products/Release/calla.notch Demo.app'",
+    "executable": "build-cache/Build/Products/Release/calla.notch Demo.app/Contents/MacOS/callaNotchDemo",
+    "encoder_sha256": "120c141670624ded6d889200004b9fe75bcbf76e8b04ce477f92df9867164ffa",
+    "source_patch_note": "Current patch also includes later optional zen-only presentation/material handling and initialized export bitmap memory. Original full and compact assets retain their recorded source hashes and capture behavior."
+  },
+  "compact_layout": {
+    "source_revision": "a7174d2f4b00729e4e935095fa7ec0f6655ab530",
+    "source_patch": "website/native/weekly-demo.patch",
+    "patch_base_revision": "dbe4b5e566475073b3adcc0fac52b9dba10e5aff",
+    "source_sha256": {
+      "Demo/App/DemoPresentation.swift": "8cdd2968b5fb479b2b8e7e38f9c32287b008c4602b2f4727a9a2223ca29548db",
+      "Demo/App/DemoEngine.swift": "2da7615f1a7e80e15cd24ad4a8c74050589e0a95e9cfef0b1fb829e60822a1ed"
+    },
+    "layout": "Native compact view throughout conversation; ambient presentation disabled.",
+    "timing_fix": "Compare the session layout against the forced compact layout, not the timeline full layout. Repeated redundant layout changes had frozen native transcript updates in the earlier compact recording.",
+    "export_arguments": [
+      "--demo-weekly",
+      "--demo-immediate",
+      "--demo-mobile",
+      "--demo-export",
+      "/private/tmp/calla-landing-mobile-frames"
+    ],
+    "encode_command": "python3 website/scripts/encode-demo.py --frames /private/tmp/calla-landing-mobile-frames --name weekly-check-in-mobile --mobile",
+    "duration_seconds": 45,
+    "audio": false,
+    "native_frames": 86,
+    "frame_metadata_sha256": "3e8898f984b9a2d4bc707c41a58304d02a9f4bb7daf43cf075bc9cdb4cae4535",
+    "alpha_dimensions": [
+      960,
+      448
+    ],
+    "fallback_dimensions": [
+      1200,
+      560
+    ],
+    "asset_sha256": {
+      "notch-mobile.webm": "f3e78a91f51039eacf32b18fc1af4a870b95703d77deaab1abfdfb488258ee17",
+      "notch-mobile.mov": "d6a810ec52e7ad8f4f69dc4e24dda1cd6f29d16bc7d77366b7726b452add4df7",
+      "weekly-check-in-mobile.mp4": "068845608bc413c4e20ec3dd1e034f8d0323c51f7fe8bf2b239a79597956ccd1",
+      "notch-mobile-poster.png": "76ebf270f085a1fcb216dbc05770c869ba256faa1c4d12618257b67b0c6fdbcd",
+      "mobile-poster.jpg": "a86b1f1c9a1c6a49bf327a1467c339d58cfbf053f3251f726556f0c13083af3f"
+    },
+    "timing_checkpoints": [
+      {
+        "recording_at": 9.59153,
+        "turn_at": 8,
+        "visible_text": "Yes. I\u2019ll finish the first draft by Wednesday."
+      },
+      {
+        "recording_at": 19.89775,
+        "turn_at": 18,
+        "visible_text": "Let\u2019s use the same report template as last week."
+      },
+      {
+        "recording_at": 29.78066,
+        "turn_at": 29,
+        "visible_text": "I\u2019ll follow up with Finance today and add the figures to the draft."
+      },
+      {
+        "recording_at": 39.89626,
+        "turn_at": 39,
+        "visible_text": "Great. Draft Wednesday, your review Thursday, and we share Friday."
+      }
+    ],
+    "timing_note": "Native elapsed clock starts after the 3-second startup. Actual native ticker arrival and redraw are sampled frames, while web captions use exact turn timestamps.",
+    "patch_sha256": "86c271f12ff2a032d30c59a19944b1cd5f3521d6b1793d6389f6f4314a18326b",
+    "source_patch_note": "Current patch also includes later optional zen-only presentation/material handling and initialized export bitmap memory. Original full and compact assets retain their recorded source hashes and capture behavior."
+  },
+  "zen_layout": {
+    "source_revision": "a7174d2f4b00729e4e935095fa7ec0f6655ab530",
+    "source_patch": "website/native/weekly-demo.patch",
+    "patch_base_revision": "dbe4b5e566475073b3adcc0fac52b9dba10e5aff",
+    "patch_sha256": "86c271f12ff2a032d30c59a19944b1cd5f3521d6b1793d6389f6f4314a18326b",
+    "source_sha256": {
+      "Demo/App/DemoEngine.swift": "a000037f37f33fbf1a2a10ff2352100b292fafee5b7833bff876d4b0028c44f2",
+      "Demo/App/DemoPresentation.swift": "4db13bd1082cdbbcda38b7ae632063a63585a6730be6331069014484e91fcef5",
+      "Demo/Core/DemoTimeline.swift": "4e45b190512fc45a86fe8e56d9e1172c1f5ed8369d3a53dfccc0716ae62ad37c",
+      "callaNotch/ContentView.swift": "2f62089929bf2ceb5cd4ccd2a1a2eba46fcfc826ac20e64eb63c4ef6e9e16dc9",
+      "callaNotch/components/Calla/CallaCopilotLiveView.swift": "3aa99037b894cf7e41d36c636cc11162bab42c35f896e8ab5e497ef55d8647f3"
+    },
+    "layout": "Actual CallaCopilotAmbientView with native summary lines. Zen presentation held through the 45-second conversation; transcript and summary content/timestamps remain the shared weekly scenario.",
+    "export_material": "Only --demo-zen with --demo-export replaces LiquidGlass backing with native solid black and disables implicit ambient-view animations; bitmap memory is initialized before NSView caching. These capture-only accommodations prevent stale composited summary text, without recreating native UI.",
+    "presentation_lifecycle": "Demo snapshot remains capturing/running until 45 seconds for the slim Zen recording, omitting taller startup and finishing panels. Native timer retains the scenario three-second startup offset.",
+    "export_arguments": [
+      "--demo-weekly",
+      "--demo-immediate",
+      "--demo-zen",
+      "--demo-export",
+      "/private/tmp/calla-landing-frames"
+    ],
+    "encode_command": "python3 website/scripts/encode-demo.py --frames /private/tmp/calla-landing-frames --name weekly-check-in-zen --zen --stem notch-zen",
+    "build_command": "xcodebuild -project callaNotch.xcodeproj -scheme callaNotchDemo -configuration Release -derivedDataPath build-cache -destination 'generic/platform=macOS' ARCHS=arm64 ONLY_ACTIVE_ARCH=YES CODE_SIGN_STYLE=Manual 'CODE_SIGN_IDENTITY=Calla Local Signing' DEVELOPMENT_TEAM= PRODUCT_BUNDLE_IDENTIFIER=org.calla.notch.landingdemo build",
+    "sign_command": "codesign --force --sign 'Calla Local Signing' --entitlements ../calla.notch/website/native/Export.entitlements 'build-cache/Build/Products/Release/calla.notch Demo.app'",
+    "executable": "build-cache/Build/Products/Release/calla.notch Demo.app/Contents/MacOS/callaNotchDemo",
+    "export_entitlements": "website/native/Export.entitlements",
+    "encoder_sha256": "20498e30868bf066c2faa627ec2fecf8f4b8591c132025383e27b6094f786205",
+    "duration_seconds": 45,
+    "audio": false,
+    "native_frames": 171,
+    "last_native_frame_at": 44.83074404168292,
+    "frame_metadata_sha256": "9027f6465e59c18a3b76ed9d8fddb8b8ef5aea0b7329da285b4f31cde1d96586",
+    "alpha_dimensions": [
+      960,
+      240
+    ],
+    "fallback_dimensions": [
+      1200,
+      300
+    ],
+    "timing": "Measured native frame timestamps, sampled approximately every 0.25 seconds. Alpha recordings contain exactly 540 frames at 12 fps and opaque fallback contains 1350 at 30 fps. Last frame padded to exactly 45 seconds.",
+    "asset_sha256": {
+      "notch-zen.webm": "f3d64773e3b68d70dbc05fec75b9ee90004d3e83ebd355fb3ce03c891af1bf77",
+      "notch-zen.mov": "498f6b16950f1b2eed1c61f8dd4344063742bae337445583a0104c1a347441a6",
+      "weekly-check-in-zen.mp4": "a0cbf318b42e72d58350f5c2709037685adbd47037923c5b86a184f5e91689fd",
+      "notch-zen-poster.png": "1dc1ef1261ced4e11e78186b678a81ad5a6167e368cab5c906518d90dca72448",
+      "notch-zen-fallback-poster.jpg": "3d932387084b91056a93e9fd63f32c77c7543dc52ffeb9dcdb0896d5b2ee98cf"
+    },
+    "timing_checkpoints": [
+      {
+        "recording_at": 9.805012291675666,
+        "summary_at": 6,
+        "visible_text": "Confirm the draft, review, and final figures."
+      },
+      {
+        "recording_at": 19.906693958328106,
+        "summary_at": 14,
+        "visible_text": "Maya: review Thursday."
+      },
+      {
+        "recording_at": 29.88409304167726,
+        "summary_at": 26,
+        "visible_text": "Draft Wednesday \u00b7 review Thursday \u00b7 share Friday."
+      },
+      {
+        "recording_at": 39.826746500009904,
+        "summary_at": 37,
+        "visible_text": "You: draft Wednesday. Maya: review Thursday."
+      },
+      {
+        "recording_at": 43.828841375012416,
+        "summary_at": 41,
+        "visible_text": "Finance: final figures this afternoon."
+      }
+    ],
+    "validation": [
+      "Release build passed.",
+      "Native --demo-weekly --demo-zen --demo-self-test passed.",
+      "Native source summary crops visually inspected at approximately 10, 20, 30, 40 and 44 seconds; no stale overlapping text.",
+      "ffprobe confirms all three recordings contain only video, exactly 45.000 seconds.",
+      "Decoded WebM alpha ranges from 0 to 255.",
+      "Native patch reverse apply check passed against isolated source.",
+      "Summary changes confirmed after boundaries 20, 32, 37, and 41 seconds. Brief native status-label reveal transitions remain visible between settled states."
+    ],
+    "transition_checkpoints": [
+      {
+        "recording_at": 20.67898991666152,
+        "summary_at": 20,
+        "visible_text": "Share the report Friday."
+      },
+      {
+        "recording_at": 32.724168500019005,
+        "summary_at": 32,
+        "visible_text": "Draft Wednesday \u00b7 Maya\u2019s review Thursday \u00b7 share Friday."
+      },
+      {
+        "recording_at": 37.499378375010565,
+        "summary_at": 37,
+        "visible_text": "You: draft Wednesday. Maya: review Thursday."
+      },
+      {
+        "recording_at": 41.570219375018496,
+        "summary_at": 41,
+        "visible_text": "Finance: final figures this afternoon."
+      }
+    ]
+  }
+}

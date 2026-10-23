@@ -1,0 +1,10 @@
+node_modules/
+dist/
+.venv/
+.data/
+__pycache__/
+*.pyc
+.env
+
+
+.asset-venv/

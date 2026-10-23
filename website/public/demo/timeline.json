@@ -1,0 +1,109 @@
+{
+  "duration" : 45,
+  "scenario" : "weekly-team-check-in",
+  "summaries" : [
+    {
+      "at" : 6,
+      "points" : [
+        "Confirm the draft, review, and final figures."
+      ],
+      "standing" : "The team is preparing the weekly report for Friday."
+    },
+    {
+      "at" : 10,
+      "points" : [
+        "You will finish the first draft by Wednesday."
+      ],
+      "standing" : "The weekly report will be shared Friday."
+    },
+    {
+      "at" : 14,
+      "points" : [
+        "You: first draft Wednesday.",
+        "Maya: review Thursday."
+      ],
+      "standing" : "The report is due Friday."
+    },
+    {
+      "at" : 20,
+      "points" : [
+        "You: draft Wednesday. Maya: review Thursday.",
+        "Share the report Friday."
+      ],
+      "standing" : "The team will reuse last week’s report template."
+    },
+    {
+      "at" : 26,
+      "points" : [
+        "Draft Wednesday · review Thursday · share Friday."
+      ],
+      "standing" : "The report plan is agreed; Finance’s final figures are still missing."
+    },
+    {
+      "at" : 32,
+      "points" : [
+        "Draft Wednesday · Maya’s review Thursday · share Friday."
+      ],
+      "standing" : "You will follow up with Finance today and add the final figures."
+    },
+    {
+      "at" : 37,
+      "points" : [
+        "The missing dependency now has a confirmed delivery time.",
+        "You: draft Wednesday. Maya: review Thursday."
+      ],
+      "standing" : "Finance will send the figures this afternoon."
+    },
+    {
+      "at" : 41,
+      "points" : [
+        "You: first draft Wednesday, using last week’s template.",
+        "Maya: review Thursday. Share the report Friday.",
+        "Finance: final figures this afternoon."
+      ],
+      "standing" : "The team confirmed the weekly report plan."
+    }
+  ],
+  "turns" : [
+    {
+      "at" : 4,
+      "source" : "them",
+      "text" : "Quick check-in. Can we have the weekly report ready for Friday?"
+    },
+    {
+      "at" : 8,
+      "source" : "me",
+      "text" : "Yes. I’ll finish the first draft by Wednesday."
+    },
+    {
+      "at" : 12,
+      "source" : "them",
+      "text" : "I’ll review it Thursday, so we can share it Friday."
+    },
+    {
+      "at" : 18,
+      "source" : "me",
+      "text" : "Let’s use the same report template as last week."
+    },
+    {
+      "at" : 24,
+      "source" : "them",
+      "text" : "We’re still waiting for the final figures from Finance."
+    },
+    {
+      "at" : 29,
+      "source" : "me",
+      "text" : "I’ll follow up with Finance today and add the figures to the draft."
+    },
+    {
+      "at" : 35,
+      "source" : "them",
+      "text" : "Thanks. Finance has confirmed they’ll send them this afternoon."
+    },
+    {
+      "at" : 39,
+      "source" : "me",
+      "text" : "Great. Draft Wednesday, your review Thursday, and we share Friday."
+    }
+  ]
+}

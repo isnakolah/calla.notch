@@ -1,0 +1,10 @@
+node_modules
+.venv
+.data
+dist
+__pycache__
+*.pyc
+.env
+native
+tests
+scripts

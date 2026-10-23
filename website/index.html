@@ -1,0 +1,582 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content"
+    />
+    <meta name="theme-color" content="#070d11" />
+    <meta name="darkreader-lock" />
+    <meta
+      name="description"
+      content="Meet Calla. Live meeting help for your Mac, and a vision for a shared brain that connects your team’s people, decisions, and work."
+    />
+    <title>Calla — A shared brain for your team’s work.</title>
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+  </head>
+  <body>
+    <a class="skip-link" href="#main">Skip to content</a>
+    <header class="desktop-bar">
+      <a class="wordmark" href="#meeting" aria-label="Calla home"
+        ><svg viewBox="0 0 32 30" aria-hidden="true">
+          <path
+            d="M1 2h30c-4 0-4 4-4 4v12c0 6-3 10-9 10h-4C8 28 5 24 5 18V6S5 2 1 2Z"
+            fill="currentColor"
+          />
+          <circle cx="12" cy="12" r="1.8" fill="#071019" />
+          <circle cx="21" cy="12" r="1.8" fill="#071019" />
+          <path
+            d="M12 19q4 4 9 0"
+            fill="none"
+            stroke="#071019"
+            stroke-width="1.5"
+          /></svg
+        ><span>calla<span class="wordmark-sub">.notch</span></span></a
+      >
+      <nav aria-label="Main navigation">
+        <a href="#connected">How it works</a
+        ><a class="nav-cta" href="#company" data-signup
+          >Get early access <span>↗</span></a
+        >
+      </nav>
+    </header>
+    <main id="main">
+      <section
+        class="hero"
+        id="meeting"
+        data-chapter="meeting"
+        aria-labelledby="hero-title"
+      >
+        <div class="intro-copy">
+          <p class="eyebrow">
+            <span class="live-dot"></span> YOUR CALL. A LITTLE MORE CLARITY.
+          </p>
+          <h1 id="hero-title">
+            Stay in the conversation.<br /><em>Calla keeps the thread.</em>
+          </h1>
+          <p class="hero-description">
+            A clear view of what’s been said,<br />what matters, and what comes
+            next.<br /><span>Right in your Mac’s notch.</span>
+          </p>
+          <div class="hero-actions">
+            <button class="primary-button" id="hero-play">
+              Watch Calla in action <span>↗</span></button
+            ><button class="quiet-link" data-explore>
+              Explore the brain <span>↗</span>
+            </button>
+          </div>
+          <p class="vision-note">
+            Real Mac app. Sample conversation. A glimpse of what’s next.
+          </p>
+        </div>
+        <div class="brain-showcase">
+          <div class="brain-heading">
+            <span class="eyebrow">BEHIND THE SCENES</span
+            ><span class="concept-tag">THE VISION</span>
+          </div>
+          <div
+            id="brain"
+            class="brain-canvas"
+            role="group"
+            aria-label="An anatomical brain formed by neural folds. Signals travel between connected pieces of team knowledge."
+          >
+            <div id="brain-fallback">
+              <img
+                src="/models/brain-neural-fallback.jpg"
+                alt="An anatomical brain with folded neural pathways connecting knowledge."
+              />
+            </div>
+            <div id="brain-labels" class="brain-labels"></div>
+          </div>
+          <div class="brain-context" id="brain-context">
+            <span id="brain-kicker">YOUR WORK, CONNECTED</span>
+            <p id="brain-explanation">
+              Every conversation adds a little more context.
+            </p>
+          </div>
+          <div class="brain-bottom">
+            <span class="brain-key"
+              ><i></i> One conversation. Many connections.</span
+            ><button class="text-cta" data-explore>
+              Explore <span>↗</span>
+            </button>
+          </div>
+        </div>
+        <div class="meeting-scene" id="meeting-scene">
+          <div class="scene-heading">
+            <span>CALLA, IN THE CONVERSATION</span
+            ><small>ZEN VIEW · 45-SECOND DEMO</small>
+          </div>
+          <div class="meeting-display">
+            <div class="desktop-menubar" aria-hidden="true">
+              <span>● &nbsp; Finder &nbsp; File &nbsp; Edit &nbsp; View</span
+              ><span>Wed 9:41</span>
+            </div>
+            <div class="notch-anchor" id="notch-anchor">
+              <div class="hardware-notch" aria-hidden="true">
+                <i class="camera-dot"></i>
+              </div>
+              <div class="native-stage" id="native-stage">
+                <video
+                  id="call-video"
+                  playsinline
+                  muted
+                  autoplay
+                  preload="auto"
+                  aria-label="Scripted weekly check-in playing in the actual Calla Mac app"
+                >
+                  <track
+                    kind="captions"
+                    src="/demo/weekly-check-in.vtt"
+                    srclang="en"
+                    label="English"
+                  />
+                </video>
+                <video
+                  id="call-video-full"
+                  playsinline
+                  muted
+                  preload="none"
+                  aria-label="Expanded native Calla view"
+                  hidden
+                ></video>
+                <span
+                  id="notch-loading"
+                  class="notch-loading"
+                  role="status"
+                  hidden
+                  >Opening Calla…</span
+                >
+              </div>
+              <button
+                id="notch-toggle"
+                class="notch-toggle"
+                aria-expanded="false"
+                aria-label="Expand Calla"
+                aria-controls="native-stage"
+              >
+                <span>Expand Calla</span><b aria-hidden="true">↗</b>
+              </button>
+            </div>
+
+            <div class="meeting-window" id="meeting-surround">
+              <div class="meeting-window-bar">
+                <span class="window-dots" aria-hidden="true">● ● ●</span
+                ><span>Weekly check-in</span
+                ><span class="meeting-tag">SAMPLE</span>
+              </div>
+              <div class="participant-grid">
+                <div class="participant participant-maya" id="maya-tile">
+                  <div class="avatar-portrait maya-portrait">
+                    <svg viewBox="0 0 160 150" aria-hidden="true">
+                      <path
+                        d="M33 150v-22q3-34 47-35 44 0 49 35v22"
+                        fill="#525f71"
+                      />
+                      <path d="M65 81h30v25q-15 14-30 0" fill="#b78069" />
+                      <ellipse cx="80" cy="56" rx="31" ry="38" fill="#d49c80" />
+                      <path
+                        d="M48 65Q26 12 77 8q49-4 36 67l-9-35Q72 53 57 32l-4 40Z"
+                        fill="#28232b"
+                      />
+                      <path
+                        d="M51 50q-16 31-5 60l-12-6q-10-21-3-45m76-13q20 37 5 64l14-7q5-26-7-50"
+                        fill="#28232b"
+                      />
+                      <path
+                        d="M69 73q12 9 23-1"
+                        fill="none"
+                        stroke="#995b53"
+                        stroke-width="2"
+                      />
+                      <circle cx="68" cy="57" r="2" fill="#30272a" />
+                      <circle cx="93" cy="57" r="2" fill="#30272a" />
+                    </svg>
+                  </div>
+                  <span class="participant-name"
+                    >Maya <i class="speaking-bars"><b></b><b></b><b></b></i
+                  ></span>
+                </div>
+                <div class="participant participant-you" id="you-tile">
+                  <div class="avatar-portrait you-portrait">
+                    <svg viewBox="0 0 160 150" aria-hidden="true">
+                      <path
+                        d="M29 150v-19q5-34 51-37 44 1 51 37v19"
+                        fill="#476c66"
+                      />
+                      <path d="M65 80h30v24q-14 14-30 0" fill="#925e43" />
+                      <ellipse cx="80" cy="57" rx="30" ry="37" fill="#ad7957" />
+                      <path
+                        d="M50 55Q33 12 75 9q48-8 38 47l-13-24Q80 43 55 34Z"
+                        fill="#242829"
+                      />
+                      <path
+                        d="M54 67q7 30 26 29 19 0 26-30-7 22-26 22-20 0-26-21"
+                        fill="#4a3a30"
+                      />
+                      <circle cx="68" cy="57" r="2" fill="#2b2827" />
+                      <circle cx="93" cy="57" r="2" fill="#2b2827" />
+                      <path
+                        d="M70 74q10 6 21 0"
+                        fill="none"
+                        stroke="#754332"
+                        stroke-width="2"
+                      />
+                    </svg>
+                  </div>
+                  <span class="participant-name"
+                    >You <i class="speaking-bars"><b></b><b></b><b></b></i
+                  ></span>
+                </div>
+              </div>
+              <div
+                class="call-toolbar"
+                aria-label="Illustrative meeting controls"
+              >
+                <span class="call-icon" aria-hidden="true"
+                  ><svg viewBox="0 0 20 20">
+                    <rect x="7" y="2" width="6" height="10" rx="3" />
+                    <path
+                      d="M4 9v1a6 6 0 0 0 12 0V9M10 16v3M7 19h6"
+                    /></svg></span
+                ><span class="call-icon" aria-hidden="true"
+                  ><svg viewBox="0 0 20 20">
+                    <rect x="2" y="5" width="11" height="10" rx="2" />
+                    <path d="m13 8 5-3v10l-5-3" /></svg></span
+                ><span class="call-status"
+                  ><i class="live-dot"></i> You and Maya</span
+                ><span class="end-call">End call</span>
+              </div>
+            </div>
+            <div class="speech-stage" id="speech-stage">
+              <div>
+                <i class="live-dot"></i
+                ><strong id="speech-name">Your weekly check-in</strong
+                ><span>A SAMPLE CALL</span>
+              </div>
+              <p id="speech-text">
+                A report, a deadline, and the people making it happen.
+              </p>
+            </div>
+
+            <div class="display-dock" aria-hidden="true">
+              <i></i><i></i><i></i><i></i><i></i>
+            </div>
+          </div>
+          <p id="notch-error" role="status" hidden>
+            Expanded view couldn’t load. The Zen demo is still available. Select
+            Expand Calla to retry.
+          </p>
+          <div class="demo-footnote">
+            <span><i class="live-dot"></i> Calla for Mac</span
+            ><span>Real app · sample conversation</span>
+          </div>
+        </div>
+
+        <div class="demo-playback">
+          <div class="flow-status" id="flow-status">
+            <span data-flow="call">Conversation</span><i>→</i
+            ><span data-flow="notch">Calla</span><i>→</i
+            ><span data-flow="brain">Connection</span>
+          </div>
+          <div class="meeting-player" id="meeting-player">
+            <div class="player-controls">
+              <button id="play" aria-label="Play sample meeting">
+                <svg viewBox="0 0 20 20" aria-hidden="true">
+                  <path
+                    id="play-icon"
+                    d="m6 3 11 7-11 7Z"
+                    fill="currentColor"
+                  /></svg
+                ><span id="play-label">Play meeting</span></button
+              ><label class="sr-only" for="progress"
+                >Meeting playback position</label
+              ><input
+                id="progress"
+                type="range"
+                min="0"
+                max="45"
+                step="0.1"
+                value="0"
+              /><span id="clock">0:00 / 0:45</span
+              ><button
+                class="replay-control"
+                id="replay"
+                aria-label="Replay meeting"
+              >
+                ↺
+              </button>
+            </div>
+          </div>
+          <p class="playback-note">
+            Follow one conversation as its details become connected.
+          </p>
+        </div>
+      </section>
+      <section
+        id="connected"
+        class="how-section"
+        data-chapter="connected"
+        aria-labelledby="how-title"
+      >
+        <div class="section-intro">
+          <p class="eyebrow">FROM A MOMENT TO A MEMORY</p>
+          <h2 id="how-title">Good work builds<br />on what came before.</h2>
+          <p>
+            Start with a conversation. Keep the useful details.<br />Connect
+            them to the bigger picture.
+          </p>
+        </div>
+        <div class="steps">
+          <article>
+            <span class="step-number">01 / CAPTURE</span>
+            <h3>Be in the conversation.</h3>
+            <p>
+              Calla sits in your Mac’s notch, keeping the transcript and a
+              running account close by.
+            </p>
+            <span class="step-status">IN THE MAC APP</span>
+          </article>
+          <article>
+            <span class="step-number">02 / CONNECT</span>
+            <h3>Keep the thread.</h3>
+            <p>
+              The vision: connect a decision to its owner, its deadline, and the
+              conversation behind it.
+            </p>
+            <span class="step-status planned">PLANNED</span>
+          </article>
+          <article>
+            <span class="step-number">03 / REMEMBER</span>
+            <h3>Find the why.</h3>
+            <p>
+              Build toward shared memory your team can explore, with sources to
+              check and context to return to.
+            </p>
+            <span class="step-status planned">PLANNED</span>
+          </article>
+        </div>
+        <div class="example-thread">
+          <span class="example-label">ONE SMALL CONNECTION</span
+          ><span class="thread-node">Maya</span
+          ><span class="thread-edge">reviews</span
+          ><span class="thread-node">Weekly report</span
+          ><span class="thread-edge">before</span
+          ><span class="thread-node">Friday</span
+          ><button data-explore class="quiet-link">Follow the source ↗</button>
+        </div>
+      </section>
+      <section
+        id="company"
+        class="signup-section"
+        data-chapter="company"
+        aria-labelledby="signup-title"
+      >
+        <div>
+          <p class="eyebrow">
+            <span class="live-dot"></span> HELP SHAPE WHAT COMES NEXT
+          </p>
+          <h2 id="signup-title">
+            Less lost context.<br /><em>More shared understanding.</em>
+          </h2>
+          <p>
+            We’re starting with calls. Join the launch list<br />and follow the
+            journey to a company brain.
+          </p>
+        </div>
+        <form id="signup" class="signup-inline">
+          <label for="email">Get a note when Calla is ready.</label>
+          <div class="inline-signup-row">
+            <input
+              id="email"
+              aria-label="Your email address"
+              name="email"
+              type="email"
+              placeholder="Your email address"
+              autocomplete="email"
+              maxlength="254"
+              required
+            /><button type="submit" class="submit-signup">
+              Join the launch list <span>↗</span>
+            </button>
+          </div>
+          <details class="inline-interests">
+            <summary>
+              What would help your working day? <span>Optional +</span>
+            </summary>
+            <fieldset>
+              <legend>I’m interested in <span>(optional)</span></legend>
+              <label
+                ><input
+                  type="checkbox"
+                  name="interests"
+                  value="live-calls"
+                /><span>Live meeting help</span></label
+              ><label
+                ><input
+                  type="checkbox"
+                  name="interests"
+                  value="company-memory"
+                /><span>Shared company memory</span></label
+              ><label
+                ><input
+                  type="checkbox"
+                  name="interests"
+                  value="team-pilot"
+                /><span>A pilot for my team</span></label
+              >
+            </fieldset>
+          </details>
+          <div class="honeypot" aria-hidden="true">
+            <label for="website">Leave this empty</label
+            ><input
+              id="website"
+              name="website"
+              tabindex="-1"
+              autocomplete="off"
+            />
+          </div>
+          <p id="signup-status" class="signup-note" role="status">
+            Launch updates and your selected interests. Nothing else.
+          </p>
+        </form>
+      </section>
+    </main>
+    <footer class="scene-footer">
+      <a class="footer-brand" href="#meeting">calla<span>.notch</span></a
+      ><span>A little more memory for work.</span
+      ><button id="about-open">About this demo ↗</button>
+    </footer>
+    <svg class="capture-overlay" id="capture-overlay" aria-hidden="true">
+      <defs>
+        <filter id="packet-glow"><feGaussianBlur stdDeviation="3" /></filter>
+      </defs>
+      <path
+        id="capture-path"
+        fill="none"
+        stroke="#62dcff"
+        stroke-width="1"
+        stroke-opacity=".2"
+      />
+      <circle
+        id="capture-halo"
+        r="9"
+        fill="#8ae7ff"
+        opacity=".35"
+        filter="url(#packet-glow)"
+      />
+      <circle id="capture-dot" r="3" fill="#d2f8ff" />
+      <circle id="capture-tail" r="2" fill="#8ceaff" opacity=".5" />
+    </svg>
+    <dialog id="about-dialog" class="about-dialog">
+      <button class="dialog-close" data-close aria-label="Close details">
+        ×
+      </button>
+      <p class="eyebrow">A LOOK INSIDE</p>
+      <h2>Real app. <br /><em>A growing vision.</em></h2>
+      <p>
+        The notch playback comes from Calla’s native Mac demo mode. The
+        conversation is scripted, silent and captioned. This page never accesses
+        your microphone.
+      </p>
+      <p>
+        The animated knowledge graph explains a future company-brain concept.
+        The document connections and company-wide answers are planned
+        capabilities.
+      </p>
+      <p>
+        We use short-lived browser session IDs to measure visits and
+        interactions. Campaign tags can be saved with your signup. Your details
+        stay private, and browser Do Not Track and Global Privacy Control
+        signals are respected.
+      </p>
+      <p class="asset-credit">
+        Brain geometry: Kristen Browne and Heidi Schlehlein, HuBMAP HRA,
+        <a
+          href="https://doi.org/10.48539/HBM929.XKCL.339"
+          target="_blank"
+          rel="noreferrer"
+          >Brain v1.3</a
+        >,
+        <a
+          href="https://creativecommons.org/licenses/by/4.0/"
+          target="_blank"
+          rel="noreferrer"
+          >CC BY 4.0</a
+        >. Simplified and restyled for this scene.
+      </p>
+    </dialog>
+    <dialog
+      id="graph-dialog"
+      class="graph-dialog"
+      aria-labelledby="graph-title"
+    >
+      <header class="explorer-header">
+        <div>
+          <p class="eyebrow">A LITTLE MEMORY. A BIGGER PICTURE.</p>
+          <h2 id="graph-title">Everything is <em>connected.</em></h2>
+        </div>
+        <button id="graph-close" aria-label="Close knowledge graph">
+          Close <span>×</span>
+        </button>
+      </header>
+      <div class="graph-legend">
+        <span style="--node-color: #83e9ff">Weekly reporting</span
+        ><span style="--node-color: #b5a1ff">Customer launch</span
+        ><span style="--node-color: #efc48f">Quarterly planning</span>
+      </div>
+      <div
+        class="explorer-stage"
+        id="explorer-stage"
+        role="group"
+        aria-label="Interactive three dimensional company knowledge graph. Use search and the connection list to explore with a keyboard."
+      >
+        <div id="explorer-labels" class="explorer-labels"></div>
+        <div id="explorer-fallback" hidden>
+          <p>The connections are still here.</p>
+          <span>Explore every point and its sources using the list.</span>
+        </div>
+      </div>
+      <aside class="graph-sidebar" aria-label="Explore connections">
+        <div class="graph-search">
+          <label class="sr-only" for="graph-search"
+            >Search the knowledge graph</label
+          ><input
+            id="graph-search"
+            type="search"
+            placeholder="Find a person, project, idea…"
+            autocomplete="off"
+          /><label class="sr-only" for="graph-type">Filter by type</label
+          ><select id="graph-type">
+            <option value="">All types</option>
+          </select>
+          <p id="graph-result-count" role="status"></p>
+          <div id="graph-results" class="graph-results"></div>
+        </div>
+        <div id="graph-detail" class="graph-detail"></div>
+      </aside>
+      <div class="graph-controls">
+        <button data-zoom="out" aria-label="Zoom out">−</button
+        ><button data-zoom="in" aria-label="Zoom in">+</button
+        ><button id="graph-reset">Reset view ↺</button
+        ><span>Drag to orbit · scroll to zoom</span>
+      </div>
+      <footer class="graph-footer">
+        <span class="live-dot"></span> FICTIONAL COMPANY · CONCEPT DEMO
+        <span class="graph-count"
+          >40 points of knowledge. One shared thread.</span
+        >
+      </footer>
+      <p id="graph-selection-status" class="sr-only" role="status"></p>
+    </dialog>
+    <noscript
+      ><div class="no-script">
+        Calla helps you keep the thread of your calls. Enable JavaScript to
+        explore the brain and join the launch list.
+        <a href="/demo/weekly-check-in.mp4">Watch the sample meeting.</a>
+      </div></noscript
+    >
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>

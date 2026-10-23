@@ -1,0 +1,31 @@
+name: calla-landing
+services:
+  web:
+    build:
+      context: ..
+      dockerfile: deploy/Web.Dockerfile
+    ports:
+      - "127.0.0.1:4187:8080"
+    depends_on:
+      waitlist:
+        condition: service_healthy
+    restart: unless-stopped
+  waitlist:
+    build:
+      context: ..
+      dockerfile: deploy/API.Dockerfile
+    environment:
+      CALLA_WAITLIST_DB: /data/waitlist.sqlite3
+      CALLA_ALLOWED_ORIGINS: ${CALLA_ALLOWED_ORIGINS:-https://calla.nomonlab.com}
+      CALLA_TRUST_PROXY: "1"
+      CALLA_SECURE_COOKIES: "1"
+    volumes:
+      - waitlist:/data
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/healthz', timeout=3)"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+    restart: unless-stopped
+volumes:
+  waitlist:

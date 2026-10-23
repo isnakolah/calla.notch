@@ -1,0 +1,342 @@
+diff --git a/Demo/App/DemoEngine.swift b/Demo/App/DemoEngine.swift
+index 33aa639..d63f66f 100644
+--- a/Demo/App/DemoEngine.swift
++++ b/Demo/App/DemoEngine.swift
+@@ -30,7 +30,7 @@ final class DemoEngine: NSObject, CallaEngineProtocol {
+         result.copilot.hostPermissionsKnown = true
+         result.copilot.hostMicGranted = true
+         result.copilot.hostScreenGranted = true
+-        result.copilot.persona = "sales"
++        result.copilot.persona = DemoTimeline.isWeekly ? "generic" : "sales"
+         result.copilot.modelLoaded = true
+         result.copilot.brainWarm = true
+         result.copilot.activeProvider = "local"
+@@ -57,9 +57,9 @@ final class DemoEngine: NSObject, CallaEngineProtocol {
+         var call = result.copilot
+         call.callID = callID
+         call.generation = 1
+-        call.meetingTitle = "Northstar Logistics · Client portal"
++        call.meetingTitle = DemoTimeline.isWeekly ? "Weekly team check-in" : "Northstar Logistics · Client portal"
+         call.meetingStartsAt = startedAt
+-        call.startedAt = startedAt.addingTimeInterval(5)
++        call.startedAt = startedAt.addingTimeInterval(DemoTimeline.isWeekly ? 3 : 5)
+         call.starting = timeline.phase == .starting
+         call.startupStage = elapsed < 1.5 ? "launching" : (elapsed < 3 ? "model" : "capture")
+         call.running = timeline.phase == .conversation
+@@ -80,6 +80,18 @@ final class DemoEngine: NSObject, CallaEngineProtocol {
+         case .finishing: call.lifecycleState = elapsed < 93 ? "stopping" : "processingRecap"
+         case .history, .completed: call.lifecycleState = "finished"
+         }
++        // The landing page's resting preview holds the real native zen surface.
++        // Only its presentation lifecycle changes; transcript and summary times
++        // still come from the exact weekly timeline shared by all recordings.
++        if CommandLine.arguments.contains("--demo-zen"), elapsed < 45 {
++            call.starting = false
++            call.running = true
++            call.micActive = true
++            call.systemAudioActive = true
++            call.finishing = false
++            call.recapProgress = nil
++            call.lifecycleState = "capturing"
++        }
+         if !call.starting { call.startupStage = nil }
+         call.lastResult = call.finishing ? "Writing the recap" : (call.running ? "Listening" : "Demo call complete")
+         result.copilot = call
+@@ -107,7 +119,7 @@ final class DemoEngine: NSObject, CallaEngineProtocol {
+     private var turns: [CallaCallTurn] {
+         timeline.turns.enumerated().map { seq, turn in
+             CallaCallTurn(id: UUID(uuidString: String(format: "00000000-0000-0000-0000-%012d", seq + 1))!,
+-                         seq: seq, source: turn.source, t0: max(0, turn.at - 9), t1: turn.at - 5,
++                         seq: seq, source: turn.source, t0: max(0, turn.at - (DemoTimeline.isWeekly ? 4 : 9)), t1: turn.at - (DemoTimeline.isWeekly ? 3 : 5),
+                          text: turn.text, confidence: 0.99,
+                          speaker: turn.source == "me" ? "me" : "S1",
+                          speakerName: turn.source == "me" ? "You" : "Maya")
+@@ -115,13 +127,23 @@ final class DemoEngine: NSObject, CallaEngineProtocol {
+     }
+     private var finished: Bool { hasSession && [.history, .completed].contains(timeline.phase) }
+     private var record: CallaCallSummary {
+-        CallaCallSummary(id: callID, startedAt: startedAt.addingTimeInterval(5),
+-                         endedAt: startedAt.addingTimeInterval(91), endReason: "completed",
+-                         turnCount: turns.count, persona: "sales", hasAudio: false,
++        CallaCallSummary(id: callID, startedAt: startedAt.addingTimeInterval(DemoTimeline.isWeekly ? 3 : 5),
++                         endedAt: startedAt.addingTimeInterval(DemoTimeline.isWeekly ? 42 : 91), endReason: "completed",
++                         turnCount: turns.count, persona: DemoTimeline.isWeekly ? "generic" : "sales", hasAudio: false,
+                          eventID: "demo-northstar", seriesID: nil)
+     }
+     private var recap: CallaRecapDraft {
+-        CallaRecapDraft(callID: callID,
++        if DemoTimeline.isWeekly {
++            return CallaRecapDraft(callID: callID,
++                overview: "The team agreed the weekly report plan: draft Wednesday, Maya’s review Thursday, and sharing Friday. Reuse last week’s template. Finance will send figures this afternoon.",
++                items: [
++                    .init(id: "draft", kind: "action", text: "You: finish the draft Wednesday, using last week’s template.", fromSeq: 1, toSeq: 3, resolved: false),
++                    .init(id: "review", kind: "action", text: "Maya: review Thursday.", fromSeq: 2, toSeq: 7, resolved: false),
++                    .init(id: "finance", kind: "decision", text: "Finance confirmed final figures for this afternoon.", fromSeq: 4, toSeq: 6, resolved: true),
++                    .init(id: "share", kind: "decision", text: "Share the report Friday.", fromSeq: 0, toSeq: 7, resolved: true)
++                ], provider: "Demo", model: "Weekly team check-in", failure: nil, reviewState: reviewState)
++        }
++        return CallaRecapDraft(callID: callID,
+                        overview: "Northstar Logistics agreed a three-week client-portal pilot for twenty clients, covering document uploads, shipment tracking, and email alerts.",
+                        items: [
+                         .init(id: "scope", kind: "decision", text: "Pilot: uploads, shipment status, and email alerts. Three weeks, twenty clients.", fromSeq: 2, toSeq: 5, resolved: true),
+diff --git a/Demo/App/DemoPresentation.swift b/Demo/App/DemoPresentation.swift
+index 698543e..9a49082 100644
+--- a/Demo/App/DemoPresentation.swift
++++ b/Demo/App/DemoPresentation.swift
+@@ -19,7 +19,7 @@ final class DemoPresentation: ObservableObject {
+         Defaults[.hideFromScreenRecording] = false
+         Defaults[.callaCopilotEnabled] = true
+         Defaults[.callaCopilotMode] = "call"
+-        Defaults[.callaCopilotPersona] = "sales"
++        Defaults[.callaCopilotPersona] = DemoTimeline.isWeekly ? "generic" : "sales"
+         Defaults[.callaCopilotAmbient] = true
+         Defaults[.callaQuizEnabled] = false
+         Defaults[.hudReplacement] = false
+@@ -33,6 +33,11 @@ final class DemoPresentation: ObservableObject {
+         Defaults[.menubarIcon] = true
+         Defaults[.showOnAllDisplays] = false
+         UserDefaults.standard.set(false, forKey: "firstLaunch")
++        if CommandLine.arguments.contains("--demo-mobile") || CommandLine.arguments.contains("--demo-zen") {
++            NotchSizePreferences.set(CGSize(width: 560, height: 270), for: .callCollapsed)
++        } else {
++            CallaPanelSize.reset()
++        }
+     }
+ 
+     func play(countdown: Double = 10) {
+@@ -69,6 +74,12 @@ final class DemoPresentation: ObservableObject {
+             var previousLayout: DemoTimeline.Layout?
+             var historyShown = false
+             var recapFocused = false
++            let arguments = CommandLine.arguments
++            let export = arguments.firstIndex(of: "--demo-export").flatMap { arguments.indices.contains($0 + 1) ? arguments[$0 + 1] : nil }
++            let output = export.map { URL(fileURLWithPath: $0, isDirectory: true) }
++            var frames: [[String: Any]] = []
++            var nextFrame: Double = 0
++            if let output { try? FileManager.default.createDirectory(at: output, withIntermediateDirectories: true) }
+             let args = ProcessInfo.processInfo.arguments
+             let speed = args.firstIndex(of: "--demo-speed").flatMap { args.indices.contains($0 + 1) ? Double(args[$0 + 1]) : nil }.map { min(20, max(1, $0)) } ?? 1
+             while !Task.isCancelled && self.run == token {
+@@ -81,20 +92,47 @@ final class DemoPresentation: ObservableObject {
+                     NSLog("[CallaDemo] phase=%@ elapsed=%.1f", timeline.phase.rawValue, self.elapsed)
+                     previousPhase = timeline.phase
+                 }
+-                if timeline.layout != previousLayout || (timeline.phase == .conversation && session.layout != (timeline.layout == .full ? .full : .compact)) || timeline.phase == .starting {
+-                    self.ambient = timeline.layout == .ambient && timeline.phase == .conversation
+-                    session.setLayout(timeline.layout == .full ? .full : .compact)
++                let forceFull = args.contains("--demo-full")
++                let forceZen = args.contains("--demo-zen")
++                let desiredLayout: CopilotLiveSession.Layout = forceFull ? .full : ((args.contains("--demo-mobile") || forceZen) ? .compact : (timeline.layout == .full ? .full : .compact))
++                let desiredAmbient = forceZen ? self.elapsed < 45 : (!forceFull && !args.contains("--demo-mobile") && timeline.layout == .ambient && timeline.phase == .conversation)
++                if timeline.layout != previousLayout || self.ambient != desiredAmbient || (timeline.phase == .conversation && session.layout != desiredLayout) || timeline.phase == .starting {
++                    self.ambient = desiredAmbient
++                    session.setLayout(desiredLayout)
+                     session.ambientShowing = self.ambient
+                     previousLayout = timeline.layout
+                     NotificationCenter.default.post(name: .copilotLiveDidChange, object: nil)
+                 }
++                if let output, self.elapsed >= nextFrame, let view = AppDelegate.shared?.window?.contentView {
++                    view.layoutSubtreeIfNeeded()
++                    if let bitmap = view.bitmapImageRepForCachingDisplay(in: view.bounds) {
++                        bitmap.bitmapData?.initialize(repeating: 0, count: bitmap.bytesPerRow * bitmap.pixelsHigh)
++                        view.cacheDisplay(in: view.bounds, to: bitmap)
++                        if let data = bitmap.representation(using: .png, properties: [:]) {
++                            let name = String(format: "frame-%04d.png", frames.count)
++                            do {
++                                try data.write(to: output.appendingPathComponent(name))
++                                frames.append(["file": name, "at": self.elapsed])
++                                nextFrame = self.elapsed + 0.24
++                            } catch { NSLog("[CallaDemoExport] %@", error.localizedDescription); exit(1) }
++                        }
++                    }
++                    if self.elapsed >= 44.8 {
++                        do {
++                            let payload = try JSONSerialization.data(withJSONObject: ["frames": frames, "duration": 45.0, "scenario": "weekly-team-check-in", "layout": args.contains("--demo-zen") ? "zen" : (args.contains("--demo-full") ? "full" : (args.contains("--demo-mobile") ? "compact" : "timeline"))], options: [.prettyPrinted, .sortedKeys])
++                            try payload.write(to: output.appendingPathComponent("frames.json"))
++                            NSLog("[CallaDemoExport] exported %d frames", frames.count)
++                            exit(0)
++                        } catch { NSLog("[CallaDemoExport] failed %@", error.localizedDescription); exit(1) }
++                    }
++                }
+                 if timeline.phase == .history && !historyShown {
+                     historyShown = true
+                     self.ambient = false
+                     session.ambientShowing = false
+                     SettingsWindowController.shared.show(route: SettingsRoute(page: .copilotCallDetail(id: DemoEngine.shared.callID)))
+                 }
+-                if timeline.phase == .history, self.elapsed >= 103, !recapFocused {
++                if timeline.phase == .history, self.elapsed >= (DemoTimeline.isWeekly ? 49 : 103), !recapFocused {
+                     recapFocused = true
+                     SettingsWindowController.shared.show(route: SettingsRoute(.history, focus: "call-recap"))
+                 }
+diff --git a/Demo/App/DemoVerification.swift b/Demo/App/DemoVerification.swift
+index 2d0e424..eb2ce0d 100644
+--- a/Demo/App/DemoVerification.swift
++++ b/Demo/App/DemoVerification.swift
+@@ -17,6 +17,24 @@ enum DemoVerification {
+             try require(replies == 1, "Each request must complete exactly once")
+             return try JSONDecoder().decode(type, from: response!)
+         }
++        if DemoTimeline.isWeekly {
++            engine.reset()
++            engine.render(elapsed: 26)
++            try require(engine.snapshot.copilot.openQuestions.count == 1, "Finance must be unresolved until confirmation")
++            engine.render(elapsed: 37)
++            try require(engine.snapshot.copilot.openQuestions.isEmpty, "Finance confirmation must resolve the open question")
++            engine.render(elapsed: 41)
++            let weekly = try read([CallaCallTurn].self) { engine.copilotTranscript(since: -1, with: $0) }
++            try require(weekly.count == 8 && engine.snapshot.copilot.running, "Weekly playback must use all eight actual transcript turns")
++            engine.render(elapsed: 45)
++            let recap = try read(CallaRecapDraft.self) { engine.copilotRecapDraft(engine.callID, with: $0) }
++            try require(recap.items.count == 4 && recap.overview.contains("Wednesday"), "Weekly recap must agree with the script")
++            try require(recap.items.allSatisfy { $0.fromSeq >= 0 && $0.toSeq < weekly.count }, "Weekly recap citations must resolve")
++            engine.reset()
++            try require(engine.snapshot.copilot.callID == nil, "Weekly replay must start clean")
++            print("Weekly demo adapter verification passed: native transcript, unresolved/resolved dependency, recap, replay.")
++            return
++        }
+         engine.reset()
+         let firstID = engine.callID
+         engine.render(elapsed: 40)
+diff --git a/Demo/Core/DemoTimeline.swift b/Demo/Core/DemoTimeline.swift
+index 593d241..817ed23 100644
+--- a/Demo/Core/DemoTimeline.swift
++++ b/Demo/Core/DemoTimeline.swift
+@@ -15,8 +15,10 @@ struct DemoTimeline {
+         let points: [String]
+         var text: String { standing + "\n\n" + points.joined(separator: "\n") }
+     }
+-    static let duration: Double = 120
+-    static let turns: [Turn] = [
++    static var isWeekly: Bool { CommandLine.arguments.contains("--demo-weekly") }
++    static var duration: Double { isWeekly ? 60 : 120 }
++    static var turns: [Turn] { isWeekly ? weeklyTurns : clientTurns }
++    static let clientTurns: [Turn] = [
+         .init(at: 9, source: "them", text: "Thanks for joining. Our clients keep emailing to ask where their shipments are."),
+         .init(at: 15, source: "me", text: "Let's give them one portal. What should a client be able to do first?"),
+         .init(at: 21, source: "them", text: "Check shipment status and upload delivery documents. Those are the two biggest pain points."),
+@@ -32,7 +34,8 @@ struct DemoTimeline {
+         .init(at: 81, source: "them", text: "Perfect. Let's review the first working version together next week."),
+         .init(at: 87, source: "me", text: "Sounds good. Three weeks, twenty clients, and single sign-on in phase two. I'll follow up tomorrow.")
+     ]
+-    static let summaries: [Summary] = [
++    static var summaries: [Summary] { isWeekly ? weeklySummaries : clientSummaries }
++    static let clientSummaries: [Summary] = [
+         .init(at: 12, standing: "Northstar Logistics wants fewer shipment-status emails.", points: ["A self-service client portal is the focus."]),
+         .init(at: 24, standing: "The client portal will bring shipment information into one place.", points: ["Clients need shipment status and delivery-document uploads."]),
+         .init(at: 36, standing: "Pilot scope: document uploads, shipment status, and email alerts.", points: ["Maya is asking for a three-week pilot with twenty clients."]),
+@@ -44,7 +47,10 @@ struct DemoTimeline {
+     let elapsed: Double
+     init(elapsed: Double) { self.elapsed = max(0, elapsed) }
+     var phase: Phase {
+-        switch elapsed {
++        if Self.isWeekly {
++            return elapsed < 3 ? .starting : (elapsed < 42 ? .conversation : (elapsed < 45 ? .finishing : (elapsed < 60 ? .history : .completed)))
++        }
++        return switch elapsed {
+         case ..<5: .starting
+         case ..<91: .conversation
+         case ..<99: .finishing
+@@ -53,7 +59,10 @@ struct DemoTimeline {
+         }
+     }
+     var layout: Layout {
+-        switch elapsed {
++        if Self.isWeekly {
++            return elapsed < 8 ? .compact : (elapsed < 16 ? .full : (elapsed < 21 ? .ambient : (elapsed < 30 ? .full : (elapsed < 34 ? .compact : .full))))
++        }
++        return switch elapsed {
+         case ..<23: .compact
+         case ..<53: .full
+         case ..<64: .ambient
+@@ -71,6 +80,30 @@ struct DemoTimeline {
+         guard phase == .conversation else { return nil }
+         return Self.turns.first { elapsed < $0.at && elapsed >= $0.at - 4 }?.source
+     }
+-    var recapProgress: Double { min(1, max(0, (elapsed - 91) / 8)) }
+-    var openQuestions: [String] { (46..<58).contains(elapsed) ? ["Should single sign-on be included in the pilot?"] : [] }
++    var recapProgress: Double { min(1, max(0, Self.isWeekly ? (elapsed - 42) / 3 : (elapsed - 91) / 8)) }
++    var openQuestions: [String] {
++        if Self.isWeekly { return (24..<36).contains(elapsed) ? ["When will Finance send the final figures?"] : [] }
++        return (46..<58).contains(elapsed) ? ["Should single sign-on be included in the pilot?"] : []
++    }
++
++    static let weeklyTurns: [Turn] = [
++        .init(at: 4, source: "them", text: "Quick check-in. Can we have the weekly report ready for Friday?"),
++        .init(at: 8, source: "me", text: "Yes. I’ll finish the first draft by Wednesday."),
++        .init(at: 12, source: "them", text: "I’ll review it Thursday, so we can share it Friday."),
++        .init(at: 18, source: "me", text: "Let’s use the same report template as last week."),
++        .init(at: 24, source: "them", text: "We’re still waiting for the final figures from Finance."),
++        .init(at: 29, source: "me", text: "I’ll follow up with Finance today and add the figures to the draft."),
++        .init(at: 35, source: "them", text: "Thanks. Finance has confirmed they’ll send them this afternoon."),
++        .init(at: 39, source: "me", text: "Great. Draft Wednesday, your review Thursday, and we share Friday.")
++    ]
++    static let weeklySummaries: [Summary] = [
++        .init(at: 6, standing: "The team is preparing the weekly report for Friday.", points: ["Confirm the draft, review, and final figures."]),
++        .init(at: 10, standing: "The weekly report will be shared Friday.", points: ["You will finish the first draft by Wednesday."]),
++        .init(at: 14, standing: "The report is due Friday.", points: ["You: first draft Wednesday.", "Maya: review Thursday."]),
++        .init(at: 20, standing: "The team will reuse last week’s report template.", points: ["You: draft Wednesday. Maya: review Thursday.", "Share the report Friday."]),
++        .init(at: 26, standing: "The report plan is agreed; Finance’s final figures are still missing.", points: ["Draft Wednesday · review Thursday · share Friday."]),
++        .init(at: 32, standing: "You will follow up with Finance today and add the final figures.", points: ["Draft Wednesday · Maya’s review Thursday · share Friday."]),
++        .init(at: 37, standing: "Finance will send the figures this afternoon.", points: ["The missing dependency now has a confirmed delivery time.", "You: draft Wednesday. Maya: review Thursday."]),
++        .init(at: 41, standing: "The team confirmed the weekly report plan.", points: ["You: first draft Wednesday, using last week’s template.", "Maya: review Thursday. Share the report Friday.", "Finance: final figures this afternoon."])
++    ]
+ }
+diff --git a/callaNotch/ContentView.swift b/callaNotch/ContentView.swift
+index 56b7692..ae645a5 100644
+--- a/callaNotch/ContentView.swift
++++ b/callaNotch/ContentView.swift
+@@ -63,6 +63,16 @@ struct ContentView: View {
+ 
+     private var isResizing: Bool { resizeSession.isEditing(vm) }
+ 
++    // Liquid Glass cannot be cached into a transparent bitmap without its
++    // compositor backdrop. Use the native solid surface for demo-only export.
++    private var isExportingZen: Bool {
++        #if CALLA_DEMO
++        return CommandLine.arguments.contains("--demo-zen") && CommandLine.arguments.contains("--demo-export")
++        #else
++        return false
++        #endif
++    }
++
+     /// Opening and closing dwells. Read through the wrapper so the policy tracks
+     /// the reader's setting without a restart.
+     @Default(.minimumHoverDuration) private var minimumHoverDuration
+@@ -149,7 +159,9 @@ struct ContentView: View {
+     /// so white text holds over a bright page; the plain black island before.
+     @ViewBuilder
+     private var ambientBackground: some View {
+-        if #available(macOS 26.0, *) {
++        if isExportingZen {
++            Color.black
++        } else if #available(macOS 26.0, *) {
+             Color.clear
+                 .glassEffect(.regular.tint(.black.opacity(0.42)), in: currentNotchShape)
+         } else {
+@@ -665,6 +677,12 @@ struct ContentView: View {
+             if isAmbient {
+                 // Status in the space either side of the cutout.
+                 CallaAmbientWings()
++                    .transaction { transaction in
++                        if isExportingZen {
++                            transaction.animation = nil
++                            transaction.disablesAnimations = true
++                        }
++                    }
+                     .frame(height: max(24, vm.effectiveClosedNotchHeight))
+                     .transition(.opacity)
+             } else {
+@@ -820,6 +838,12 @@ struct ContentView: View {
+                                 CallaQuizLiveView()
+                             } else if isAmbient {
+                                 CallaCopilotAmbientView()
++                                    .transaction { transaction in
++                                        if isExportingZen {
++                                            transaction.animation = nil
++                                            transaction.disablesAnimations = true
++                                        }
++                                    }
+                                     .transition(.opacity)
+                             } else {
+                                 CallaCopilotLiveView()
