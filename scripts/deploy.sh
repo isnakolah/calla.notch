@@ -14,6 +14,8 @@
 #   scripts/deploy.sh --config Release
 #   scripts/deploy.sh --no-launch     # install but don't relaunch
 #   scripts/deploy.sh --skip-build    # reuse the last build product
+#   scripts/deploy.sh --skip-build --source /path/to/calla.notch.app
+#                                  # install an exact signed build product
 #   scripts/deploy.sh --allow-signing-change
 #                                  # replace app even if TCC identity changes
 #
@@ -23,6 +25,7 @@ CONFIG="Debug"
 LAUNCH=1
 BUILD=1
 ALLOW_SIGNING_CHANGE=0
+SOURCE_OVERRIDE=""
 STAGING_DIR=""
 
 cleanup() {
@@ -35,6 +38,7 @@ while [[ $# -gt 0 ]]; do
     --config) CONFIG="$2"; shift 2 ;;
     --no-launch) LAUNCH=0; shift ;;
     --skip-build) BUILD=0; shift ;;
+    --source) SOURCE_OVERRIDE="$2"; shift 2 ;;
     --allow-signing-change) ALLOW_SIGNING_CHANGE=1; shift ;;
     -h|--help) grep '^#' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
     *) echo "unknown arg: $1" >&2; exit 1 ;;
@@ -115,17 +119,19 @@ fi
 # coexist — including ones belonging to *other checkouts* of this project, whose
 # products may be newer but unsigned. Match on the recorded WorkspacePath so we
 # only ever deploy a product built from this working copy.
-SRC=""
-for derived_dir in "$HOME/Library/Developer/Xcode/DerivedData"/callaNotch-*; do
-  [[ -d "$derived_dir" ]] || continue
-  workspace_path="$(plutil -extract WorkspacePath raw -o - "$derived_dir/info.plist" 2>/dev/null || true)"
-  [[ "$workspace_path" == "$PROJECT_DIR/callaNotch.xcodeproj" ]] || continue
-  candidate="$derived_dir/Build/Products/$CONFIG/$APP_NAME"
-  [[ -d "$candidate" ]] || continue
-  if [[ -z "$SRC" || "$candidate" -nt "$SRC" ]]; then
-    SRC="$candidate"
-  fi
-done
+SRC="$SOURCE_OVERRIDE"
+if [[ -z "$SRC" ]]; then
+  for derived_dir in "$HOME/Library/Developer/Xcode/DerivedData"/callaNotch-*; do
+    [[ -d "$derived_dir" ]] || continue
+    workspace_path="$(plutil -extract WorkspacePath raw -o - "$derived_dir/info.plist" 2>/dev/null || true)"
+    [[ "$workspace_path" == "$PROJECT_DIR/callaNotch.xcodeproj" ]] || continue
+    candidate="$derived_dir/Build/Products/$CONFIG/$APP_NAME"
+    [[ -d "$candidate" ]] || continue
+    if [[ -z "$SRC" || "$candidate" -nt "$SRC" ]]; then
+      SRC="$candidate"
+    fi
+  done
+fi
 if [[ -z "$SRC" || ! -d "$SRC" ]]; then
   echo "✗ Could not find built $APP_NAME for $CONFIG" >&2
   exit 1
