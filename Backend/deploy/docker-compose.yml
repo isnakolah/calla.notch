@@ -1,0 +1,64 @@
+# calla-backend on nomonhomelab. Lives in /srv/app/calla-backend; secrets in
+# .env beside this file (see .env.example). Only the API is published, and
+# only on loopback: cf-dns puts it behind the calla-control tunnel.
+#
+# The vault (CALLA_VAULT_DIR) is on the NAS: /mnt/nas/data/calla, NFS 4.1.
+# Postgres stays in a Docker volume, which is on the NAS's iSCSI disk
+# (/var/lib/docker -> /mnt/nas-docker); never put Postgres on NFS.
+name: calla-backend
+
+services:
+  backend:
+    build:
+      context: ..
+    image: calla-backend:local
+    restart: unless-stopped
+    user: "${CALLA_UID:-1000}:${CALLA_GID:-1000}"
+    env_file: .env
+    environment:
+      CALLA_DATA_DIR: /data
+      CALLA_VAULT_REQUIRE_MARKER: "1"
+      CALLA_DATABASE_URL: postgres://calla:${POSTGRES_PASSWORD}@db:5432/calla?sslmode=disable
+      CALLA_EMBED_URL: http://embed:80
+      CALLA_PUBLIC_URL: ${CALLA_PUBLIC_URL:-https://calla-api.nomonlab.com}
+    volumes:
+      - ${CALLA_VAULT_DIR:-../data}:/data
+    ports:
+      - "127.0.0.1:18795:8080"
+    depends_on:
+      db:
+        condition: service_healthy
+    stop_grace_period: 15s
+
+  db:
+    image: pgvector/pgvector:pg17
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: calla
+      POSTGRES_USER: calla
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U calla -d calla"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    shm_size: 256mb
+
+  # BAAI/bge-small-en-v1.5: 384-d, CPU, ~300 MB resident. Optional: if it is
+  # down, indexing retries and search falls back to full text.
+  embed:
+    image: ghcr.io/huggingface/text-embeddings-inference:cpu-1.8
+    restart: unless-stopped
+    command: ["--model-id", "BAAI/bge-small-en-v1.5", "--max-client-batch-size", "64", "--max-batch-tokens", "4096", "--tokenization-workers", "2"]
+    volumes:
+      - embedcache:/data
+    deploy:
+      resources:
+        limits:
+          memory: 1536m
+
+volumes:
+  pgdata:
+  embedcache:

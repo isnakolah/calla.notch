@@ -1,0 +1,8 @@
+#!/bin/sh
+# Operator entrypoint on nomonhomelab: runs a calla-backend command inside the
+# running backend container. calla.notch setup calls `calla-backend enroll`
+# through this over ssh.
+set -eu
+here=$(cd "$(dirname "$(readlink -f "$0")")/.." && pwd)
+exec docker compose --project-directory "$here/deploy" -f "$here/deploy/docker-compose.yml" \
+  exec -T backend calla-backend "$@"
